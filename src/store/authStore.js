@@ -1,4 +1,3 @@
-
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 
@@ -9,15 +8,27 @@ export const useAuthStore = create((set, get) => ({
   loading: true,
 
   initialize: async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session) {
-      set({ user: session.user, session })
-      await get().fetchRestaurant(session.user.id)
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (error) {
+        console.error('Session error:', error)
+        set({ loading: false })
+        return
+      }
+
+      if (session?.user) {
+        set({ user: session.user, session })
+        await get().fetchRestaurant(session.user.id)
+      }
+    } catch (err) {
+      console.error('Init error:', err)
+    } finally {
+      set({ loading: false })
     }
-    set({ loading: false })
 
     supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
+      if (session?.user) {
         set({ user: session.user, session })
         await get().fetchRestaurant(session.user.id)
       } else {
@@ -27,12 +38,16 @@ export const useAuthStore = create((set, get) => ({
   },
 
   fetchRestaurant: async (userId) => {
-    const { data } = await supabase
-      .from('restaurants')
-      .select('*')
-      .eq('owner_id', userId)
-      .single()
-    if (data) set({ restaurant: data })
+    try {
+      const { data } = await supabase
+        .from('restaurants')
+        .select('*')
+        .eq('owner_id', userId)
+        .single()
+      if (data) set({ restaurant: data })
+    } catch (err) {
+      console.error('Restaurant error:', err)
+    }
   },
 
   signUp: async (email, password, fullName) => {
@@ -52,14 +67,6 @@ export const useAuthStore = create((set, get) => ({
     })
     if (error) throw error
     return data
-  },
-
-  signInWithGoogle: async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/dashboard` },
-    })
-    if (error) throw error
   },
 
   signOut: async () => {
