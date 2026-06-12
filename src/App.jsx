@@ -8,6 +8,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import Menu from './pages/Menu'
+import Orders from './pages/Orders'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore()
@@ -38,17 +39,18 @@ export default function App() {
       <Toaster position="bottom-center" toastOptions={{
         style: { fontFamily:'Tajawal,sans-serif', direction:'rtl', borderRadius:'12px', background:'#0F1117', color:'white', fontSize:'14px', fontWeight:'600' },
         success: { iconTheme: { primary:'#10B981', secondary:'white' } },
-        error: { iconTheme: { primary:'#EF4444', secondary:'white' } },
+        error:   { iconTheme: { primary:'#EF4444',  secondary:'white' } },
       }}/>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+        <Route path="/"                element={<Navigate to="/login" replace />} />
+        <Route path="/login"           element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/register"        element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-        <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/menu" element={<ProtectedRoute><Menu /></ProtectedRoute>} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="/onboarding"      element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+        <Route path="/dashboard"       element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/menu"            element={<ProtectedRoute><Menu /></ProtectedRoute>} />
+        <Route path="/orders"          element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+        <Route path="*"                element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   )
