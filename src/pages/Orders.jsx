@@ -151,7 +151,7 @@ export default function Orders() {
             <NavItem icon="📋" label="الأقسام" onClick={() => navigate('/menu')} />
             <NavItem icon="🍽️" label="الأصناف" onClick={() => navigate('/menu')} />
             <NavItem icon="👥" label="العملاء" onClick={() => toast('قريباً! 🔧')} />
-            <NavItem icon="📱" label="QR Code" onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="📱" label="QR Code" onClick={() => navigate('/qr')} />
             <NavItem icon="📈" label="التحليلات" onClick={() => toast('قريباً! 🔧')} />
             <NavItem icon="⚙️" label="الإعدادات" onClick={() => toast('قريباً! 🔧')} />
           </nav>
