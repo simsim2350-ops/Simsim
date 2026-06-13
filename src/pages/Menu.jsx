@@ -230,7 +230,7 @@ export default function Menu() {
             <NavItem icon="👥" label="العملاء" onClick={() => navigate('/qr')} />
             <NavItem icon="📱" label="QR Code" onClick={() => navigate('/qr')} />
             <NavItem icon="📈" label="التحليلات" onClick={() => navigate('/qr')} />
-            <NavItem icon="⚙️" label="الإعدادات" onClick={() => navigate('/qr')} />
+            <NavItem icon="⚙️" label="الإعدادات" onClick={() => navigate('/settings')} />
           </nav>
 
           <div style={{ padding:'12px', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
