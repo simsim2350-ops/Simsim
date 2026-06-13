@@ -228,7 +228,7 @@ export default function Menu() {
             <NavItem icon="📋" label="الأقسام" active={tab==='categories'} onClick={() => { setTab('categories'); setSidebarOpen(false) }} />
             <NavItem icon="🍽️" label="الأصناف" active={tab==='products'} onClick={() => { setTab('products'); setSidebarOpen(false) }} />
             <NavItem icon="👥" label="العملاء" onClick={() => toast('قريباً! 🔧')} />
-            <NavItem icon="📱" label="QR Code" onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="📱" label="QR Code" onClick={() => navigate('/qr')} />
             <NavItem icon="📈" label="التحليلات" onClick={() => toast('قريباً! 🔧')} />
             <NavItem icon="⚙️" label="الإعدادات" onClick={() => toast('قريباً! 🔧')} />
           </nav>
