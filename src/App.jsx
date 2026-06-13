@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard'
 import Menu from './pages/Menu'
 import Orders from './pages/Orders'
 import PublicMenu from './pages/PublicMenu'
+import QRCodePage from './pages/QRCode'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore()
@@ -40,7 +41,7 @@ export default function App() {
       <Toaster position="bottom-center" toastOptions={{
         style: { fontFamily:'Tajawal,sans-serif', direction:'rtl', borderRadius:'12px', background:'#0F1117', color:'white', fontSize:'14px', fontWeight:'600' },
         success: { iconTheme: { primary:'#10B981', secondary:'white' } },
-        error:   { iconTheme: { primary:'#EF4444',  secondary:'white' } },
+        error:   { iconTheme: { primary:'#EF4444', secondary:'white' } },
       }}/>
       <Routes>
         {/* Public */}
@@ -49,7 +50,7 @@ export default function App() {
         <Route path="/register"        element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
 
-        {/* Customer menu - no auth needed */}
+        {/* Customer menu - no auth */}
         <Route path="/menu/:slug"      element={<PublicMenu />} />
 
         {/* Protected */}
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/dashboard"       element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/menu"            element={<ProtectedRoute><Menu /></ProtectedRoute>} />
         <Route path="/orders"          element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+        <Route path="/qr"              element={<ProtectedRoute><QRCodePage /></ProtectedRoute>} />
 
         <Route path="*"                element={<Navigate to="/login" replace />} />
       </Routes>
