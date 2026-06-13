@@ -239,7 +239,7 @@ export default function Dashboard() {
             {[
               { icon:'📋', label:'إدارة الأقسام', sub:'أضف وعدّل الأقسام', action: () => navigate('/menu') },
               { icon:'🍽️', label:'إضافة صنف', sub:'أضف أصنافاً جديدة', action: () => navigate('/menu') },
-              { icon:'📱', label:'QR Code', sub:'حمّل وشارك QR', action: () => toast('قريباً! 🔧') },
+              { icon:'📱', label:'QR Code', sub:'حمّل وشارك QR', action: () => navigate('/qr') },
               { icon:'📊', label:'التحليلات', sub:'تقارير المبيعات', action: () => toast('قريباً! 🔧') },
             ].map(q => (
               <div key={q.label} onClick={q.action} style={{ background:'white', border:'1.5px solid #E5E7EB', borderRadius:'14px', padding:'16px 12px', cursor:'pointer', textAlign:'center', transition:'all 0.2s' }}>
