@@ -224,13 +224,13 @@ export default function Menu() {
 
           <nav style={{ padding:'8px 12px', flex:1 }}>
             <NavItem icon="📊" label="الرئيسية" onClick={() => navigate('/dashboard')} />
-            <NavItem icon="🛒" label="الطلبات" onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="🛒" label="الطلبات" onClick={() => navigate('/qr')} />
             <NavItem icon="📋" label="الأقسام" active={tab==='categories'} onClick={() => { setTab('categories'); setSidebarOpen(false) }} />
             <NavItem icon="🍽️" label="الأصناف" active={tab==='products'} onClick={() => { setTab('products'); setSidebarOpen(false) }} />
-            <NavItem icon="👥" label="العملاء" onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="👥" label="العملاء" onClick={() => navigate('/qr')} />
             <NavItem icon="📱" label="QR Code" onClick={() => navigate('/qr')} />
-            <NavItem icon="📈" label="التحليلات" onClick={() => toast('قريباً! 🔧')} />
-            <NavItem icon="⚙️" label="الإعدادات" onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="📈" label="التحليلات" onClick={() => navigate('/qr')} />
+            <NavItem icon="⚙️" label="الإعدادات" onClick={() => navigate('/qr')} />
           </nav>
 
           <div style={{ padding:'12px', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
