@@ -9,6 +9,7 @@ import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import Menu from './pages/Menu'
 import Orders from './pages/Orders'
+import PublicMenu from './pages/PublicMenu'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore()
@@ -42,14 +43,21 @@ export default function App() {
         error:   { iconTheme: { primary:'#EF4444',  secondary:'white' } },
       }}/>
       <Routes>
+        {/* Public */}
         <Route path="/"                element={<Navigate to="/login" replace />} />
         <Route path="/login"           element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register"        element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+
+        {/* Customer menu - no auth needed */}
+        <Route path="/menu/:slug"      element={<PublicMenu />} />
+
+        {/* Protected */}
         <Route path="/onboarding"      element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
         <Route path="/dashboard"       element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/menu"            element={<ProtectedRoute><Menu /></ProtectedRoute>} />
         <Route path="/orders"          element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+
         <Route path="*"                element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
