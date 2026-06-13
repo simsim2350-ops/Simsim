@@ -1,0 +1,513 @@
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
+import { supabase } from '../lib/supabase'
+
+export default function PublicMenu() {
+  const { slug } = useParams()
+  const [restaurant, setRestaurant] = useState(null)
+  const [categories, setCategories] = useState([])
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
+  const [activeCategory, setActiveCategory] = useState(null)
+  const [cart, setCart] = useState([])
+  const [cartOpen, setCartOpen] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [modalQty, setModalQty] = useState(1)
+  const [modalNote, setModalNote] = useState('')
+  const [tableNumber, setTableNumber] = useState('')
+  const [orderPlaced, setOrderPlaced] = useState(false)
+  const [orderNumber, setOrderNumber] = useState('')
+  const [orderStatus, setOrderStatus] = useState('pending')
+  const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => {
+    fetchMenu()
+  }, [slug])
+
+  const fetchMenu = async () => {
+    try {
+      // Fetch restaurant
+      const { data: rest, error } = await supabase
+        .from('restaurants')
+        .select('*')
+        .eq('slug', slug)
+        .eq('is_active', true)
+        .single()
+
+      if (error || !rest) { setNotFound(true); return }
+      setRestaurant(rest)
+
+      // Fetch categories & products
+      const [{ data: cats }, { data: prods }] = await Promise.all([
+        supabase.from('categories').select('*').eq('restaurant_id', rest.id).eq('is_visible', true).order('sort_order'),
+        supabase.from('products').select('*').eq('restaurant_id', rest.id).eq('is_available', true).order('sort_order'),
+      ])
+
+      if (cats) { setCategories(cats); if (cats.length > 0) setActiveCategory(cats[0].id) }
+      if (prods) setProducts(prods)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Cart functions
+  const addToCart = (product, qty = 1, note = '') => {
+    setCart(prev => {
+      const existing = prev.find(i => i.id === product.id && i.note === note)
+      if (existing) return prev.map(i => i.id === product.id && i.note === note ? { ...i, qty: i.qty + qty } : i)
+      return [...prev, { id: product.id, name: product.name, emoji: product.emoji, price: product.price, qty, note }]
+    })
+    toast.success(`✅ تم إضافة ${product.name}`)
+  }
+
+  const removeFromCart = (id, note) => {
+    setCart(prev => {
+      const item = prev.find(i => i.id === id && i.note === note)
+      if (!item) return prev
+      if (item.qty <= 1) return prev.filter(i => !(i.id === id && i.note === note))
+      return prev.map(i => i.id === id && i.note === note ? { ...i, qty: i.qty - 1 } : i)
+    })
+  }
+
+  const cartTotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0)
+  const cartCount = cart.reduce((sum, i) => sum + i.qty, 0)
+
+  // Place order
+  const placeOrder = async () => {
+    if (cart.length === 0) { toast.error('السلة فارغة!'); return }
+    if (!tableNumber.trim()) { toast.error('أدخل رقم الطاولة'); return }
+
+    const items = cart.map(i => ({
+      id: i.id, name: i.name, emoji: i.emoji,
+      price: i.price, qty: i.qty, notes: i.note,
+    }))
+
+    const { data, error } = await supabase.from('orders').insert({
+      restaurant_id: restaurant.id,
+      table_number: tableNumber,
+      type: 'dine_in',
+      status: 'pending',
+      items,
+      subtotal: cartTotal,
+      tax: cartTotal * 0.15,
+      total: cartTotal,
+      notes: '',
+    }).select().single()
+
+    if (error) { toast.error('حدث خطأ، حاول مجدداً'); return }
+
+    setOrderNumber(data.order_number)
+    setOrderPlaced(true)
+    setCart([])
+    setCartOpen(false)
+
+    // Subscribe to order status
+    supabase.channel('order-status')
+      .on('postgres_changes',
+        { event:'UPDATE', schema:'public', table:'orders', filter:`id=eq.${data.id}` },
+        (p) => setOrderStatus(p.new.status)
+      ).subscribe()
+  }
+
+  // Filter products
+  const filteredProducts = (catId) => {
+    let prods = products.filter(p => p.category_id === catId)
+    if (searchQuery) prods = products.filter(p => p.name.includes(searchQuery) || (p.description || '').includes(searchQuery))
+    return prods
+  }
+
+  const allFiltered = searchQuery ? products.filter(p => p.name.includes(searchQuery)) : []
+
+  const brandColor = restaurant?.brand_color || '#FF6B35'
+
+  // Loading
+  if (loading) return (
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F8F9FB', flexDirection:'column', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
+      <div style={{ width:'48px', height:'48px', border:`3px solid rgba(0,0,0,0.1)`, borderTopColor: brandColor, borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <span style={{ color:'#9CA3AF', fontSize:'14px' }}>جارٍ تحميل المنيو...</span>
+    </div>
+  )
+
+  // Not found
+  if (notFound) return (
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F8F9FB', flexDirection:'column', gap:'16px', fontFamily:'Cairo,sans-serif', direction:'rtl', textAlign:'center', padding:'24px' }}>
+      <div style={{ fontSize:'64px' }}>🔍</div>
+      <h2 style={{ fontSize:'22px', fontWeight:'900', color:'#0F1117' }}>المطعم غير موجود</h2>
+      <p style={{ color:'#9CA3AF', fontSize:'14px' }}>تأكد من الرابط أو تواصل مع المطعم</p>
+    </div>
+  )
+
+  // Order placed screen
+  if (orderPlaced) return (
+    <div style={{ minHeight:'100vh', background:'#F8F9FB', direction:'rtl', fontFamily:'Tajawal,sans-serif' }}>
+      <div style={{ background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, padding:'40px 24px', textAlign:'center', position:'relative', overflow:'hidden' }}>
+        <div style={{ position:'absolute', inset:0, background:'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1), transparent)', pointerEvents:'none' }}/>
+        <div style={{ fontSize:'64px', marginBottom:'12px', position:'relative' }}>🎉</div>
+        <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'24px', color:'white', marginBottom:'6px' }}>تم استلام طلبك!</h2>
+        <p style={{ color:'rgba(255,255,255,0.8)', fontSize:'14px', marginBottom:'12px' }}>يعمل المطبخ على تحضير طلبك الآن</p>
+        <div style={{ display:'inline-block', background:'rgba(255,255,255,0.2)', padding:'6px 20px', borderRadius:'100px', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', color:'white' }}>
+          {orderNumber}
+        </div>
+      </div>
+
+      <div style={{ padding:'24px 20px' }}>
+        {/* Status stepper */}
+        <div style={{ background:'white', borderRadius:'16px', padding:'20px', marginBottom:'16px', border:'1px solid #E5E7EB' }}>
+          <div style={{ fontSize:'14px', fontWeight:'700', color:'#9CA3AF', marginBottom:'16px', textTransform:'uppercase', letterSpacing:'0.5px' }}>حالة الطلب</div>
+          <div style={{ display:'flex', alignItems:'center' }}>
+            {[
+              { key:'pending', label:'استُلم', icon:'📥' },
+              { key:'preparing', label:'تحضير', icon:'👨‍🍳' },
+              { key:'ready', label:'جاهز', icon:'✅' },
+              { key:'completed', label:'تسليم', icon:'🎉' },
+            ].map((step, i, arr) => {
+              const statuses = ['pending','preparing','ready','completed']
+              const currentIdx = statuses.indexOf(orderStatus)
+              const stepIdx = statuses.indexOf(step.key)
+              const isDone = stepIdx < currentIdx
+              const isCurrent = stepIdx === currentIdx
+              return (
+                <div key={step.key} style={{ display:'flex', alignItems:'center', flex: i < arr.length - 1 ? 1 : 'none' }}>
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'6px' }}>
+                    <div style={{
+                      width:'40px', height:'40px', borderRadius:'50%',
+                      background: isDone ? '#10B981' : isCurrent ? brandColor : '#F3F4F6',
+                      border: `2px solid ${isDone ? '#10B981' : isCurrent ? brandColor : '#E5E7EB'}`,
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                      fontSize:'18px', transition:'all 0.5s',
+                      boxShadow: isCurrent ? `0 0 0 4px ${brandColor}22` : 'none',
+                    }}>
+                      {isDone ? '✓' : step.icon}
+                    </div>
+                    <span style={{ fontSize:'10px', fontWeight:'700', color: isCurrent ? brandColor : isDone ? '#10B981' : '#9CA3AF', whiteSpace:'nowrap' }}>{step.label}</span>
+                  </div>
+                  {i < arr.length - 1 && (
+                    <div style={{ flex:1, height:'2px', background: isDone ? '#10B981' : '#E5E7EB', margin:'0 4px', marginBottom:'16px', transition:'background 0.5s' }}/>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* New order button */}
+        <button
+          onClick={() => { setOrderPlaced(false); setOrderStatus('pending') }}
+          style={{ width:'100%', padding:'15px', borderRadius:'14px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'16px', cursor:'pointer', boxShadow:`0 8px 24px ${brandColor}44` }}
+        >
+          ← العودة للمنيو
+        </button>
+      </div>
+    </div>
+  )
+
+  return (
+    <div style={{ minHeight:'100vh', background:'#F8F9FB', direction:'rtl', fontFamily:'Tajawal,sans-serif', maxWidth:'480px', margin:'0 auto', position:'relative' }}>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        * { box-sizing: border-box; }
+      `}</style>
+
+      {/* Restaurant Header */}
+      <div style={{ background:`linear-gradient(135deg, ${brandColor}22, ${brandColor}08)`, borderBottom:'1px solid #E5E7EB' }}>
+        <div style={{ padding:'20px 16px 16px', display:'flex', alignItems:'center', gap:'14px' }}>
+          <div style={{ width:'60px', height:'60px', borderRadius:'16px', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'28px', flexShrink:0, boxShadow:`0 4px 16px ${brandColor}44` }}>
+            🍕
+          </div>
+          <div style={{ flex:1 }}>
+            <h1 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'20px', color:'#0F1117', marginBottom:'4px' }}>{restaurant.name}</h1>
+            <div style={{ display:'flex', alignItems:'center', gap:'10px', flexWrap:'wrap' }}>
+              <span style={{ display:'flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'700', color:'#10B981', background:'rgba(16,185,129,0.1)', padding:'3px 10px', borderRadius:'100px' }}>
+                <span style={{ width:'6px', height:'6px', borderRadius:'50%', background:'#10B981', display:'inline-block' }}/>
+                مفتوح الآن
+              </span>
+              <span style={{ fontSize:'12px', color:'#9CA3AF' }}>⭐ 4.9</span>
+              <span style={{ fontSize:'12px', color:'#9CA3AF' }}>🕐 15-25 د</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Search */}
+        <div style={{ padding:'0 16px 14px' }}>
+          <div style={{ background:'white', borderRadius:'12px', border:'1.5px solid #E5E7EB', display:'flex', alignItems:'center', overflow:'hidden' }}>
+            <span style={{ padding:'10px 12px', fontSize:'16px', color:'#9CA3AF' }}>🔍</span>
+            <input
+              type="text"
+              placeholder="ابحث في المنيو..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ flex:1, padding:'10px 4px', border:'none', outline:'none', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'transparent', textAlign:'right' }}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} style={{ padding:'10px 12px', background:'none', border:'none', fontSize:'16px', cursor:'pointer', color:'#9CA3AF' }}>✕</button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Category tabs */}
+      {!searchQuery && (
+        <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', overflowX:'auto', display:'flex', padding:'0 8px', position:'sticky', top:0, zIndex:10, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+          {categories.map(cat => (
+            <div
+              key={cat.id}
+              onClick={() => {
+                setActiveCategory(cat.id)
+                document.getElementById(`cat-${cat.id}`)?.scrollIntoView({ behavior:'smooth', block:'start' })
+              }}
+              style={{
+                display:'flex', flexDirection:'column', alignItems:'center', gap:'3px',
+                padding:'10px 14px', cursor:'pointer', flexShrink:0,
+                borderBottom: activeCategory === cat.id ? `2.5px solid ${brandColor}` : '2.5px solid transparent',
+                color: activeCategory === cat.id ? brandColor : '#6B7280',
+                transition:'all 0.2s',
+              }}
+            >
+              <span style={{ fontSize:'18px' }}>{cat.emoji}</span>
+              <span style={{ fontSize:'12px', fontWeight:'700', whiteSpace:'nowrap' }}>{cat.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Menu content */}
+      <div style={{ padding:'0 0 100px' }}>
+
+        {/* Search results */}
+        {searchQuery && (
+          <div style={{ padding:'16px' }}>
+            <div style={{ fontSize:'13px', color:'#9CA3AF', marginBottom:'12px' }}>
+              {allFiltered.length} نتيجة لـ "{searchQuery}"
+            </div>
+            {allFiltered.length === 0 ? (
+              <div style={{ textAlign:'center', padding:'40px', color:'#9CA3AF' }}>
+                <div style={{ fontSize:'40px', opacity:0.3, marginBottom:'10px' }}>🔍</div>
+                <div style={{ fontSize:'14px', fontWeight:'700', color:'#374151' }}>لا توجد نتائج</div>
+              </div>
+            ) : (
+              <div style={{ display:'flex', flexDirection:'column', gap:'1px', background:'#E5E7EB', borderRadius:'16px', overflow:'hidden' }}>
+                {allFiltered.map(prod => <ProductItem key={prod.id} product={prod} cart={cart} onAdd={() => { setSelectedProduct(prod); setModalQty(1); setModalNote('') }} onQtyChange={(delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(prod.id, '')} brandColor={brandColor} />)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Categories */}
+        {!searchQuery && categories.map(cat => {
+          const catProducts = filteredProducts(cat.id)
+          if (catProducts.length === 0) return null
+          return (
+            <div key={cat.id} id={`cat-${cat.id}`} style={{ marginBottom:'8px' }}>
+              <div style={{ padding:'16px 16px 10px', display:'flex', alignItems:'center', gap:'8px' }}>
+                <span style={{ fontSize:'20px' }}>{cat.emoji}</span>
+                <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color:'#0F1117' }}>{cat.name}</h2>
+                <span style={{ fontSize:'12px', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 8px', borderRadius:'100px' }}>{catProducts.length}</span>
+              </div>
+              <div style={{ background:'white', display:'flex', flexDirection:'column', gap:'1px', background:'#F3F4F6' }}>
+                {catProducts.map(prod => (
+                  <ProductItem
+                    key={prod.id}
+                    product={prod}
+                    cart={cart}
+                    onAdd={() => { setSelectedProduct(prod); setModalQty(1); setModalNote('') }}
+                    onQtyChange={(delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(prod.id, '')}
+                    brandColor={brandColor}
+                  />
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Floating cart button */}
+      {cartCount > 0 && !cartOpen && (
+        <div style={{ position:'fixed', bottom:'20px', right:'50%', transform:'translateX(50%)', width:'calc(100% - 32px)', maxWidth:'448px', zIndex:50 }}>
+          <button
+            onClick={() => setCartOpen(true)}
+            style={{ width:'100%', padding:'0 16px', height:'58px', borderRadius:'16px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', cursor:'pointer', display:'flex', alignItems:'center', boxShadow:`0 8px 32px ${brandColor}55`, transition:'all 0.2s' }}
+          >
+            <div style={{ width:'28px', height:'28px', background:'rgba(0,0,0,0.15)', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px' }}>{cartCount}</div>
+            <span style={{ flex:1, textAlign:'center', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px' }}>عرض السلة</span>
+            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px' }}>{cartTotal} ﷼</span>
+          </button>
+        </div>
+      )}
+
+      {/* Cart drawer */}
+      {cartOpen && (
+        <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
+          <div onClick={() => setCartOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', animation:'fadeIn 0.2s ease' }}/>
+          <div style={{ background:'white', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', maxHeight:'88vh', display:'flex', flexDirection:'column', animation:'slideUp 0.3s ease', position:'relative', overflow:'hidden' }}>
+            <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'2px', margin:'12px auto' }}/>
+
+            <div style={{ padding:'0 20px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid #E5E7EB', flexShrink:0 }}>
+              <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px' }}>🛒 سلتك ({cartCount})</h3>
+              <button onClick={() => setCartOpen(false)} style={{ width:'32px', height:'32px', borderRadius:'50%', border:'1.5px solid #E5E7EB', background:'white', fontSize:'18px', cursor:'pointer', color:'#6B7280' }}>✕</button>
+            </div>
+
+            {/* Cart items */}
+            <div style={{ flex:1, overflowY:'auto', padding:'12px 20px' }}>
+              {cart.map((item, i) => (
+                <div key={i} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 0', borderBottom:'1px solid #F3F4F6' }}>
+                  <div style={{ width:'48px', height:'48px', borderRadius:'12px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px', flexShrink:0 }}>{item.emoji}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:'700', fontSize:'14px', marginBottom:'2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.name}</div>
+                    {item.note && <div style={{ fontSize:'11px', color:'#9CA3AF' }}>📝 {item.note}</div>}
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:'0', border:'1.5px solid #E5E7EB', borderRadius:'10px', overflow:'hidden', flexShrink:0 }}>
+                    <button onClick={() => removeFromCart(item.id, item.note)} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', cursor:'pointer', color:brandColor, fontWeight:'300' }}>−</button>
+                    <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', minWidth:'24px', textAlign:'center', borderRight:'1px solid #E5E7EB', borderLeft:'1px solid #E5E7EB', lineHeight:'30px' }}>{item.qty}</span>
+                    <button onClick={() => addToCart(item, 1, item.note)} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', cursor:'pointer', color:brandColor, fontWeight:'300' }}>+</button>
+                  </div>
+                  <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', flexShrink:0, minWidth:'50px', textAlign:'left' }}>{item.price * item.qty} ﷼</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Summary */}
+            <div style={{ padding:'12px 20px', background:'#F8F9FB', borderTop:'1px solid #E5E7EB', flexShrink:0 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:'#9CA3AF', marginBottom:'4px' }}>
+                <span>المجموع الجزئي</span><span>{cartTotal} ﷼</span>
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:'#9CA3AF', marginBottom:'8px' }}>
+                <span>الضريبة 15%</span><span>{(cartTotal * 0.15).toFixed(2)} ﷼</span>
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', paddingTop:'8px', borderTop:'1px solid #E5E7EB', marginBottom:'12px' }}>
+                <span>الإجمالي</span>
+                <span style={{ color:brandColor }}>{(cartTotal * 1.15).toFixed(2)} ﷼</span>
+              </div>
+
+              {/* Table number */}
+              <div style={{ marginBottom:'12px' }}>
+                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>🪑 رقم الطاولة *</label>
+                <input
+                  type="text"
+                  placeholder="أدخل رقم طاولتك..."
+                  value={tableNumber}
+                  onChange={e => setTableNumber(e.target.value)}
+                  style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right' }}
+                />
+              </div>
+
+              <button
+                onClick={placeOrder}
+                style={{ width:'100%', padding:'15px', borderRadius:'14px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'16px', cursor:'pointer', boxShadow:`0 8px 24px ${brandColor}44` }}
+              >
+                🎉 تأكيد الطلب
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Product modal */}
+      {selectedProduct && (
+        <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
+          <div onClick={() => setSelectedProduct(null)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', animation:'fadeIn 0.2s ease' }}/>
+          <div style={{ background:'white', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', animation:'slideUp 0.3s ease', position:'relative', overflow:'hidden', maxHeight:'90vh', overflowY:'auto' }}>
+            <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'2px', margin:'12px auto' }}/>
+
+            <div style={{ height:'200px', background:`linear-gradient(135deg, ${brandColor}22, ${brandColor}08)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'80px' }}>
+              {selectedProduct.emoji}
+            </div>
+
+            <div style={{ padding:'20px 20px 32px' }}>
+              <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'22px', marginBottom:'6px' }}>{selectedProduct.name}</h2>
+              {selectedProduct.description && <p style={{ fontSize:'14px', color:'#6B7280', lineHeight:'1.65', marginBottom:'16px' }}>{selectedProduct.description}</p>}
+
+              <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'20px' }}>
+                <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'24px', color:brandColor }}>{selectedProduct.price} ﷼</span>
+                {selectedProduct.compare_price && <span style={{ fontSize:'15px', color:'#9CA3AF', textDecoration:'line-through' }}>{selectedProduct.compare_price} ﷼</span>}
+                {selectedProduct.calories && <span style={{ fontSize:'12px', color:'#9CA3AF', background:'#F3F4F6', padding:'3px 10px', borderRadius:'100px', marginRight:'auto' }}>🔥 {selectedProduct.calories} كالوري</span>}
+              </div>
+
+              {/* Quantity */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px' }}>
+                <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px' }}>الكمية</span>
+                <div style={{ display:'flex', alignItems:'center', gap:'0', border:'1.5px solid #E5E7EB', borderRadius:'12px', overflow:'hidden' }}>
+                  <button onClick={() => setModalQty(q => Math.max(1, q - 1))} style={{ width:'40px', height:'40px', background:'none', border:'none', fontSize:'22px', cursor:'pointer', color:brandColor, fontWeight:'300' }}>−</button>
+                  <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', minWidth:'40px', textAlign:'center', borderRight:'1px solid #E5E7EB', borderLeft:'1px solid #E5E7EB', lineHeight:'40px' }}>{modalQty}</span>
+                  <button onClick={() => setModalQty(q => q + 1)} style={{ width:'40px', height:'40px', background:'none', border:'none', fontSize:'22px', cursor:'pointer', color:brandColor, fontWeight:'300' }}>+</button>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div style={{ marginBottom:'20px' }}>
+                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>💬 ملاحظات للمطبخ</label>
+                <textarea
+                  placeholder="مثال: بدون بصل، حار جداً..."
+                  value={modalNote}
+                  onChange={e => setModalNote(e.target.value)}
+                  rows={2}
+                  style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'#F8F9FB', outline:'none', textAlign:'right', direction:'rtl', resize:'none' }}
+                />
+              </div>
+
+              <button
+                onClick={() => { addToCart(selectedProduct, modalQty, modalNote); setSelectedProduct(null) }}
+                style={{ width:'100%', padding:'16px', borderRadius:'14px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:`0 8px 24px ${brandColor}44` }}
+              >
+                <span>إضافة للسلة</span>
+                <span style={{ background:'rgba(0,0,0,0.15)', padding:'4px 12px', borderRadius:'8px', fontSize:'14px' }}>{(selectedProduct.price * modalQty).toFixed(2)} ﷼</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Product item component
+function ProductItem({ product, cart, onAdd, onQtyChange, brandColor }) {
+  const cartItem = cart.find(i => i.id === product.id)
+  const qty = cartItem?.qty || 0
+
+  return (
+    <div style={{ background:'white', padding:'14px 16px', display:'flex', gap:'12px', alignItems:'center' }}>
+      <div style={{ flex:1, minWidth:0 }}>
+        {product.is_featured && (
+          <span style={{ fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px', marginBottom:'4px', display:'inline-block' }}>⭐ مميز</span>
+        )}
+        <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', color:'#0F1117', marginBottom:'4px' }}>{product.name}</div>
+        {product.description && (
+          <div style={{ fontSize:'12px', color:'#9CA3AF', lineHeight:'1.5', marginBottom:'8px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+            {product.description}
+          </div>
+        )}
+        <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', color: brandColor }}>{product.price} ﷼</span>
+          {product.compare_price && <span style={{ fontSize:'12px', color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
+          {product.calories && <span style={{ fontSize:'11px', color:'#9CA3AF' }}>🔥 {product.calories}</span>}
+        </div>
+      </div>
+
+      <div style={{ position:'relative', flexShrink:0 }}>
+        <div style={{ width:'88px', height:'88px', borderRadius:'14px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'42px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+          {product.emoji}
+        </div>
+
+        {qty === 0 ? (
+          <button
+            onClick={onAdd}
+            style={{ position:'absolute', bottom:'6px', left:'6px', width:'30px', height:'30px', borderRadius:'50%', border:'none', background: brandColor, color:'white', fontSize:'20px', fontWeight:'300', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:`0 4px 12px ${brandColor}55`, lineHeight:'1' }}
+          >
+            +
+          </button>
+        ) : (
+          <div style={{ position:'absolute', bottom:'5px', left:'4px', display:'flex', alignItems:'center', background:'#0F1117', borderRadius:'100px', overflow:'hidden', boxShadow:'0 4px 12px rgba(0,0,0,0.3)' }}>
+            <button onClick={() => onQtyChange(-1)} style={{ width:'26px', height:'26px', background:'none', border:'none', color:'white', fontSize:'17px', cursor:'pointer', fontWeight:'300', display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
+            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color:'white', minWidth:'20px', textAlign:'center' }}>{qty}</span>
+            <button onClick={onAdd} style={{ width:'26px', height:'26px', background:'none', border:'none', color:'white', fontSize:'17px', cursor:'pointer', fontWeight:'300', display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
