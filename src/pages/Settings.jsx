@@ -188,7 +188,7 @@ export default function Settings() {
             <NavItem icon="🍽️" label="الأصناف"     onClick={() => navigate('/menu')} />
             <NavItem icon="👥" label="العملاء"     onClick={() => toast('قريباً! 🔧')} />
             <NavItem icon="📱" label="QR Code"     onClick={() => navigate('/qr')} />
-            <NavItem icon="📈" label="التحليلات"   onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="📈" label="التحليلات"   onClick={() => navigate('/analytics')} />
             <NavItem icon="⚙️" label="الإعدادات"  active={true} onClick={() => setSidebarOpen(false)} />
           </nav>
 
