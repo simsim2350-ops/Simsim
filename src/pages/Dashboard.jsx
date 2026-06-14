@@ -131,7 +131,7 @@ export default function Dashboard() {
             <NavItem icon="🍽️" label="الأصناف" onClick={() => { navigate('/menu'); setSidebarOpen(false) }} />
             <NavItem icon="👥" label="العملاء" onClick={() => toast('قريباً! 🔧')} />
             <NavItem icon="📱" label="QR Code" onClick={() => navigate('/qr')} />
-            <NavItem icon="📈" label="التحليلات" onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="📈" label="التحليلات" onClick={() => navigate('/analytics')} />
             <NavItem icon="⚙️" label="الإعدادات" onClick={() => navigate('/settings')} />
           </nav>
 
