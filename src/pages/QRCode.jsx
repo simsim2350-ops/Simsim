@@ -152,7 +152,7 @@ export default function QRCodePage() {
             <NavItem icon="👥" label="العملاء" onClick={() => toast('قريباً! 🔧')} />
             <NavItem icon="📱" label="QR Code" active={true} onClick={() => setSidebarOpen(false)} />
             <NavItem icon="📈" label="التحليلات" onClick={() => toast('قريباً! 🔧')} />
-            <NavItem icon="⚙️" label="الإعدادات" onClick={() =>navigate('/settings')}  />
+            <NavItem icon="⚙️" label="الإعدادات" onClick={() => navigate('/settings')} />
           </nav>
 
           <div style={{ padding:'12px', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
