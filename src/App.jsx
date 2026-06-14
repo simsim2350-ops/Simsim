@@ -12,6 +12,7 @@ import Orders from './pages/Orders'
 import PublicMenu from './pages/PublicMenu'
 import QRCodePage from './pages/QRCode'
 import Settings from './pages/Settings'
+import Analytics from './pages/Analytics'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore()
@@ -56,6 +57,7 @@ export default function App() {
         <Route path="/orders"          element={<ProtectedRoute><Orders /></ProtectedRoute>} />
         <Route path="/qr"              element={<ProtectedRoute><QRCodePage /></ProtectedRoute>} />
         <Route path="/settings"        element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/analytics"       element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
         <Route path="*"                element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
