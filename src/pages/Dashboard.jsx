@@ -129,10 +129,10 @@ export default function Dashboard() {
             <NavItem icon="🛒" label="الطلبات" onClick={() => { navigate('/orders'); setSidebarOpen(false) }} />
             <NavItem icon="📋" label="الأقسام" onClick={() => { navigate('/menu'); setSidebarOpen(false) }} />
             <NavItem icon="🍽️" label="الأصناف" onClick={() => { navigate('/menu'); setSidebarOpen(false) }} />
-            <NavItem icon="👥" label="العملاء" onClick={() => navigate('/qr')} />
+            <NavItem icon="👥" label="العملاء" onClick={() => toast('قريباً! 🔧')} />
             <NavItem icon="📱" label="QR Code" onClick={() => navigate('/qr')} />
-            <NavItem icon="📈" label="التحليلات" onClick={() => navigate('/qr')} />
-            <NavItem icon="⚙️" label="الإعدادات" onClick={() =>  navigate('/settings')}/>
+            <NavItem icon="📈" label="التحليلات" onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="⚙️" label="الإعدادات" onClick={() => navigate('/settings')} />
           </nav>
 
           {/* User */}
