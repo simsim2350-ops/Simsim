@@ -132,7 +132,7 @@ export default function Dashboard() {
             <NavItem icon="👥" label="العملاء" onClick={() => navigate('/qr')} />
             <NavItem icon="📱" label="QR Code" onClick={() => navigate('/qr')} />
             <NavItem icon="📈" label="التحليلات" onClick={() => navigate('/qr')} />
-            <NavItem icon="⚙️" label="الإعدادات" onClick={() =>  navigate('/settings')}>
+            <NavItem icon="⚙️" label="الإعدادات" onClick={() =>  navigate('/settings')}/>
           </nav>
 
           {/* User */}
