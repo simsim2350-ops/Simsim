@@ -246,11 +246,11 @@ export default function Menu() {
           {/* Nav */}
           <nav style={{ padding:'8px 12px', flex:1, overflowY:'auto' }}>
             <NavItem icon="📊" label="الرئيسية" onClick={() => navigate('/dashboard')} />
-            <NavItem icon="🛒" label="الطلبات" onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="🛒" label="الطلبات" onClick={() => navigate('/orders')} />
             <NavItem icon="📋" label="الأقسام" active={tab==='categories'} onClick={() => { setTab('categories'); setSidebarOpen(false) }} />
             <NavItem icon="🍽️" label="الأصناف" active={tab==='products'} onClick={() => { setTab('products'); setSidebarOpen(false) }} />
             <NavItem icon="👥" label="العملاء" onClick={() => toast('قريباً! 🔧')} />
-            <NavItem icon="📱" label="QR Code" onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="📱" label="QR Code" onClick={() => navigate('/qr')} />
             <NavItem icon="📈" label="التحليلات" onClick={() => navigate('/analytics')} />
             <NavItem icon="⚙️" label="الإعدادات" onClick={() => navigate('/settings')} />
           </nav>
