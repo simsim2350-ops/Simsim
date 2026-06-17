@@ -36,7 +36,11 @@ export default function PublicMenu() {
         .eq('is_active', true)
         .single()
 
-      if (error || !rest) { setNotFound(true); return }
+      if (error) {
+  console.error('Order error:', error)
+  toast.error(error.message || 'حدث خطأ، حاول مجدداً')
+  return
+}
       setRestaurant(rest)
 
       // Fetch categories & products
