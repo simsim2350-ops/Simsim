@@ -318,17 +318,17 @@ export default function Orders() {
                             </div>
                           )}
 
-                          {/* Summary */}
+                          {{/* Summary */}
                           <div style={{ background:'white', borderRadius:'10px', padding:'10px 12px', marginBottom:'12px', border:'1px solid #E5E7EB' }}>
                             <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#9CA3AF', marginBottom:'4px' }}>
-                              <span>المجموع الجزئي</span><span>{order.subtotal || order.total} ﷼</span>
+                              <span>المجموع الجزئي</span><span>{(order.subtotal ?? order.total ?? 0).toFixed ? (order.subtotal ?? order.total).toFixed(2) : (order.subtotal ?? order.total)} ﷼</span>
                             </div>
                             <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#9CA3AF', marginBottom:'6px' }}>
-                              <span>الضريبة 15%</span><span>{((order.total || 0) * 0.15).toFixed(2)} ﷼</span>
+                              <span>الضريبة 15%</span><span>{(order.tax ?? 0).toFixed(2)} ﷼</span>
                             </div>
                             <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', paddingTop:'6px', borderTop:'1px solid #E5E7EB' }}>
                               <span>الإجمالي</span>
-                              <span style={{ color:'#FF6B35' }}>{((order.total || 0) * 1.15).toFixed(2)} ﷼</span>
+                              <span style={{ color:'#FF6B35' }}>{(order.total ?? 0).toFixed(2)} ﷼</span>
                             </div>
                           </div>
 
