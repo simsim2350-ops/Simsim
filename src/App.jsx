@@ -5,6 +5,7 @@ import { useAuthStore } from './store/authStore'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import Menu from './pages/Menu'
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="/login"           element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register"        element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+        <Route path="/reset-password"  element={<ResetPassword />} />
         <Route path="/menu/:slug"      element={<PublicMenu />} />
         <Route path="/onboarding"      element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
         <Route path="/dashboard"       element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
