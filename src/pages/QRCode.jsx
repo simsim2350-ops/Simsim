@@ -61,9 +61,28 @@ export default function QRCodePage() {
     toast.success('تم تحميل QR Code ✅')
   }
 
-  const copyURL = () => {
-    navigator.clipboard.writeText(menuURL)
-    toast.success('تم نسخ الرابط! 📋')
+  const copyURL = async () => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(menuURL)
+      } else {
+        // Fallback for browsers/contexts without Clipboard API support
+        const textarea = document.createElement('textarea')
+        textarea.value = menuURL
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.focus()
+        textarea.select()
+        const ok = document.execCommand('copy')
+        document.body.removeChild(textarea)
+        if (!ok) throw new Error('execCommand failed')
+      }
+      toast.success('تم نسخ الرابط! 📋')
+    } catch (err) {
+      console.error('Copy failed:', err)
+      toast.error('تعذّر نسخ الرابط، انسخه يدوياً من الحقل')
+    }
   }
 
   const shareWhatsApp = () => {
