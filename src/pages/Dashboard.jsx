@@ -168,9 +168,28 @@ export default function Dashboard() {
             </span>
           </div>
           <button
-            onClick={() => {
-              navigator.clipboard.writeText(`https://simsim.menu/${restaurant?.slug}`)
-              toast.success('تم نسخ الرابط! 📋')
+            onClick={async () => {
+              const menuURL = `${window.location.origin}/menu/${restaurant?.slug}`
+              try {
+                if (navigator.clipboard && window.isSecureContext) {
+                  await navigator.clipboard.writeText(menuURL)
+                } else {
+                  const textarea = document.createElement('textarea')
+                  textarea.value = menuURL
+                  textarea.style.position = 'fixed'
+                  textarea.style.opacity = '0'
+                  document.body.appendChild(textarea)
+                  textarea.focus()
+                  textarea.select()
+                  const ok = document.execCommand('copy')
+                  document.body.removeChild(textarea)
+                  if (!ok) throw new Error('execCommand failed')
+                }
+                toast.success('تم نسخ الرابط! 📋')
+              } catch (err) {
+                console.error('Copy failed:', err)
+                toast.error('تعذّر نسخ الرابط')
+              }
             }}
             style={{ padding:'8px 14px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', whiteSpace:'nowrap' }}
           >
