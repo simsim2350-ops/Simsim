@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
@@ -10,6 +10,13 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 1024)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -31,7 +38,8 @@ export default function Login() {
 
   return (
     <div style={styles.container}>
-      {/* Left Visual */}
+      {/* Left Visual — مخفي على الجوال */}
+      {!isMobile && (
       <div style={styles.visual}>
         <div style={styles.visualOrb1} />
         <div style={styles.visualOrb2} />
@@ -68,9 +76,10 @@ export default function Login() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Right Form */}
-      <div style={styles.formPanel}>
+      <div style={{ ...styles.formPanel, width: isMobile ? '100%' : '520px' }}>
         <div style={styles.formInner}>
           <div style={styles.formHeader}>
             <div style={styles.eyebrow}>مرحباً بعودتك 👋</div>
@@ -81,7 +90,6 @@ export default function Login() {
           <div style={{ marginBottom: '8px' }} />
 
           <form onSubmit={handleLogin}>
-            {/* Email */}
             <div style={styles.formGroup}>
               <label style={styles.label}>البريد الإلكتروني</label>
               <div style={styles.inputWrap}>
@@ -97,7 +105,6 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Password */}
             <div style={styles.formGroup}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <label style={{ ...styles.label, marginBottom: 0 }}>كلمة المرور</label>
@@ -125,7 +132,6 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
@@ -166,7 +172,6 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     padding: '48px',
-    '@media (max-width: 1024px)': { display: 'none' },
   },
   visualOrb1: {
     position: 'absolute',
@@ -234,10 +239,8 @@ const styles = {
     fontSize: '26px', color: '#FF6B35',
   },
   statLabel: { fontSize: '12px', color: 'rgba(255,255,255,0.4)' },
-
-  // Form
   formPanel: {
-    width: '520px', flexShrink: 0,
+    flexShrink: 0,
     background: 'white',
     display: 'flex', flexDirection: 'column',
     borderRight: '3px solid #FF6B35',
@@ -259,28 +262,6 @@ const styles = {
     color: '#0F1117', marginBottom: '8px',
   },
   formSub: { fontSize: '15px', color: '#6B7280', lineHeight: '1.6' },
-
-  socialBtn: {
-    width: '100%', padding: '13px',
-    borderRadius: '13px',
-    border: '1.5px solid #E5E7EB',
-    background: 'white',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    gap: '10px',
-    fontFamily: 'Cairo, sans-serif', fontWeight: '600', fontSize: '14px',
-    color: '#0F1117',
-    cursor: 'pointer',
-    transition: 'all 0.2s',
-    marginBottom: '20px',
-  },
-
-  divider: {
-    display: 'flex', alignItems: 'center', gap: '12px',
-    marginBottom: '24px',
-  },
-  dividerLine: { flex: 1, height: '1px', background: '#E5E7EB' },
-  dividerText: { fontSize: '13px', color: '#9CA3AF', whiteSpace: 'nowrap' },
-
   formGroup: { marginBottom: '18px' },
   label: {
     display: 'block', fontSize: '13px', fontWeight: '700',
@@ -307,7 +288,6 @@ const styles = {
     fontSize: '17px', cursor: 'pointer',
     padding: '4px',
   },
-
   submitBtn: {
     width: '100%', padding: '15px',
     borderRadius: '13px', border: 'none',
@@ -319,13 +299,11 @@ const styles = {
     marginTop: '8px', marginBottom: '24px',
     transition: 'all 0.2s',
   },
-
   spinner: {
     width: '18px', height: '18px',
     border: '2px solid rgba(255,255,255,0.3)',
     borderTopColor: 'white', borderRadius: '50%',
     animation: 'spin 0.7s linear infinite',
   },
-
   footer: { textAlign: 'center', fontSize: '14px', color: '#6B7280' },
 }
