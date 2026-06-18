@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
@@ -21,10 +21,17 @@ export default function PublicMenu() {
   const [orderNumber, setOrderNumber] = useState('')
   const [orderStatus, setOrderStatus] = useState('pending')
   const [searchQuery, setSearchQuery] = useState('')
+  const orderChannelRef = useRef(null)
 
   useEffect(() => {
     fetchMenu()
   }, [slug])
+
+  useEffect(() => {
+    return () => {
+      if (orderChannelRef.current) supabase.removeChannel(orderChannelRef.current)
+    }
+  }, [])
 
   const fetchMenu = async () => {
     try {
