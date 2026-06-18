@@ -95,6 +95,9 @@ export default function PublicMenu() {
       price: i.price, qty: i.qty, notes: i.note,
     }))
 
+    const tax = cartTotal * 0.15
+    const total = cartTotal + tax
+
     const { data, error } = await supabase.from('orders').insert({
       restaurant_id: restaurant.id,
       table_number: tableNumber,
@@ -102,26 +105,30 @@ export default function PublicMenu() {
       status: 'pending',
       items,
       subtotal: cartTotal,
-      tax: cartTotal * 0.15,
-      total: cartTotal,
+      tax,
+      total,
       notes: '',
     }).select().single()
 
-    if (error) { toast.error('حدث خطأ، حاول مجدداً'); return }
+    if (error) {
+      console.error('Order error:', error)
+      toast.error(error.message || 'حدث خطأ، حاول مجدداً')
+      return
+    }
 
     setOrderNumber(data.order_number)
     setOrderPlaced(true)
     setCart([])
     setCartOpen(false)
 
-    // Subscribe to order status
-    supabase.channel('order-status')
+    // Subscribe to order status (cleaned up on unmount / next order)
+    if (orderChannelRef.current) supabase.removeChannel(orderChannelRef.current)
+    orderChannelRef.current = supabase.channel(`order-status-${data.id}`)
       .on('postgres_changes',
         { event:'UPDATE', schema:'public', table:'orders', filter:`id=eq.${data.id}` },
         (p) => setOrderStatus(p.new.status)
       ).subscribe()
   }
-
   // Filter products
   const filteredProducts = (catId) => {
     let prods = products.filter(p => p.category_id === catId)
