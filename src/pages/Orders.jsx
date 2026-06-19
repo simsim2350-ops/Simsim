@@ -195,7 +195,8 @@ export default function Orders() {
         </div>
 
         {/* Stats row */}
-        <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', padding:'12px 16px', display:'flex', gap:'10px', overflowX:'auto', flexShrink:0 }}>
+        <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', padding:'0 16px', flexShrink:0, overflowX:'auto', scrollbarWidth:'none' }}>
+
           {[
             { label:'كل الطلبات', val:orders.length, color:'#374151', bg:'#F3F4F6' },
             { label:'⏳ انتظار', val:orders.filter(o=>o.status==='pending').length, color:'#92400E', bg:'#FEF3C7' },
