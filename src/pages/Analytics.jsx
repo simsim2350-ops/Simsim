@@ -26,7 +26,6 @@ export default function Analytics() {
   const fetchAnalytics = async () => {
     setLoading(true)
     try {
-      // Date range
       const now = new Date()
       const from = new Date()
       if (period === 'week') from.setDate(now.getDate() - 7)
@@ -42,7 +41,6 @@ export default function Analytics() {
 
       if (!orders) return
 
-      // Calculate stats
       const completed = orders.filter(o => o.status === 'completed')
       const totalRevenue = completed.reduce((s, o) => s + (o.total || 0), 0)
       const totalOrders = orders.length
@@ -50,7 +48,6 @@ export default function Analytics() {
       const completionRate = totalOrders > 0 ? Math.round((completed.length / totalOrders) * 100) : 0
       const uniqueCustomers = new Set(orders.map(o => o.customer_phone).filter(Boolean)).size
 
-      // Daily revenue
       const dailyMap = {}
       orders.forEach(o => {
         const day = new Date(o.created_at).toLocaleDateString('ar', { weekday:'short', month:'short', day:'numeric' })
@@ -60,15 +57,12 @@ export default function Analytics() {
       })
       const dailyRevenue = Object.entries(dailyMap).map(([day, data]) => ({ day, ...data }))
 
-      // Orders by status
       const statusMap = {}
       orders.forEach(o => { statusMap[o.status] = (statusMap[o.status] || 0) + 1 })
 
-      // Orders by type
       const typeMap = {}
       orders.forEach(o => { typeMap[o.type || 'dine_in'] = (typeMap[o.type || 'dine_in'] || 0) + 1 })
 
-      // Top products
       const productMap = {}
       orders.forEach(o => {
         const items = Array.isArray(o.items) ? o.items : []
@@ -96,7 +90,6 @@ export default function Analytics() {
     </div>
   )
 
-  // Simple bar chart
   const BarChart = ({ data, maxVal }) => (
     <div style={{ display:'flex', alignItems:'flex-end', gap:'6px', height:'120px', padding:'8px 0' }}>
       {data.map((d, i) => (
@@ -141,7 +134,7 @@ export default function Analytics() {
 
       {/* Sidebar */}
       <div style={{ position:'fixed', right:0, top:0, transform: !isMobile?'none':sidebarOpen?'translateX(0)':'translateX(100%)', transition:'transform 0.3s ease', zIndex:50, height:'100vh' }}>
-        <aside style={{ width:'240px', background:'#0F1117', height:'100vh', display:'flex', flexDirection:'column', borderLeft:'1px solid rgba(255,255,255,0.06)', overflowY:'auto' }}>
+        <aside style={{ width:'240px', background:'#0F1117', height:'100dvh', display:'flex', flexDirection:'column', borderLeft:'1px solid rgba(255,255,255,0.06)', overflowY:'auto' }}>
           <div style={{ padding:'20px 18px', display:'flex', alignItems:'center', gap:'10px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
             <div style={{ width:'34px', height:'34px', background:'linear-gradient(135deg,#FF6B35,#E85A24)', borderRadius:'9px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', color:'white' }}>S</div>
             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', color:'white' }}>SIM<span style={{ color:'#FF6B35' }}>SIM</span></span>
@@ -211,7 +204,7 @@ export default function Analytics() {
           {/* Stats */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'12px', marginBottom:'16px' }}>
             {[
-              { icon:'💰', val:`${stats.totalRevenue.toLocaleString('ar')} ﷼`, label:'إجمالي المبيعات', color:'#FF6B35', bg:'rgba(255,107,53,0.1)', sub:`متوسط الطلب: ${Math.round(stats.avgOrder)} ﷼` },
+              { icon:'💰', val:`${Number(stats.totalRevenue).toFixed(2)} ﷼`, label:'إجمالي المبيعات', color:'#FF6B35', bg:'rgba(255,107,53,0.1)', sub:`متوسط الطلب: ${Math.round(stats.avgOrder)} ﷼` },
               { icon:'🛒', val:stats.totalOrders, label:'إجمالي الطلبات', color:'#3B82F6', bg:'rgba(59,130,246,0.1)', sub:`معدل الإتمام: ${stats.completionRate}%` },
               { icon:'👥', val:stats.totalCustomers, label:'عملاء فريدون', color:'#10B981', bg:'rgba(16,185,129,0.1)', sub:'بناءً على رقم الجوال' },
               { icon:'⭐', val:`${stats.completionRate}%`, label:'معدل إتمام الطلبات', color:'#F59E0B', bg:'rgba(245,158,11,0.1)', sub:`${stats.totalOrders - (stats.ordersByStatus.cancelled||0)} من ${stats.totalOrders}` },
