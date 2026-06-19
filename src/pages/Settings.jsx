@@ -173,7 +173,7 @@ export default function Settings() {
             </div>
           )}
 
-          <nav style={{ padding:'8px 12px', flex:1 }}>
+          <nav style={{ padding:'8px 12px', flex:1, overflowY:'auto' }}>
             <NavItem icon="📊" label="الرئيسية"    onClick={() => navigate('/dashboard')} />
             <NavItem icon="🛒" label="الطلبات"     onClick={() => navigate('/orders')} />
             <NavItem icon="📋" label="الأقسام"     onClick={() => navigate('/menu')} />
