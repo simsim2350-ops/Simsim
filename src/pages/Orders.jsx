@@ -145,7 +145,7 @@ export default function Orders() {
             </div>
           )}
 
-          <nav style={{ padding:'8px 12px', flex:1 }}>
+          <nav style={{ padding:'8px 12px', flex:1, overflowY:'auto' }}>
             <NavItem icon="📊" label="الرئيسية" onClick={() => navigate('/dashboard')} />
             <NavItem icon="🛒" label="الطلبات" active={true} badge={activeCount} onClick={() => setSidebarOpen(false)} />
             <NavItem icon="📋" label="الأقسام" onClick={() => navigate('/menu')} />
