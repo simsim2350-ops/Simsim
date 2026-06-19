@@ -184,7 +184,7 @@ export default function Settings() {
             <NavItem icon="⚙️" label="الإعدادات"  active={true} onClick={() => setSidebarOpen(false)} />
           </nav>
 
-          <div style={{ padding:'12px', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ padding:'12px', borderTop:'1px solid rgba(255,255,255,0.06)', flexShrink:0 }}>
             <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', marginBottom:'8px' }}>
               <div style={{ width:'32px', height:'32px', borderRadius:'50%', background:'linear-gradient(135deg,#667eea,#764ba2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', fontWeight:'700', color:'white', flexShrink:0 }}>
                 {user?.user_metadata?.full_name?.charAt(0) || 'م'}
