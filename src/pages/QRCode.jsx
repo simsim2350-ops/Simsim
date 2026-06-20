@@ -7,19 +7,18 @@ import QRCode from 'qrcode'
 const QR_COLORS = ['#0F1117','#FF6B35','#10B981','#3B82F6','#8B5CF6','#EC4899','#F59E0B','#EF4444']
 
 const STYLES = {
-  orange: { cardBg:'linear-gradient(135deg,#FF6B35,#E85A24)', textColor:'white', logoBg:'rgba(255,255,255,0.2)' },
-  dark:   { cardBg:'linear-gradient(135deg,#0F1117,#1A1A2E)', textColor:'white', logoBg:'rgba(255,107,53,0.2)' },
-  green:  { cardBg:'linear-gradient(135deg,#10B981,#059669)', textColor:'white', logoBg:'rgba(255,255,255,0.2)' },
-  blue:   { cardBg:'linear-gradient(135deg,#3B82F6,#2563EB)', textColor:'white', logoBg:'rgba(255,255,255,0.2)' },
-  purple: { cardBg:'linear-gradient(135deg,#8B5CF6,#7C3AED)', textColor:'white', logoBg:'rgba(255,255,255,0.2)' },
-  white:  { cardBg:'#FFFFFF', textColor:'#0F1117', logoBg:'#F0F2F5' },
+  orange: { cardBg:'linear-gradient(135deg,#FF6B35,#E85A24)', from:'#FF6B35', to:'#E85A24', textColor:'white', logoBg:'rgba(255,255,255,0.2)' },
+  dark:   { cardBg:'linear-gradient(135deg,#0F1117,#1A1A2E)', from:'#0F1117', to:'#1A1A2E', textColor:'white', logoBg:'rgba(255,107,53,0.2)' },
+  green:  { cardBg:'linear-gradient(135deg,#10B981,#059669)', from:'#10B981', to:'#059669', textColor:'white', logoBg:'rgba(255,255,255,0.2)' },
+  blue:   { cardBg:'linear-gradient(135deg,#3B82F6,#2563EB)', from:'#3B82F6', to:'#2563EB', textColor:'white', logoBg:'rgba(255,255,255,0.2)' },
+  purple: { cardBg:'linear-gradient(135deg,#8B5CF6,#7C3AED)', from:'#8B5CF6', to:'#7C3AED', textColor:'white', logoBg:'rgba(255,255,255,0.2)' },
+  white:  { cardBg:'#FFFFFF', from:'#FFFFFF', to:'#FFFFFF', textColor:'#0F1117', logoBg:'#F0F2F5' },
 }
 
 export default function QRCodePage() {
   const navigate = useNavigate()
   const { user, restaurant, signOut } = useAuthStore()
   const canvasRef = useRef(null)
-  const printCanvasRef = useRef(null)
   const [qrColor, setQrColor] = useState('#0F1117')
   const [qrSize, setQrSize] = useState(200)
   const [cardStyle, setCardStyle] = useState('orange')
@@ -47,17 +46,6 @@ export default function QRCodePage() {
         },
         errorCorrectionLevel: 'H',
       })
-      if (printCanvasRef.current) {
-        await QRCode.toCanvas(printCanvasRef.current, menuURL, {
-          width: 220,
-          margin: 2,
-          color: {
-            dark: qrColor,
-            light: '#FFFFFF',
-          },
-          errorCorrectionLevel: 'H',
-        })
-      }
     } catch (err) {
       console.error('QR Error:', err)
     }
@@ -71,6 +59,73 @@ export default function QRCodePage() {
     link.href = canvas.toDataURL('image/png')
     link.click()
     toast.success('تم تحميل QR Code ✅')
+  }
+
+  // تحميل الكارت كامل (الخلفية + الاسم + QR + الرابط) كصورة واحدة — بديل عن الطباعة
+  const downloadCardImage = () => {
+    const qrCanvas = canvasRef.current
+    if (!qrCanvas || !restaurant) return
+
+    const W = 600, H = 760
+    const out = document.createElement('canvas')
+    out.width = W
+    out.height = H
+    const ctx = out.getContext('2d')
+    const s = STYLES[cardStyle] || STYLES.orange
+
+    // الخلفية المتدرجة العليا
+    const grad = ctx.createLinearGradient(0, 0, W, 280)
+    grad.addColorStop(0, s.from)
+    grad.addColorStop(1, s.to)
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, W, 280)
+
+    // أيقونة دائرية شفافة
+    ctx.fillStyle = 'rgba(255,255,255,0.25)'
+    ctx.beginPath()
+    ctx.arc(W/2, 106, 56, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.font = '64px sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('🍕', W/2, 110)
+
+    // اسم المطعم
+    ctx.fillStyle = s.textColor === 'white' ? '#FFFFFF' : '#0F1117'
+    ctx.font = '700 34px Tajawal, Arial, sans-serif'
+    ctx.direction = 'rtl'
+    ctx.fillText(restaurant.name || 'مطعمك', W/2, 210)
+
+    // الوصف
+    ctx.globalAlpha = 0.85
+    ctx.font = '400 18px Tajawal, Arial, sans-serif'
+    ctx.fillText('امسح للاطلاع على المنيو وتقديم طلبك', W/2, 250)
+    ctx.globalAlpha = 1
+
+    // خلفية بيضاء للجزء السفلي
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillRect(0, 280, W, H - 280)
+
+    // رسم QR نفسه في المنتصف
+    const qrSizeOut = 340
+    ctx.drawImage(qrCanvas, (W - qrSizeOut)/2, 320, qrSizeOut, qrSizeOut)
+
+    // نص "امسح للطلب"
+    ctx.fillStyle = '#9CA3AF'
+    ctx.font = '700 16px Tajawal, Arial, sans-serif'
+    ctx.fillText('📷 امسح للطلب', W/2, 320 + qrSizeOut + 30)
+
+    // الرابط
+    ctx.fillStyle = '#6B7280'
+    ctx.font = '600 15px Tajawal, Arial, sans-serif'
+    ctx.direction = 'ltr'
+    ctx.fillText(menuURL.replace('https://',''), W/2, 320 + qrSizeOut + 60)
+
+    const link = document.createElement('a')
+    link.download = `menu-card-${restaurant.slug}.png`
+    link.href = out.toDataURL('image/png')
+    link.click()
+    toast.success('تم تحميل الكارت ✅')
   }
 
   const copyURL = async () => {
@@ -114,47 +169,7 @@ export default function QRCodePage() {
   const style = STYLES[cardStyle] || STYLES.orange
 
   return (
-    <div id="qr-app-shell" style={{ display:'flex', height:'100vh', overflow:'hidden', direction:'rtl', position:'relative' }}>
-
-      <style>{`
-        @media print {
-          body * { visibility: hidden; }
-          #qr-print-only, #qr-print-only * { visibility: visible; }
-          #qr-print-only {
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-          }
-          #qr-print-only * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-        }
-      `}</style>
-
-      {/* نسخة مخصصة للطباعة فقط — مخفية دائماً إلا عند الطباعة */}
-      <div id="qr-print-only" style={{ display:'none', position:'fixed', inset:0, alignItems:'center', justifyContent:'center', background:'white', zIndex:9999 }}>
-        <div style={{ width:'300px', borderRadius:'20px', overflow:'hidden', border:'1px solid #E5E7EB' }}>
-          <div style={{ background: style.cardBg, padding:'24px 20px 16px', display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
-            <div style={{ width:'56px', height:'56px', borderRadius:'14px', background: style.logoBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'28px' }}>🍕</div>
-            <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', color: style.textColor, textAlign:'center' }}>
-              {restaurant?.name || 'مطعمك'}
-            </div>
-            <div style={{ fontSize:'12px', color: style.textColor, opacity:0.8, textAlign:'center' }}>
-              امسح للاطلاع على المنيو وتقديم طلبك
-            </div>
-          </div>
-          <div style={{ background:'white', padding:'18px', display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
-            <canvas ref={printCanvasRef} style={{ borderRadius:'8px', display:'block' }} />
-            <div style={{ fontSize:'12px', color:'#9CA3AF', fontWeight:'700' }}>📷 امسح للطلب</div>
-          </div>
-          <div style={{ background:'#F8F9FB', padding:'10px', textAlign:'center' }}>
-            <div style={{ fontSize:'11px', color:'#9CA3AF', direction:'ltr', fontWeight:'600' }}>
-              {menuURL.replace('https://','')}
-            </div>
-          </div>
-        </div>
-      </div>
+    <div style={{ display:'flex', height:'100vh', overflow:'hidden', direction:'rtl', position:'relative' }}>
 
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:40 }}/>}
 
@@ -272,9 +287,9 @@ export default function QRCodePage() {
                     <span style={{ fontSize:'22px' }}>🖼️</span>
                     تحميل PNG
                   </button>
-                  <button onClick={() => window.print()} style={{ padding:'12px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'5px', color:'#374151' }}>
-                    <span style={{ fontSize:'22px' }}>🖨️</span>
-                    طباعة
+                  <button onClick={downloadCardImage} style={{ padding:'12px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'5px', color:'#374151' }}>
+                    <span style={{ fontSize:'22px' }}>🎴</span>
+                    تحميل الكارت
                   </button>
                 </div>
               </div>
