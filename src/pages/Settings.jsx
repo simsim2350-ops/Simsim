@@ -15,20 +15,24 @@ export default function Settings() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isMobile = window.innerWidth <= 768
 
+  // Restaurant form
   const [restForm, setRestForm] = useState({
     name: '', slug: '', description: '',
     phone: '', address: '', currency: 'SAR - ريال سعودي',
     brand_color: '#FF6B35', type: 'restaurant',
   })
 
+  // Profile form
   const [profileForm, setProfileForm] = useState({
     full_name: '', phone: '',
   })
 
+  // Password form
   const [passForm, setPassForm] = useState({
     current: '', newPass: '', confirm: '',
   })
 
+  // Working hours
   const [hours, setHours] = useState([
     { day:'الأحد',    open:true,  from:'09:00', to:'23:00' },
     { day:'الاثنين',  open:true,  from:'09:00', to:'23:00' },
@@ -60,6 +64,7 @@ export default function Settings() {
     }
   }, [restaurant, user])
 
+  // Save restaurant
   const saveRestaurant = async () => {
     if (!restForm.name.trim()) { toast.error('اسم المطعم مطلوب'); return }
     if (!restForm.slug.trim()) { toast.error('رابط المنيو مطلوب'); return }
@@ -86,6 +91,7 @@ export default function Settings() {
     } finally { setLoading(false) }
   }
 
+  // Save profile
   const saveProfile = async () => {
     if (!profileForm.full_name.trim()) { toast.error('الاسم مطلوب'); return }
     setLoading(true)
@@ -100,6 +106,7 @@ export default function Settings() {
     } finally { setLoading(false) }
   }
 
+  // Change password
   const changePassword = async () => {
     if (!passForm.newPass) { toast.error('أدخل كلمة المرور الجديدة'); return }
     if (passForm.newPass.length < 8) { toast.error('كلمة المرور 8 أحرف على الأقل'); return }
@@ -115,6 +122,7 @@ export default function Settings() {
     } finally { setLoading(false) }
   }
 
+  // Toggle restaurant active
   const toggleActive = async () => {
     const { error } = await supabase
       .from('restaurants')
@@ -178,7 +186,7 @@ export default function Settings() {
             <NavItem icon="🛒" label="الطلبات"     onClick={() => navigate('/orders')} />
             <NavItem icon="📋" label="الأقسام"     onClick={() => navigate('/menu')} />
             <NavItem icon="🍽️" label="الأصناف"     onClick={() => navigate('/menu')} />
-            <NavItem icon="👥" label="العملاء"     onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="👥" label="العملاء"     onClick={() => navigate('/customers')} />
             <NavItem icon="📱" label="QR Code"     onClick={() => navigate('/qr')} />
             <NavItem icon="📈" label="التحليلات" onClick={() => navigate("/analytics")} />
             <NavItem icon="⚙️" label="الإعدادات"  active={true} onClick={() => setSidebarOpen(false)} />
@@ -326,6 +334,7 @@ export default function Settings() {
                 <div style={{ padding:'12px 16px', display:'flex', flexDirection:'column', gap:'8px' }}>
                   {hours.map((h, i) => (
                     <div key={h.day} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background: h.open ? 'white' : '#F8F9FB' }}>
+                      {/* Toggle */}
                       <label style={{ position:'relative', width:'36px', height:'20px', cursor:'pointer', flexShrink:0 }}>
                         <input type="checkbox" checked={h.open} onChange={e => updateHour(i,'open',e.target.checked)} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
                         <div style={{ position:'absolute', inset:0, background: h.open ? '#10B981' : '#E5E7EB', borderRadius:'20px', transition:'0.3s' }}>
@@ -362,6 +371,7 @@ export default function Settings() {
                   <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>👤 الملف الشخصي</div>
                   <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:'14px' }}>
 
+                    {/* Avatar */}
                     <div style={{ display:'flex', alignItems:'center', gap:'14px', padding:'14px', background:'#F8F9FB', borderRadius:'12px' }}>
                       <div style={{ width:'56px', height:'56px', borderRadius:'50%', background:'linear-gradient(135deg,#667eea,#764ba2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px', fontWeight:'700', color:'white', fontFamily:'Cairo,sans-serif', flexShrink:0 }}>
                         {profileForm.full_name?.charAt(0) || 'م'}
