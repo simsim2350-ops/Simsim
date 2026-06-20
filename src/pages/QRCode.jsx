@@ -19,6 +19,7 @@ export default function QRCodePage() {
   const navigate = useNavigate()
   const { user, restaurant, signOut } = useAuthStore()
   const canvasRef = useRef(null)
+  const printCanvasRef = useRef(null)
   const [qrColor, setQrColor] = useState('#0F1117')
   const [qrSize, setQrSize] = useState(200)
   const [cardStyle, setCardStyle] = useState('orange')
@@ -46,6 +47,17 @@ export default function QRCodePage() {
         },
         errorCorrectionLevel: 'H',
       })
+      if (printCanvasRef.current) {
+        await QRCode.toCanvas(printCanvasRef.current, menuURL, {
+          width: 220,
+          margin: 2,
+          color: {
+            dark: qrColor,
+            light: '#FFFFFF',
+          },
+          errorCorrectionLevel: 'H',
+        })
+      }
     } catch (err) {
       console.error('QR Error:', err)
     }
@@ -102,21 +114,49 @@ export default function QRCodePage() {
   const style = STYLES[cardStyle] || STYLES.orange
 
   return (
-    <div style={{ display:'flex', height:'100vh', overflow:'hidden', direction:'rtl', position:'relative' }}>
+    <div id="qr-app-shell" style={{ display:'flex', height:'100vh', overflow:'hidden', direction:'rtl', position:'relative' }}>
 
       <style>{`
         @media print {
-          body * { visibility: hidden; }
-          #qr-print-card, #qr-print-card * { visibility: visible; }
-          #qr-print-card {
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 300px !important;
-            box-shadow: none !important;
+          @page { size: auto; margin: 10mm; }
+          html, body { height: auto !important; }
+          #qr-app-shell { display: none !important; }
+          #qr-print-only {
+            display: flex !important;
+            position: static !important;
+            height: auto !important;
+          }
+          #qr-print-only * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
           }
         }
       `}</style>
+
+      {/* نسخة مخصصة للطباعة فقط — مخفية دائماً إلا عند الطباعة */}
+      <div id="qr-print-only" style={{ display:'none', position:'fixed', inset:0, alignItems:'center', justifyContent:'center', background:'white', zIndex:9999 }}>
+        <div style={{ width:'300px', borderRadius:'20px', overflow:'hidden', border:'1px solid #E5E7EB' }}>
+          <div style={{ background: style.cardBg, padding:'24px 20px 16px', display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
+            <div style={{ width:'56px', height:'56px', borderRadius:'14px', background: style.logoBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'28px' }}>🍕</div>
+            <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', color: style.textColor, textAlign:'center' }}>
+              {restaurant?.name || 'مطعمك'}
+            </div>
+            <div style={{ fontSize:'12px', color: style.textColor, opacity:0.8, textAlign:'center' }}>
+              امسح للاطلاع على المنيو وتقديم طلبك
+            </div>
+          </div>
+          <div style={{ background:'white', padding:'18px', display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
+            <canvas ref={printCanvasRef} style={{ borderRadius:'8px', display:'block' }} />
+            <div style={{ fontSize:'12px', color:'#9CA3AF', fontWeight:'700' }}>📷 امسح للطلب</div>
+          </div>
+          <div style={{ background:'#F8F9FB', padding:'10px', textAlign:'center' }}>
+            <div style={{ fontSize:'11px', color:'#9CA3AF', direction:'ltr', fontWeight:'600' }}>
+              {menuURL.replace('https://','')}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:40 }}/>}
 
@@ -198,7 +238,7 @@ export default function QRCodePage() {
 
                 {/* Card */}
                 <div style={{ padding:'24px', display:'flex', justifyContent:'center' }}>
-                  <div id="qr-print-card" style={{ width:'260px', borderRadius:'20px', overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.15)' }}>
+                  <div style={{ width:'260px', borderRadius:'20px', overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.15)' }}>
 
                     {/* Header */}
                     <div style={{ background: style.cardBg, padding:'20px 20px 14px', display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
