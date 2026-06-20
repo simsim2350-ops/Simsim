@@ -17,6 +17,8 @@ export default function PublicMenu() {
   const [modalQty, setModalQty] = useState(1)
   const [modalNote, setModalNote] = useState('')
   const [tableNumber, setTableNumber] = useState('')
+  const [customerName, setCustomerName] = useState('')
+  const [customerPhone, setCustomerPhone] = useState('')
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [orderNumber, setOrderNumber] = useState('')
   const [orderStatus, setOrderStatus] = useState('pending')
@@ -43,11 +45,7 @@ export default function PublicMenu() {
         .eq('is_active', true)
         .single()
 
-      if (error) {
-  console.error('Order error:', error)
-  toast.error(error.message || 'حدث خطأ، حاول مجدداً')
-  return
-}
+      if (error || !rest) { setNotFound(true); return }
       setRestaurant(rest)
 
       // Fetch categories & products
@@ -89,6 +87,7 @@ export default function PublicMenu() {
   const placeOrder = async () => {
     if (cart.length === 0) { toast.error('السلة فارغة!'); return }
     if (!tableNumber.trim()) { toast.error('أدخل رقم الطاولة'); return }
+    if (!customerPhone.trim()) { toast.error('أدخل رقم جوالك'); return }
 
     const items = cart.map(i => ({
       id: i.id, name: i.name, emoji: i.emoji,
@@ -101,6 +100,8 @@ export default function PublicMenu() {
     const { data, error } = await supabase.from('orders').insert({
       restaurant_id: restaurant.id,
       table_number: tableNumber,
+      customer_name: customerName.trim() || null,
+      customer_phone: customerPhone.trim(),
       type: 'dine_in',
       status: 'pending',
       items,
@@ -129,6 +130,7 @@ export default function PublicMenu() {
         (p) => setOrderStatus(p.new.status)
       ).subscribe()
   }
+
   // Filter products
   const filteredProducts = (catId) => {
     let prods = products.filter(p => p.category_id === catId)
@@ -244,7 +246,6 @@ export default function PublicMenu() {
                 <span style={{ width:'6px', height:'6px', borderRadius:'50%', background:'#10B981', display:'inline-block' }}/>
                 مفتوح الآن
               </span>
-              <span style={{ fontSize:'12px', color:'#9CA3AF' }}>⭐ 4.9</span>
               <span style={{ fontSize:'12px', color:'#9CA3AF' }}>🕐 15-25 د</span>
             </div>
           </div>
@@ -399,6 +400,26 @@ export default function PublicMenu() {
               <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', paddingTop:'8px', borderTop:'1px solid #E5E7EB', marginBottom:'12px' }}>
                 <span>الإجمالي</span>
                 <span style={{ color:brandColor }}>{(cartTotal * 1.15).toFixed(2)} ﷼</span>
+              </div>
+
+              {/* Customer info */}
+              <div style={{ marginBottom:'12px' }}>
+                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>👤 اسمك (اختياري)</label>
+                <input
+                  type="text"
+                  placeholder="مثال: محمد"
+                  value={customerName}
+                  onChange={e => setCustomerName(e.target.value)}
+                  style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', marginBottom:'10px' }}
+                />
+                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>📱 رقم جوالك *</label>
+                <input
+                  type="tel"
+                  placeholder="05XXXXXXXX"
+                  value={customerPhone}
+                  onChange={e => setCustomerPhone(e.target.value)}
+                  style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', direction:'ltr' }}
+                />
               </div>
 
               {/* Table number */}
