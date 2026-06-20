@@ -118,22 +118,22 @@ export default function QRCodePage() {
 
       <style>{`
         @media print {
-          #qr-app-shell { display: none !important; }
+          body * { visibility: hidden; }
+          #qr-print-only, #qr-print-only * { visibility: visible; }
           #qr-print-only {
-            position: static !important;
-            left: auto !important;
-            top: auto !important;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
           }
           #qr-print-only * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            color-adjust: exact !important;
           }
         }
       `}</style>
 
-      {/* نسخة مخصصة للطباعة فقط — موضوعة خارج الشاشة دائماً، تظهر في موضعها الطبيعي فقط عند الطباعة */}
-      <div id="qr-print-only" style={{ position:'absolute', left:'-9999px', top:0, display:'flex', alignItems:'center', justifyContent:'center', background:'white', padding:'20px' }}>
+      {/* نسخة مخصصة للطباعة فقط — مخفية دائماً إلا عند الطباعة */}
+      <div id="qr-print-only" style={{ display:'none', position:'fixed', inset:0, alignItems:'center', justifyContent:'center', background:'white', zIndex:9999 }}>
         <div style={{ width:'300px', borderRadius:'20px', overflow:'hidden', border:'1px solid #E5E7EB' }}>
           <div style={{ background: style.cardBg, padding:'24px 20px 16px', display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
             <div style={{ width:'56px', height:'56px', borderRadius:'14px', background: style.logoBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'28px' }}>🍕</div>
