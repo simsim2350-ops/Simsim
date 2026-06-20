@@ -26,6 +26,7 @@ export default function Analytics() {
   const fetchAnalytics = async () => {
     setLoading(true)
     try {
+      // Date range
       const now = new Date()
       const from = new Date()
       if (period === 'week') from.setDate(now.getDate() - 7)
@@ -41,6 +42,7 @@ export default function Analytics() {
 
       if (!orders) return
 
+      // Calculate stats
       const completed = orders.filter(o => o.status === 'completed')
       const totalRevenue = completed.reduce((s, o) => s + (o.total || 0), 0)
       const totalOrders = orders.length
@@ -48,6 +50,7 @@ export default function Analytics() {
       const completionRate = totalOrders > 0 ? Math.round((completed.length / totalOrders) * 100) : 0
       const uniqueCustomers = new Set(orders.map(o => o.customer_phone).filter(Boolean)).size
 
+      // Daily revenue
       const dailyMap = {}
       orders.forEach(o => {
         const day = new Date(o.created_at).toLocaleDateString('ar', { weekday:'short', month:'short', day:'numeric' })
@@ -57,12 +60,15 @@ export default function Analytics() {
       })
       const dailyRevenue = Object.entries(dailyMap).map(([day, data]) => ({ day, ...data }))
 
+      // Orders by status
       const statusMap = {}
       orders.forEach(o => { statusMap[o.status] = (statusMap[o.status] || 0) + 1 })
 
+      // Orders by type
       const typeMap = {}
       orders.forEach(o => { typeMap[o.type || 'dine_in'] = (typeMap[o.type || 'dine_in'] || 0) + 1 })
 
+      // Top products
       const productMap = {}
       orders.forEach(o => {
         const items = Array.isArray(o.items) ? o.items : []
@@ -90,6 +96,7 @@ export default function Analytics() {
     </div>
   )
 
+  // Simple bar chart
   const BarChart = ({ data, maxVal }) => (
     <div style={{ display:'flex', alignItems:'flex-end', gap:'6px', height:'120px', padding:'8px 0' }}>
       {data.map((d, i) => (
@@ -155,7 +162,7 @@ export default function Analytics() {
             <NavItem icon="🛒" label="الطلبات"    onClick={() => navigate('/orders')} />
             <NavItem icon="📋" label="الأقسام"    onClick={() => navigate('/menu')} />
             <NavItem icon="🍽️" label="الأصناف"    onClick={() => navigate('/menu')} />
-            <NavItem icon="👥" label="العملاء"    onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="👥" label="العملاء"    onClick={() => navigate('/customers')} />
             <NavItem icon="📱" label="QR Code"    onClick={() => navigate('/qr')} />
             <NavItem icon="📈" label="التحليلات"  active={true} onClick={() => setSidebarOpen(false)} />
             <NavItem icon="⚙️" label="الإعدادات" onClick={() => navigate('/settings')} />
