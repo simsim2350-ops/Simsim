@@ -104,6 +104,20 @@ export default function QRCodePage() {
   return (
     <div style={{ display:'flex', height:'100vh', overflow:'hidden', direction:'rtl', position:'relative' }}>
 
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #qr-print-card, #qr-print-card * { visibility: visible; }
+          #qr-print-card {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px !important;
+            box-shadow: none !important;
+          }
+        }
+      `}</style>
+
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:40 }}/>}
 
       {/* Sidebar */}
@@ -184,7 +198,7 @@ export default function QRCodePage() {
 
                 {/* Card */}
                 <div style={{ padding:'24px', display:'flex', justifyContent:'center' }}>
-                  <div style={{ width:'260px', borderRadius:'20px', overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.15)' }}>
+                  <div id="qr-print-card" style={{ width:'260px', borderRadius:'20px', overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.15)' }}>
 
                     {/* Header */}
                     <div style={{ background: style.cardBg, padding:'20px 20px 14px', display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
