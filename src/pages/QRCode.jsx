@@ -66,6 +66,7 @@ export default function QRCodePage() {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(menuURL)
       } else {
+        // Fallback for browsers/contexts without Clipboard API support
         const textarea = document.createElement('textarea')
         textarea.value = menuURL
         textarea.style.position = 'fixed'
@@ -128,7 +129,7 @@ export default function QRCodePage() {
             <NavItem icon="🛒" label="الطلبات"    onClick={() => navigate('/orders')} />
             <NavItem icon="📋" label="الأقسام"    onClick={() => navigate('/menu')} />
             <NavItem icon="🍽️" label="الأصناف"    onClick={() => navigate('/menu')} />
-            <NavItem icon="👥" label="العملاء"    onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="👥" label="العملاء"    onClick={() => navigate('/customers')} />
             <NavItem icon="📱" label="QR Code"    active={true} onClick={() => setSidebarOpen(false)} />
             <NavItem icon="📈" label="التحليلات" onClick={() => navigate("/analytics")} />
             <NavItem icon="⚙️" label="الإعدادات" onClick={() => navigate('/settings')} />
@@ -225,23 +226,6 @@ export default function QRCodePage() {
                   </button>
                 </div>
               </div>
-
-              {/* Stats */}
-              <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', padding:'16px' }}>
-                <div style={{ fontSize:'14px', fontWeight:'800', marginBottom:'14px' }}>📊 إحصائيات</div>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px' }}>
-                  {[
-                    { val:'124', label:'مسح هذا الشهر', color:'#FF6B35' },
-                    { val:'89',  label:'زيارة فريدة',   color:'#3B82F6' },
-                    { val:'68%', label:'معدل الطلب',     color:'#10B981' },
-                  ].map(s => (
-                    <div key={s.label} style={{ background:'#F8F9FB', borderRadius:'12px', padding:'12px', textAlign:'center' }}>
-                      <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'20px', color:s.color, marginBottom:'4px' }}>{s.val}</div>
-                      <div style={{ fontSize:'10px', color:'#9CA3AF', fontWeight:'600' }}>{s.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
 
             {/* Right: Settings */}
@@ -313,4 +297,4 @@ export default function QRCodePage() {
       </main>
     </div>
   )
-      }
+}
