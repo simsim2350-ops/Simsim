@@ -35,11 +35,13 @@ export default function Menu() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isMobile = window.innerWidth <= 768
 
+  // Modals
   const [catModal, setCatModal] = useState(false)
   const [prodModal, setProdModal] = useState(false)
   const [editingCat, setEditingCat] = useState(null)
   const [editingProd, setEditingProd] = useState(null)
 
+  // Forms
   const [catForm, setCatForm] = useState({ name:'', emoji:'🍽️', is_visible:true })
   const [prodForm, setProdForm] = useState({ name:'', description:'', price:'', compare_price:'', category_id:'', emoji:'🍽️', is_available:true, is_featured:false })
 
@@ -62,6 +64,7 @@ export default function Menu() {
     }
   }
 
+  // ===== CATEGORIES =====
   const openAddCat = () => {
     setEditingCat(null)
     setCatForm({ name:'', emoji:'🍽️', is_visible:true })
@@ -115,6 +118,7 @@ export default function Menu() {
     toast.success(cat.is_visible ? 'تم الإخفاء 🚫' : 'تم الإظهار ✅')
   }
 
+  // ===== PRODUCTS =====
   const openAddProd = () => {
     setEditingProd(null)
     setProdForm({ name:'', description:'', price:'', compare_price:'', category_id: categories[0]?.id || '', emoji:'🍽️', is_available:true, is_featured:false })
@@ -187,6 +191,7 @@ export default function Menu() {
     navigate('/login')
   }
 
+  // ===== NAV ITEM =====
   const NavItem = ({ icon, label, active, onClick }) => (
     <div onClick={onClick} style={{
       display:'flex', alignItems:'center', gap:'10px',
@@ -207,10 +212,12 @@ export default function Menu() {
   return (
     <div style={{ display:'flex', height:'100vh', overflow:'hidden', direction:'rtl', position:'relative' }}>
 
+      {/* Mobile overlay */}
       {sidebarOpen && (
         <div onClick={() => setSidebarOpen(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:40 }}/>
       )}
 
+      {/* Sidebar */}
       <div style={{
         position:'fixed', right:0, top:0,
         transform: !isMobile ? 'none' : sidebarOpen ? 'translateX(0)' : 'translateX(100%)',
@@ -219,11 +226,13 @@ export default function Menu() {
       }}>
         <aside style={{ width:'240px', background:'#0F1117', height:'100dvh', display:'flex', flexDirection:'column', borderLeft:'1px solid rgba(255,255,255,0.06)', overflowY:'auto' }}>
 
+          {/* Logo */}
           <div style={{ padding:'20px 18px', display:'flex', alignItems:'center', gap:'10px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
             <div style={{ width:'34px', height:'34px', background:'linear-gradient(135deg,#FF6B35,#E85A24)', borderRadius:'9px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', color:'white' }}>S</div>
             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', color:'white' }}>SIM<span style={{ color:'#FF6B35' }}>SIM</span></span>
           </div>
 
+          {/* Restaurant */}
           {restaurant && (
             <div style={{ margin:'12px', padding:'10px 12px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'11px', display:'flex', alignItems:'center', gap:'10px' }}>
               <div style={{ width:'32px', height:'32px', borderRadius:'8px', background:'linear-gradient(135deg,#FF6B35,#FF9F6B)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px' }}>🍕</div>
@@ -234,17 +243,19 @@ export default function Menu() {
             </div>
           )}
 
+          {/* Nav */}
           <nav style={{ padding:'8px 12px', flex:1, overflowY:'auto' }}>
             <NavItem icon="📊" label="الرئيسية" onClick={() => navigate('/dashboard')} />
             <NavItem icon="🛒" label="الطلبات" onClick={() => navigate('/orders')} />
             <NavItem icon="📋" label="الأقسام" active={tab==='categories'} onClick={() => { setTab('categories'); setSidebarOpen(false) }} />
             <NavItem icon="🍽️" label="الأصناف" active={tab==='products'} onClick={() => { setTab('products'); setSidebarOpen(false) }} />
-            <NavItem icon="👥" label="العملاء" onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="👥" label="العملاء" onClick={() => navigate('/customers')} />
             <NavItem icon="📱" label="QR Code" onClick={() => navigate('/qr')} />
             <NavItem icon="📈" label="التحليلات" onClick={() => navigate('/analytics')} />
             <NavItem icon="⚙️" label="الإعدادات" onClick={() => navigate('/settings')} />
           </nav>
 
+          {/* User */}
           <div style={{ padding:'12px', borderTop:'1px solid rgba(255,255,255,0.06)', flexShrink:0 }}>
             <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', marginBottom:'8px' }}>
               <div style={{ width:'32px', height:'32px', borderRadius:'50%', background:'linear-gradient(135deg,#667eea,#764ba2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', fontWeight:'700', color:'white', fontFamily:'Cairo,sans-serif', flexShrink:0 }}>
@@ -262,8 +273,10 @@ export default function Menu() {
         </aside>
       </div>
 
+      {/* Main */}
       <main style={{ marginRight: isMobile ? '0' : '240px', flex:1, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden' }}>
 
+        {/* Topbar */}
         <div style={{ height:'56px', background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', alignItems:'center', padding:'0 16px', gap:'10px', flexShrink:0 }}>
           {isMobile && (
             <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background:'none', border:'none', fontSize:'22px', cursor:'pointer', padding:'4px' }}>☰</button>
@@ -282,7 +295,8 @@ export default function Menu() {
           </div>
         </div>
 
-        <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', padding:'0 16px', flexShrink:0 }}>
+        {/* Tabs */}
+        <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', padding:'0 16px', flexShrink:0, overflowX:'auto', scrollbarWidth:'none' }}>
           {[
             { key:'categories', label:`📋 الأقسام (${categories.length})` },
             { key:'products', label:`🍽️ الأصناف (${products.length})` },
@@ -298,8 +312,10 @@ export default function Menu() {
           ))}
         </div>
 
+        {/* Content */}
         <div style={{ flex:1, overflowY:'auto', padding:'16px' }}>
 
+          {/* CATEGORIES */}
           {tab === 'categories' && (
             <div>
               {categories.length === 0 ? (
@@ -341,6 +357,7 @@ export default function Menu() {
             </div>
           )}
 
+          {/* PRODUCTS */}
           {tab === 'products' && (
             <div>
               {products.length === 0 ? (
@@ -390,6 +407,7 @@ export default function Menu() {
         </div>
       </main>
 
+      {/* ===== CATEGORY MODAL ===== */}
       {catModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={() => setCatModal(false)}>
           <div style={{ background:'white', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', padding:'20px 20px 36px' }} onClick={e => e.stopPropagation()}>
@@ -397,6 +415,7 @@ export default function Menu() {
             <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', marginBottom:'18px', textAlign:'center' }}>
               {editingCat ? 'تعديل القسم' : '📋 إضافة قسم جديد'}
             </h3>
+
             <div style={{ marginBottom:'14px' }}>
               <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px' }}>أيقونة القسم</label>
               <div style={{ display:'flex', gap:'7px', flexWrap:'wrap' }}>
@@ -407,14 +426,17 @@ export default function Menu() {
                 ))}
               </div>
             </div>
+
             <div style={{ marginBottom:'14px' }}>
               <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px' }}>اسم القسم *</label>
               <input style={inputStyle} placeholder="مثال: البرغر، المشروبات..." value={catForm.name} onChange={e => setCatForm(f=>({...f,name:e.target.value}))} autoFocus />
             </div>
+
             <label style={{ display:'flex', alignItems:'center', gap:'10px', cursor:'pointer', marginBottom:'20px' }}>
               <input type="checkbox" checked={catForm.is_visible} onChange={e => setCatForm(f=>({...f,is_visible:e.target.checked}))} style={{ width:'18px', height:'18px', accentColor:'#FF6B35' }}/>
               <span style={{ fontSize:'14px', fontWeight:'600' }}>إظهار القسم في المنيو</span>
             </label>
+
             <div style={{ display:'flex', gap:'10px' }}>
               <button onClick={() => setCatModal(false)} style={{ flex:1, padding:'13px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'600', fontSize:'14px', cursor:'pointer', color:'#6B7280' }}>إلغاء</button>
               <button onClick={saveCat} style={{ flex:2, padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
@@ -425,6 +447,7 @@ export default function Menu() {
         </div>
       )}
 
+      {/* ===== PRODUCT MODAL ===== */}
       {prodModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={() => setProdModal(false)}>
           <div style={{ background:'white', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', maxHeight:'92vh', overflowY:'auto', padding:'20px 20px 36px' }} onClick={e => e.stopPropagation()}>
@@ -432,6 +455,7 @@ export default function Menu() {
             <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', marginBottom:'18px', textAlign:'center' }}>
               {editingProd ? 'تعديل الصنف' : '🍽️ إضافة صنف جديد'}
             </h3>
+
             <div style={{ marginBottom:'14px' }}>
               <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px' }}>أيقونة الصنف</label>
               <div style={{ display:'flex', gap:'7px', flexWrap:'wrap' }}>
@@ -442,14 +466,17 @@ export default function Menu() {
                 ))}
               </div>
             </div>
+
             <div style={{ marginBottom:'14px' }}>
               <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px' }}>اسم الصنف *</label>
               <input style={inputStyle} placeholder="مثال: برغر كلاسيك" value={prodForm.name} onChange={e => setProdForm(f=>({...f,name:e.target.value}))} autoFocus />
             </div>
+
             <div style={{ marginBottom:'14px' }}>
               <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px' }}>الوصف</label>
               <textarea style={{ ...inputStyle, minHeight:'72px', resize:'vertical' }} placeholder="وصف شهي يجذب العملاء..." value={prodForm.description} onChange={e => setProdForm(f=>({...f,description:e.target.value}))} />
             </div>
+
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'14px' }}>
               <div>
                 <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px' }}>السعر (ريال) *</label>
@@ -460,6 +487,7 @@ export default function Menu() {
                 <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} type="number" min="0" step="0.5" placeholder="0.00" value={prodForm.compare_price} onChange={e => setProdForm(f=>({...f,compare_price:e.target.value}))} />
               </div>
             </div>
+
             <div style={{ marginBottom:'14px' }}>
               <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px' }}>القسم</label>
               <select style={{ ...inputStyle, cursor:'pointer' }} value={prodForm.category_id} onChange={e => setProdForm(f=>({...f,category_id:e.target.value}))}>
@@ -469,6 +497,7 @@ export default function Menu() {
                 ))}
               </select>
             </div>
+
             <div style={{ display:'flex', gap:'20px', marginBottom:'20px' }}>
               <label style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
                 <input type="checkbox" checked={prodForm.is_available} onChange={e => setProdForm(f=>({...f,is_available:e.target.checked}))} style={{ width:'17px', height:'17px', accentColor:'#FF6B35' }}/>
@@ -479,6 +508,7 @@ export default function Menu() {
                 <span style={{ fontSize:'13px', fontWeight:'600' }}>⭐ مميز</span>
               </label>
             </div>
+
             <div style={{ display:'flex', gap:'10px' }}>
               <button onClick={() => setProdModal(false)} style={{ flex:1, padding:'13px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'600', fontSize:'14px', cursor:'pointer', color:'#6B7280' }}>إلغاء</button>
               <button onClick={saveProd} style={{ flex:2, padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
