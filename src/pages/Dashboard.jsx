@@ -7,7 +7,7 @@ import { useAuthStore } from '../store/authStore'
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user, restaurant, signOut } = useAuthStore()
-  const [stats, setStats] = useState({ orders:0, revenue:0, customers:0 })
+  const [stats, setStats] = useState({ orders:0, revenue:0, customers:0, avgPrepMinutes:null })
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -30,10 +30,18 @@ export default function Dashboard() {
         .limit(10)
       if (data) {
         setOrders(data)
+        const completedOrders = data.filter(o => o.status === 'completed' && o.updated_at)
+        const avgPrepMinutes = completedOrders.length > 0
+          ? completedOrders.reduce((sum, o) => {
+              const mins = (new Date(o.updated_at) - new Date(o.created_at)) / 60000
+              return sum + Math.max(mins, 0)
+            }, 0) / completedOrders.length
+          : null
         setStats({
           orders: data.length,
           revenue: data.reduce((s,o) => s+(o.total||0), 0),
-          customers: new Set(data.map(o => o.customer_phone)).size
+          customers: new Set(data.map(o => o.customer_phone).filter(Boolean)).size,
+          avgPrepMinutes,
         })
       }
     } finally { setLoading(false) }
@@ -92,10 +100,12 @@ export default function Dashboard() {
   return (
     <div style={{ display:'flex', height:'100vh', overflow:'hidden', direction:'rtl', position:'relative' }}>
 
+      {/* Mobile overlay */}
       {sidebarOpen && (
         <div onClick={() => setSidebarOpen(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:40 }}/>
       )}
 
+      {/* Sidebar */}
       <div style={{
         position:'fixed', right:0, top:0,
         transform: !isMobile ? 'none' : sidebarOpen ? 'translateX(0)' : 'translateX(100%)',
@@ -104,11 +114,13 @@ export default function Dashboard() {
       }}>
         <aside style={{ width:'240px', background:'#0F1117', height:'100dvh', display:'flex', flexDirection:'column', borderLeft:'1px solid rgba(255,255,255,0.06)', overflowY:'auto' }}>
 
+          {/* Logo */}
           <div style={{ padding:'20px 18px', display:'flex', alignItems:'center', gap:'10px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
             <div style={{ width:'34px', height:'34px', background:'linear-gradient(135deg,#FF6B35,#E85A24)', borderRadius:'9px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', color:'white' }}>S</div>
             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', color:'white' }}>SIM<span style={{ color:'#FF6B35' }}>SIM</span></span>
           </div>
 
+          {/* Restaurant */}
           {restaurant && (
             <div style={{ margin:'12px', padding:'10px 12px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'11px', display:'flex', alignItems:'center', gap:'10px' }}>
               <div style={{ width:'32px', height:'32px', borderRadius:'8px', background:'linear-gradient(135deg,#FF6B35,#FF9F6B)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px' }}>🍕</div>
@@ -119,17 +131,19 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Nav */}
           <nav style={{ padding:'8px 12px', flex:1, overflowY:'auto' }}>
             <NavItem icon="📊" label="الرئيسية" active={true} onClick={() => setSidebarOpen(false)} />
             <NavItem icon="🛒" label="الطلبات" onClick={() => { navigate('/orders'); setSidebarOpen(false) }} />
             <NavItem icon="📋" label="الأقسام" onClick={() => { navigate('/menu'); setSidebarOpen(false) }} />
             <NavItem icon="🍽️" label="الأصناف" onClick={() => { navigate('/menu'); setSidebarOpen(false) }} />
-            <NavItem icon="👥" label="العملاء" onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="👥" label="العملاء" onClick={() => navigate('/customers')} />
             <NavItem icon="📱" label="QR Code" onClick={() => navigate('/qr')} />
             <NavItem icon="📈" label="التحليلات" onClick={() => navigate('/analytics')} />
             <NavItem icon="⚙️" label="الإعدادات" onClick={() => navigate('/settings')} />
           </nav>
 
+          {/* User */}
           <div style={{ padding:'12px', borderTop:'1px solid rgba(255,255,255,0.06)', flexShrink:0 }}>
             <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', marginBottom:'8px' }}>
               <div style={{ width:'32px', height:'32px', borderRadius:'50%', background:'linear-gradient(135deg,#667eea,#764ba2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', fontWeight:'700', color:'white', fontFamily:'Cairo,sans-serif', flexShrink:0 }}>
@@ -147,8 +161,10 @@ export default function Dashboard() {
         </aside>
       </div>
 
+      {/* Main */}
       <main style={{ marginRight: isMobile ? '0' : '240px', flex:1, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden' }}>
 
+        {/* Topbar */}
         <div style={{ height:'56px', background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', alignItems:'center', padding:'0 16px', gap:'10px', flexShrink:0 }}>
           {isMobile && (
             <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background:'none', border:'none', fontSize:'22px', cursor:'pointer', padding:'4px' }}>☰</button>
@@ -189,14 +205,16 @@ export default function Dashboard() {
           </button>
         </div>
 
+        {/* Content */}
         <div style={{ flex:1, overflowY:'auto', padding:'16px' }}>
 
+          {/* Stats */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'12px', marginBottom:'16px' }}>
             {[
               { icon:'🛒', val:stats.orders, label:'طلب اليوم', color:'#FF6B35', bg:'rgba(255,107,53,0.1)' },
               { icon:'💰', val:`${Number(stats.revenue).toFixed(2)} ﷼`, label:'المبيعات', color:'#10B981', bg:'rgba(16,185,129,0.1)' },
               { icon:'👥', val:stats.customers, label:'عميل جديد', color:'#3B82F6', bg:'rgba(59,130,246,0.1)' },
-              { icon:'⭐', val:'4.9', label:'التقييم', color:'#F59E0B', bg:'rgba(245,158,11,0.1)' },
+              { icon:'⏱️', val: stats.avgPrepMinutes != null ? `${Math.round(stats.avgPrepMinutes)} د` : '—', label:'متوسط وقت التجهيز', color:'#F59E0B', bg:'rgba(245,158,11,0.1)' },
             ].map(s => (
               <div key={s.label} style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding:'16px' }}>
                 <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', marginBottom:'10px' }}>{s.icon}</div>
@@ -206,6 +224,7 @@ export default function Dashboard() {
             ))}
           </div>
 
+          {/* Orders */}
           <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden', marginBottom:'16px' }}>
             <div style={{ padding:'14px 16px', borderBottom:'1px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <div style={{ fontSize:'14px', fontWeight:'800' }}>🧾 آخر الطلبات</div>
@@ -242,6 +261,7 @@ export default function Dashboard() {
             )}
           </div>
 
+          {/* Quick actions */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'12px' }}>
             {[
               { icon:'📋', label:'إدارة الأقسام', sub:'أضف وعدّل الأقسام', action: () => navigate('/menu') },
