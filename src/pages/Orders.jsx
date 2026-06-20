@@ -150,7 +150,7 @@ export default function Orders() {
             <NavItem icon="🛒" label="الطلبات" active={true} badge={activeCount} onClick={() => setSidebarOpen(false)} />
             <NavItem icon="📋" label="الأقسام" onClick={() => navigate('/menu')} />
             <NavItem icon="🍽️" label="الأصناف" onClick={() => navigate('/menu')} />
-            <NavItem icon="👥" label="العملاء" onClick={() => toast('قريباً! 🔧')} />
+            <NavItem icon="👥" label="العملاء" onClick={() => navigate('/customers')} />
             <NavItem icon="📱" label="QR Code" onClick={() => navigate('/qr')} />
             <NavItem icon="📈" label="التحليلات" onClick={() => navigate('/analytics')} />
             <NavItem icon="⚙️" label="الإعدادات" onClick={() => navigate('/settings')} />
