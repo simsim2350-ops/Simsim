@@ -66,6 +66,8 @@ export default function QRCodePage() {
     const qrCanvas = canvasRef.current
     if (!qrCanvas || !restaurant) return
 
+    toast(`🔍 DEBUG: cardStyle = ${cardStyle}`, { duration: 6000 })
+
     const W = 600, H = 760
     const out = document.createElement('canvas')
     out.width = W
@@ -303,7 +305,7 @@ export default function QRCodePage() {
                 <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🎨 ستايل الكارت</div>
                 <div style={{ padding:'14px 16px', display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px' }}>
                   {Object.entries(STYLES).map(([key, s]) => (
-                    <div key={key} onClick={() => setCardStyle(key)} style={{ borderRadius:'12px', overflow:'hidden', cursor:'pointer', border:`2.5px solid ${cardStyle===key?'#FF6B35':'#E5E7EB'}`, boxShadow:cardStyle===key?'0 0 0 3px rgba(255,107,53,0.15)':'none', transition:'all 0.2s', aspectRatio:'3/4' }}>
+                    <div key={key} onClick={() => { setCardStyle(key); toast(`✅ اخترت: ${key}`, { duration: 2000 }) }} style={{ borderRadius:'12px', overflow:'hidden', cursor:'pointer', border:`2.5px solid ${cardStyle===key?'#FF6B35':'#E5E7EB'}`, boxShadow:cardStyle===key?'0 0 0 3px rgba(255,107,53,0.15)':'none', transition:'all 0.2s', aspectRatio:'3/4' }}>
                       <div style={{ height:'100%', background:s.cardBg, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'6px', padding:'8px' }}>
                         <div style={{ width:'28px', height:'28px', borderRadius:'8px', background:s.logoBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px' }}>🍕</div>
                         <div style={{ width:'32px', height:'32px', background:'white', borderRadius:'6px' }}/>
