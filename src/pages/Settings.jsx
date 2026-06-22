@@ -18,7 +18,7 @@ export default function Settings() {
   // Restaurant form
   const [restForm, setRestForm] = useState({
     name: '', slug: '', description: '',
-    phone: '', address: '', currency: 'SAR - ريال سعودي',
+    phone: '', whatsapp_message: '', address: '', currency: 'SAR - ريال سعودي',
     brand_color: '#FF6B35', type: 'restaurant',
   })
 
@@ -50,6 +50,7 @@ export default function Settings() {
         slug: restaurant.slug || '',
         description: restaurant.description || '',
         phone: restaurant.phone || '',
+        whatsapp_message: restaurant.whatsapp_message || '',
         address: restaurant.address || '',
         currency: restaurant.currency || 'SAR - ريال سعودي',
         brand_color: restaurant.brand_color || '#FF6B35',
@@ -77,6 +78,7 @@ export default function Settings() {
           slug: restForm.slug,
           description: restForm.description,
           phone: restForm.phone,
+          whatsapp_message: restForm.whatsapp_message,
           address: restForm.address,
           currency: restForm.currency.split(' - ')[0],
           brand_color: restForm.brand_color,
@@ -262,13 +264,24 @@ export default function Settings() {
                     </div>
 
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px' }}>
-                      <div><label style={labelStyle}>رقم التواصل</label>
-                        <input style={inputStyle} type="tel" value={restForm.phone} onChange={e => setRestForm(f=>({...f,phone:e.target.value}))} placeholder="05XXXXXXXX" />
+                      <div><label style={labelStyle}>رقم التواصل (واتساب) *</label>
+                        <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} type="tel" value={restForm.phone} onChange={e => setRestForm(f=>({...f,phone:e.target.value}))} placeholder="9665XXXXXXXX" />
+                        <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'5px', lineHeight:'1.5' }}>
+                          اكتب الرقم بصيغة دولية كاملة بدون + أو مسافات، يبدأ بكود الدولة<br/>
+                          مثال السعودية: 9665XXXXXXXX — الإمارات: 9715XXXXXXX — الكويت: 965XXXXXXXX
+                        </div>
                       </div>
                       <div><label style={labelStyle}>العملة</label>
                         <select style={{ ...inputStyle, cursor:'pointer' }} value={restForm.currency} onChange={e => setRestForm(f=>({...f,currency:e.target.value}))}>
                           {CURRENCIES.map(c => <option key={c}>{c}</option>)}
                         </select>
+                      </div>
+                    </div>
+
+                    <div><label style={labelStyle}>رسالة ترحيب واتساب (اختياري)</label>
+                      <input style={inputStyle} value={restForm.whatsapp_message} onChange={e => setRestForm(f=>({...f,whatsapp_message:e.target.value}))} placeholder="شكراً لطلبك من مطعم البيت! 🍕" />
+                      <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'5px' }}>
+                        تظهر هذه الجملة في بداية رسالة تأكيد الطلب وفي زر التواصل المباشر عبر واتساب
                       </div>
                     </div>
 
