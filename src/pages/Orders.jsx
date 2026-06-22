@@ -299,6 +299,11 @@ export default function Orders() {
                                     <span style={{ fontSize:'18px' }}>{item.emoji || '🍽️'}</span>
                                     <div>
                                       <div style={{ fontSize:'13px', fontWeight:'700' }}>{item.name}</div>
+                                      {Array.isArray(item.selectedOptions) && item.selectedOptions.length > 0 && (
+                                        <div style={{ fontSize:'11px', color:'#FF6B35', fontWeight:'600' }}>
+                                          {item.selectedOptions.map(o => o.choiceName).join(' + ')}
+                                        </div>
+                                      )}
                                       {item.notes && <div style={{ fontSize:'11px', color:'#9CA3AF' }}>📝 {item.notes}</div>}
                                     </div>
                                   </div>
