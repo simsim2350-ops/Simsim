@@ -3,6 +3,14 @@ import { useParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 
+// شارة مستوى السعرات: 🟢 منخفض (<300) / 🟡 متوسط (300-600) / 🔴 مرتفع (600+)
+function getCalorieBadge(calories) {
+  if (calories == null) return null
+  if (calories < 300) return '🟢'
+  if (calories <= 600) return '🟡'
+  return '🔴'
+}
+
 export default function PublicMenu() {
   const { slug } = useParams()
   const [restaurant, setRestaurant] = useState(null)
@@ -16,6 +24,7 @@ export default function PublicMenu() {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [modalQty, setModalQty] = useState(1)
   const [modalNote, setModalNote] = useState('')
+  const [modalOptions, setModalOptions] = useState({}) // { groupIdx: choiceIdx | [choiceIdx,...] }
   const [tableNumber, setTableNumber] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
@@ -62,21 +71,86 @@ export default function PublicMenu() {
   }
 
   // Cart functions
-  const addToCart = (product, qty = 1, note = '') => {
+  // selectedOptions: [{ groupName, choiceName, price }] — قائمة مفسّرة من الخيارات المختارة
+  const addToCart = (product, qty = 1, note = '', selectedOptions = []) => {
+    const optionsPrice = selectedOptions.reduce((s, o) => s + (o.price || 0), 0)
+    const finalPrice = product.price + optionsPrice
+    // مفتاح فريد للعنصر: نفس الصنف بخيارات مختلفة = عنصر سلة مختلف
+    const optionsKey = selectedOptions.map(o => `${o.groupName}:${o.choiceName}`).sort().join('|')
+    const cartKey = `${product.id}__${optionsKey}__${note}`
+
     setCart(prev => {
-      const existing = prev.find(i => i.id === product.id && i.note === note)
-      if (existing) return prev.map(i => i.id === product.id && i.note === note ? { ...i, qty: i.qty + qty } : i)
-      return [...prev, { id: product.id, name: product.name, emoji: product.emoji, price: product.price, qty, note }]
+      const existing = prev.find(i => i.cartKey === cartKey)
+      if (existing) return prev.map(i => i.cartKey === cartKey ? { ...i, qty: i.qty + qty } : i)
+      return [...prev, {
+        cartKey, id: product.id, name: product.name, emoji: product.emoji,
+        price: finalPrice, basePrice: product.price, qty, note,
+        selectedOptions,
+      }]
     })
     toast.success(`✅ تم إضافة ${product.name}`)
   }
 
-  const removeFromCart = (id, note) => {
+  const removeFromCart = (cartKey) => {
     setCart(prev => {
-      const item = prev.find(i => i.id === id && i.note === note)
+      const item = prev.find(i => i.cartKey === cartKey)
       if (!item) return prev
-      if (item.qty <= 1) return prev.filter(i => !(i.id === id && i.note === note))
-      return prev.map(i => i.id === id && i.note === note ? { ...i, qty: i.qty - 1 } : i)
+      if (item.qty <= 1) return prev.filter(i => i.cartKey !== cartKey)
+      return prev.map(i => i.cartKey === cartKey ? { ...i, qty: i.qty - 1 } : i)
+    })
+  }
+
+  const incrementCartItem = (cartKey) => {
+    setCart(prev => prev.map(i => i.cartKey === cartKey ? { ...i, qty: i.qty + 1 } : i))
+  }
+
+  // التحقق من اكتمال كل مجموعات الخيارات الإجبارية للصنف المعروض في الـ Modal
+  const validateModalOptions = (product) => {
+    const groups = Array.isArray(product?.options) ? product.options : []
+    for (let gi = 0; gi < groups.length; gi++) {
+      const group = groups[gi]
+      if (!group.required) continue
+      const sel = modalOptions[gi]
+      if (group.type === 'multiple') {
+        if (!Array.isArray(sel) || sel.length === 0) return group.name
+      } else {
+        if (sel == null) return group.name
+      }
+    }
+    return null
+  }
+
+  // تحويل modalOptions (مؤشرات) إلى قائمة مفسّرة {groupName, choiceName, price}
+  const resolveModalOptions = (product) => {
+    const groups = Array.isArray(product?.options) ? product.options : []
+    const resolved = []
+    groups.forEach((group, gi) => {
+      const sel = modalOptions[gi]
+      if (sel == null) return
+      if (group.type === 'multiple') {
+        (Array.isArray(sel) ? sel : []).forEach(ci => {
+          const choice = group.choices[ci]
+          if (choice) resolved.push({ groupName: group.name, choiceName: choice.name, price: choice.price || 0 })
+        })
+      } else {
+        const choice = group.choices[sel]
+        if (choice) resolved.push({ groupName: group.name, choiceName: choice.name, price: choice.price || 0 })
+      }
+    })
+    return resolved
+  }
+
+  const toggleSingleOption = (groupIdx, choiceIdx) => {
+    setModalOptions(prev => ({ ...prev, [groupIdx]: choiceIdx }))
+  }
+
+  const toggleMultipleOption = (groupIdx, choiceIdx) => {
+    setModalOptions(prev => {
+      const current = Array.isArray(prev[groupIdx]) ? prev[groupIdx] : []
+      const next = current.includes(choiceIdx)
+        ? current.filter(i => i !== choiceIdx)
+        : [...current, choiceIdx]
+      return { ...prev, [groupIdx]: next }
     })
   }
 
@@ -92,6 +166,7 @@ export default function PublicMenu() {
     const items = cart.map(i => ({
       id: i.id, name: i.name, emoji: i.emoji,
       price: i.price, qty: i.qty, notes: i.note,
+      selectedOptions: i.selectedOptions || [],
     }))
 
     const tax = cartTotal * 0.15
@@ -310,7 +385,7 @@ export default function PublicMenu() {
               </div>
             ) : (
               <div style={{ display:'flex', flexDirection:'column', gap:'1px', background:'#E5E7EB', borderRadius:'16px', overflow:'hidden' }}>
-                {allFiltered.map(prod => <ProductItem key={prod.id} product={prod} cart={cart} onAdd={() => { setSelectedProduct(prod); setModalQty(1); setModalNote('') }} onQtyChange={(delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(prod.id, '')} brandColor={brandColor} />)}
+                {allFiltered.map(prod => <ProductItem key={prod.id} product={prod} cart={cart} onAdd={() => { setSelectedProduct(prod); setModalQty(1); setModalNote(''); setModalOptions({}) }} onQtyChange={(delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(`${prod.id}____`)} brandColor={brandColor} />)}
               </div>
             )}
           </div>
@@ -333,8 +408,8 @@ export default function PublicMenu() {
                     key={prod.id}
                     product={prod}
                     cart={cart}
-                    onAdd={() => { setSelectedProduct(prod); setModalQty(1); setModalNote('') }}
-                    onQtyChange={(delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(prod.id, '')}
+                    onAdd={() => { setSelectedProduct(prod); setModalQty(1); setModalNote(''); setModalOptions({}) }}
+                    onQtyChange={(delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(`${prod.id}____`)}
                     brandColor={brandColor}
                   />
                 ))}
@@ -372,19 +447,24 @@ export default function PublicMenu() {
 
             {/* Cart items */}
             <div style={{ flex:1, overflowY:'auto', padding:'12px 20px' }}>
-              {cart.map((item, i) => (
-                <div key={i} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 0', borderBottom:'1px solid #F3F4F6' }}>
+              {cart.map((item) => (
+                <div key={item.cartKey} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 0', borderBottom:'1px solid #F3F4F6' }}>
                   <div style={{ width:'48px', height:'48px', borderRadius:'12px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px', flexShrink:0 }}>{item.emoji}</div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontWeight:'700', fontSize:'14px', marginBottom:'2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.name}</div>
+                    {Array.isArray(item.selectedOptions) && item.selectedOptions.length > 0 && (
+                      <div style={{ fontSize:'11px', color:'#9CA3AF', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {item.selectedOptions.map(o => o.choiceName).join('، ')}
+                      </div>
+                    )}
                     {item.note && <div style={{ fontSize:'11px', color:'#9CA3AF' }}>📝 {item.note}</div>}
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:'0', border:'1.5px solid #E5E7EB', borderRadius:'10px', overflow:'hidden', flexShrink:0 }}>
-                    <button onClick={() => removeFromCart(item.id, item.note)} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', cursor:'pointer', color:brandColor, fontWeight:'300' }}>−</button>
+                    <button onClick={() => removeFromCart(item.cartKey)} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', cursor:'pointer', color:brandColor, fontWeight:'300' }}>−</button>
                     <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', minWidth:'24px', textAlign:'center', borderRight:'1px solid #E5E7EB', borderLeft:'1px solid #E5E7EB', lineHeight:'30px' }}>{item.qty}</span>
-                    <button onClick={() => addToCart(item, 1, item.note)} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', cursor:'pointer', color:brandColor, fontWeight:'300' }}>+</button>
+                    <button onClick={() => incrementCartItem(item.cartKey)} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', cursor:'pointer', color:brandColor, fontWeight:'300' }}>+</button>
                   </div>
-                  <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', flexShrink:0, minWidth:'50px', textAlign:'left' }}>{item.price * item.qty} ﷼</div>
+                  <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', flexShrink:0, minWidth:'50px', textAlign:'left' }}>{(item.price * item.qty).toFixed(2)} ﷼</div>
                 </div>
               ))}
             </div>
@@ -463,8 +543,58 @@ export default function PublicMenu() {
               <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'20px' }}>
                 <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'24px', color:brandColor }}>{selectedProduct.price} ﷼</span>
                 {selectedProduct.compare_price && <span style={{ fontSize:'15px', color:'#9CA3AF', textDecoration:'line-through' }}>{selectedProduct.compare_price} ﷼</span>}
-                {selectedProduct.calories && <span style={{ fontSize:'12px', color:'#9CA3AF', background:'#F3F4F6', padding:'3px 10px', borderRadius:'100px', marginRight:'auto' }}>🔥 {selectedProduct.calories} كالوري</span>}
+                {selectedProduct.calories && <span style={{ fontSize:'12px', color:'#9CA3AF', background:'#F3F4F6', padding:'3px 10px', borderRadius:'100px', marginRight:'auto' }}>{getCalorieBadge(selectedProduct.calories)} {selectedProduct.calories} كالوري</span>}
               </div>
+
+              {/* Option groups: size, extras, etc. */}
+              {Array.isArray(selectedProduct.options) && selectedProduct.options.length > 0 && (
+                <div style={{ marginBottom:'20px', display:'flex', flexDirection:'column', gap:'16px' }}>
+                  {selectedProduct.options.map((group, gi) => (
+                    <div key={gi}>
+                      <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
+                        <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px' }}>{group.name}</span>
+                        {group.required && <span style={{ fontSize:'10px', fontWeight:'700', color:'#EF4444', background:'#FEF2F2', padding:'2px 7px', borderRadius:'100px' }}>إجباري</span>}
+                        {!group.required && group.type === 'multiple' && <span style={{ fontSize:'10px', fontWeight:'700', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 7px', borderRadius:'100px' }}>اختياري</span>}
+                      </div>
+                      <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+                        {group.choices.map((choice, ci) => {
+                          const isSelected = group.type === 'multiple'
+                            ? (Array.isArray(modalOptions[gi]) && modalOptions[gi].includes(ci))
+                            : modalOptions[gi] === ci
+                          return (
+                            <div
+                              key={ci}
+                              onClick={() => group.type === 'multiple' ? toggleMultipleOption(gi, ci) : toggleSingleOption(gi, ci)}
+                              style={{
+                                display:'flex', alignItems:'center', justifyContent:'space-between',
+                                padding:'11px 14px', borderRadius:'11px', cursor:'pointer',
+                                border:`1.5px solid ${isSelected ? brandColor : '#E5E7EB'}`,
+                                background: isSelected ? `${brandColor}0D` : 'white',
+                                transition:'all 0.15s',
+                              }}
+                            >
+                              <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                                <div style={{
+                                  width:'18px', height:'18px', flexShrink:0,
+                                  borderRadius: group.type === 'multiple' ? '5px' : '50%',
+                                  border:`2px solid ${isSelected ? brandColor : '#D1D5DB'}`,
+                                  background: isSelected ? brandColor : 'white',
+                                  display:'flex', alignItems:'center', justifyContent:'center',
+                                  fontSize:'11px', color:'white',
+                                }}>
+                                  {isSelected && '✓'}
+                                </div>
+                                <span style={{ fontSize:'14px', fontWeight:'600' }}>{choice.name}</span>
+                              </div>
+                              {choice.price > 0 && <span style={{ fontSize:'13px', fontWeight:'700', color:brandColor }}>+{choice.price} ﷼</span>}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Quantity */}
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px' }}>
@@ -489,11 +619,19 @@ export default function PublicMenu() {
               </div>
 
               <button
-                onClick={() => { addToCart(selectedProduct, modalQty, modalNote); setSelectedProduct(null) }}
+                onClick={() => {
+                  const missingGroup = validateModalOptions(selectedProduct)
+                  if (missingGroup) { toast.error(`يرجى اختيار: ${missingGroup}`); return }
+                  const resolved = resolveModalOptions(selectedProduct)
+                  addToCart(selectedProduct, modalQty, modalNote, resolved)
+                  setSelectedProduct(null)
+                }}
                 style={{ width:'100%', padding:'16px', borderRadius:'14px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:`0 8px 24px ${brandColor}44` }}
               >
                 <span>إضافة للسلة</span>
-                <span style={{ background:'rgba(0,0,0,0.15)', padding:'4px 12px', borderRadius:'8px', fontSize:'14px' }}>{(selectedProduct.price * modalQty).toFixed(2)} ﷼</span>
+                <span style={{ background:'rgba(0,0,0,0.15)', padding:'4px 12px', borderRadius:'8px', fontSize:'14px' }}>
+                  {((selectedProduct.price + resolveModalOptions(selectedProduct).reduce((s,o)=>s+(o.price||0),0)) * modalQty).toFixed(2)} ﷼
+                </span>
               </button>
             </div>
           </div>
@@ -505,8 +643,9 @@ export default function PublicMenu() {
 
 // Product item component
 function ProductItem({ product, cart, onAdd, onQtyChange, brandColor }) {
-  const cartItem = cart.find(i => i.id === product.id)
-  const qty = cartItem?.qty || 0
+  const hasOptions = Array.isArray(product.options) && product.options.length > 0
+  // لو الصنف بدون خيارات: نجمع كل عناصر السلة بنفس id (مفتاح بدون خيارات دائماً ثابت)
+  const qty = hasOptions ? 0 : cart.filter(i => i.id === product.id).reduce((s,i) => s + i.qty, 0)
 
   return (
     <div style={{ background:'white', padding:'14px 16px', display:'flex', gap:'12px', alignItems:'center' }}>
@@ -523,7 +662,7 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor }) {
         <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
           <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', color: brandColor }}>{product.price} ﷼</span>
           {product.compare_price && <span style={{ fontSize:'12px', color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
-          {product.calories && <span style={{ fontSize:'11px', color:'#9CA3AF' }}>🔥 {product.calories}</span>}
+          {product.calories && <span style={{ fontSize:'11px', color:'#9CA3AF' }}>{getCalorieBadge(product.calories)} {product.calories}</span>}
         </div>
       </div>
 
