@@ -6,6 +6,14 @@ import { useAuthStore } from '../store/authStore'
 
 const EMOJIS = ['🍽️','🍔','🍕','🌮','🥙','🥗','🍜','🥩','🍗','☕','🧃','🥤','🍰','🧁','🍟','🌯','🎯','⭐','🔥','🍣']
 
+// شارة مستوى السعرات: 🟢 منخفض (<300) / 🟡 متوسط (300-600) / 🔴 مرتفع (600+)
+function getCalorieBadge(calories) {
+  if (calories == null) return null
+  if (calories < 300) return '🟢'
+  if (calories <= 600) return '🟡'
+  return '🔴'
+}
+
 const inputStyle = {
   width:'100%', padding:'11px 13px',
   border:'1.5px solid #E5E7EB', borderRadius:'11px',
@@ -43,7 +51,7 @@ export default function Menu() {
 
   // Forms
   const [catForm, setCatForm] = useState({ name:'', emoji:'🍽️', is_visible:true })
-  const [prodForm, setProdForm] = useState({ name:'', description:'', price:'', compare_price:'', category_id:'', emoji:'🍽️', is_available:true, is_featured:false })
+  const [prodForm, setProdForm] = useState({ name:'', description:'', price:'', compare_price:'', category_id:'', emoji:'🍽️', calories:'', is_available:true, is_featured:false, options:[] })
 
   useEffect(() => {
     if (!restaurant) return
@@ -121,7 +129,7 @@ export default function Menu() {
   // ===== PRODUCTS =====
   const openAddProd = () => {
     setEditingProd(null)
-    setProdForm({ name:'', description:'', price:'', compare_price:'', category_id: categories[0]?.id || '', emoji:'🍽️', is_available:true, is_featured:false })
+    setProdForm({ name:'', description:'', price:'', compare_price:'', category_id: categories[0]?.id || '', emoji:'🍽️', calories:'', is_available:true, is_featured:false, options:[] })
     setProdModal(true)
   }
 
@@ -134,8 +142,10 @@ export default function Menu() {
       compare_price: prod.compare_price || '',
       category_id: prod.category_id || '',
       emoji: prod.emoji || '🍽️',
+      calories: prod.calories || '',
       is_available: prod.is_available,
       is_featured: prod.is_featured,
+      options: Array.isArray(prod.options) ? prod.options : [],
     })
     setProdModal(true)
   }
@@ -143,6 +153,19 @@ export default function Menu() {
   const saveProd = async () => {
     if (!prodForm.name.trim()) { toast.error('أدخل اسم الصنف'); return }
     if (!prodForm.price) { toast.error('أدخل السعر'); return }
+
+    // تنظيف مجموعات الخيارات: إزالة المجموعات/الخيارات بدون اسم
+    const cleanOptions = (prodForm.options || [])
+      .map(group => ({
+        name: (group.name || '').trim(),
+        type: group.type === 'multiple' ? 'multiple' : 'single',
+        required: !!group.required,
+        choices: (group.choices || [])
+          .map(c => ({ name: (c.name || '').trim(), price: parseFloat(c.price) || 0 }))
+          .filter(c => c.name),
+      }))
+      .filter(group => group.name && group.choices.length > 0)
+
     try {
       const data = {
         restaurant_id: restaurant.id,
@@ -152,8 +175,10 @@ export default function Menu() {
         compare_price: prodForm.compare_price ? parseFloat(prodForm.compare_price) : null,
         category_id: prodForm.category_id || null,
         emoji: prodForm.emoji,
+        calories: prodForm.calories ? parseInt(prodForm.calories) : null,
         is_available: prodForm.is_available,
         is_featured: prodForm.is_featured,
+        options: cleanOptions,
         sort_order: editingProd ? editingProd.sort_order : products.length,
       }
       if (editingProd) {
@@ -170,6 +195,48 @@ export default function Menu() {
     } catch (err) {
       toast.error(err.message)
     }
+  }
+
+  // ===== OPTIONS GROUPS (إدارة مجموعات الإضافات/الحجم) =====
+  const addOptionGroup = () => {
+    setProdForm(f => ({
+      ...f,
+      options: [...(f.options || []), { name:'', type:'single', required:false, choices:[{ name:'', price:'' }] }],
+    }))
+  }
+
+  const removeOptionGroup = (groupIdx) => {
+    setProdForm(f => ({ ...f, options: f.options.filter((_, i) => i !== groupIdx) }))
+  }
+
+  const updateOptionGroup = (groupIdx, field, value) => {
+    setProdForm(f => ({
+      ...f,
+      options: f.options.map((g, i) => i === groupIdx ? { ...g, [field]: value } : g),
+    }))
+  }
+
+  const addChoice = (groupIdx) => {
+    setProdForm(f => ({
+      ...f,
+      options: f.options.map((g, i) => i === groupIdx ? { ...g, choices: [...g.choices, { name:'', price:'' }] } : g),
+    }))
+  }
+
+  const removeChoice = (groupIdx, choiceIdx) => {
+    setProdForm(f => ({
+      ...f,
+      options: f.options.map((g, i) => i === groupIdx ? { ...g, choices: g.choices.filter((_, ci) => ci !== choiceIdx) } : g),
+    }))
+  }
+
+  const updateChoice = (groupIdx, choiceIdx, field, value) => {
+    setProdForm(f => ({
+      ...f,
+      options: f.options.map((g, i) => i === groupIdx
+        ? { ...g, choices: g.choices.map((c, ci) => ci === choiceIdx ? { ...c, [field]: value } : c) }
+        : g),
+    }))
   }
 
   const deleteProd = async (id) => {
@@ -383,6 +450,7 @@ export default function Menu() {
                           <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6B35' }}>{prod.price} ﷼</span>
                           {prod.compare_price && <span style={{ fontSize:'12px', color:'#9CA3AF', textDecoration:'line-through' }}>{prod.compare_price} ﷼</span>}
                           {prod.categories && <span style={{ fontSize:'11px', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 7px', borderRadius:'100px' }}>{prod.categories.name}</span>}
+                          {prod.calories && <span style={{ fontSize:'11px', color:'#9CA3AF' }}>{getCalorieBadge(prod.calories)} {prod.calories} كالوري</span>}
                           {prod.is_featured && <span style={{ fontSize:'10px', color:'#92400E', background:'#FEF3C7', padding:'2px 6px', borderRadius:'100px' }}>⭐</span>}
                         </div>
                       </div>
@@ -489,6 +557,11 @@ export default function Menu() {
             </div>
 
             <div style={{ marginBottom:'14px' }}>
+              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px' }}>🔥 السعرات الحرارية (اختياري)</label>
+              <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} type="number" min="0" step="1" placeholder="مثال: 450" value={prodForm.calories} onChange={e => setProdForm(f=>({...f,calories:e.target.value}))} />
+            </div>
+
+            <div style={{ marginBottom:'14px' }}>
               <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px' }}>القسم</label>
               <select style={{ ...inputStyle, cursor:'pointer' }} value={prodForm.category_id} onChange={e => setProdForm(f=>({...f,category_id:e.target.value}))}>
                 <option value="">بدون قسم</option>
@@ -507,6 +580,95 @@ export default function Menu() {
                 <input type="checkbox" checked={prodForm.is_featured} onChange={e => setProdForm(f=>({...f,is_featured:e.target.checked}))} style={{ width:'17px', height:'17px', accentColor:'#FF6B35' }}/>
                 <span style={{ fontSize:'13px', fontWeight:'600' }}>⭐ مميز</span>
               </label>
+            </div>
+
+            {/* ===== خيارات الصنف (الحجم / الإضافات) ===== */}
+            <div style={{ marginBottom:'20px', border:'1.5px solid #E5E7EB', borderRadius:'14px', overflow:'hidden' }}>
+              <div style={{ padding:'12px 14px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                <span style={{ fontSize:'13px', fontWeight:'800' }}>🧩 خيارات الصنف (الحجم، الإضافات...)</span>
+                <button type="button" onClick={addOptionGroup} style={{ padding:'5px 10px', borderRadius:'8px', border:'1.5px solid #FF6B35', background:'white', color:'#FF6B35', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer' }}>
+                  ＋ مجموعة
+                </button>
+              </div>
+
+              {(prodForm.options || []).length === 0 ? (
+                <div style={{ padding:'16px', textAlign:'center', fontSize:'12px', color:'#9CA3AF' }}>
+                  لا توجد خيارات — مفيدة لو الصنف له أحجام أو إضافات (مثل: الحجم، الإضافات)
+                </div>
+              ) : (
+                <div style={{ padding:'12px', display:'flex', flexDirection:'column', gap:'12px' }}>
+                  {prodForm.options.map((group, gi) => (
+                    <div key={gi} style={{ border:'1.5px solid #E5E7EB', borderRadius:'12px', padding:'10px', background:'white' }}>
+                      <div style={{ display:'flex', gap:'8px', marginBottom:'8px', alignItems:'center' }}>
+                        <input
+                          placeholder="اسم المجموعة (مثال: الحجم)"
+                          value={group.name}
+                          onChange={e => updateOptionGroup(gi, 'name', e.target.value)}
+                          style={{ flex:1, padding:'8px 10px', border:'1.5px solid #E5E7EB', borderRadius:'9px', fontFamily:'Tajawal,sans-serif', fontSize:'13px', outline:'none', textAlign:'right' }}
+                        />
+                        <button type="button" onClick={() => removeOptionGroup(gi)} style={{ width:'30px', height:'30px', flexShrink:0, borderRadius:'8px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'13px' }}>🗑️</button>
+                      </div>
+
+                      <div style={{ display:'flex', gap:'14px', marginBottom:'10px', flexWrap:'wrap' }}>
+                        <label style={{ display:'flex', alignItems:'center', gap:'6px', cursor:'pointer', fontSize:'12px' }}>
+                          <input
+                            type="radio"
+                            name={`group-type-${gi}`}
+                            checked={group.type !== 'multiple'}
+                            onChange={() => updateOptionGroup(gi, 'type', 'single')}
+                            style={{ accentColor:'#FF6B35' }}
+                          />
+                          اختيار واحد
+                        </label>
+                        <label style={{ display:'flex', alignItems:'center', gap:'6px', cursor:'pointer', fontSize:'12px' }}>
+                          <input
+                            type="radio"
+                            name={`group-type-${gi}`}
+                            checked={group.type === 'multiple'}
+                            onChange={() => updateOptionGroup(gi, 'type', 'multiple')}
+                            style={{ accentColor:'#FF6B35' }}
+                          />
+                          اختيار متعدد
+                        </label>
+                        <label style={{ display:'flex', alignItems:'center', gap:'6px', cursor:'pointer', fontSize:'12px' }}>
+                          <input
+                            type="checkbox"
+                            checked={!!group.required}
+                            onChange={e => updateOptionGroup(gi, 'required', e.target.checked)}
+                            style={{ accentColor:'#FF6B35' }}
+                          />
+                          إجباري
+                        </label>
+                      </div>
+
+                      <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+                        {group.choices.map((choice, ci) => (
+                          <div key={ci} style={{ display:'flex', gap:'6px', alignItems:'center' }}>
+                            <input
+                              placeholder="اسم الخيار"
+                              value={choice.name}
+                              onChange={e => updateChoice(gi, ci, 'name', e.target.value)}
+                              style={{ flex:2, padding:'7px 9px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'12px', outline:'none', textAlign:'right' }}
+                            />
+                            <input
+                              type="number"
+                              step="0.5"
+                              placeholder="+0"
+                              value={choice.price}
+                              onChange={e => updateChoice(gi, ci, 'price', e.target.value)}
+                              style={{ flex:1, padding:'7px 9px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'12px', outline:'none', direction:'ltr', textAlign:'left' }}
+                            />
+                            <button type="button" onClick={() => removeChoice(gi, ci)} style={{ width:'26px', height:'26px', flexShrink:0, borderRadius:'7px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'11px' }}>✕</button>
+                          </div>
+                        ))}
+                        <button type="button" onClick={() => addChoice(gi)} style={{ marginTop:'4px', padding:'6px', borderRadius:'8px', border:'1.5px dashed #E5E7EB', background:'transparent', color:'#9CA3AF', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer' }}>
+                          ＋ إضافة خيار
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div style={{ display:'flex', gap:'10px' }}>
