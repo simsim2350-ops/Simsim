@@ -30,6 +30,7 @@ export default function PublicMenu() {
   const [customerPhone, setCustomerPhone] = useState('')
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [orderNumber, setOrderNumber] = useState('')
+  const [lastOrderSummary, setLastOrderSummary] = useState(null) // { items, total, tableNumber } للمشاركة عبر واتساب
   const [orderStatus, setOrderStatus] = useState('pending')
   const [searchQuery, setSearchQuery] = useState('')
   const orderChannelRef = useRef(null)
@@ -157,6 +158,45 @@ export default function PublicMenu() {
   const cartTotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0)
   const cartCount = cart.reduce((sum, i) => sum + i.qty, 0)
 
+  // بناء رسالة واتساب جاهزة بتفاصيل الطلب وفتحها على رقم المطعم
+  const sendWhatsAppConfirmation = () => {
+    if (!lastOrderSummary || !restaurant?.phone) {
+      toast.error('رقم تواصل المطعم غير متوفر')
+      return
+    }
+    const greeting = restaurant.whatsapp_message?.trim() || `تفضل تأكيد طلبي من ${restaurant.name} 🍽️`
+    const lines = [
+      greeting,
+      `رقم الطلب: ${lastOrderSummary.orderNumber}`,
+      `رقم الطاولة: ${lastOrderSummary.tableNumber}`,
+      '',
+      'الأصناف:',
+      ...lastOrderSummary.items.map(i => {
+        const optsText = (i.selectedOptions && i.selectedOptions.length > 0)
+          ? ` (${i.selectedOptions.map(o => o.choiceName).join('، ')})`
+          : ''
+        return `- ${i.name}${optsText} × ${i.qty} = ${(i.price * i.qty).toFixed(2)} ﷼`
+      }),
+      '',
+      `الإجمالي: ${lastOrderSummary.total.toFixed(2)} ﷼`,
+    ]
+    const phone = restaurant.phone.replace(/[^\d]/g, '')
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(lines.join('\n'))}`
+    window.open(url, '_blank')
+  }
+
+  // فتح محادثة واتساب عامة للاستفسارات، بمعزل عن طلب فعلي (الزر العائم)
+  const openWhatsAppContact = () => {
+    if (!restaurant?.phone) {
+      toast.error('رقم تواصل المطعم غير متوفر')
+      return
+    }
+    const greeting = restaurant.whatsapp_message?.trim() || `مرحباً، لدي استفسار بخصوص ${restaurant.name} 👋`
+    const phone = restaurant.phone.replace(/[^\d]/g, '')
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(greeting)}`
+    window.open(url, '_blank')
+  }
+
   // Place order
   const placeOrder = async () => {
     if (cart.length === 0) { toast.error('السلة فارغة!'); return }
@@ -193,6 +233,7 @@ export default function PublicMenu() {
     }
 
     setOrderNumber(data.order_number)
+    setLastOrderSummary({ items, total, tableNumber, orderNumber: data.order_number })
     setOrderPlaced(true)
     setCart([])
     setCartOpen(false)
@@ -287,6 +328,16 @@ export default function PublicMenu() {
             })}
           </div>
         </div>
+
+        {/* WhatsApp confirmation (اختياري) */}
+        {restaurant?.phone && (
+          <button
+            onClick={sendWhatsAppConfirmation}
+            style={{ width:'100%', padding:'15px', borderRadius:'14px', border:'1.5px solid #25D366', background:'rgba(37,211,102,0.08)', color:'#1FA855', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', marginBottom:'12px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}
+          >
+            💬 إرسال تأكيد الطلب عبر واتساب
+          </button>
+        )}
 
         {/* New order button */}
         <button
@@ -431,6 +482,24 @@ export default function PublicMenu() {
             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px' }}>{cartTotal} ﷼</span>
           </button>
         </div>
+      )}
+
+      {/* Floating WhatsApp contact button — للاستفسارات العامة بمعزل عن طلب فعلي */}
+      {restaurant?.phone && !cartOpen && (
+        <button
+          onClick={openWhatsAppContact}
+          style={{
+            position:'fixed', bottom: cartCount > 0 ? '90px' : '20px', left:'16px',
+            width:'52px', height:'52px', borderRadius:'50%', border:'none',
+            background:'#25D366', color:'white', fontSize:'26px',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            boxShadow:'0 6px 20px rgba(37,211,102,0.45)', cursor:'pointer', zIndex:49,
+            transition:'bottom 0.2s',
+          }}
+          aria-label="تواصل عبر واتساب"
+        >
+          💬
+        </button>
       )}
 
       {/* Cart drawer */}
