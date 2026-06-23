@@ -53,6 +53,56 @@ export default function Orders() {
     }
   }
 
+  const audioCtxRef = useRef(null)
+
+  useEffect(() => {
+    // تفعيل AudioContext عند أول تفاعل من المستخدم (مطلوب من المتصفحات لتشغيل الصوت)
+    const unlockAudio = () => {
+      if (!audioCtxRef.current) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext
+        audioCtxRef.current = new AudioCtx()
+      } else if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume()
+      }
+      window.removeEventListener('click', unlockAudio)
+      window.removeEventListener('touchstart', unlockAudio)
+    }
+    window.addEventListener('click', unlockAudio)
+    window.addEventListener('touchstart', unlockAudio)
+    return () => {
+      window.removeEventListener('click', unlockAudio)
+      window.removeEventListener('touchstart', unlockAudio)
+    }
+  }, [])
+
+  // نغمة تنبيه قصيرة (نغمتين صاعدتين) عبر Web Audio API — لا تحتاج ملف صوتي خارجي
+  const playNewOrderSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext
+      const ctx = audioCtxRef.current || new AudioCtx()
+      audioCtxRef.current = ctx
+      if (ctx.state === 'suspended') ctx.resume()
+      const playTone = (freq, startTime, duration) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'sine'
+        osc.frequency.value = freq
+        gain.gain.setValueAtTime(0.0001, startTime)
+        gain.gain.exponentialRampToValueAtTime(0.3, startTime + 0.02)
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration)
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.start(startTime)
+        osc.stop(startTime + duration)
+      }
+      const now = ctx.currentTime
+      playTone(880, now, 0.15)
+      playTone(1175, now + 0.16, 0.2)
+    } catch (err) {
+      console.error('Sound play failed:', err)
+    }
+  }
+
   const subscribeOrders = () => {
     if (!restaurant) return () => {}
     const ch = supabase.channel('orders-realtime')
@@ -61,6 +111,7 @@ export default function Orders() {
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setOrders(prev => [payload.new, ...prev])
+            playNewOrderSound()
             toast.success(`🔔 طلب جديد! ${payload.new.order_number}`)
           } else if (payload.eventType === 'UPDATE') {
             setOrders(prev => prev.map(o => o.id === payload.new.id ? payload.new : o))
@@ -88,6 +139,30 @@ export default function Orders() {
     await supabase.from('orders').update({ status:'cancelled' }).eq('id', order.id)
     toast.success('تم إلغاء الطلب')
     if (selectedOrder?.id === order.id) setSelectedOrder(null)
+  }
+
+  // تعليم/إلغاء تعليم صنف كـ"غير متوفر" داخل الطلب، مع إعادة حساب الإجمالي تلقائياً
+  const toggleItemUnavailable = async (order, itemIndex) => {
+    const items = Array.isArray(order.items) ? order.items : []
+    const updatedItems = items.map((it, i) =>
+      i === itemIndex ? { ...it, unavailable: !it.unavailable } : it
+    )
+    // المجموع الجزئي من الأصناف المتاحة فقط (item.price يشمل أصلاً سعر الخيارات المختارة)
+    const newSubtotal = updatedItems.reduce((sum, it) => {
+      if (it.unavailable) return sum
+      return sum + (it.price * it.qty)
+    }, 0)
+    const newTax = newSubtotal * 0.15
+    const newTotal = newSubtotal + newTax
+
+    const { error } = await supabase
+      .from('orders')
+      .update({ items: updatedItems, subtotal: newSubtotal, tax: newTax, total: newTotal })
+      .eq('id', order.id)
+
+    if (error) { toast.error(error.message); return }
+    const item = items[itemIndex]
+    toast.success(item.unavailable ? `✅ ${item.name} أصبح متوفراً` : `⚠️ تم تعليم ${item.name} كغير متوفر`)
   }
 
   const handleSignOut = async () => { await signOut(); navigate('/login') }
@@ -294,11 +369,14 @@ export default function Orders() {
                             <div style={{ marginBottom:'12px' }}>
                               <div style={{ fontSize:'12px', fontWeight:'700', color:'#9CA3AF', marginBottom:'8px', textTransform:'uppercase', letterSpacing:'0.5px' }}>الأصناف</div>
                               {items.map((item, i) => (
-                                <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 0', borderBottom:'1px solid #F0F0F0' }}>
+                                <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 0', borderBottom:'1px solid #F0F0F0', opacity: item.unavailable ? 0.5 : 1 }}>
                                   <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
                                     <span style={{ fontSize:'18px' }}>{item.emoji || '🍽️'}</span>
                                     <div>
-                                      <div style={{ fontSize:'13px', fontWeight:'700' }}>{item.name}</div>
+                                      <div style={{ fontSize:'13px', fontWeight:'700', textDecoration: item.unavailable ? 'line-through' : 'none' }}>
+                                        {item.name}
+                                        {item.unavailable && <span style={{ fontSize:'10px', fontWeight:'700', color:'#EF4444', background:'#FEF2F2', padding:'2px 6px', borderRadius:'100px', marginRight:'6px' }}>غير متوفر</span>}
+                                      </div>
                                       {Array.isArray(item.selectedOptions) && item.selectedOptions.length > 0 && (
                                         <div style={{ fontSize:'11px', color:'#FF6B35', fontWeight:'600' }}>
                                           {item.selectedOptions.map(o => o.choiceName).join(' + ')}
@@ -307,9 +385,19 @@ export default function Orders() {
                                       {item.notes && <div style={{ fontSize:'11px', color:'#9CA3AF' }}>📝 {item.notes}</div>}
                                     </div>
                                   </div>
-                                  <div style={{ textAlign:'left' }}>
-                                    <div style={{ fontSize:'12px', color:'#9CA3AF' }}>× {item.qty}</div>
-                                    <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px' }}>{item.price * item.qty} ﷼</div>
+                                  <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                                    {['pending','preparing'].includes(order.status) && (
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); toggleItemUnavailable(order, i) }}
+                                        style={{ padding:'4px 8px', borderRadius:'7px', border:`1.5px solid ${item.unavailable ? '#D1FAE5' : '#FEE2E2'}`, background: item.unavailable ? '#ECFDF5' : '#FEF2F2', color: item.unavailable ? '#065F46' : '#EF4444', fontSize:'10px', fontWeight:'700', cursor:'pointer', whiteSpace:'nowrap' }}
+                                      >
+                                        {item.unavailable ? '↺ إعادة' : '⚠️ غير متوفر'}
+                                      </button>
+                                    )}
+                                    <div style={{ textAlign:'left' }}>
+                                      <div style={{ fontSize:'12px', color:'#9CA3AF' }}>× {item.qty}</div>
+                                      <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', textDecoration: item.unavailable ? 'line-through' : 'none' }}>{item.price * item.qty} ﷼</div>
+                                    </div>
                                   </div>
                                 </div>
                               ))}
