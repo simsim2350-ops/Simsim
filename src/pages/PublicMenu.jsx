@@ -31,17 +31,63 @@ export default function PublicMenu() {
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [orderNumber, setOrderNumber] = useState('')
   const [lastOrderSummary, setLastOrderSummary] = useState(null) // { items, total, tableNumber } للمشاركة عبر واتساب
-  const [orderStatus, setOrderStatus] = useState('pending')
+  // activeOrders: كل الطلبات النشطة لهذا المطعم على هذا الجهاز، محفوظة في localStorage
+  // كل عنصر: { id, orderNumber, status, items, total, tableNumber, createdAt }
+  const [activeOrders, setActiveOrders] = useState([])
+  const orderChannelsRef = useRef({}) // { [orderId]: channel }
   const [searchQuery, setSearchQuery] = useState('')
-  const orderChannelRef = useRef(null)
+
+  const ORDERS_STORAGE_KEY = `simsim_orders_${slug}`
 
   useEffect(() => {
     fetchMenu()
   }, [slug])
 
+  // تحميل الطلبات النشطة المحفوظة من قبل لهذا المطعم، والاستماع لتحديثاتها
+  useEffect(() => {
+    if (!slug) return
+    try {
+      const saved = JSON.parse(localStorage.getItem(ORDERS_STORAGE_KEY) || '[]')
+      // إخفاء الطلبات المكتملة/الملغاة القديمة جداً (أكثر من 12 ساعة) لتجنب تراكم لا نهائي
+      const recent = saved.filter(o => Date.now() - (o.createdAt || 0) < 12 * 60 * 60 * 1000)
+      setActiveOrders(recent)
+      if (recent.length > 0) setOrderPlaced(true)
+    } catch {
+      setActiveOrders([])
+    }
+  }, [slug])
+
+  // حفظ activeOrders في localStorage عند أي تغيير، والاشتراك في تحديثات أي طلب جديد لم يُشترك له بعد
+  useEffect(() => {
+    if (!slug) return
+    localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(activeOrders))
+    activeOrders.forEach(order => {
+      if (orderChannelsRef.current[order.id]) return // مشترك بالفعل
+      const ch = supabase.channel(`order-status-${order.id}`)
+        .on('postgres_changes',
+          { event:'UPDATE', schema:'public', table:'orders', filter:`id=eq.${order.id}` },
+          (p) => {
+            const newItems = Array.isArray(p.new.items) ? p.new.items : []
+            setActiveOrders(prev => prev.map(o => {
+              if (o.id !== order.id) return o
+              // إشعار عند تعليم صنف جديد كغير متوفر
+              newItems.forEach((ni, idx) => {
+                const wasUnavailable = o.items[idx]?.unavailable
+                if (ni.unavailable && !wasUnavailable) {
+                  toast.error(`⚠️ ${ni.name} غير متوفر في طلب ${o.orderNumber}`, { duration: 6000 })
+                }
+              })
+              return { ...o, status: p.new.status, items: newItems, total: Number(p.new.total) || 0 }
+            }))
+          }
+        ).subscribe()
+      orderChannelsRef.current[order.id] = ch
+    })
+  }, [activeOrders, slug])
+
   useEffect(() => {
     return () => {
-      if (orderChannelRef.current) supabase.removeChannel(orderChannelRef.current)
+      Object.values(orderChannelsRef.current).forEach(ch => supabase.removeChannel(ch))
     }
   }, [])
 
@@ -238,13 +284,11 @@ export default function PublicMenu() {
     setCart([])
     setCartOpen(false)
 
-    // Subscribe to order status (cleaned up on unmount / next order)
-    if (orderChannelRef.current) supabase.removeChannel(orderChannelRef.current)
-    orderChannelRef.current = supabase.channel(`order-status-${data.id}`)
-      .on('postgres_changes',
-        { event:'UPDATE', schema:'public', table:'orders', filter:`id=eq.${data.id}` },
-        (p) => setOrderStatus(p.new.status)
-      ).subscribe()
+    // إضافة الطلب الجديد فوق قائمة الطلبات النشطة (الأحدث أولاً) — الاشتراك في تحديثاته يحصل تلقائياً
+    setActiveOrders(prev => [
+      { id: data.id, orderNumber: data.order_number, status: 'pending', items, total, tableNumber, createdAt: Date.now() },
+      ...prev,
+    ])
   }
 
   // Filter products
@@ -276,75 +320,97 @@ export default function PublicMenu() {
     </div>
   )
 
-  // Order placed screen
+  // Order placed / tracking screen — يعرض كل الطلبات النشطة، الأحدث أولاً
   if (orderPlaced) return (
     <div style={{ minHeight:'100vh', background:'#F8F9FB', direction:'rtl', fontFamily:'Tajawal,sans-serif' }}>
-      <div style={{ background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, padding:'40px 24px', textAlign:'center', position:'relative', overflow:'hidden' }}>
+      <div style={{ background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, padding:'32px 24px', textAlign:'center', position:'relative', overflow:'hidden' }}>
         <div style={{ position:'absolute', inset:0, background:'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1), transparent)', pointerEvents:'none' }}/>
-        <div style={{ fontSize:'64px', marginBottom:'12px', position:'relative' }}>🎉</div>
-        <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'24px', color:'white', marginBottom:'6px' }}>تم استلام طلبك!</h2>
-        <p style={{ color:'rgba(255,255,255,0.8)', fontSize:'14px', marginBottom:'12px' }}>يعمل المطبخ على تحضير طلبك الآن</p>
-        <div style={{ display:'inline-block', background:'rgba(255,255,255,0.2)', padding:'6px 20px', borderRadius:'100px', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', color:'white' }}>
-          {orderNumber}
-        </div>
+        <div style={{ fontSize:'56px', marginBottom:'10px', position:'relative' }}>🎉</div>
+        <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'22px', color:'white', marginBottom:'4px' }}>طلباتك</h2>
+        <p style={{ color:'rgba(255,255,255,0.8)', fontSize:'13px' }}>{activeOrders.length} طلب نشط على هذا الجهاز</p>
       </div>
 
-      <div style={{ padding:'24px 20px' }}>
-        {/* Status stepper */}
-        <div style={{ background:'white', borderRadius:'16px', padding:'20px', marginBottom:'16px', border:'1px solid #E5E7EB' }}>
-          <div style={{ fontSize:'14px', fontWeight:'700', color:'#9CA3AF', marginBottom:'16px', textTransform:'uppercase', letterSpacing:'0.5px' }}>حالة الطلب</div>
-          <div style={{ display:'flex', alignItems:'center' }}>
-            {[
-              { key:'pending', label:'استُلم', icon:'📥' },
-              { key:'preparing', label:'تحضير', icon:'👨‍🍳' },
-              { key:'ready', label:'جاهز', icon:'✅' },
-              { key:'completed', label:'تسليم', icon:'🎉' },
-            ].map((step, i, arr) => {
-              const statuses = ['pending','preparing','ready','completed']
-              const currentIdx = statuses.indexOf(orderStatus)
-              const stepIdx = statuses.indexOf(step.key)
-              const isDone = stepIdx < currentIdx
-              const isCurrent = stepIdx === currentIdx
-              return (
-                <div key={step.key} style={{ display:'flex', alignItems:'center', flex: i < arr.length - 1 ? 1 : 'none' }}>
-                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'6px' }}>
-                    <div style={{
-                      width:'40px', height:'40px', borderRadius:'50%',
-                      background: isDone ? '#10B981' : isCurrent ? brandColor : '#F3F4F6',
-                      border: `2px solid ${isDone ? '#10B981' : isCurrent ? brandColor : '#E5E7EB'}`,
-                      display:'flex', alignItems:'center', justifyContent:'center',
-                      fontSize:'18px', transition:'all 0.5s',
-                      boxShadow: isCurrent ? `0 0 0 4px ${brandColor}22` : 'none',
-                    }}>
-                      {isDone ? '✓' : step.icon}
-                    </div>
-                    <span style={{ fontSize:'10px', fontWeight:'700', color: isCurrent ? brandColor : isDone ? '#10B981' : '#9CA3AF', whiteSpace:'nowrap' }}>{step.label}</span>
-                  </div>
-                  {i < arr.length - 1 && (
-                    <div style={{ flex:1, height:'2px', background: isDone ? '#10B981' : '#E5E7EB', margin:'0 4px', marginBottom:'16px', transition:'background 0.5s' }}/>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
+      <div style={{ padding:'20px 16px' }}>
+        {activeOrders.map(order => {
+          const statuses = ['pending','preparing','ready','completed']
+          const currentIdx = statuses.indexOf(order.status)
+          return (
+            <div key={order.id} style={{ background:'white', borderRadius:'18px', padding:'18px', marginBottom:'16px', border:'1px solid #E5E7EB' }}>
 
-        {/* WhatsApp confirmation (اختياري) */}
-        {restaurant?.phone && (
+              {/* رقم الطلب وحالته */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px' }}>
+                <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px' }}>{order.orderNumber}</span>
+                <span style={{ fontSize:'11px', fontWeight:'700', color: order.status==='cancelled' ? '#EF4444' : brandColor, background: order.status==='cancelled' ? '#FEF2F2' : `${brandColor}15`, padding:'4px 10px', borderRadius:'100px' }}>
+                  {{ pending:'استُلم', preparing:'قيد التحضير', ready:'جاهز للاستلام', completed:'تم التسليم 🎉', cancelled:'ملغي' }[order.status] || order.status}
+                </span>
+              </div>
+
+              {/* Status stepper */}
+              {order.status !== 'cancelled' && (
+                <div style={{ display:'flex', alignItems:'center', marginBottom:'16px' }}>
+                  {[
+                    { key:'pending', icon:'📥' }, { key:'preparing', icon:'👨‍🍳' },
+                    { key:'ready', icon:'✅' }, { key:'completed', icon:'🎉' },
+                  ].map((step, i, arr) => {
+                    const stepIdx = statuses.indexOf(step.key)
+                    const isDone = stepIdx < currentIdx
+                    const isCurrent = stepIdx === currentIdx
+                    return (
+                      <div key={step.key} style={{ display:'flex', alignItems:'center', flex: i < arr.length - 1 ? 1 : 'none' }}>
+                        <div style={{
+                          width:'30px', height:'30px', borderRadius:'50%',
+                          background: isDone ? '#10B981' : isCurrent ? brandColor : '#F3F4F6',
+                          border: `2px solid ${isDone ? '#10B981' : isCurrent ? brandColor : '#E5E7EB'}`,
+                          display:'flex', alignItems:'center', justifyContent:'center',
+                          fontSize:'13px', transition:'all 0.5s', flexShrink:0,
+                        }}>
+                          {isDone ? '✓' : step.icon}
+                        </div>
+                        {i < arr.length - 1 && (
+                          <div style={{ flex:1, height:'2px', background: isDone ? '#10B981' : '#E5E7EB', margin:'0 4px', transition:'background 0.5s' }}/>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* الأصناف */}
+              <div style={{ borderTop:'1px solid #F3F4F6', paddingTop:'12px' }}>
+                {order.items.map((item, i) => (
+                  <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 0', opacity: item.unavailable ? 0.55 : 1 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                      <span style={{ fontSize:'15px' }}>{item.emoji || '🍽️'}</span>
+                      <span style={{ fontSize:'13px', fontWeight:'600', textDecoration: item.unavailable ? 'line-through' : 'none' }}>{item.name} × {item.qty}</span>
+                      {item.unavailable && <span style={{ fontSize:'9px', fontWeight:'700', color:'#EF4444', background:'#FEF2F2', padding:'2px 6px', borderRadius:'100px' }}>غير متوفر</span>}
+                    </div>
+                  </div>
+                ))}
+                <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', paddingTop:'8px', marginTop:'4px', borderTop:'1px solid #F3F4F6' }}>
+                  <span>الإجمالي</span>
+                  <span style={{ color:brandColor }}>{order.total.toFixed(2)} ﷼</span>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+
+        {/* WhatsApp confirmation لآخر طلب (اختياري) */}
+        {restaurant?.phone && lastOrderSummary && (
           <button
             onClick={sendWhatsAppConfirmation}
             style={{ width:'100%', padding:'15px', borderRadius:'14px', border:'1.5px solid #25D366', background:'rgba(37,211,102,0.08)', color:'#1FA855', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', marginBottom:'12px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}
           >
-            💬 إرسال تأكيد الطلب عبر واتساب
+            💬 إرسال تأكيد آخر طلب عبر واتساب
           </button>
         )}
 
-        {/* New order button */}
+        {/* العودة للمنيو لطلب إضافي — الطلبات الحالية تستمر بالتتبع */}
         <button
-          onClick={() => { setOrderPlaced(false); setOrderStatus('pending') }}
+          onClick={() => setOrderPlaced(false)}
           style={{ width:'100%', padding:'15px', borderRadius:'14px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'16px', cursor:'pointer', boxShadow:`0 8px 24px ${brandColor}44` }}
         >
-          ← العودة للمنيو
+          ← العودة للمنيو لطلب إضافي
         </button>
       </div>
     </div>
@@ -375,6 +441,15 @@ export default function PublicMenu() {
               <span style={{ fontSize:'12px', color:'#9CA3AF' }}>🕐 15-25 د</span>
             </div>
           </div>
+          {activeOrders.length > 0 && (
+            <button
+              onClick={() => setOrderPlaced(true)}
+              style={{ flexShrink:0, padding:'9px 14px', borderRadius:'12px', border:'none', background:brandColor, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', boxShadow:`0 4px 12px ${brandColor}44` }}
+            >
+              📋 طلباتي
+              <span style={{ background:'rgba(255,255,255,0.3)', borderRadius:'100px', padding:'1px 7px', fontSize:'11px' }}>{activeOrders.length}</span>
+            </button>
+          )}
         </div>
 
         {/* Search */}
