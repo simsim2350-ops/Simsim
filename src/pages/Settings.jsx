@@ -1,0 +1,565 @@
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
+import { supabase } from '../lib/supabase'
+import { useAuthStore } from '../store/authStore'
+
+const BRAND_COLORS = ['#FF6B35','#E85A24','#10B981','#3B82F6','#8B5CF6','#EC4899','#F59E0B','#0F1117']
+const CURRENCIES = ['SAR - ريال سعودي','AED - درهم إماراتي','KWD - دينار كويتي','BHD - دينار بحريني','QAR - ريال قطري','OMR - ريال عماني','EGP - جنيه مصري']
+
+export default function Settings() {
+  const navigate = useNavigate()
+  const { user, restaurant, fetchRestaurant, signOut } = useAuthStore()
+  const [activeTab, setActiveTab] = useState('restaurant')
+  const [loading, setLoading] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const isMobile = window.innerWidth <= 768
+
+  // Restaurant form
+  const [restForm, setRestForm] = useState({
+    name: '', slug: '', description: '',
+    phone: '', whatsapp_message: '', address: '', currency: 'SAR - ريال سعودي',
+    delivery_enabled: false, delivery_fee: '',
+    brand_color: '#FF6B35', type: 'restaurant',
+  })
+
+  // Profile form
+  const [profileForm, setProfileForm] = useState({
+    full_name: '', phone: '',
+  })
+
+  // Password form
+  const [passForm, setPassForm] = useState({
+    current: '', newPass: '', confirm: '',
+  })
+
+  // Working hours
+  const [hours, setHours] = useState([
+    { day:'الأحد',    open:true,  from:'09:00', to:'23:00' },
+    { day:'الاثنين',  open:true,  from:'09:00', to:'23:00' },
+    { day:'الثلاثاء', open:true,  from:'09:00', to:'23:00' },
+    { day:'الأربعاء', open:true,  from:'09:00', to:'23:00' },
+    { day:'الخميس',  open:true,  from:'09:00', to:'23:00' },
+    { day:'الجمعة',  open:true,  from:'12:00', to:'24:00' },
+    { day:'السبت',   open:false, from:'09:00', to:'23:00' },
+  ])
+
+  useEffect(() => {
+    if (restaurant) {
+      setRestForm({
+        name: restaurant.name || '',
+        slug: restaurant.slug || '',
+        description: restaurant.description || '',
+        phone: restaurant.phone || '',
+        whatsapp_message: restaurant.whatsapp_message || '',
+        delivery_enabled: restaurant.delivery_enabled || false,
+        delivery_fee: restaurant.delivery_fee ?? '',
+        address: restaurant.address || '',
+        currency: restaurant.currency || 'SAR - ريال سعودي',
+        brand_color: restaurant.brand_color || '#FF6B35',
+        type: restaurant.type || 'restaurant',
+      })
+    }
+    if (user) {
+      setProfileForm({
+        full_name: user.user_metadata?.full_name || '',
+        phone: user.user_metadata?.phone || '',
+      })
+    }
+  }, [restaurant, user])
+
+  // Save restaurant
+  const saveRestaurant = async () => {
+    if (!restForm.name.trim()) { toast.error('اسم المطعم مطلوب'); return }
+    if (!restForm.slug.trim()) { toast.error('رابط المنيو مطلوب'); return }
+    setLoading(true)
+    try {
+      const { error } = await supabase
+        .from('restaurants')
+        .update({
+          name: restForm.name,
+          slug: restForm.slug,
+          description: restForm.description,
+          phone: restForm.phone,
+          whatsapp_message: restForm.whatsapp_message,
+          delivery_enabled: restForm.delivery_enabled,
+          delivery_fee: restForm.delivery_fee ? parseFloat(restForm.delivery_fee) : 0,
+          address: restForm.address,
+          currency: restForm.currency.split(' - ')[0],
+          brand_color: restForm.brand_color,
+          type: restForm.type,
+        })
+        .eq('id', restaurant.id)
+      if (error) throw error
+      await fetchRestaurant(user.id)
+      toast.success('تم حفظ إعدادات المطعم ✅')
+    } catch (err) {
+      toast.error(err.code === '23505' ? 'هذا الرابط مستخدم، جرب آخر' : err.message)
+    } finally { setLoading(false) }
+  }
+
+  // Save profile
+  const saveProfile = async () => {
+    if (!profileForm.full_name.trim()) { toast.error('الاسم مطلوب'); return }
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { full_name: profileForm.full_name, phone: profileForm.phone }
+      })
+      if (error) throw error
+      toast.success('تم تحديث الملف الشخصي ✅')
+    } catch (err) {
+      toast.error(err.message)
+    } finally { setLoading(false) }
+  }
+
+  // Change password
+  const changePassword = async () => {
+    if (!passForm.newPass) { toast.error('أدخل كلمة المرور الجديدة'); return }
+    if (passForm.newPass.length < 8) { toast.error('كلمة المرور 8 أحرف على الأقل'); return }
+    if (passForm.newPass !== passForm.confirm) { toast.error('كلمتا المرور غير متطابقتين'); return }
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: passForm.newPass })
+      if (error) throw error
+      setPassForm({ current:'', newPass:'', confirm:'' })
+      toast.success('تم تغيير كلمة المرور ✅')
+    } catch (err) {
+      toast.error(err.message)
+    } finally { setLoading(false) }
+  }
+
+  // Toggle restaurant active
+  const toggleActive = async () => {
+    const { error } = await supabase
+      .from('restaurants')
+      .update({ is_active: !restaurant.is_active })
+      .eq('id', restaurant.id)
+    if (error) { toast.error(error.message); return }
+    await fetchRestaurant(user.id)
+    toast.success(restaurant.is_active ? 'تم إيقاف المطعم مؤقتاً' : 'تم تفعيل المطعم ✅')
+  }
+
+  const handleSignOut = async () => { await signOut(); navigate('/login') }
+
+  const updateHour = (i, field, val) => {
+    setHours(prev => prev.map((h, idx) => idx === i ? { ...h, [field]: val } : h))
+  }
+
+  const NavItem = ({ icon, label, active, onClick }) => (
+    <div onClick={onClick} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px', borderRadius:'10px', cursor:'pointer', background: active ? 'rgba(255,107,53,0.12)' : 'transparent', color: active ? '#FF6B35' : 'rgba(255,255,255,0.55)', fontSize:'13px', fontWeight:'600', marginBottom:'2px', position:'relative', transition:'all 0.2s' }}>
+      {active && <div style={{ position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', width:'3px', height:'20px', background:'#FF6B35', borderRadius:'0 3px 3px 0' }}/>}
+      <span style={{ fontSize:'16px', width:'20px', textAlign:'center' }}>{icon}</span>
+      {label}
+    </div>
+  )
+
+  const inputStyle = { width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'#F8F9FB', outline:'none', textAlign:'right', direction:'rtl', boxSizing:'border-box' }
+  const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', color:'#0F1117', marginBottom:'6px' }
+
+  const TABS = [
+    { key:'restaurant', label:'🏪 المطعم' },
+    { key:'hours',      label:'🕐 أوقات العمل' },
+    { key:'profile',    label:'👤 الملف الشخصي' },
+    { key:'password',   label:'🔒 كلمة المرور' },
+    { key:'danger',     label:'⚠️ متقدم' },
+  ]
+
+  return (
+    <div style={{ display:'flex', height:'100vh', overflow:'hidden', direction:'rtl', position:'relative' }}>
+
+      {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:40 }}/>}
+
+      {/* Sidebar */}
+      <div style={{ position:'fixed', right:0, top:0, transform: !isMobile ? 'none' : sidebarOpen ? 'translateX(0)' : 'translateX(100%)', transition:'transform 0.3s ease', zIndex:50, height:'100vh' }}>
+        <aside style={{ width:'240px', background:'#0F1117', height:'100dvh', display:'flex', flexDirection:'column', borderLeft:'1px solid rgba(255,255,255,0.06)', overflowY:'auto' }}>
+          <div style={{ padding:'20px 18px', display:'flex', alignItems:'center', gap:'10px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ width:'34px', height:'34px', background:'linear-gradient(135deg,#FF6B35,#E85A24)', borderRadius:'9px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', color:'white' }}>S</div>
+            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', color:'white' }}>SIM<span style={{ color:'#FF6B35' }}>SIM</span></span>
+          </div>
+
+          {restaurant && (
+            <div style={{ margin:'12px', padding:'10px 12px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'11px', display:'flex', alignItems:'center', gap:'10px' }}>
+              <div style={{ width:'32px', height:'32px', borderRadius:'8px', background:'linear-gradient(135deg,#FF6B35,#FF9F6B)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px' }}>🍕</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', color:'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{restaurant.name}</div>
+                <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.35)', direction:'ltr' }}>{window.location.origin}/menu/{restaurant.slug}</div>
+              </div>
+            </div>
+          )}
+
+          <nav style={{ padding:'8px 12px', flex:1, overflowY:'auto' }}>
+            <NavItem icon="📊" label="الرئيسية"    onClick={() => navigate('/dashboard')} />
+            <NavItem icon="🛒" label="الطلبات"     onClick={() => navigate('/orders')} />
+            <NavItem icon="📋" label="الأقسام"     onClick={() => navigate('/menu')} />
+            <NavItem icon="🍽️" label="الأصناف"     onClick={() => navigate('/menu')} />
+            <NavItem icon="👥" label="العملاء"     onClick={() => navigate('/customers')} />
+            <NavItem icon="📱" label="QR Code"     onClick={() => navigate('/qr')} />
+            <NavItem icon="📈" label="التحليلات" onClick={() => navigate("/analytics")} />
+            <NavItem icon="⚙️" label="الإعدادات"  active={true} onClick={() => setSidebarOpen(false)} />
+          </nav>
+
+          <div style={{ padding:'12px', borderTop:'1px solid rgba(255,255,255,0.06)', flexShrink:0 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', marginBottom:'8px' }}>
+              <div style={{ width:'32px', height:'32px', borderRadius:'50%', background:'linear-gradient(135deg,#667eea,#764ba2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', fontWeight:'700', color:'white', flexShrink:0 }}>
+                {user?.user_metadata?.full_name?.charAt(0) || 'م'}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:'13px', fontWeight:'700', color:'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user?.user_metadata?.full_name}</div>
+                <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.35)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user?.email}</div>
+              </div>
+            </div>
+            <button onClick={handleSignOut} style={{ width:'100%', padding:'9px', borderRadius:'9px', border:'1px solid rgba(239,68,68,0.3)', background:'rgba(239,68,68,0.08)', color:'#FC8181', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>
+              تسجيل الخروج 🚪
+            </button>
+          </div>
+        </aside>
+      </div>
+
+      {/* Main */}
+      <main style={{ marginRight: isMobile ? '0' : '240px', flex:1, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden' }}>
+
+        {/* Topbar */}
+        <div style={{ height:'56px', background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', alignItems:'center', padding:'0 16px', gap:'10px', flexShrink:0 }}>
+          {isMobile && <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background:'none', border:'none', fontSize:'22px', cursor:'pointer' }}>☰</button>}
+          <span style={{ fontSize:'16px', fontWeight:'800' }}>⚙️ الإعدادات</span>
+          <div style={{ marginRight:'auto' }}>
+            <button onClick={() => navigate('/dashboard')} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'600', fontSize:'12px', cursor:'pointer', color:'#374151' }}>
+              ← الرئيسية
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', padding:'0 16px', overflowX:'auto', flexShrink:0, scrollbarWidth:'none' }}>
+          {TABS.map(t => (
+            <div key={t.key} onClick={() => setActiveTab(t.key)} style={{ padding:'12px 14px', fontSize:'13px', fontWeight:'700', color: activeTab === t.key ? '#FF6B35' : '#6B7280', borderBottom: activeTab === t.key ? '2.5px solid #FF6B35' : '2.5px solid transparent', cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.2s' }}>
+              {t.label}
+            </div>
+          ))}
+        </div>
+
+        {/* Content */}
+        <div style={{ flex:1, overflowY:'auto', padding:'16px' }}>
+          <div style={{ maxWidth:'600px', margin:'0 auto' }}>
+
+            {/* ===== RESTAURANT TAB ===== */}
+            {activeTab === 'restaurant' && (
+              <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
+
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🏪 معلومات المطعم</div>
+                  <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:'14px' }}>
+
+                    <div><label style={labelStyle}>اسم المطعم *</label>
+                      <input style={inputStyle} value={restForm.name} onChange={e => setRestForm(f=>({...f,name:e.target.value}))} placeholder="مطعم البيت" />
+                    </div>
+
+                    <div><label style={labelStyle}>رابط المنيو *</label>
+                      <div style={{ display:'flex', border:'1.5px solid #E5E7EB', borderRadius:'11px', overflow:'hidden' }}>
+                        <span style={{ padding:'11px 12px', background:'#E5E7EB', fontSize:'12px', fontWeight:'600', color:'#6B7280', whiteSpace:'nowrap', direction:'ltr', borderLeft:'1.5px solid #E5E7EB' }}>
+                          {window.location.origin}/menu/
+                        </span>
+                        <input style={{ ...inputStyle, border:'none', borderRadius:'0', direction:'ltr', textAlign:'left', background:'white' }} value={restForm.slug} onChange={e => setRestForm(f=>({...f,slug:e.target.value.toLowerCase().replace(/[^\w-]/g,'')}))} placeholder="al-bait" />
+                      </div>
+                    </div>
+
+                    <div><label style={labelStyle}>الوصف</label>
+                      <textarea style={{ ...inputStyle, minHeight:'80px', resize:'vertical' }} value={restForm.description} onChange={e => setRestForm(f=>({...f,description:e.target.value}))} placeholder="وصف مطعمك..." />
+                    </div>
+
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px' }}>
+                      <div><label style={labelStyle}>رقم التواصل (واتساب) *</label>
+                        <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} type="tel" value={restForm.phone} onChange={e => setRestForm(f=>({...f,phone:e.target.value}))} placeholder="9665XXXXXXXX" />
+                        <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'5px', lineHeight:'1.5' }}>
+                          اكتب الرقم بصيغة دولية كاملة بدون + أو مسافات، يبدأ بكود الدولة<br/>
+                          مثال السعودية: 9665XXXXXXXX — الإمارات: 9715XXXXXXX — الكويت: 965XXXXXXXX
+                        </div>
+                      </div>
+                      <div><label style={labelStyle}>العملة</label>
+                        <select style={{ ...inputStyle, cursor:'pointer' }} value={restForm.currency} onChange={e => setRestForm(f=>({...f,currency:e.target.value}))}>
+                          {CURRENCIES.map(c => <option key={c}>{c}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div><label style={labelStyle}>رسالة ترحيب واتساب (اختياري)</label>
+                      <input style={inputStyle} value={restForm.whatsapp_message} onChange={e => setRestForm(f=>({...f,whatsapp_message:e.target.value}))} placeholder="شكراً لطلبك من مطعم البيت! 🍕" />
+                      <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'5px' }}>
+                        تظهر هذه الجملة في بداية رسالة تأكيد الطلب وفي زر التواصل المباشر عبر واتساب
+                      </div>
+                    </div>
+
+                    <div><label style={labelStyle}>العنوان</label>
+                      <input style={inputStyle} value={restForm.address} onChange={e => setRestForm(f=>({...f,address:e.target.value}))} placeholder="الرياض، حي النزهة..." />
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* Delivery settings */}
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🚚 خيارات التوصيل</div>
+                  <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:'14px' }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                      <div>
+                        <div style={{ fontSize:'14px', fontWeight:'700', marginBottom:'3px' }}>تفعيل التوصيل</div>
+                        <div style={{ fontSize:'12px', color:'#9CA3AF' }}>إظهار خيار "توصيل" للعميل عند الطلب</div>
+                      </div>
+                      <label style={{ position:'relative', width:'48px', height:'26px', cursor:'pointer', flexShrink:0 }}>
+                        <input type="checkbox" checked={restForm.delivery_enabled} onChange={e => setRestForm(f=>({...f,delivery_enabled:e.target.checked}))} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
+                        <div style={{ position:'absolute', inset:0, background: restForm.delivery_enabled ? '#10B981' : '#E5E7EB', borderRadius:'26px', transition:'0.3s' }}>
+                          <div style={{ position:'absolute', width:'20px', height:'20px', background:'white', borderRadius:'50%', top:'3px', left: restForm.delivery_enabled ? '25px' : '3px', transition:'0.3s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
+                        </div>
+                      </label>
+                    </div>
+                    {restForm.delivery_enabled && (
+                      <div><label style={labelStyle}>رسوم التوصيل (ريال)</label>
+                        <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} type="number" min="0" step="0.5" value={restForm.delivery_fee} onChange={e => setRestForm(f=>({...f,delivery_fee:e.target.value}))} placeholder="0.00" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Brand color */}
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🎨 لون المطعم</div>
+                  <div style={{ padding:'16px 18px' }}>
+                    <div style={{ display:'flex', gap:'10px', flexWrap:'wrap', marginBottom:'12px' }}>
+                      {BRAND_COLORS.map(c => (
+                        <div key={c} onClick={() => setRestForm(f=>({...f,brand_color:c}))} style={{ width:'38px', height:'38px', borderRadius:'50%', background:c, cursor:'pointer', border:`3px solid ${restForm.brand_color===c?'#0F1117':'transparent'}`, boxShadow:restForm.brand_color===c?'0 0 0 2px white inset':'none', transition:'all 0.2s', transform:restForm.brand_color===c?'scale(1.1)':'scale(1)' }}/>
+                      ))}
+                      <div style={{ position:'relative', width:'38px', height:'38px', borderRadius:'50%', border:'2px dashed #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', cursor:'pointer' }}>
+                        🎨
+                        <input type="color" value={restForm.brand_color} onChange={e => setRestForm(f=>({...f,brand_color:e.target.value}))} style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer', width:'100%', height:'100%' }}/>
+                      </div>
+                    </div>
+                    <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px', background:'#F8F9FB', borderRadius:'10px' }}>
+                      <div style={{ width:'32px', height:'32px', borderRadius:'8px', background:restForm.brand_color }}/>
+                      <span style={{ fontSize:'13px', color:'#6B7280' }}>اللون الحالي:</span>
+                      <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'700', color:restForm.brand_color }}>{restForm.brand_color}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Restaurant status */}
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>📡 حالة المطعم</div>
+                  <div style={{ padding:'16px 18px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                    <div>
+                      <div style={{ fontSize:'14px', fontWeight:'700', marginBottom:'3px' }}>
+                        {restaurant?.is_active ? '✅ المطعم مفتوح' : '🔴 المطعم مغلق مؤقتاً'}
+                      </div>
+                      <div style={{ fontSize:'12px', color:'#9CA3AF' }}>
+                        {restaurant?.is_active ? 'المنيو ظاهر ويقبل الطلبات' : 'المنيو مخفي ولا يقبل طلبات'}
+                      </div>
+                    </div>
+                    <label style={{ position:'relative', width:'48px', height:'26px', cursor:'pointer' }}>
+                      <input type="checkbox" checked={restaurant?.is_active || false} onChange={toggleActive} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
+                      <div style={{ position:'absolute', inset:0, background: restaurant?.is_active ? '#10B981' : '#E5E7EB', borderRadius:'26px', transition:'0.3s' }}>
+                        <div style={{ position:'absolute', width:'20px', height:'20px', background:'white', borderRadius:'50%', top:'3px', left: restaurant?.is_active ? '25px' : '3px', transition:'0.3s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <button onClick={saveRestaurant} disabled={loading} style={{ padding:'14px', borderRadius:'13px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', boxShadow:'0 6px 20px rgba(255,107,53,0.35)', opacity:loading?0.8:1 }}>
+                  {loading ? 'جارٍ الحفظ...' : '💾 حفظ إعدادات المطعم'}
+                </button>
+              </div>
+            )}
+
+            {/* ===== HOURS TAB ===== */}
+            {activeTab === 'hours' && (
+              <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🕐 أوقات العمل</div>
+                <div style={{ padding:'12px 16px', display:'flex', flexDirection:'column', gap:'8px' }}>
+                  {hours.map((h, i) => (
+                    <div key={h.day} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background: h.open ? 'white' : '#F8F9FB' }}>
+                      {/* Toggle */}
+                      <label style={{ position:'relative', width:'36px', height:'20px', cursor:'pointer', flexShrink:0 }}>
+                        <input type="checkbox" checked={h.open} onChange={e => updateHour(i,'open',e.target.checked)} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
+                        <div style={{ position:'absolute', inset:0, background: h.open ? '#10B981' : '#E5E7EB', borderRadius:'20px', transition:'0.3s' }}>
+                          <div style={{ position:'absolute', width:'14px', height:'14px', background:'white', borderRadius:'50%', top:'3px', left: h.open ? '19px' : '3px', transition:'0.3s', boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                        </div>
+                      </label>
+
+                      <span style={{ fontSize:'13px', fontWeight:'700', width:'52px', flexShrink:0, color: h.open ? '#0F1117' : '#9CA3AF' }}>{h.day}</span>
+
+                      {h.open ? (
+                        <div style={{ display:'flex', alignItems:'center', gap:'6px', flex:1, direction:'ltr' }}>
+                          <input type="time" value={h.from} onChange={e => updateHour(i,'from',e.target.value)} style={{ padding:'5px 8px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'13px', outline:'none', flex:1 }}/>
+                          <span style={{ color:'#9CA3AF', fontSize:'12px' }}>—</span>
+                          <input type="time" value={h.to} onChange={e => updateHour(i,'to',e.target.value)} style={{ padding:'5px 8px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'13px', outline:'none', flex:1 }}/>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize:'13px', color:'#9CA3AF', flex:1 }}>مغلق</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ padding:'0 16px 16px' }}>
+                  <button onClick={() => toast.success('تم حفظ أوقات العمل ✅')} style={{ width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
+                    💾 حفظ أوقات العمل
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ===== PROFILE TAB ===== */}
+            {activeTab === 'profile' && (
+              <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>👤 الملف الشخصي</div>
+                  <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:'14px' }}>
+
+                    {/* Avatar */}
+                    <div style={{ display:'flex', alignItems:'center', gap:'14px', padding:'14px', background:'#F8F9FB', borderRadius:'12px' }}>
+                      <div style={{ width:'56px', height:'56px', borderRadius:'50%', background:'linear-gradient(135deg,#667eea,#764ba2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px', fontWeight:'700', color:'white', fontFamily:'Cairo,sans-serif', flexShrink:0 }}>
+                        {profileForm.full_name?.charAt(0) || 'م'}
+                      </div>
+                      <div>
+                        <div style={{ fontSize:'15px', fontWeight:'800', marginBottom:'3px' }}>{profileForm.full_name}</div>
+                        <div style={{ fontSize:'12px', color:'#9CA3AF' }}>{user?.email}</div>
+                      </div>
+                    </div>
+
+                    <div><label style={labelStyle}>الاسم الكامل *</label>
+                      <input style={inputStyle} value={profileForm.full_name} onChange={e => setProfileForm(f=>({...f,full_name:e.target.value}))} placeholder="محمد العتيبي" />
+                    </div>
+
+                    <div><label style={labelStyle}>رقم الجوال</label>
+                      <input style={inputStyle} type="tel" value={profileForm.phone} onChange={e => setProfileForm(f=>({...f,phone:e.target.value}))} placeholder="05XXXXXXXX" />
+                    </div>
+
+                    <div style={{ padding:'12px 14px', background:'#F8F9FB', borderRadius:'10px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                      <div>
+                        <div style={{ fontSize:'13px', fontWeight:'700', marginBottom:'2px' }}>البريد الإلكتروني</div>
+                        <div style={{ fontSize:'12px', color:'#9CA3AF' }}>لا يمكن تغيير البريد</div>
+                      </div>
+                      <span style={{ fontSize:'13px', color:'#9CA3AF', direction:'ltr' }}>{user?.email}</span>
+                    </div>
+
+                    <button onClick={saveProfile} disabled={loading} style={{ padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity:loading?0.8:1 }}>
+                      {loading ? 'جارٍ الحفظ...' : '💾 حفظ الملف الشخصي'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ===== PASSWORD TAB ===== */}
+            {activeTab === 'password' && (
+              <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🔒 تغيير كلمة المرور</div>
+                <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:'14px' }}>
+
+                  <div style={{ padding:'12px 14px', background:'#FFF0EB', border:'1px solid rgba(255,107,53,0.2)', borderRadius:'10px', fontSize:'13px', color:'#E85A24' }}>
+                    💡 اختر كلمة مرور قوية لا تشاركها مع أحد
+                  </div>
+
+                  <div><label style={labelStyle}>كلمة المرور الجديدة *</label>
+                    <input style={inputStyle} type="password" value={passForm.newPass} onChange={e => setPassForm(f=>({...f,newPass:e.target.value}))} placeholder="8 أحرف على الأقل" autoComplete="new-password" />
+                  </div>
+
+                  <div><label style={labelStyle}>تأكيد كلمة المرور *</label>
+                    <input style={inputStyle} type="password" value={passForm.confirm} onChange={e => setPassForm(f=>({...f,confirm:e.target.value}))} placeholder="••••••••" autoComplete="new-password" />
+                  </div>
+
+                  {passForm.newPass && passForm.confirm && passForm.newPass !== passForm.confirm && (
+                    <div style={{ padding:'10px 14px', background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:'10px', fontSize:'13px', color:'#EF4444' }}>
+                      ⚠️ كلمتا المرور غير متطابقتين
+                    </div>
+                  )}
+
+                  <button onClick={changePassword} disabled={loading} style={{ padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity:loading?0.8:1 }}>
+                    {loading ? 'جارٍ التغيير...' : '🔒 تغيير كلمة المرور'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ===== DANGER TAB ===== */}
+            {activeTab === 'danger' && (
+              <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
+
+                {/* Menu URL */}
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🔗 رابط المنيو</div>
+                  <div style={{ padding:'16px 18px' }}>
+                    <div style={{ display:'flex', gap:'8px' }}>
+                      <input readOnly value={`${window.location.origin}/menu/${restaurant?.slug}`} style={{ ...inputStyle, direction:'ltr', textAlign:'left', color:'#9CA3AF' }}/>
+                      <button onClick={async () => {
+                        const url = `${window.location.origin}/menu/${restaurant?.slug}`
+                        try {
+                          if (navigator.clipboard && window.isSecureContext) {
+                            await navigator.clipboard.writeText(url)
+                          } else {
+                            const textarea = document.createElement('textarea')
+                            textarea.value = url
+                            textarea.style.position = 'fixed'
+                            textarea.style.opacity = '0'
+                            document.body.appendChild(textarea)
+                            textarea.focus()
+                            textarea.select()
+                            const ok = document.execCommand('copy')
+                            document.body.removeChild(textarea)
+                            if (!ok) throw new Error('execCommand failed')
+                          }
+                          toast.success('تم النسخ!')
+                        } catch (err) {
+                          console.error('Copy failed:', err)
+                          toast.error('تعذّر نسخ الرابط')
+                        }
+                      }} style={{ padding:'11px 14px', borderRadius:'11px', border:'none', background:'#FF6B35', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', whiteSpace:'nowrap' }}>
+                        نسخ
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Subscription */}
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>💳 الاشتراك</div>
+                  <div style={{ padding:'16px 18px' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'14px' }}>
+                      <div>
+                        <div style={{ fontSize:'15px', fontWeight:'800', marginBottom:'3px' }}>خطة Starter</div>
+                        <div style={{ fontSize:'12px', color:'#9CA3AF' }}>تجربة مجانية — 14 يوم</div>
+                      </div>
+                      <span style={{ padding:'4px 12px', background:'#D1FAE5', color:'#065F46', borderRadius:'100px', fontSize:'12px', fontWeight:'700' }}>نشط</span>
+                    </div>
+                    <button onClick={() => toast('ترقية الخطة قريباً! 🔧')} style={{ width:'100%', padding:'12px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}>
+                      ⬆️ ترقية الخطة
+                    </button>
+                  </div>
+                </div>
+
+                {/* Danger zone */}
+                <div style={{ background:'white', borderRadius:'16px', border:'1.5px solid #FEE2E2', overflow:'hidden' }}>
+                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #FEE2E2', fontSize:'14px', fontWeight:'800', color:'#EF4444' }}>⚠️ منطقة الخطر</div>
+                  <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:'10px' }}>
+                    <div style={{ padding:'12px 14px', background:'#FEF2F2', borderRadius:'10px', fontSize:'13px', color:'#991B1B', lineHeight:'1.6' }}>
+                      تحذير: الإجراءات التالية لا يمكن التراجع عنها. تأكد قبل المتابعة.
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (window.confirm('هل أنت متأكد من حذف كل بيانات المطعم؟ لا يمكن التراجع!')) {
+                          toast.error('حذف المطعم غير متاح الآن')
+                        }
+                      }}
+                      style={{ padding:'12px', borderRadius:'12px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', color:'#EF4444', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}
+                    >
+                      🗑️ حذف بيانات المطعم
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
