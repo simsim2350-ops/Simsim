@@ -8,6 +8,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Onboarding from './pages/Onboarding'
 import Customers from './pages/Customers'
+import Branches from './pages/Branches'
 import Dashboard from './pages/Dashboard'
 import Menu from './pages/Menu'
 import Orders from './pages/Orders'
@@ -59,6 +60,7 @@ export default function App() {
         <Route path="/menu"            element={<ProtectedRoute><Menu /></ProtectedRoute>} />
         <Route path="/orders"          element={<ProtectedRoute><Orders /></ProtectedRoute>} />
         <Route path="/customers"       element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+        <Route path="/branches"        element={<ProtectedRoute><Branches /></ProtectedRoute>} />
         <Route path="/qr"              element={<ProtectedRoute><QRCodePage /></ProtectedRoute>} />
         <Route path="/settings"        element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/analytics"       element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
@@ -66,4 +68,4 @@ export default function App() {
       </Routes>
     </BrowserRouter>
   )
-         }
+}
