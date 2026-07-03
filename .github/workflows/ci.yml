@@ -7,7 +7,6 @@ on:
   pull_request:
     branches: [main]
 
-# يلغي أي تشغيل قديم لنفس الفرع عند دفع جديد (توفير وقت)
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -26,10 +25,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          # ملاحظة: لا نستخدم cache لعدم وجود package-lock.json حالياً.
+          # عند إضافة lock file لاحقاً: أضف `cache: 'npm'` وبدّل npm install بـ npm ci.
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build
         run: npm run build
