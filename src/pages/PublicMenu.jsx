@@ -390,13 +390,9 @@ export default function PublicMenu() {
         if (list.length === 0) setBranchPicked(true)
       }
 
-      // عدد الطلبات النشطة حالياً لحساب وقت تجهيز تقديري ديناميكي
-      const { count } = await supabase
-        .from('orders')
-        .select('id', { count: 'exact', head: true })
-        .eq('restaurant_id', rest.id)
-        .in('status', ['pending', 'preparing'])
-      setActiveOrdersCount(count || 0)
+      // عدد الطلبات النشطة حالياً لحساب وقت تجهيز تقديري ديناميكي (عبر RPC آمن)
+      const { data: activeCount } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id })
+      setActiveOrdersCount(activeCount || 0)
 
       // Fetch categories & products
       const [{ data: cats }, { data: prods }] = await Promise.all([
@@ -407,15 +403,8 @@ export default function PublicMenu() {
       if (cats) { setCategories(cats); if (cats.length > 0) setActiveCategory(cats[0].id) }
       if (prods) setProducts(prods)
 
-      // حساب الأصناف الأكثر مبيعاً من الطلبات الفعلية (غير الملغاة) خلال آخر 30 يوماً
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-      const { data: pastOrders } = await supabase
-        .from('orders')
-        .select('items')
-        .eq('restaurant_id', rest.id)
-        .neq('status', 'cancelled')
-        .gte('created_at', thirtyDaysAgo)
-        .limit(500)
+      // حساب الأصناف الأكثر مبيعاً من الطلبات الفعلية (غير الملغاة) خلال آخر 30 يوماً (عبر RPC آمن)
+      const { data: pastOrders } = await supabase.rpc('get_recent_order_items', { p_restaurant_id: rest.id })
 
       if (pastOrders && prods) {
         const salesCount = {}
@@ -439,12 +428,8 @@ export default function PublicMenu() {
         .on('postgres_changes',
           { event: '*', schema: 'public', table: 'orders', filter: `restaurant_id=eq.${rest.id}` },
           async () => {
-            const { count } = await supabase
-              .from('orders')
-              .select('id', { count: 'exact', head: true })
-              .eq('restaurant_id', rest.id)
-              .in('status', ['pending', 'preparing'])
-            setActiveOrdersCount(count || 0)
+            const { data: c } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id })
+            setActiveOrdersCount(c || 0)
           }
         ).subscribe()
     } finally {
