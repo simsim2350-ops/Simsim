@@ -165,6 +165,81 @@ export default function PublicMenu() {
     note:        { ar: 'ملاحظة', en: 'Note' },
     qty:         { ar: 'الكمية', en: 'Quantity' },
     calories:    { ar: 'كالوري', en: 'cal' },
+    myOrders:    { ar: 'طلباتي', en: 'My Orders' },
+    noResults:   { ar: 'لا توجد نتائج', en: 'No results' },
+    dineIn:      { ar: 'محلي', en: 'Dine-in' },
+    takeaway2:   { ar: 'سفري', en: 'Takeaway' },
+    deliveryT:   { ar: 'توصيل', en: 'Delivery' },
+    addrLabel:   { ar: '📍 عنوان التوصيل', en: '📍 Delivery address' },
+    namePh:      { ar: 'اسمك', en: 'Your name' },
+    phonePh:     { ar: 'رقم جوالك', en: 'Your phone number' },
+    addrPh:      { ar: 'اكتب عنوانك بالتفصيل...', en: 'Enter your address...' },
+    notePh:      { ar: 'أي ملاحظة على الطلب؟', en: 'Any note on your order?' },
+    orderType:   { ar: 'نوع الطلب', en: 'Order type' },
+    total:       { ar: 'الإجمالي', en: 'Total' },
+    points:      { ar: 'نقاطي', en: 'My Points' },
+    rate:        { ar: 'قيّم طلبك', en: 'Rate your order' },
+    confirmOrder:{ ar: '🎉 تأكيد الطلب', en: '🎉 Confirm order' },
+    closedBtn:   { ar: '⛔ المحل مغلق الآن', en: '⛔ Closed now' },
+    namePh2:     { ar: 'مثال: محمد', en: 'e.g. Mohammed' },
+    tablePh:     { ar: 'أدخل رقم طاولتك...', en: 'Enter your table number...' },
+    addrPh2:     { ar: 'الحي، الشارع، أقرب معلم، ملاحظات إضافية...', en: 'District, street, nearest landmark...' },
+    notePh2:     { ar: 'أضف ملاحظتك هنا (اختياري)...', en: 'Add your note here (optional)...' },
+    noteShop:    { ar: 'اكتب ملاحظتك للمطعم (اختياري)...', en: 'Note to the restaurant (optional)...' },
+    loadingMenu: { ar: 'جارٍ تحميل المنيو...', en: 'Loading menu...' },
+    notFound:    { ar: 'المطعم غير موجود', en: 'Restaurant not found' },
+    notFoundSub: { ar: 'تأكد من الرابط أو تواصل مع المطعم', en: 'Check the link or contact the restaurant' },
+    pickBranch:  { ar: 'اختر الفرع الأقرب ليك 👇', en: 'Choose your nearest branch 👇' },
+    loyaltyPts:  { ar: '⭐ نقاط الولاء', en: '⭐ Loyalty points' },
+    cartYours:   { ar: 'سلتك', en: 'Your cart' },
+    orderTypeR:  { ar: '📦 نوع الطلب', en: '📦 Order type' },
+    nameOpt:     { ar: '👤 اسمك (اختياري)', en: '👤 Your name (optional)' },
+    phoneReq:    { ar: '📱 رقم جوالك', en: '📱 Your phone' },
+    tableReq:    { ar: '🪑 رقم الطاولة', en: '🪑 Table number' },
+    addrReq:     { ar: '📍 عنوان التوصيل', en: '📍 Delivery address' },
+    closedTitle: { ar: 'المحل مغلق الآن', en: 'Closed now' },
+    noteRest:    { ar: '💬 ملاحظتك للمطعم', en: '💬 Note to the restaurant' },
+    addToCartB:  { ar: 'إضافة للسلة', en: 'Add to cart' },
+    reviewQ:     { ar: 'كيف كانت تجربتك؟', en: 'How was your experience?' },
+    sendReview:  { ar: '📤 إرسال التقييم', en: '📤 Send review' },
+    sendingRev:  { ar: 'جارٍ الإرسال...', en: 'Sending...' },
+    minShort:    { ar: 'د', en: 'min' },
+    required:    { ar: 'إجباري', en: 'Required' },
+    optional:    { ar: 'اختياري', en: 'Optional' },
+    stReceived:  { ar: 'استُلم', en: 'Received' },
+    stPreparing: { ar: 'قيد التحضير', en: 'Preparing' },
+    stReady:     { ar: 'جاهز للاستلام', en: 'Ready for pickup' },
+    stCompleted: { ar: 'تم التسليم 🎉', en: 'Delivered 🎉' },
+    stCancYou:   { ar: 'ملغي (بواسطتك)', en: 'Cancelled (by you)' },
+    stCancShop:  { ar: 'ملغي من المطعم', en: 'Cancelled by restaurant' },
+    otDine:      { ar: '🪑 محلي', en: '🪑 Dine-in' },
+    otTake:      { ar: '🥡 سفري', en: '🥡 Takeaway' },
+    otDeliv:     { ar: '🛵 توصيل', en: '🛵 Delivery' },
+    tAdded:      { ar: 'تمت الإضافة', en: 'Added' },
+    tEnterTable: { ar: 'أدخل رقم الطاولة', en: 'Enter table number' },
+    tEnterAddr:  { ar: 'أدخل عنوان التوصيل', en: 'Enter delivery address' },
+    tEnterPhone: { ar: 'أدخل رقم جوالك', en: 'Enter your phone number' },
+    tBadPhone:   { ar: 'رقم الجوال غير صحيح، يرجى إدخال رقم صالح', en: 'Invalid phone number' },
+    tClosed:     { ar: 'المحل مغلق الآن، لا يمكن استقبال الطلبات', en: 'Closed now — orders unavailable' },
+    tNoContact:  { ar: 'رقم تواصل المطعم غير متوفر', en: 'Restaurant contact unavailable' },
+    tCancelled:  { ar: 'تم إلغاء طلبك', en: 'Your order was cancelled' },
+    tCancelFail: { ar: 'تعذّر الإلغاء — يبدو أن المطعم بدأ تحضير طلبك بالفعل', en: "Couldn't cancel — preparation already started" },
+    tPickStars:  { ar: 'اختر عدد النجوم أولاً ⭐', en: 'Pick a rating first ⭐' },
+    tRevThanks:  { ar: 'شكراً لتقييمك! 🙏 وصل تقييمك للمطعم', en: 'Thanks for your review! 🙏' },
+    tRevFail:    { ar: 'تعذّر إرسال التقييم، حاول مرة أخرى', en: "Couldn't send review, try again" },
+    tErr:        { ar: 'حدث خطأ، حاول مجدداً', en: 'An error occurred, try again' },
+    tCartEmpty:  { ar: 'السلة فارغة!', en: 'Your cart is empty!' },
+    tPleaseChoose:{ ar: 'يرجى اختيار', en: 'Please choose' },
+    unavailable: { ar: 'غير متوفر', en: 'Unavailable' },
+    featured:    { ar: '⭐ مميز', en: '⭐ Featured' },
+    ordersTitle: { ar: 'طلباتك', en: 'Your Orders' },
+    prevOrders:  { ar: 'طلباتك السابقة', en: 'Your previous orders' },
+    ptsUnit:     { ar: 'نقطة', en: 'pts' },
+    deliveryFee: { ar: '🛵 رسوم التوصيل', en: '🛵 Delivery fee' },
+    feeSuffix:   { ar: 'رسوم توصيل', en: 'delivery fee' },
+    cancelledByShop:{ ar: 'تم إلغاء طلبك من قبل المطعم', en: 'Your order was cancelled by the restaurant' },
+    itemUnavail: { ar: 'أصبح غير متوفر في طلبك', en: 'became unavailable in your order' },
+    tCancelFail3:{ ar: 'تعذّر إلغاء الطلب، حاول مرة أخرى', en: 'Could not cancel the order, try again' },
   }
   const t = (key) => (TT[key]?.[lang]) ?? TT[key]?.ar ?? key
 
@@ -259,13 +334,13 @@ export default function PublicMenu() {
             setActiveOrders(prev => prev.map(o => {
               if (o.id !== order.id) return o
               if (newStatus === 'cancelled' && o.status !== 'cancelled') {
-                toast.error(`🚫 تم إلغاء طلبك ${o.orderNumber} من قبل المطعم`, { duration: 8000 })
+                toast.error(`🚫 ${t('cancelledByShop')} (${o.orderNumber})`, { duration: 8000 })
               } else {
                 // إشعار عند تعليم صنف جديد كغير متوفر (طلب لسه نشط)
                 newItems.forEach((ni, idx) => {
                   const wasUnavailable = o.items[idx]?.unavailable
                   if (ni.unavailable && !wasUnavailable) {
-                    toast.error(`⚠️ ${ni.name} غير متوفر في طلب ${o.orderNumber}`, { duration: 6000 })
+                    toast.error(`⚠️ ${ni.name} ${t('itemUnavail')} (${o.orderNumber})`, { duration: 6000 })
                   }
                 })
               }
@@ -314,7 +389,7 @@ export default function PublicMenu() {
         if (!fresh) return o
         // إشعار لو اكتشفنا إلغاءً من المطعم لم يصل عبر realtime
         if (fresh.status === 'cancelled' && o.status !== 'cancelled' && fresh.cancelled_by !== 'customer') {
-          toast.error(`🚫 تم إلغاء طلبك ${o.orderNumber} من قبل المطعم`, { duration: 8000 })
+          toast.error(`🚫 ${t('cancelledByShop')} (${o.orderNumber})`, { duration: 8000 })
         }
         return {
           ...o,
@@ -494,7 +569,7 @@ export default function PublicMenu() {
         selectedOptions,
       }]
     })
-    toast.success(`✅ تم إضافة ${product.name}`)
+    toast.success(`✅ ${t('tAdded')}`)
   }
 
   const removeFromCart = (cartKey) => {
@@ -598,7 +673,7 @@ export default function PublicMenu() {
   // بناء رسالة واتساب جاهزة بتفاصيل الطلب وفتحها على رقم المطعم
   const sendWhatsAppConfirmation = () => {
     if (!lastOrderSummary || !restaurant?.phone) {
-      toast.error('رقم تواصل المطعم غير متوفر')
+      toast.error(t('tNoContact'))
       return
     }
     const greeting = restaurant.whatsapp_message?.trim() || `تفضل تأكيد طلبي من ${restaurant.name} 🍽️`
@@ -617,7 +692,7 @@ export default function PublicMenu() {
       'الأصناف:',
       ...lastOrderSummary.items.map(i => {
         const optsText = (i.selectedOptions && i.selectedOptions.length > 0)
-          ? ` (${i.selectedOptions.map(o => o.choiceName).join('، ')})`
+          ? ` (${i.selectedOptions.map(o => o.choiceName).join(isEn ? ', ' : '، ')})`
           : ''
         return `- ${i.name}${optsText} × ${i.qty} = ${(i.price * i.qty).toFixed(2)} ﷼`
       }),
@@ -632,7 +707,7 @@ export default function PublicMenu() {
   // فتح محادثة واتساب عامة للاستفسارات، بمعزل عن طلب فعلي (الزر العائم)
   const openWhatsAppContact = () => {
     if (!restaurant?.phone) {
-      toast.error('رقم تواصل المطعم غير متوفر')
+      toast.error(t('tNoContact'))
       return
     }
     const greeting = restaurant.whatsapp_message?.trim() || `مرحباً، لدي استفسار بخصوص ${restaurant.name} 👋`
@@ -643,19 +718,19 @@ export default function PublicMenu() {
 
   // Place order
   const placeOrder = async () => {
-    if (cart.length === 0) { toast.error('السلة فارغة!'); return }
+    if (cart.length === 0) { toast.error(t('tCartEmpty')); return }
     // منع الطلب وقت الإغلاق حسب أوقات الفرع/المطعم
     const openStatus = computeOpenStatus(branch?.opening_hours || restaurant.opening_hours)
     if (!openStatus.open) {
-      toast.error(openStatus.nextText ? `المحل مغلق الآن — ${openStatus.nextText}` : 'المحل مغلق الآن، لا يمكن استقبال الطلبات')
+      toast.error(openStatus.nextText ? `${t('closedTitle')} — ${openStatus.nextText}` : t('tClosed'))
       return
     }
-    if (orderType === 'dine_in' && !tableNumber.trim()) { toast.error('أدخل رقم الطاولة'); return }
-    if (orderType === 'delivery' && !deliveryAddress.trim()) { toast.error('أدخل عنوان التوصيل'); return }
-    if (!customerPhone.trim()) { toast.error('أدخل رقم جوالك'); return }
+    if (orderType === 'dine_in' && !tableNumber.trim()) { toast.error(t('tEnterTable')); return }
+    if (orderType === 'delivery' && !deliveryAddress.trim()) { toast.error(t('tEnterAddr')); return }
+    if (!customerPhone.trim()) { toast.error(t('tEnterPhone')); return }
     const cleanPhone = customerPhone.replace(/[^\d]/g, '')
     if (cleanPhone.length < 8 || cleanPhone.length > 15) {
-      toast.error('رقم الجوال غير صحيح، يرجى إدخال رقم صالح')
+      toast.error(t('tBadPhone'))
       return
     }
 
@@ -690,7 +765,7 @@ export default function PublicMenu() {
 
     if (error) {
       console.error('Order error:', error)
-      toast.error(error.message || 'حدث خطأ، حاول مجدداً')
+      toast.error(error.message || t('tErr'))
       return
     }
 
@@ -718,7 +793,7 @@ export default function PublicMenu() {
       .eq('status', 'pending') // حماية إضافية: لا يُنفَّذ إلا لو لسه pending فعلياً في قاعدة البيانات
 
     if (error) {
-      toast.error('تعذّر إلغاء الطلب، حاول مرة أخرى')
+      toast.error(t('tCancelFail3'))
       return
     }
 
@@ -740,9 +815,9 @@ export default function PublicMenu() {
 
     if (confirmedCancelled) {
       setActiveOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'cancelled', cancelledBy:'customer' } : o))
-      toast.success('تم إلغاء طلبك')
+      toast.success(t('tCancelled'))
     } else {
-      toast.error('تعذّر الإلغاء — يبدو أن المطعم بدأ تحضير طلبك بالفعل')
+      toast.error(t('tCancelFail'))
     }
   }
 
@@ -762,7 +837,7 @@ export default function PublicMenu() {
   // إرسال تقييم الزبون بعد اكتمال الطلب — يصل لصاحب المطعم في لوحة التحكم
   const submitReview = async (order) => {
     const draft = reviewDraft[order.id] || {}
-    if (!draft.rating || draft.rating < 1) { toast.error('اختر عدد النجوم أولاً ⭐'); return }
+    if (!draft.rating || draft.rating < 1) { toast.error(t('tPickStars')); return }
     setSubmittingReview(true)
     try {
       const { error } = await supabase.from('reviews').insert({
@@ -778,9 +853,9 @@ export default function PublicMenu() {
       const updated = [...reviewedIds, order.id]
       setReviewedIds(updated)
       localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify(updated))
-      toast.success('شكراً لتقييمك! 🙏 وصل تقييمك للمطعم')
+      toast.success(t('tRevThanks'))
     } catch (err) {
-      toast.error('تعذّر إرسال التقييم، حاول مرة أخرى')
+      toast.error(t('tRevFail'))
     } finally {
       setSubmittingReview(false)
     }
@@ -804,7 +879,7 @@ export default function PublicMenu() {
     <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F8F9FB', flexDirection:'column', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
       <div style={{ width:'48px', height:'48px', border:`3px solid rgba(0,0,0,0.1)`, borderTopColor: brandColor, borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
-      <span style={{ color:'#9CA3AF', fontSize:'14px' }}>جارٍ تحميل المنيو...</span>
+      <span style={{ color:'#9CA3AF', fontSize:'14px' }}>{t('loadingMenu')}</span>
     </div>
   )
 
@@ -812,8 +887,8 @@ export default function PublicMenu() {
   if (notFound) return (
     <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F8F9FB', flexDirection:'column', gap:'16px', fontFamily:'Cairo,sans-serif', direction:'rtl', textAlign:'center', padding:'24px' }}>
       <div style={{ fontSize:'64px' }}>🔍</div>
-      <h2 style={{ fontSize:'22px', fontWeight:'900', color:'#0F1117' }}>المطعم غير موجود</h2>
-      <p style={{ color:'#9CA3AF', fontSize:'14px' }}>تأكد من الرابط أو تواصل مع المطعم</p>
+      <h2 style={{ fontSize:'22px', fontWeight:'900', color:'#0F1117' }}>{t('notFound')}</h2>
+      <p style={{ color:'#9CA3AF', fontSize:'14px' }}>{t('notFoundSub')}</p>
     </div>
   )
 
@@ -885,7 +960,7 @@ export default function PublicMenu() {
               : '🍕'}
           </div>
           <h1 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'20px', marginBottom:'4px' }}>{restaurant.name}</h1>
-          <p style={{ fontSize:'13px', opacity:0.9 }}>اختر الفرع الأقرب ليك 👇</p>
+          <p style={{ fontSize:'13px', opacity:0.9 }}>{t('pickBranch')}</p>
         </div>
 
         {/* Branch list */}
@@ -921,8 +996,8 @@ export default function PublicMenu() {
       <div style={{ background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, padding:'32px 24px', textAlign:'center', position:'relative', overflow:'hidden' }}>
         <div style={{ position:'absolute', inset:0, background:'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1), transparent)', pointerEvents:'none' }}/>
         <div style={{ fontSize:'56px', marginBottom:'10px', position:'relative' }}>🎉</div>
-        <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'22px', color:'white', marginBottom:'4px' }}>طلباتك</h2>
-        <p style={{ color:'rgba(255,255,255,0.8)', fontSize:'13px' }}>{liveOrdersCount > 0 ? `لديك ${liveOrdersCount} طلب نشط` : 'طلباتك السابقة'}</p>
+        <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'22px', color:'white', marginBottom:'4px' }}>{t('ordersTitle')}</h2>
+        <p style={{ color:'rgba(255,255,255,0.8)', fontSize:'13px' }}>{liveOrdersCount > 0 ? `${liveOrdersCount} ${isEn ? 'active order(s)' : 'طلب نشط'}` : t('prevOrders')}</p>
       </div>
 
       <div style={{ padding:'20px 16px' }}>
@@ -935,8 +1010,8 @@ export default function PublicMenu() {
           return (
             <div style={{ background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, borderRadius:'18px', padding:'18px', marginBottom:'16px', color:'white' }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'10px' }}>
-                <span style={{ fontSize:'13px', fontWeight:'700', opacity:0.9 }}>⭐ نقاط الولاء</span>
-                <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'22px', lineHeight:1 }}>{balance}<span style={{ fontSize:'12px', fontWeight:'700', opacity:0.85 }}> نقطة</span></span>
+                <span style={{ fontSize:'13px', fontWeight:'700', opacity:0.9 }}>{t('loyaltyPts')}</span>
+                <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'22px', lineHeight:1 }}>{balance}<span style={{ fontSize:'12px', fontWeight:'700', opacity:0.85 }}> {t('ptsUnit')}</span></span>
               </div>
               {ready ? (
                 <div style={{ background:'rgba(255,255,255,0.2)', borderRadius:'11px', padding:'10px 12px', fontSize:'13px', fontWeight:'800' }}>
@@ -966,13 +1041,13 @@ export default function PublicMenu() {
                 <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px' }}>{order.orderNumber}</span>
                 <span style={{ fontSize:'11px', fontWeight:'700', color: order.status==='cancelled' ? '#EF4444' : brandColor, background: order.status==='cancelled' ? '#FEF2F2' : `${brandColor}15`, padding:'4px 10px', borderRadius:'100px' }}>
                   {order.status === 'cancelled'
-                    ? (order.cancelledBy === 'customer' ? 'ملغي (بواسطتك)' : 'ملغي من المطعم')
-                    : { pending:'استُلم', preparing:'قيد التحضير', ready:'جاهز للاستلام', completed:'تم التسليم 🎉' }[order.status] || order.status}
+                    ? (order.cancelledBy === 'customer' ? t('stCancYou') : t('stCancShop'))
+                    : { pending:t('stReceived'), preparing:t('stPreparing'), ready:t('stReady'), completed:t('stCompleted') }[order.status] || order.status}
                 </span>
               </div>
 
               <div style={{ fontSize:'12px', color:'#9CA3AF', marginBottom:'16px' }}>
-                {{ dine_in:'🪑 محلي', takeaway:'🥡 سفري', delivery:'🛵 توصيل' }[order.orderType] || ''}
+                {{ dine_in:t('otDine'), takeaway:t('otTake'), delivery:t('otDeliv') }[order.orderType] || ''}
                 {order.orderType === 'dine_in' && order.tableNumber && ` — طاولة ${order.tableNumber}`}
                 {order.orderType === 'delivery' && order.deliveryAddress && ` — ${order.deliveryAddress}`}
               </div>
@@ -1014,12 +1089,12 @@ export default function PublicMenu() {
                     <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
                       <span style={{ fontSize:'15px' }}>{item.emoji || '🍽️'}</span>
                       <span style={{ fontSize:'13px', fontWeight:'600', textDecoration: item.unavailable ? 'line-through' : 'none' }}>{item.name} × {item.qty}</span>
-                      {item.unavailable && <span style={{ fontSize:'9px', fontWeight:'700', color:'#EF4444', background:'#FEF2F2', padding:'2px 6px', borderRadius:'100px' }}>غير متوفر</span>}
+                      {item.unavailable && <span style={{ fontSize:'9px', fontWeight:'700', color:'#EF4444', background:'#FEF2F2', padding:'2px 6px', borderRadius:'100px' }}>{t('unavailable')}</span>}
                     </div>
                   </div>
                 ))}
                 <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', paddingTop:'8px', marginTop:'4px', borderTop:'1px solid #F3F4F6' }}>
-                  <span>الإجمالي</span>
+                  <span>{t('total')}</span>
                   <span style={{ color:brandColor }}>{order.total.toFixed(2)} ﷼</span>
                 </div>
               </div>
@@ -1032,7 +1107,7 @@ export default function PublicMenu() {
                   </div>
                 ) : (
                   <div style={{ marginTop:'14px', paddingTop:'14px', borderTop:'1px dashed #E5E7EB' }}>
-                    <div style={{ fontSize:'13px', fontWeight:'800', marginBottom:'10px', textAlign:'center' }}>كيف كانت تجربتك؟ 🌟</div>
+                    <div style={{ fontSize:'13px', fontWeight:'800', marginBottom:'10px', textAlign:'center' }}>{t('reviewQ')} 🌟</div>
                     <div style={{ display:'flex', justifyContent:'center', gap:'8px', marginBottom:'12px' }}>
                       {[1,2,3,4,5].map(n => {
                         const active = (reviewDraft[order.id]?.rating || 0) >= n
@@ -1048,7 +1123,7 @@ export default function PublicMenu() {
                     <textarea
                       value={reviewDraft[order.id]?.comment || ''}
                       onChange={e => setDraft(order.id, { comment: e.target.value })}
-                      placeholder="اكتب ملاحظتك للمطعم (اختياري)..."
+                      placeholder={t('noteShop')}
                       style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'13px', outline:'none', textAlign:'right', minHeight:'60px', resize:'vertical', boxSizing:'border-box', marginBottom:'10px' }}
                     />
                     <button
@@ -1056,7 +1131,7 @@ export default function PublicMenu() {
                       disabled={submittingReview}
                       style={{ width:'100%', padding:'11px', borderRadius:'11px', border:'none', background:brandColor, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer', opacity: submittingReview ? 0.7 : 1 }}
                     >
-                      {submittingReview ? 'جارٍ الإرسال...' : '📤 إرسال التقييم'}
+                      {submittingReview ? t('sendingRev') : t('sendReview')}
                     </button>
                   </div>
                 )
@@ -1165,7 +1240,7 @@ export default function PublicMenu() {
                   )
                 })()}
                 {estimatedPrepTime() != null && (
-                  <span style={{ fontSize:'12px', color:'#9CA3AF' }}>⏱️ {estimatedPrepTime()} د</span>
+                  <span style={{ fontSize:'12px', color:'#9CA3AF' }}>⏱️ {estimatedPrepTime()} {t('minShort')}</span>
                 )}
               </div>
             </div>
@@ -1174,7 +1249,7 @@ export default function PublicMenu() {
                 onClick={() => setOrderPlaced(true)}
                 style={{ flexShrink:0, padding:'9px 14px', borderRadius:'12px', border:'none', background:brandColor, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', boxShadow:`0 4px 12px ${brandColor}44` }}
               >
-                📋 طلباتي
+                📋 {t('myOrders')}
                 {liveOrdersCount > 0 && (
                   <span style={{ background:'rgba(255,255,255,0.3)', borderRadius:'100px', padding:'1px 7px', fontSize:'11px' }}>{liveOrdersCount}</span>
                 )}
@@ -1240,7 +1315,7 @@ export default function PublicMenu() {
               onClick={() => setShowAllergensModal(true)}
               style={{ marginTop:'10px', display:'flex', alignItems:'center', gap:'6px', padding:'7px 12px', borderRadius:'10px', border:'1.5px solid #FDE68A', background:'#FFFBEB', color:'#92400E', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}
             >
-              ⚠️ مسبّبات الحساسية
+              ⚠️ {t('allergens')}
             </button>
           )}
         </div>
@@ -1307,7 +1382,7 @@ export default function PublicMenu() {
             {allFiltered.length === 0 ? (
               <div style={{ textAlign:'center', padding:'40px', color:'#9CA3AF' }}>
                 <div style={{ fontSize:'40px', opacity:0.3, marginBottom:'10px' }}>🔍</div>
-                <div style={{ fontSize:'14px', fontWeight:'700', color:'#374151' }}>لا توجد نتائج</div>
+                <div style={{ fontSize:'14px', fontWeight:'700', color:'#374151' }}>{t('noResults')}</div>
               </div>
             ) : (
               <div className="sm-products" style={['grid','circles'].includes(restaurant.menu_layout)
@@ -1420,7 +1495,7 @@ export default function PublicMenu() {
             <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'2px', margin:'12px auto' }}/>
 
             <div style={{ padding:'0 20px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid #E5E7EB', flexShrink:0 }}>
-              <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px' }}>🛒 سلتك ({cartCount})</h3>
+              <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px' }}>🛒 {t('cartYours')} ({cartCount})</h3>
               <button onClick={() => setCartOpen(false)} style={{ width:'32px', height:'32px', borderRadius:'50%', border:'1.5px solid #E5E7EB', background:'white', fontSize:'18px', cursor:'pointer', color:'#6B7280' }}>✕</button>
             </div>
 
@@ -1437,7 +1512,7 @@ export default function PublicMenu() {
                     <div style={{ fontWeight:'700', fontSize:'14px', marginBottom:'2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.name}</div>
                     {Array.isArray(item.selectedOptions) && item.selectedOptions.length > 0 && (
                       <div style={{ fontSize:'11px', color:'#9CA3AF', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                        {item.selectedOptions.map(o => o.choiceName).join('، ')}
+                        {item.selectedOptions.map(o => o.choiceName).join(isEn ? ', ' : '، ')}
                       </div>
                     )}
                     {item.note && <div style={{ fontSize:'11px', color:'#9CA3AF' }}>📝 {item.note}</div>}
@@ -1462,22 +1537,22 @@ export default function PublicMenu() {
               </div>
               {orderType === 'delivery' && Number(restaurant?.delivery_fee) > 0 && (
                 <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:'#9CA3AF', marginBottom:'8px' }}>
-                  <span>🛵 رسوم التوصيل</span><span>{Number(restaurant.delivery_fee).toFixed(2)} ﷼</span>
+                  <span>{t('deliveryFee')}</span><span>{Number(restaurant.delivery_fee).toFixed(2)} ﷼</span>
                 </div>
               )}
               <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', paddingTop:'8px', borderTop:'1px solid #E5E7EB', marginBottom:'12px' }}>
-                <span>الإجمالي</span>
+                <span>{t('total')}</span>
                 <span style={{ color:brandColor }}>{(cartTotal + (orderType === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0)).toFixed(2)} ﷼</span>
               </div>
 
               {/* Order type */}
               <div style={{ marginBottom:'14px' }}>
-                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px' }}>📦 نوع الطلب *</label>
+                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px' }}>{t('orderTypeR')} *</label>
                 <div style={{ display:'grid', gridTemplateColumns: restaurant?.delivery_enabled ? 'repeat(3,1fr)' : 'repeat(2,1fr)', gap:'8px' }}>
                   {[
-                    { key:'dine_in', icon:'🪑', label:'محلي' },
-                    { key:'takeaway', icon:'🥡', label:'سفري' },
-                    ...(restaurant?.delivery_enabled ? [{ key:'delivery', icon:'🛵', label:'توصيل' }] : []),
+                    { key:'dine_in', icon:'🪑', label:t('dineIn') },
+                    { key:'takeaway', icon:'🥡', label:t('takeaway2') },
+                    ...(restaurant?.delivery_enabled ? [{ key:'delivery', icon:'🛵', label:t('deliveryT') }] : []),
                   ].map(opt => (
                     <div
                       key={opt.key}
@@ -1495,24 +1570,24 @@ export default function PublicMenu() {
                   ))}
                 </div>
                 {orderType === 'delivery' && restaurant?.delivery_fee > 0 && (
-                  <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>+ {Number(restaurant.delivery_fee).toFixed(2)} ﷼ رسوم توصيل</div>
+                  <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>+ {Number(restaurant.delivery_fee).toFixed(2)} ﷼ {t('feeSuffix')}</div>
                 )}
               </div>
 
               {/* Customer info */}
               <div style={{ marginBottom:'12px' }}>
-                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>👤 اسمك (اختياري)</label>
+                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>{t('nameOpt')}</label>
                 <input
                   type="text"
-                  placeholder="مثال: محمد"
+                  placeholder={t('namePh2')}
                   value={customerName}
                   onChange={e => setCustomerName(e.target.value)}
                   style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', marginBottom:'10px' }}
                 />
-                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>📱 رقم جوالك *</label>
+                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>{t('phoneReq')} *</label>
                 <input
                   type="tel"
-                  placeholder="05XXXXXXXX"
+                  placeholder={t('phonePh')}
                   value={customerPhone}
                   onChange={e => setCustomerPhone(e.target.value)}
                   style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', direction:'ltr' }}
@@ -1522,10 +1597,10 @@ export default function PublicMenu() {
               {/* Table number — محلي فقط */}
               {orderType === 'dine_in' && (
                 <div style={{ marginBottom:'12px' }}>
-                  <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>🪑 رقم الطاولة *</label>
+                  <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>{t('tableReq')} *</label>
                   <input
                     type="text"
-                    placeholder="أدخل رقم طاولتك..."
+                    placeholder={t('tablePh')}
                     value={tableNumber}
                     onChange={e => setTableNumber(e.target.value)}
                     style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right' }}
@@ -1536,9 +1611,9 @@ export default function PublicMenu() {
               {/* Delivery address — توصيل فقط */}
               {orderType === 'delivery' && (
                 <div style={{ marginBottom:'12px' }}>
-                  <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>📍 عنوان التوصيل *</label>
+                  <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>{t('addrReq')} *</label>
                   <textarea
-                    placeholder="الحي، الشارع، أقرب معلم، ملاحظات إضافية..."
+                    placeholder={t('addrPh2')}
                     value={deliveryAddress}
                     onChange={e => setDeliveryAddress(e.target.value)}
                     style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', minHeight:'72px', resize:'vertical' }}
@@ -1550,7 +1625,7 @@ export default function PublicMenu() {
                 <div style={{ display:'flex', alignItems:'flex-start', gap:'8px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.25)', borderRadius:'12px', padding:'12px 14px', marginBottom:'12px' }}>
                   <span style={{ fontSize:'18px', flexShrink:0 }}>🔴</span>
                   <div>
-                    <div style={{ fontSize:'13px', fontWeight:'800', color:'#B91C1C', marginBottom:'2px' }}>المحل مغلق الآن</div>
+                    <div style={{ fontSize:'13px', fontWeight:'800', color:'#B91C1C', marginBottom:'2px' }}>{t('closedTitle')}</div>
                     {openStatus.nextText && (
                       <div style={{ fontSize:'12px', color:'#B91C1C', opacity:0.85 }}>{openStatus.nextText}</div>
                     )}
@@ -1563,7 +1638,7 @@ export default function PublicMenu() {
                 disabled={!openStatus.open}
                 style={{ width:'100%', padding:'15px', borderRadius:'14px', border:'none', background: openStatus.open ? `linear-gradient(135deg, ${brandColor}, ${brandColor}CC)` : '#E5E7EB', color: openStatus.open ? 'white' : '#9CA3AF', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'16px', cursor: openStatus.open ? 'pointer' : 'not-allowed', boxShadow: openStatus.open ? `0 8px 24px ${brandColor}44` : 'none' }}
               >
-                {openStatus.open ? '🎉 تأكيد الطلب' : '⛔ المحل مغلق الآن'}
+                {openStatus.open ? t('confirmOrder') : t('closedBtn')}
               </button>
             </div>
           </div>
@@ -1604,7 +1679,7 @@ export default function PublicMenu() {
               <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'20px' }}>
                 <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'24px', color:priceColor }}>{selectedProduct.price} ﷼</span>
                 {selectedProduct.compare_price && <span style={{ fontSize:'15px', color:'#9CA3AF', textDecoration:'line-through' }}>{selectedProduct.compare_price} ﷼</span>}
-                {selectedProduct.calories && <span style={{ fontSize:'12px', color:'#9CA3AF', background:'#F3F4F6', padding:'3px 10px', borderRadius:'100px', marginRight:'auto' }}>{getCalorieBadge(selectedProduct.calories)} {selectedProduct.calories} كالوري</span>}
+                {selectedProduct.calories && <span style={{ fontSize:'12px', color:'#9CA3AF', background:'#F3F4F6', padding:'3px 10px', borderRadius:'100px', marginRight:'auto' }}>{getCalorieBadge(selectedProduct.calories)} {selectedProduct.calories} {t('calories')}</span>}
               </div>
 
               {/* Option groups: size, extras, etc. */}
@@ -1614,8 +1689,8 @@ export default function PublicMenu() {
                     <div key={gi}>
                       <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
                         <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px' }}>{group.name}</span>
-                        {group.required && <span style={{ fontSize:'10px', fontWeight:'700', color:'#EF4444', background:'#FEF2F2', padding:'2px 7px', borderRadius:'100px' }}>إجباري</span>}
-                        {!group.required && group.type === 'multiple' && <span style={{ fontSize:'10px', fontWeight:'700', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 7px', borderRadius:'100px' }}>اختياري</span>}
+                        {group.required && <span style={{ fontSize:'10px', fontWeight:'700', color:'#EF4444', background:'#FEF2F2', padding:'2px 7px', borderRadius:'100px' }}>{t('required')}</span>}
+                        {!group.required && group.type === 'multiple' && <span style={{ fontSize:'10px', fontWeight:'700', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 7px', borderRadius:'100px' }}>{t('optional')}</span>}
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
                         {group.choices.map((choice, ci) => {
@@ -1659,7 +1734,7 @@ export default function PublicMenu() {
 
               {/* Quantity */}
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px' }}>
-                <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px' }}>الكمية</span>
+                <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px' }}>{t('qty')}</span>
                 <div style={{ display:'flex', alignItems:'center', gap:'0', border:'1.5px solid #E5E7EB', borderRadius:'12px', overflow:'hidden' }}>
                   <button onClick={() => setModalQty(q => Math.max(1, q - 1))} style={{ width:'40px', height:'40px', background:'none', border:'none', fontSize:'22px', cursor:'pointer', color:brandColor, fontWeight:'300' }}>−</button>
                   <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', minWidth:'40px', textAlign:'center', borderRight:'1px solid #E5E7EB', borderLeft:'1px solid #E5E7EB', lineHeight:'40px' }}>{modalQty}</span>
@@ -1669,9 +1744,9 @@ export default function PublicMenu() {
 
               {/* Notes */}
               <div style={{ marginBottom:'20px' }}>
-                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>💬 ملاحظتك للمطعم</label>
+                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>{t('noteRest')}</label>
                 <textarea
-                  placeholder="أضف ملاحظتك هنا (اختياري)..."
+                  placeholder={t('notePh2')}
                   value={modalNote}
                   onChange={e => setModalNote(e.target.value)}
                   rows={2}
@@ -1682,14 +1757,14 @@ export default function PublicMenu() {
               <button
                 onClick={() => {
                   const missingGroup = validateModalOptions(selectedProduct)
-                  if (missingGroup) { toast.error(`يرجى اختيار: ${missingGroup}`); return }
+                  if (missingGroup) { toast.error(`${t('tPleaseChoose')}: ${missingGroup}`); return }
                   const resolved = resolveModalOptions(selectedProduct)
                   addToCart(selectedProduct, modalQty, modalNote, resolved)
                   setSelectedProduct(null)
                 }}
                 style={{ width:'100%', padding:'16px', borderRadius:'14px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:`0 8px 24px ${brandColor}44` }}
               >
-                <span>إضافة للسلة</span>
+                <span>{t('addToCartB')}</span>
                 <span style={{ background:'rgba(0,0,0,0.15)', padding:'4px 12px', borderRadius:'8px', fontSize:'14px' }}>
                   {((selectedProduct.price + resolveModalOptions(selectedProduct).reduce((s,o)=>s+(o.price||0),0)) * modalQty).toFixed(2)} ﷼
                 </span>
@@ -1706,7 +1781,7 @@ export default function PublicMenu() {
           <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)' }}/>
           <div onClick={e => e.stopPropagation()} style={{ position:'relative', background:'white', width:'100%', maxWidth:'480px', borderRadius:'24px 24px 0 0', padding:'20px', maxHeight:'75vh', overflowY:'auto', animation:'slideUp 0.25s ease' }}>
             <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'2px', margin:'0 auto 16px' }}/>
-            <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', marginBottom:'6px', textAlign:'center' }}>⚠️ مسبّبات الحساسية</h3>
+            <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', marginBottom:'6px', textAlign:'center' }}>⚠️ {t('allergens')}</h3>
             <p style={{ fontSize:'12px', color:'#9CA3AF', textAlign:'center', marginBottom:'18px', lineHeight:'1.6' }}>
               قد تحتوي أصناف هذا المنيو على واحد أو أكثر من المسبّبات التالية
             </p>
@@ -1798,7 +1873,7 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor
               : product.emoji}
           </div>
           {product.is_featured && (
-            <span style={{ position:'absolute', top:'8px', right:'8px', fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>⭐ مميز</span>
+            <span style={{ position:'absolute', top:'8px', right:'8px', fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>{isEn ? '⭐ Featured' : '⭐ مميز'}</span>
           )}
           {qtyControl}
         </div>
@@ -1817,7 +1892,7 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor
     <div style={{ background:'white', padding:'14px 16px', display:'flex', gap:'12px', alignItems:'center' }}>
       <div onClick={onAdd} style={{ flex:1, minWidth:0, cursor:'pointer' }}>
         {product.is_featured && (
-          <span style={{ fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px', marginBottom:'4px', display:'inline-block' }}>⭐ مميز</span>
+          <span style={{ fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px', marginBottom:'4px', display:'inline-block' }}>{isEn ? '⭐ Featured' : '⭐ مميز'}</span>
         )}
         <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', color:'#0F1117', marginBottom:'4px' }}>{pName}</div>
         {pDesc && (
