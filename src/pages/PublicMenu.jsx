@@ -39,23 +39,6 @@ function computeOpenStatus(hours) {
   }
   const DAY_NAMES = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت']
 
-// ترجمة إنجليزية للمسبّبات القياسية (تُطابق العربي المخزّن؛ أي قيمة غير موجودة تُعرض كما هي)
-const ALLERGEN_EN = {
-  'البيض ومنتجاته': 'Eggs & products',
-  'الفول السوداني ومنتجاته': 'Peanuts & products',
-  'الغلوتين (القمح والشعير)': 'Gluten (wheat & barley)',
-  'الحليب ومنتجاته': 'Milk & dairy',
-  'القشريات (الجمبري، الكابوريا)': 'Crustaceans (shrimp, crab)',
-  'المكسرات (لوز، جوز، فستق)': 'Tree nuts (almond, walnut, pistachio)',
-  'الصويا ومنتجاتها': 'Soy & products',
-  'بذور السمسم ومنتجاتها': 'Sesame seeds & products',
-  'الرخويات (المحار، الحبار)': 'Molluscs (oysters, squid)',
-  'الأسماك ومنتجاتها': 'Fish & products',
-  'الخردل ومنتجاته': 'Mustard & products',
-  'الكرفس ومنتجاته': 'Celery & products',
-  'ثاني أكسيد الكبريت والكبريتات': 'Sulphur dioxide & sulphites',
-  'الترمس ومنتجاته': 'Lupin & products',
-}
   const fmt = (t) => (t === '24:00' ? '00:00' : t)
   const toMins = (t) => {
     if (!t) return null
@@ -1848,7 +1831,7 @@ function PublicMenuInner() {
                   const item = typeof a === 'string' ? { label: a, icon: '⚠️' } : (a || {})
                   const label = item.label || item.name || (typeof a === 'string' ? a : '')
                   if (!label) return null
-                  const shown = isEn ? (ALLERGEN_EN[label] || label) : label
+                  const shown = (isEn && item.label_en) ? item.label_en : label
                   return (
                     <div key={i} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', background:'#F8F9FB', borderRadius:'12px' }}>
                       <span style={{ fontSize:'18px' }}>{item.icon || '⚠️'}</span>

@@ -10,20 +10,20 @@ import { useBreakpoint } from '../hooks/useBreakpoint'
 const BRAND_COLORS = ['#FF6B35','#E85A24','#10B981','#3B82F6','#8B5CF6','#EC4899','#F59E0B','#0F1117']
 const CURRENCIES = ['SAR - ريال سعودي','AED - درهم إماراتي','KWD - دينار كويتي','BHD - دينار بحريني','QAR - ريال قطري','OMR - ريال عماني','EGP - جنيه مصري']
 const COMMON_ALLERGENS = [
-  { icon:'🐟', label:'الأسماك ومنتجاتها' },
-  { icon:'🥚', label:'البيض ومنتجاته' },
-  { icon:'🥜', label:'الفول السوداني ومنتجاته' },
-  { icon:'🌾', label:'الغلوتين (القمح والشعير)' },
-  { icon:'🥛', label:'الحليب ومنتجاته' },
-  { icon:'🦐', label:'القشريات (الجمبري، الكابوريا)' },
-  { icon:'🌰', label:'المكسرات (لوز، جوز، فستق)' },
-  { icon:'🫘', label:'الصويا ومنتجاتها' },
-  { icon:'🌻', label:'بذور السمسم ومنتجاتها' },
-  { icon:'🦪', label:'الرخويات (المحار، الحبار)' },
-  { icon:'🍷', label:'الكبريتيت (في بعض المشروبات والمخللات)' },
-  { icon:'🌿', label:'الخردل ومنتجاته' },
-  { icon:'🥬', label:'الكرفس ومنتجاته' },
-  { icon:'🌱', label:'الترمس (اللوبيا) ومنتجاته' },
+  { icon:'🐟', label:'الأسماك ومنتجاتها', label_en:'Fish & products' },
+  { icon:'🥚', label:'البيض ومنتجاته', label_en:'Eggs & products' },
+  { icon:'🥜', label:'الفول السوداني ومنتجاته', label_en:'Peanuts & products' },
+  { icon:'🌾', label:'الغلوتين (القمح والشعير)', label_en:'Gluten (wheat & barley)' },
+  { icon:'🥛', label:'الحليب ومنتجاته', label_en:'Milk & dairy' },
+  { icon:'🦐', label:'القشريات (الجمبري، الكابوريا)', label_en:'Crustaceans (shrimp, crab)' },
+  { icon:'🌰', label:'المكسرات (لوز، جوز، فستق)', label_en:'Tree nuts (almond, walnut, pistachio)' },
+  { icon:'🫘', label:'الصويا ومنتجاتها', label_en:'Soy & products' },
+  { icon:'🌻', label:'بذور السمسم ومنتجاتها', label_en:'Sesame seeds & products' },
+  { icon:'🦪', label:'الرخويات (المحار، الحبار)', label_en:'Molluscs (oysters, squid)' },
+  { icon:'🍷', label:'الكبريتيت (في بعض المشروبات والمخللات)', label_en:'Sulphites (in some drinks & pickles)' },
+  { icon:'🌿', label:'الخردل ومنتجاته', label_en:'Mustard & products' },
+  { icon:'🥬', label:'الكرفس ومنتجاته', label_en:'Celery & products' },
+  { icon:'🌱', label:'الترمس (اللوبيا) ومنتجاته', label_en:'Lupin & products' },
 ]
 
 export default function Settings() {
@@ -83,9 +83,13 @@ export default function Settings() {
         social_links: { instagram:'', whatsapp_social:'', snapchat:'', twitter:'', tiktok:'', ...(restaurant.social_links || {}) },
         allergens: Array.isArray(restaurant.allergens)
           ? restaurant.allergens.map(a => {
-              if (typeof a !== 'string') return a
-              const matched = COMMON_ALLERGENS.find(c => c.label === a)
-              return matched ? { label:a, icon:matched.icon } : { label:a, icon:'⚠️' }
+              const label = typeof a === 'string' ? a : a.label
+              const matched = COMMON_ALLERGENS.find(c => c.label === label)
+              return {
+                label,
+                label_en: (typeof a === 'object' && a.label_en) ? a.label_en : (matched?.label_en || ''),
+                icon: (typeof a === 'object' && a.icon) ? a.icon : (matched?.icon || '⚠️'),
+              }
             })
           : [],
         menu_layout: restaurant.menu_layout || 'list',
@@ -462,7 +466,7 @@ export default function Settings() {
                                 setRestForm(f => ({
                                   ...f,
                                   allergens: e.target.checked
-                                    ? [...f.allergens, { label:a.label, icon:a.icon }]
+                                    ? [...f.allergens, { label:a.label, label_en:a.label_en, icon:a.icon }]
                                     : f.allergens.filter(x => x.label !== a.label),
                                 }))
                               }}
