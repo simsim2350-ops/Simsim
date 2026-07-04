@@ -163,6 +163,14 @@ export default function PublicMenu() {
   const toggleLang = () => setLang(l => { const n = l === 'ar' ? 'en' : 'ar'; try { localStorage.setItem('sm_lang', n) } catch {} return n })
   // ترجمة المحتوى: يرجّع الإنجليزي إن وُجد وإلا العربي (fallback)
   const tx = (obj, base) => (isEn && obj && obj[`${base}_en`]) ? obj[`${base}_en`] : (obj?.[base] || '')
+  // اسم الصنف داخل الطلب: يُطابق الصنف الحالي لجلب الترجمة، وإلا الاسم المخزّن
+  const itemName = (item) => {
+    if (isEn && item?.id) {
+      const pr = products.find(p => p.id === item.id)
+      if (pr?.name_en) return pr.name_en
+    }
+    return item?.name || ''
+  }
   // قاموس نصوص الواجهة الثابتة
   const TT = {
     search:      { ar: 'ابحث في المنيو...', en: 'Search the menu...' },
@@ -244,6 +252,7 @@ export default function PublicMenu() {
     tCancelFail: { ar: 'تعذّر الإلغاء — يبدو أن المطعم بدأ تحضير طلبك بالفعل', en: "Couldn't cancel — preparation already started" },
     tPickStars:  { ar: 'اختر عدد النجوم أولاً ⭐', en: 'Pick a rating first ⭐' },
     tRevThanks:  { ar: 'شكراً لتقييمك! 🙏 وصل تقييمك للمطعم', en: 'Thanks for your review! 🙏' },
+    reviewedOk:  { ar: '✅ شكراً لتقييمك!', en: '✅ Thanks for your review!' },
     tRevFail:    { ar: 'تعذّر إرسال التقييم، حاول مرة أخرى', en: "Couldn't send review, try again" },
     tErr:        { ar: 'حدث خطأ، حاول مجدداً', en: 'An error occurred, try again' },
     tCartEmpty:  { ar: 'السلة فارغة!', en: 'Your cart is empty!' },
@@ -1112,7 +1121,7 @@ export default function PublicMenu() {
                   <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 0', opacity: item.unavailable ? 0.55 : 1 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
                       <span style={{ fontSize:'15px' }}>{item.emoji || '🍽️'}</span>
-                      <span style={{ fontSize:'13px', fontWeight:'600', textDecoration: item.unavailable ? 'line-through' : 'none' }}>{item.name} × {item.qty}</span>
+                      <span style={{ fontSize:'13px', fontWeight:'600', textDecoration: item.unavailable ? 'line-through' : 'none' }}>{itemName(item)} × {item.qty}</span>
                       {item.unavailable && <span style={{ fontSize:'9px', fontWeight:'700', color:'#EF4444', background:'#FEF2F2', padding:'2px 6px', borderRadius:'100px' }}>{t('unavailable')}</span>}
                     </div>
                   </div>
@@ -1127,7 +1136,7 @@ export default function PublicMenu() {
               {order.status === 'completed' && (
                 reviewedIds.includes(order.id) ? (
                   <div style={{ marginTop:'12px', padding:'12px', borderRadius:'12px', background:'#ECFDF5', border:'1px solid #A7F3D0', textAlign:'center', fontSize:'13px', fontWeight:'700', color:'#065F46' }}>
-                    ✅ شكراً لتقييمك!
+                    {t('reviewedOk')}
                   </div>
                 ) : (
                   <div style={{ marginTop:'14px', paddingTop:'14px', borderTop:'1px dashed #E5E7EB' }}>
@@ -1533,7 +1542,7 @@ export default function PublicMenu() {
                       : item.emoji}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:'700', fontSize:'14px', marginBottom:'2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.name}</div>
+                    <div style={{ fontWeight:'700', fontSize:'14px', marginBottom:'2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{itemName(item)}</div>
                     {Array.isArray(item.selectedOptions) && item.selectedOptions.length > 0 && (
                       <div style={{ fontSize:'11px', color:'#9CA3AF', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                         {item.selectedOptions.map(o => o.choiceName).join(isEn ? ', ' : '، ')}
@@ -1810,15 +1819,21 @@ export default function PublicMenu() {
               {t('allergensDesc')}
             </p>
             <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-              {restaurant.allergens.map((a, i) => {
-                const item = typeof a === 'string' ? { label:a, icon:'⚠️' } : a
-                return (
-                  <div key={i} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', background:'#F8F9FB', borderRadius:'12px' }}>
-                    <span style={{ fontSize:'18px' }}>{item.icon || '⚠️'}</span>
-                    <span style={{ fontSize:'13px', fontWeight:'600' }}>{isEn ? (ALLERGEN_EN[item.label] || item.label) : item.label}</span>
-                  </div>
-                )
-              })}
+              {(Array.isArray(restaurant.allergens) ? restaurant.allergens : [])
+                .map((a, i) => {
+                  // تحصين: تجاهل القيم الفارغة، ودعم النص أو الكائن
+                  if (a == null) return null
+                  const item = typeof a === 'string' ? { label: a, icon: '⚠️' } : (a || {})
+                  const label = item.label || item.name || (typeof a === 'string' ? a : '')
+                  if (!label) return null
+                  const shown = isEn ? (ALLERGEN_EN[label] || label) : label
+                  return (
+                    <div key={i} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', background:'#F8F9FB', borderRadius:'12px' }}>
+                      <span style={{ fontSize:'18px' }}>{item.icon || '⚠️'}</span>
+                      <span style={{ fontSize:'13px', fontWeight:'600' }}>{shown}</span>
+                    </div>
+                  )
+                })}
             </div>
             <button
               onClick={() => setShowAllergensModal(false)}
