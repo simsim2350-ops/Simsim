@@ -1719,10 +1719,10 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, layout = '
     return (
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', padding:'6px 4px' }}>
         <div style={{ position:'relative', marginBottom:'10px' }}>
-          <div style={{
+          <div onClick={onAdd} style={{
             width:'104px', height:'104px', borderRadius:'50%', background:'#F8F9FB',
             display:'flex', alignItems:'center', justifyContent:'center', fontSize:'44px',
-            overflow:'hidden', boxShadow:'0 6px 18px rgba(0,0,0,0.10)', border:'3px solid white',
+            overflow:'hidden', boxShadow:'0 6px 18px rgba(0,0,0,0.10)', border:'3px solid white', cursor:'pointer',
           }}>
             {product.image_url
               ? <img src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
@@ -1748,7 +1748,7 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, layout = '
     return (
       <div style={{ background:'white', borderRadius:'14px', overflow:'hidden', border:'1px solid #F0F0F0' }}>
         <div style={{ position:'relative' }}>
-          <div style={{ width:'100%', aspectRatio:'1/1', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'46px', overflow:'hidden' }}>
+          <div onClick={onAdd} style={{ width:'100%', aspectRatio:'1/1', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'46px', overflow:'hidden', cursor:'pointer' }}>
             {product.image_url
               ? <img src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
               : product.emoji}
@@ -1758,7 +1758,7 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, layout = '
           )}
           {qtyControl}
         </div>
-        <div style={{ padding:'10px 12px' }}>
+        <div onClick={onAdd} style={{ padding:'10px 12px', cursor:'pointer' }}>
           <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color:'#0F1117', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{product.name}</div>
           <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap' }}>
             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color: brandColor }}>{product.price} ﷼</span>
@@ -1771,7 +1771,7 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, layout = '
 
   return (
     <div style={{ background:'white', padding:'14px 16px', display:'flex', gap:'12px', alignItems:'center' }}>
-      <div style={{ flex:1, minWidth:0 }}>
+      <div onClick={onAdd} style={{ flex:1, minWidth:0, cursor:'pointer' }}>
         {product.is_featured && (
           <span style={{ fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px', marginBottom:'4px', display:'inline-block' }}>⭐ مميز</span>
         )}
@@ -1789,7 +1789,7 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, layout = '
       </div>
 
       <div style={{ position:'relative', flexShrink:0 }}>
-        <div style={{ width:'88px', height:'88px', borderRadius:'14px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'42px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+        <div onClick={onAdd} style={{ width:'88px', height:'88px', borderRadius:'14px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'42px', border:'1px solid #E5E7EB', overflow:'hidden', cursor:'pointer' }}>
           {product.image_url
             ? <img src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
             : product.emoji}
