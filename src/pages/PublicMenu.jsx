@@ -1295,7 +1295,7 @@ function PublicMenuInner() {
           </div>
 
           {tx(restaurant,'description') && (
-            <p style={{ fontSize:'13px', color:'#6B7280', lineHeight:'1.6', marginBottom:'10px' }}>{tx(restaurant,'description')}</p>
+            <p style={{ fontSize:'13px', color:descColor, lineHeight:'1.6', marginBottom:'10px' }}>{tx(restaurant,'description')}</p>
           )}
 
           {/* موقع المحل — يعرض موقع الفرع لو محدد، وإلا موقع المطعم */}
@@ -1711,7 +1711,7 @@ function PublicMenuInner() {
             <div style={{ overflowY:'auto' }}>
             <div style={{ padding:'20px 20px 32px' }}>
               <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'22px', marginBottom:'6px' }}>{(isEn && selectedProduct.name_en) ? selectedProduct.name_en : selectedProduct.name}</h2>
-              {((isEn && selectedProduct.description_en) ? selectedProduct.description_en : selectedProduct.description) && <p style={{ fontSize:'14px', color:descColor, lineHeight:'1.65', marginBottom:'16px' }}>{(isEn && selectedProduct.description_en) ? selectedProduct.description_en : selectedProduct.description}</p>}
+              {((isEn && selectedProduct.description_en) ? selectedProduct.description_en : selectedProduct.description) && <p style={{ fontSize:'14px', color:'#6B7280', lineHeight:'1.65', marginBottom:'16px' }}>{(isEn && selectedProduct.description_en) ? selectedProduct.description_en : selectedProduct.description}</p>}
 
               <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'20px' }}>
                 <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'24px', color:priceColor }}>{selectedProduct.price} ﷼</span>
@@ -1941,7 +1941,7 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor
         )}
         <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', color:'#0F1117', marginBottom:'4px' }}>{pName}</div>
         {pDesc && (
-          <div style={{ fontSize:'12px', color:_descColor, lineHeight:'1.5', marginBottom:'8px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+          <div style={{ fontSize:'12px', color:'#9CA3AF', lineHeight:'1.5', marginBottom:'8px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
             {pDesc}
           </div>
         )}
