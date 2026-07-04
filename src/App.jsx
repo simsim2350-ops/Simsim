@@ -17,6 +17,7 @@ import QRCodePage from './pages/QRCode'
 import Settings from './pages/Settings'
 import Analytics from './pages/Analytics'
 import Loyalty from './pages/Loyalty'
+import Staff from './pages/Staff'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore()
@@ -66,6 +67,7 @@ export default function App() {
         <Route path="/settings"        element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/analytics"       element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
         <Route path="/loyalty"         element={<ProtectedRoute><Loyalty /></ProtectedRoute>} />
+        <Route path="/staff"           element={<ProtectedRoute><Staff /></ProtectedRoute>} />
         <Route path="*"                element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
