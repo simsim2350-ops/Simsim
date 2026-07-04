@@ -156,7 +156,7 @@ const SOCIAL_ICONS = {
   ),
 }
 
-export default function PublicMenu() {
+function PublicMenuInner() {
   const { slug } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const branchId = searchParams.get('branch')
@@ -1978,5 +1978,14 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor
         {qtyControl}
       </div>
     </div>
+  )
+}
+
+// الغلاف: يلفّ المنيو كله بمصيدة الأخطاء (أي خطأ في أي مكان يظهر كنص بدل شاشة بيضاء)
+export default function PublicMenu() {
+  return (
+    <ErrBoundary>
+      <PublicMenuInner />
+    </ErrBoundary>
   )
 }
