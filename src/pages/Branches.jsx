@@ -30,7 +30,7 @@ export default function Branches() {
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingBranch, setEditingBranch] = useState(null)
-  const [form, setForm] = useState({ name:'', address:'', phone:'', maps_url:'', is_active:true })
+  const [form, setForm] = useState({ name:'', name_en:'', address:'', address_en:'', phone:'', maps_url:'', is_active:true })
 
   useEffect(() => {
     if (!restaurant) return
@@ -53,7 +53,7 @@ export default function Branches() {
 
   const openAdd = () => {
     setEditingBranch(null)
-    setForm({ name:'', address:'', phone:'', maps_url:'', is_active:true })
+    setForm({ name:'', name_en:'', address:'', address_en:'', phone:'', maps_url:'', is_active:true })
     setModalOpen(true)
   }
 
@@ -61,7 +61,9 @@ export default function Branches() {
     setEditingBranch(branch)
     setForm({
       name: branch.name,
+      name_en: branch.name_en || '',
       address: branch.address || '',
+      address_en: branch.address_en || '',
       phone: branch.phone || '',
       maps_url: branch.maps_url || '',
       is_active: branch.is_active,
@@ -74,7 +76,7 @@ export default function Branches() {
     try {
       if (editingBranch) {
         const { error } = await supabase.from('branches')
-          .update({ name:form.name, address:form.address, phone:form.phone, maps_url:form.maps_url, is_active:form.is_active })
+          .update({ name:form.name, name_en:form.name_en || null, address:form.address, address_en:form.address_en || null, phone:form.phone, maps_url:form.maps_url, is_active:form.is_active })
           .eq('id', editingBranch.id)
         if (error) throw error
         toast.success('تم تحديث الفرع ✅')
@@ -82,7 +84,9 @@ export default function Branches() {
         const { error } = await supabase.from('branches').insert({
           restaurant_id: restaurant.id,
           name: form.name,
+          name_en: form.name_en || null,
           address: form.address,
+          address_en: form.address_en || null,
           phone: form.phone,
           maps_url: form.maps_url,
           is_active: form.is_active,
@@ -212,8 +216,18 @@ export default function Branches() {
             </div>
 
             <div style={{ marginBottom:'14px' }}>
+              <label style={{ ...labelStyle, color:'#6B7280' }}>🇬🇧 اسم الفرع (إنجليزي) — اختياري</label>
+              <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} value={form.name_en} onChange={e => setForm(f=>({...f,name_en:e.target.value}))} placeholder="e.g. Riyadh - Al Nuzha Branch" />
+            </div>
+
+            <div style={{ marginBottom:'14px' }}>
               <label style={labelStyle}>العنوان</label>
               <input style={inputStyle} value={form.address} onChange={e => setForm(f=>({...f,address:e.target.value}))} placeholder="الحي، الشارع..." />
+            </div>
+
+            <div style={{ marginBottom:'14px' }}>
+              <label style={{ ...labelStyle, color:'#6B7280' }}>🇬🇧 العنوان (إنجليزي) — اختياري</label>
+              <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} value={form.address_en} onChange={e => setForm(f=>({...f,address_en:e.target.value}))} placeholder="District, street..." />
             </div>
 
             <div style={{ marginBottom:'14px' }}>
