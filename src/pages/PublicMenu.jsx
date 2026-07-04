@@ -766,6 +766,8 @@ export default function PublicMenu() {
   const allFiltered = searchQuery ? products.filter(p => p.name.includes(searchQuery)) : []
 
   const brandColor = restaurant?.brand_color || '#FF6B35'
+  const priceColor = restaurant?.price_color || brandColor
+  const descColor = restaurant?.description_color || '#9CA3AF'
 
   // Loading
   if (loading) return (
@@ -1277,7 +1279,7 @@ export default function PublicMenu() {
                 ? { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }
                 : { display:'flex', flexDirection:'column', gap:'1px', background:'#E5E7EB', borderRadius:'16px', overflow:'hidden' }
               }>
-                {allFiltered.map(prod => <ProductItem key={prod.id} product={prod} cart={cart} onAdd={() => { setSelectedProduct(prod); setModalQty(1); setModalNote(''); setModalOptions({}) }} onQtyChange={(delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(`${prod.id}____`)} brandColor={brandColor} layout={restaurant.menu_layout} />)}
+                {allFiltered.map(prod => <ProductItem key={prod.id} product={prod} cart={cart} onAdd={() => { setSelectedProduct(prod); setModalQty(1); setModalNote(''); setModalOptions({}) }} onQtyChange={(delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(`${prod.id}____`)} brandColor={brandColor} priceColor={priceColor} descColor={descColor} layout={restaurant.menu_layout} />)}
               </div>
             )}
           </div>
@@ -1295,7 +1297,7 @@ export default function PublicMenu() {
               : { display:'flex', flexDirection:'column', gap:'1px', background:'#F3F4F6' }
             }>
               {bestSellers.map(prod => (
-                <ProductItem key={prod.id} product={prod} cart={cart} onAdd={() => { setSelectedProduct(prod); setModalQty(1); setModalNote(''); setModalOptions({}) }} onQtyChange={(delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(`${prod.id}____`)} brandColor={brandColor} layout={restaurant.menu_layout} />
+                <ProductItem key={prod.id} product={prod} cart={cart} onAdd={() => { setSelectedProduct(prod); setModalQty(1); setModalNote(''); setModalOptions({}) }} onQtyChange={(delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(`${prod.id}____`)} brandColor={brandColor} priceColor={priceColor} descColor={descColor} layout={restaurant.menu_layout} />
               ))}
             </div>
           </div>
@@ -1330,6 +1332,8 @@ export default function PublicMenu() {
                     onAdd={() => { setSelectedProduct(prod); setModalQty(1); setModalNote(''); setModalOptions({}) }}
                     onQtyChange={(delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(`${prod.id}____`)}
                     brandColor={brandColor}
+                    priceColor={priceColor}
+                    descColor={descColor}
                     layout={restaurant.menu_layout}
                   />
                 ))}
@@ -1559,10 +1563,10 @@ export default function PublicMenu() {
             <div style={{ overflowY:'auto' }}>
             <div style={{ padding:'20px 20px 32px' }}>
               <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'22px', marginBottom:'6px' }}>{selectedProduct.name}</h2>
-              {selectedProduct.description && <p style={{ fontSize:'14px', color:'#6B7280', lineHeight:'1.65', marginBottom:'16px' }}>{selectedProduct.description}</p>}
+              {selectedProduct.description && <p style={{ fontSize:'14px', color:descColor, lineHeight:'1.65', marginBottom:'16px' }}>{selectedProduct.description}</p>}
 
               <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'20px' }}>
-                <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'24px', color:brandColor }}>{selectedProduct.price} ﷼</span>
+                <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'24px', color:priceColor }}>{selectedProduct.price} ﷼</span>
                 {selectedProduct.compare_price && <span style={{ fontSize:'15px', color:'#9CA3AF', textDecoration:'line-through' }}>{selectedProduct.compare_price} ﷼</span>}
                 {selectedProduct.calories && <span style={{ fontSize:'12px', color:'#9CA3AF', background:'#F3F4F6', padding:'3px 10px', borderRadius:'100px', marginRight:'auto' }}>{getCalorieBadge(selectedProduct.calories)} {selectedProduct.calories} كالوري</span>}
               </div>
@@ -1695,7 +1699,9 @@ export default function PublicMenu() {
 }
 
 // Product item component
-function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, layout = 'list' }) {
+function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor, descColor, layout = 'list' }) {
+  const _priceColor = priceColor || brandColor
+  const _descColor = descColor || '#9CA3AF'
   const hasOptions = Array.isArray(product.options) && product.options.length > 0
   // لو الصنف بدون خيارات: نجمع كل عناصر السلة بنفس id (مفتاح بدون خيارات دائماً ثابت)
   const qty = hasOptions ? 0 : cart.filter(i => i.id === product.id).reduce((s,i) => s + i.qty, 0)
@@ -1737,7 +1743,7 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, layout = '
         </div>
         <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color:'#0F1117', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'100%' }}>{product.name}</div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
-          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color: brandColor }}>{product.price} ﷼</span>
+          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color: _priceColor }}>{product.price} ﷼</span>
           {product.compare_price && <span style={{ fontSize:'10px', color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
         </div>
       </div>
@@ -1761,7 +1767,7 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, layout = '
         <div onClick={onAdd} style={{ padding:'10px 12px', cursor:'pointer' }}>
           <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color:'#0F1117', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{product.name}</div>
           <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap' }}>
-            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color: brandColor }}>{product.price} ﷼</span>
+            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color: _priceColor }}>{product.price} ﷼</span>
             {product.compare_price && <span style={{ fontSize:'10px', color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
           </div>
         </div>
@@ -1777,12 +1783,12 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, layout = '
         )}
         <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', color:'#0F1117', marginBottom:'4px' }}>{product.name}</div>
         {product.description && (
-          <div style={{ fontSize:'12px', color:'#9CA3AF', lineHeight:'1.5', marginBottom:'8px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+          <div style={{ fontSize:'12px', color:_descColor, lineHeight:'1.5', marginBottom:'8px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
             {product.description}
           </div>
         )}
         <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', color: brandColor }}>{product.price} ﷼</span>
+          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', color: _priceColor }}>{product.price} ﷼</span>
           {product.compare_price && <span style={{ fontSize:'12px', color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
           {product.calories && <span style={{ fontSize:'11px', color:'#9CA3AF' }}>{getCalorieBadge(product.calories)} {product.calories}</span>}
         </div>

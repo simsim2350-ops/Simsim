@@ -36,7 +36,7 @@ export default function Settings() {
   const { isMobile } = useBreakpoint()
   // Restaurant form
   const [restForm, setRestForm] = useState({
-    name: '', slug: '', description: '',
+    name: '', slug: '', description: '', description_en: '',
     phone: '', whatsapp_message: '', address: '', currency: 'SAR - ريال سعودي',
     delivery_enabled: false, delivery_fee: '',
     social_links: { instagram:'', whatsapp_social:'', snapchat:'', twitter:'', tiktok:'' },
@@ -45,6 +45,7 @@ export default function Settings() {
     logo_url: '',
     cover_url: '',
     brand_color: '#FF6B35', type: 'restaurant',
+    price_color: '', description_color: '',
   })
 
   // Profile form
@@ -75,7 +76,7 @@ export default function Settings() {
       setRestForm({
         name: restaurant.name || '',
         slug: restaurant.slug || '',
-        description: restaurant.description || '',
+        description: restaurant.description || '', description_en: restaurant.description_en || '',
         phone: restaurant.phone || '',
         whatsapp_message: restaurant.whatsapp_message || '',
         delivery_enabled: restaurant.delivery_enabled || false,
@@ -94,6 +95,8 @@ export default function Settings() {
         address: restaurant.address || '',
         currency: restaurant.currency || 'SAR - ريال سعودي',
         brand_color: restaurant.brand_color || '#FF6B35',
+        price_color: restaurant.price_color || '',
+        description_color: restaurant.description_color || '',
         type: restaurant.type || 'restaurant',
       })
     }
@@ -116,7 +119,7 @@ export default function Settings() {
         .update({
           name: restForm.name,
           slug: restForm.slug,
-          description: restForm.description,
+          description: restForm.description, description_en: restForm.description_en || null,
           phone: restForm.phone,
           whatsapp_message: restForm.whatsapp_message,
           delivery_enabled: restForm.delivery_enabled,
@@ -128,6 +131,8 @@ export default function Settings() {
           address: restForm.address,
           currency: restForm.currency.split(' - ')[0],
           brand_color: restForm.brand_color,
+          price_color: restForm.price_color || null,
+          description_color: restForm.description_color || null,
           type: restForm.type,
         })
         .eq('id', restaurant.id)
@@ -356,6 +361,9 @@ export default function Settings() {
                     <div><label style={labelStyle}>الوصف</label>
                       <textarea style={{ ...inputStyle, minHeight:'80px', resize:'vertical' }} value={restForm.description} onChange={e => setRestForm(f=>({...f,description:e.target.value}))} placeholder="وصف مطعمك..." />
                     </div>
+                    <div><label style={{ ...labelStyle, color:'#6B7280' }}>🇬🇧 الوصف (إنجليزي) — اختياري</label>
+                      <textarea style={{ ...inputStyle, minHeight:'80px', resize:'vertical', direction:'ltr', textAlign:'left' }} value={restForm.description_en} onChange={e => setRestForm(f=>({...f,description_en:e.target.value}))} placeholder="Your restaurant description..." />
+                    </div>
 
                     <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:'12px' }}>
                       <div><label style={labelStyle}>رقم التواصل (واتساب) *</label>
@@ -581,6 +589,50 @@ export default function Settings() {
                       <span style={{ fontSize:'13px', color:'#6B7280' }}>اللون الحالي:</span>
                       <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'700', color:restForm.brand_color }}>{restForm.brand_color}</span>
                     </div>
+                  </div>
+                </div>
+
+                {/* Menu colors (price + description) */}
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🎨 ألوان المنيو</div>
+                  <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:'16px' }}>
+
+                    {/* لون السعر */}
+                    <div>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'8px' }}>
+                        <span style={{ fontSize:'13px', fontWeight:'700', color:'#374151' }}>لون السعر</span>
+                        {restForm.price_color && (
+                          <button onClick={() => setRestForm(f=>({...f,price_color:''}))} style={{ fontSize:'11px', color:'#9CA3AF', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>إعادة للافتراضي</button>
+                        )}
+                      </div>
+                      <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px', background:'#F8F9FB', borderRadius:'10px' }}>
+                        <div style={{ position:'relative', width:'34px', height:'34px', borderRadius:'8px', overflow:'hidden', border:'1px solid #E5E7EB', flexShrink:0 }}>
+                          <div style={{ width:'100%', height:'100%', background: restForm.price_color || restForm.brand_color }}/>
+                          <input type="color" value={restForm.price_color || restForm.brand_color} onChange={e => setRestForm(f=>({...f,price_color:e.target.value}))} style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer', width:'100%', height:'100%' }}/>
+                        </div>
+                        <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', color: restForm.price_color || restForm.brand_color }}>25 ﷼</span>
+                        <span style={{ fontSize:'11px', color:'#9CA3AF', marginRight:'auto' }}>{restForm.price_color || 'افتراضي (لون المطعم)'}</span>
+                      </div>
+                    </div>
+
+                    {/* لون الوصف */}
+                    <div>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'8px' }}>
+                        <span style={{ fontSize:'13px', fontWeight:'700', color:'#374151' }}>لون الوصف</span>
+                        {restForm.description_color && (
+                          <button onClick={() => setRestForm(f=>({...f,description_color:''}))} style={{ fontSize:'11px', color:'#9CA3AF', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>إعادة للافتراضي</button>
+                        )}
+                      </div>
+                      <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px', background:'#F8F9FB', borderRadius:'10px' }}>
+                        <div style={{ position:'relative', width:'34px', height:'34px', borderRadius:'8px', overflow:'hidden', border:'1px solid #E5E7EB', flexShrink:0 }}>
+                          <div style={{ width:'100%', height:'100%', background: restForm.description_color || '#9CA3AF' }}/>
+                          <input type="color" value={restForm.description_color || '#9CA3AF'} onChange={e => setRestForm(f=>({...f,description_color:e.target.value}))} style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer', width:'100%', height:'100%' }}/>
+                        </div>
+                        <span style={{ fontSize:'13px', color: restForm.description_color || '#9CA3AF' }}>وصف الصنف يظهر بهذا اللون</span>
+                        <span style={{ fontSize:'11px', color:'#9CA3AF', marginRight:'auto' }}>{restForm.description_color || 'افتراضي'}</span>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
 
