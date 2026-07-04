@@ -138,6 +138,36 @@ export default function PublicMenu() {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [dragOffset, setDragOffset] = useState(0)
   const dragStartYRef = useRef(null)
+
+  // ===== اللغة (عربي/إنجليزي) =====
+  const [lang, setLang] = useState(() => { try { return localStorage.getItem('sm_lang') || 'ar' } catch { return 'ar' } })
+  const isEn = lang === 'en'
+  const toggleLang = () => setLang(l => { const n = l === 'ar' ? 'en' : 'ar'; try { localStorage.setItem('sm_lang', n) } catch {} return n })
+  // ترجمة المحتوى: يرجّع الإنجليزي إن وُجد وإلا العربي (fallback)
+  const tx = (obj, base) => (isEn && obj && obj[`${base}_en`]) ? obj[`${base}_en`] : (obj?.[base] || '')
+  // قاموس نصوص الواجهة الثابتة
+  const TT = {
+    search:      { ar: 'ابحث في المنيو...', en: 'Search the menu...' },
+    bestSellers: { ar: 'الأكثر مبيعاً', en: 'Best Sellers' },
+    viewCart:    { ar: 'عرض السلة', en: 'View Cart' },
+    cart:        { ar: 'السلة', en: 'Cart' },
+    totalVat:    { ar: 'المجموع (شامل الضريبة)', en: 'Total (VAT incl.)' },
+    vatLine:     { ar: '· منها ض.ق.م 15%', en: '· incl. 15% VAT' },
+    delivery:    { ar: '🛵 رسوم التوصيل', en: '🛵 Delivery fee' },
+    openNow:     { ar: 'مفتوح الآن', en: 'Open now' },
+    closedNow:   { ar: 'مغلق الآن', en: 'Closed now' },
+    addToCart:   { ar: 'أضف للسلة', en: 'Add to cart' },
+    checkout:    { ar: 'إتمام الطلب', en: 'Checkout' },
+    allergens:   { ar: 'مسبّبات الحساسية', en: 'Allergens' },
+    branches:    { ar: 'الفروع', en: 'Branches' },
+    currency:    { ar: '﷼', en: 'SAR' },
+    empty:       { ar: 'السلة فارغة!', en: 'Your cart is empty!' },
+    note:        { ar: 'ملاحظة', en: 'Note' },
+    qty:         { ar: 'الكمية', en: 'Quantity' },
+    calories:    { ar: 'كالوري', en: 'cal' },
+  }
+  const t = (key) => (TT[key]?.[lang]) ?? TT[key]?.ar ?? key
+
   const [modalQty, setModalQty] = useState(1)
   const [modalNote, setModalNote] = useState('')
   const [modalOptions, setModalOptions] = useState({}) // { groupIdx: choiceIdx | [choiceIdx,...] }
@@ -824,7 +854,7 @@ export default function PublicMenu() {
           <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'10px', flexWrap:'wrap' }}>
             <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'11px', fontWeight:'700', color:c, background:bg, padding:'3px 9px', borderRadius:'100px' }}>
               <span style={{ width:'6px', height:'6px', borderRadius:'50%', background:c, display:'inline-block' }}/>
-              {st.open ? 'مفتوح الآن' : 'مغلق الآن'}
+              {st.open ? t('openNow') : t('closedNow')}
             </span>
             {!st.open && st.nextText && <span style={{ fontSize:'11px', color:'#EF4444' }}>{st.nextText}</span>}
             {mapsUrl && (
@@ -1067,7 +1097,7 @@ export default function PublicMenu() {
   )
 
   return (
-    <div className="sm-menu-frame" style={{ minHeight:'100vh', background:'#F8F9FB', direction:'rtl', fontFamily:'Tajawal,sans-serif', maxWidth:'480px', margin:'0 auto', position:'relative' }}>
+    <div className="sm-menu-frame" style={{ minHeight:'100vh', background:'#F8F9FB', direction: isEn ? 'ltr' : 'rtl', fontFamily:'Tajawal,sans-serif', maxWidth:'480px', margin:'0 auto', position:'relative' }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -1098,7 +1128,12 @@ export default function PublicMenu() {
         )}
 
         <div style={{ padding: restaurant.cover_url ? '0 16px 16px' : '20px 16px 16px', marginTop: restaurant.cover_url ? '-32px' : 0 }}>
-          <div style={{ display:'flex', alignItems:'flex-start', gap:'14px', marginBottom: restaurant.description ? '10px' : 0 }}>
+          <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'8px' }}>
+            <button onClick={toggleLang} style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'6px 12px', borderRadius:'100px', border:'1.5px solid #E5E7EB', background:'white', cursor:'pointer', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', color:'#374151', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+              🌐 {isEn ? 'العربية' : 'English'}
+            </button>
+          </div>
+          <div style={{ display:'flex', alignItems:'flex-start', gap:'14px', marginBottom: tx(restaurant,'description') ? '10px' : 0 }}>
             <div style={{ width:'64px', height:'64px', borderRadius:'16px', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'30px', flexShrink:0, boxShadow:'0 4px 16px rgba(0,0,0,0.2)', overflow:'hidden', border: restaurant.cover_url ? '3px solid white' : 'none' }}>
               {restaurant.logo_url
                 ? <img src={restaurant.logo_url} alt={restaurant.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
@@ -1117,7 +1152,7 @@ export default function PublicMenu() {
                     <>
                       <span style={{ display:'flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'700', color:c, background:bg, padding:'3px 10px', borderRadius:'100px' }}>
                         <span style={{ width:'6px', height:'6px', borderRadius:'50%', background:c, display:'inline-block' }}/>
-                        {openStatus.open ? 'مفتوح الآن' : 'مغلق الآن'}
+                        {openStatus.open ? t('openNow') : t('closedNow')}
                       </span>
                       {openStatus.open
                         ? (!openStatus.unknown && openStatus.todayText && (
@@ -1147,8 +1182,8 @@ export default function PublicMenu() {
             )}
           </div>
 
-          {restaurant.description && (
-            <p style={{ fontSize:'13px', color:'#6B7280', lineHeight:'1.6', marginBottom:'10px' }}>{restaurant.description}</p>
+          {tx(restaurant,'description') && (
+            <p style={{ fontSize:'13px', color:'#6B7280', lineHeight:'1.6', marginBottom:'10px' }}>{tx(restaurant,'description')}</p>
           )}
 
           {/* موقع المحل — يعرض موقع الفرع لو محدد، وإلا موقع المطعم */}
@@ -1216,7 +1251,7 @@ export default function PublicMenu() {
             <span style={{ padding:'10px 12px', fontSize:'16px', color:'#9CA3AF' }}>🔍</span>
             <input
               type="text"
-              placeholder="ابحث في المنيو..."
+              placeholder={t('search')}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               style={{ flex:1, padding:'10px 4px', border:'none', outline:'none', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'transparent', textAlign:'right' }}
@@ -1254,7 +1289,7 @@ export default function PublicMenu() {
               ) : (
                 <span style={{ fontSize:'18px' }}>{cat.emoji}</span>
               )}
-              <span style={{ fontSize:'12px', fontWeight:'700', whiteSpace:'nowrap' }}>{cat.name}</span>
+              <span style={{ fontSize:'12px', fontWeight:'700', whiteSpace:'nowrap' }}>{tx(cat,'name')}</span>
             </div>
           ))}
         </div>
@@ -1279,7 +1314,7 @@ export default function PublicMenu() {
                 ? { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }
                 : { display:'flex', flexDirection:'column', gap:'1px', background:'#E5E7EB', borderRadius:'16px', overflow:'hidden' }
               }>
-                {allFiltered.map(prod => <ProductItem key={prod.id} product={prod} cart={cart} onAdd={() => { setSelectedProduct(prod); setModalQty(1); setModalNote(''); setModalOptions({}) }} onQtyChange={(delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(`${prod.id}____`)} brandColor={brandColor} priceColor={priceColor} descColor={descColor} layout={restaurant.menu_layout} />)}
+                {allFiltered.map(prod => <ProductItem key={prod.id} product={prod} cart={cart} onAdd={() => { setSelectedProduct(prod); setModalQty(1); setModalNote(''); setModalOptions({}) }} onQtyChange={(delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(`${prod.id}____`)} brandColor={brandColor} priceColor={priceColor} descColor={descColor} isEn={isEn} layout={restaurant.menu_layout} />)}
               </div>
             )}
           </div>
@@ -1290,14 +1325,14 @@ export default function PublicMenu() {
           <div style={{ marginBottom:'8px' }}>
             <div style={{ padding:'16px 16px 10px', display:'flex', alignItems:'center', gap:'8px' }}>
               <span style={{ fontSize:'20px' }}>🔥</span>
-              <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color:'#0F1117' }}>الأكثر مبيعاً</h2>
+              <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color:'#0F1117' }}>{t('bestSellers')}</h2>
             </div>
             <div className="sm-products" style={['grid','circles'].includes(restaurant.menu_layout)
               ? { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }
               : { display:'flex', flexDirection:'column', gap:'1px', background:'#F3F4F6' }
             }>
               {bestSellers.map(prod => (
-                <ProductItem key={prod.id} product={prod} cart={cart} onAdd={() => { setSelectedProduct(prod); setModalQty(1); setModalNote(''); setModalOptions({}) }} onQtyChange={(delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(`${prod.id}____`)} brandColor={brandColor} priceColor={priceColor} descColor={descColor} layout={restaurant.menu_layout} />
+                <ProductItem key={prod.id} product={prod} cart={cart} onAdd={() => { setSelectedProduct(prod); setModalQty(1); setModalNote(''); setModalOptions({}) }} onQtyChange={(delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(`${prod.id}____`)} brandColor={brandColor} priceColor={priceColor} descColor={descColor} isEn={isEn} layout={restaurant.menu_layout} />
               ))}
             </div>
           </div>
@@ -1317,7 +1352,7 @@ export default function PublicMenu() {
                 ) : (
                   <span style={{ fontSize:'20px' }}>{cat.emoji}</span>
                 )}
-                <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color:'#0F1117' }}>{cat.name}</h2>
+                <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color:'#0F1117' }}>{tx(cat,'name')}</h2>
                 <span style={{ fontSize:'12px', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 8px', borderRadius:'100px' }}>{catProducts.length}</span>
               </div>
               <div className="sm-products" style={['grid','circles'].includes(restaurant.menu_layout)
@@ -1334,6 +1369,7 @@ export default function PublicMenu() {
                     brandColor={brandColor}
                     priceColor={priceColor}
                     descColor={descColor}
+                    isEn={isEn}
                     layout={restaurant.menu_layout}
                   />
                 ))}
@@ -1351,7 +1387,7 @@ export default function PublicMenu() {
             style={{ width:'100%', padding:'0 16px', height:'58px', borderRadius:'16px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', cursor:'pointer', display:'flex', alignItems:'center', boxShadow:`0 8px 32px ${brandColor}55`, transition:'all 0.2s' }}
           >
             <div style={{ width:'28px', height:'28px', background:'rgba(0,0,0,0.15)', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px' }}>{cartCount}</div>
-            <span style={{ flex:1, textAlign:'center', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px' }}>عرض السلة</span>
+            <span style={{ flex:1, textAlign:'center', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px' }}>{t('viewCart')}</span>
             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px' }}>{cartTotal} ﷼</span>
           </button>
         </div>
@@ -1419,10 +1455,10 @@ export default function PublicMenu() {
             {/* Summary — الأسعار شاملة ض.ق.م 15% */}
             <div style={{ padding:'12px 20px', background:'#F8F9FB', borderTop:'1px solid #E5E7EB', flexShrink:0 }}>
               <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:'#9CA3AF', marginBottom:'4px' }}>
-                <span>المجموع (شامل الضريبة)</span><span>{cartTotal.toFixed(2)} ﷼</span>
+                <span>{t('totalVat')}</span><span>{cartTotal.toFixed(2)} ﷼</span>
               </div>
               <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#9CA3AF', marginBottom: orderType === 'delivery' && restaurant?.delivery_fee > 0 ? '4px' : '8px' }}>
-                <span>· منها ض.ق.م 15%</span><span>{(cartTotal - cartTotal / 1.15).toFixed(2)} ﷼</span>
+                <span>{t('vatLine')}</span><span>{(cartTotal - cartTotal / 1.15).toFixed(2)} ﷼</span>
               </div>
               {orderType === 'delivery' && Number(restaurant?.delivery_fee) > 0 && (
                 <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:'#9CA3AF', marginBottom:'8px' }}>
@@ -1562,8 +1598,8 @@ export default function PublicMenu() {
 
             <div style={{ overflowY:'auto' }}>
             <div style={{ padding:'20px 20px 32px' }}>
-              <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'22px', marginBottom:'6px' }}>{selectedProduct.name}</h2>
-              {selectedProduct.description && <p style={{ fontSize:'14px', color:descColor, lineHeight:'1.65', marginBottom:'16px' }}>{selectedProduct.description}</p>}
+              <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'22px', marginBottom:'6px' }}>{(isEn && selectedProduct.name_en) ? selectedProduct.name_en : selectedProduct.name}</h2>
+              {((isEn && selectedProduct.description_en) ? selectedProduct.description_en : selectedProduct.description) && <p style={{ fontSize:'14px', color:descColor, lineHeight:'1.65', marginBottom:'16px' }}>{(isEn && selectedProduct.description_en) ? selectedProduct.description_en : selectedProduct.description}</p>}
 
               <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'20px' }}>
                 <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'24px', color:priceColor }}>{selectedProduct.price} ﷼</span>
@@ -1699,9 +1735,11 @@ export default function PublicMenu() {
 }
 
 // Product item component
-function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor, descColor, layout = 'list' }) {
+function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor, descColor, isEn, layout = 'list' }) {
   const _priceColor = priceColor || brandColor
   const _descColor = descColor || '#9CA3AF'
+  const pName = (isEn && product.name_en) ? product.name_en : product.name
+  const pDesc = (isEn && product.description_en) ? product.description_en : product.description
   const hasOptions = Array.isArray(product.options) && product.options.length > 0
   // لو الصنف بدون خيارات: نجمع كل عناصر السلة بنفس id (مفتاح بدون خيارات دائماً ثابت)
   const qty = hasOptions ? 0 : cart.filter(i => i.id === product.id).reduce((s,i) => s + i.qty, 0)
@@ -1741,7 +1779,7 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor
             {qtyControl}
           </div>
         </div>
-        <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color:'#0F1117', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'100%' }}>{product.name}</div>
+        <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color:'#0F1117', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'100%' }}>{pName}</div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
           <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color: _priceColor }}>{product.price} ﷼</span>
           {product.compare_price && <span style={{ fontSize:'10px', color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
@@ -1765,7 +1803,7 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor
           {qtyControl}
         </div>
         <div onClick={onAdd} style={{ padding:'10px 12px', cursor:'pointer' }}>
-          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color:'#0F1117', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{product.name}</div>
+          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color:'#0F1117', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pName}</div>
           <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap' }}>
             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color: _priceColor }}>{product.price} ﷼</span>
             {product.compare_price && <span style={{ fontSize:'10px', color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
@@ -1781,10 +1819,10 @@ function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor
         {product.is_featured && (
           <span style={{ fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px', marginBottom:'4px', display:'inline-block' }}>⭐ مميز</span>
         )}
-        <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', color:'#0F1117', marginBottom:'4px' }}>{product.name}</div>
-        {product.description && (
+        <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', color:'#0F1117', marginBottom:'4px' }}>{pName}</div>
+        {pDesc && (
           <div style={{ fontSize:'12px', color:_descColor, lineHeight:'1.5', marginBottom:'8px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
-            {product.description}
+            {pDesc}
           </div>
         )}
         <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
