@@ -73,8 +73,8 @@ export default function Menu() {
   const [editingProd, setEditingProd] = useState(null)
 
   // Forms
-  const [catForm, setCatForm] = useState({ name:'', emoji:'🍽️', cover_url:'', is_visible:true })
-  const [prodForm, setProdForm] = useState({ name:'', description:'', price:'', compare_price:'', category_id:'', emoji:'🍽️', image_url:'', calories:'', is_available:true, is_featured:false, options:[] })
+  const [catForm, setCatForm] = useState({ name:'', name_en:'', emoji:'🍽️', cover_url:'', is_visible:true })
+  const [prodForm, setProdForm] = useState({ name:'', name_en:'', description:'', description_en:'', price:'', compare_price:'', category_id:'', emoji:'🍽️', image_url:'', calories:'', is_available:true, is_featured:false, options:[] })
   const [uploadingCatImage, setUploadingCatImage] = useState(false)
   const [uploadingProdImage, setUploadingProdImage] = useState(false)
 
@@ -106,13 +106,13 @@ export default function Menu() {
   // ===== CATEGORIES =====
   const openAddCat = () => {
     setEditingCat(null)
-    setCatForm({ name:'', emoji:'🍽️', cover_url:'', is_visible:true })
+    setCatForm({ name:'', name_en:'', emoji:'🍽️', cover_url:'', is_visible:true })
     setCatModal(true)
   }
 
   const openEditCat = (cat) => {
     setEditingCat(cat)
-    setCatForm({ name:cat.name, emoji:cat.emoji, cover_url:cat.cover_url || '', is_visible:cat.is_visible })
+    setCatForm({ name:cat.name, name_en:cat.name_en || '', emoji:cat.emoji, cover_url:cat.cover_url || '', is_visible:cat.is_visible })
     setCatModal(true)
   }
 
@@ -121,7 +121,7 @@ export default function Menu() {
     try {
       if (editingCat) {
         const { error } = await supabase.from('categories')
-          .update({ name:catForm.name, emoji:catForm.emoji, cover_url:catForm.cover_url, is_visible:catForm.is_visible })
+          .update({ name:catForm.name, name_en:catForm.name_en || null, emoji:catForm.emoji, cover_url:catForm.cover_url, is_visible:catForm.is_visible })
           .eq('id', editingCat.id)
         if (error) throw error
         toast.success('تم تحديث القسم ✅')
@@ -129,6 +129,7 @@ export default function Menu() {
         const { error } = await supabase.from('categories').insert({
           restaurant_id: restaurant.id,
           name: catForm.name,
+          name_en: catForm.name_en || null,
           emoji: catForm.emoji,
           cover_url: catForm.cover_url,
           is_visible: catForm.is_visible,
@@ -228,7 +229,7 @@ export default function Menu() {
   // ===== PRODUCTS =====
   const openAddProd = () => {
     setEditingProd(null)
-    setProdForm({ name:'', description:'', price:'', compare_price:'', category_id: categories[0]?.id || '', emoji:'🍽️', image_url:'', calories:'', is_available:true, is_featured:false, options:[] })
+    setProdForm({ name:'', name_en:'', description:'', description_en:'', price:'', compare_price:'', category_id: categories[0]?.id || '', emoji:'🍽️', image_url:'', calories:'', is_available:true, is_featured:false, options:[] })
     setProdModal(true)
   }
 
@@ -236,7 +237,9 @@ export default function Menu() {
     setEditingProd(prod)
     setProdForm({
       name: prod.name,
+      name_en: prod.name_en || '',
       description: prod.description || '',
+      description_en: prod.description_en || '',
       price: prod.price,
       compare_price: prod.compare_price || '',
       category_id: prod.category_id || '',
@@ -287,7 +290,9 @@ export default function Menu() {
       const data = {
         restaurant_id: restaurant.id,
         name: prodForm.name,
+        name_en: prodForm.name_en || null,
         description: prodForm.description,
+        description_en: prodForm.description_en || null,
         price: parseFloat(prodForm.price),
         compare_price: prodForm.compare_price ? parseFloat(prodForm.compare_price) : null,
         category_id: prodForm.category_id || null,
@@ -570,6 +575,11 @@ export default function Menu() {
               <input style={inputStyle} placeholder="مثال: البرغر، المشروبات..." value={catForm.name} onChange={e => setCatForm(f=>({...f,name:e.target.value}))} autoFocus />
             </div>
 
+            <div style={{ marginBottom:'14px' }}>
+              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px', color:'#6B7280' }}>🇬🇧 اسم القسم (إنجليزي) <span style={{ fontWeight:'400', fontSize:'11px' }}>— اختياري</span></label>
+              <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} placeholder="e.g. Burgers, Drinks..." value={catForm.name_en} onChange={e => setCatForm(f=>({...f,name_en:e.target.value}))} />
+            </div>
+
             <label style={{ display:'flex', alignItems:'center', gap:'10px', cursor:'pointer', marginBottom:'20px' }}>
               <input type="checkbox" checked={catForm.is_visible} onChange={e => setCatForm(f=>({...f,is_visible:e.target.checked}))} style={{ width:'18px', height:'18px', accentColor:'#FF6B35' }}/>
               <span style={{ fontSize:'14px', fontWeight:'600' }}>إظهار القسم في المنيو</span>
@@ -629,8 +639,18 @@ export default function Menu() {
             </div>
 
             <div style={{ marginBottom:'14px' }}>
+              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px', color:'#6B7280' }}>🇬🇧 اسم الصنف (إنجليزي) <span style={{ fontWeight:'400', fontSize:'11px' }}>— اختياري</span></label>
+              <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} placeholder="e.g. Classic Burger" value={prodForm.name_en} onChange={e => setProdForm(f=>({...f,name_en:e.target.value}))} />
+            </div>
+
+            <div style={{ marginBottom:'14px' }}>
               <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px' }}>الوصف</label>
               <textarea style={{ ...inputStyle, minHeight:'72px', resize:'vertical' }} placeholder="وصف شهي يجذب العملاء..." value={prodForm.description} onChange={e => setProdForm(f=>({...f,description:e.target.value}))} />
+            </div>
+
+            <div style={{ marginBottom:'14px' }}>
+              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px', color:'#6B7280' }}>🇬🇧 الوصف (إنجليزي) <span style={{ fontWeight:'400', fontSize:'11px' }}>— اختياري</span></label>
+              <textarea style={{ ...inputStyle, minHeight:'72px', resize:'vertical', direction:'ltr', textAlign:'left' }} placeholder="Appetizing description..." value={prodForm.description_en} onChange={e => setProdForm(f=>({...f,description_en:e.target.value}))} />
             </div>
 
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'14px' }}>
