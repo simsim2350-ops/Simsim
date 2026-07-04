@@ -272,6 +272,8 @@ export default function PublicMenu() {
     tPickStars:  { ar: 'اختر عدد النجوم أولاً ⭐', en: 'Pick a rating first ⭐' },
     tRevThanks:  { ar: 'شكراً لتقييمك! 🙏 وصل تقييمك للمطعم', en: 'Thanks for your review! 🙏' },
     reviewedOk:  { ar: '✅ شكراً لتقييمك!', en: '✅ Thanks for your review!' },
+    mapBtn:      { ar: '🗺️ الخريطة', en: '🗺️ Map' },
+    mapLocation: { ar: '🗺️ الموقع على الخريطة', en: '🗺️ View on map' },
     tRevFail:    { ar: 'تعذّر إرسال التقييم، حاول مرة أخرى', en: "Couldn't send review, try again" },
     tErr:        { ar: 'حدث خطأ، حاول مجدداً', en: 'An error occurred, try again' },
     tCartEmpty:  { ar: 'السلة فارغة!', en: 'Your cart is empty!' },
@@ -992,7 +994,7 @@ export default function PublicMenu() {
                 onClick={e => e.stopPropagation()}
                 style={{ fontSize:'11px', fontWeight:'700', color:brandColor, background:`${brandColor}14`, padding:'3px 9px', borderRadius:'100px', textDecoration:'none' }}
               >
-                🗺️ الخريطة
+                {t('mapBtn')}
               </a>
             )}
           </div>
@@ -1029,8 +1031,8 @@ export default function PublicMenu() {
           {branchList.map(b => (
             <BranchCard
               key={b.id}
-              name={b.name}
-              address={b.address}
+              name={isEn && b.name_en ? b.name_en : b.name}
+              address={isEn && b.address_en ? b.address_en : b.address}
               mapsUrl={b.maps_url}
               hours={b.opening_hours}
               onPick={() => chooseBranch(b)}
@@ -1269,7 +1271,7 @@ export default function PublicMenu() {
             <div style={{ flex:1, paddingTop: restaurant.cover_url ? '38px' : 0 }}>
               <h1 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'20px', color:'#0F1117', marginBottom:'4px' }}>{restaurant.name}</h1>
               {branch && (
-                <div style={{ fontSize:'12px', fontWeight:'700', color:brandColor, marginBottom:'6px' }}>🏢 {branch.name}</div>
+                <div style={{ fontSize:'12px', fontWeight:'700', color:brandColor, marginBottom:'6px' }}>🏢 {isEn && branch.name_en ? branch.name_en : branch.name}</div>
               )}
               <div style={{ display:'flex', alignItems:'center', gap:'10px', flexWrap:'wrap' }}>
                 {(() => {
@@ -1332,7 +1334,7 @@ export default function PublicMenu() {
                     rel="noopener noreferrer"
                     style={{ fontSize:'12px', fontWeight:'700', color:brandColor, background:`${brandColor}14`, padding:'5px 11px', borderRadius:'100px', textDecoration:'none', display:'inline-flex', alignItems:'center', gap:'5px' }}
                   >
-                    🗺️ الموقع على الخريطة
+                    {t('mapLocation')}
                   </a>
                 )}
               </div>
