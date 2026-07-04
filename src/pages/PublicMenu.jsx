@@ -1097,7 +1097,7 @@ export default function PublicMenu() {
   )
 
   return (
-    <div className="sm-menu-frame" style={{ minHeight:'100vh', background:'#F8F9FB', direction: isEn ? 'ltr' : 'rtl', fontFamily:'Tajawal,sans-serif', maxWidth:'480px', margin:'0 auto', position:'relative' }}>
+    <div className="sm-menu-frame" style={{ minHeight:'100vh', background:'#F8F9FB', direction:'rtl', fontFamily:'Tajawal,sans-serif', maxWidth:'480px', margin:'0 auto', position:'relative' }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
