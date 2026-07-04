@@ -1,7 +1,26 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, Component } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
+
+// مصيدة أخطاء: تعرض رسالة الخطأ على الشاشة بدل الشاشة البيضاء (للتشخيص)
+class ErrBoundary extends Component {
+  constructor(p) { super(p); this.state = { err: null } }
+  static getDerivedStateFromError(err) { return { err } }
+  render() {
+    if (this.state.err) {
+      return (
+        <div style={{ padding:'16px', margin:'12px', background:'#FEF2F2', border:'2px solid #EF4444', borderRadius:'12px', direction:'ltr', textAlign:'left' }}>
+          <div style={{ fontWeight:'800', color:'#B91C1C', marginBottom:'6px', fontSize:'13px' }}>⚠️ Error (screenshot this):</div>
+          <div style={{ fontSize:'11px', color:'#7F1D1D', fontFamily:'monospace', whiteSpace:'pre-wrap', wordBreak:'break-word' }}>
+            {String(this.state.err?.message || this.state.err)}
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 // شارة مستوى السعرات: 🟢 منخفض (<300) / 🟡 متوسط (300-600) / 🔴 مرتفع (600+)
 function getCalorieBadge(calories) {
@@ -1813,6 +1832,7 @@ export default function PublicMenu() {
         <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={() => setShowAllergensModal(false)}>
           <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)' }}/>
           <div onClick={e => e.stopPropagation()} style={{ position:'relative', background:'white', width:'100%', maxWidth:'480px', borderRadius:'24px 24px 0 0', padding:'20px', maxHeight:'75vh', overflowY:'auto', animation:'slideUp 0.25s ease' }}>
+            <ErrBoundary>
             <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'2px', margin:'0 auto 16px' }}/>
             <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', marginBottom:'6px', textAlign:'center' }}>⚠️ {t('allergens')}</h3>
             <p style={{ fontSize:'12px', color:'#9CA3AF', textAlign:'center', marginBottom:'18px', lineHeight:'1.6' }}>
@@ -1841,6 +1861,7 @@ export default function PublicMenu() {
             >
               {t('close')}
             </button>
+            </ErrBoundary>
           </div>
         </div>
       )}
