@@ -19,6 +19,24 @@ function computeOpenStatus(hours) {
     return { open: true, unknown: true, todayText: '', nextText: '' }
   }
   const DAY_NAMES = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت']
+
+// ترجمة إنجليزية للمسبّبات القياسية (تُطابق العربي المخزّن؛ أي قيمة غير موجودة تُعرض كما هي)
+const ALLERGEN_EN = {
+  'البيض ومنتجاته': 'Eggs & products',
+  'الفول السوداني ومنتجاته': 'Peanuts & products',
+  'الغلوتين (القمح والشعير)': 'Gluten (wheat & barley)',
+  'الحليب ومنتجاته': 'Milk & dairy',
+  'القشريات (الجمبري، الكابوريا)': 'Crustaceans (shrimp, crab)',
+  'المكسرات (لوز، جوز، فستق)': 'Tree nuts (almond, walnut, pistachio)',
+  'الصويا ومنتجاتها': 'Soy & products',
+  'بذور السمسم ومنتجاتها': 'Sesame seeds & products',
+  'الرخويات (المحار، الحبار)': 'Molluscs (oysters, squid)',
+  'الأسماك ومنتجاتها': 'Fish & products',
+  'الخردل ومنتجاته': 'Mustard & products',
+  'الكرفس ومنتجاته': 'Celery & products',
+  'ثاني أكسيد الكبريت والكبريتات': 'Sulphur dioxide & sulphites',
+  'الترمس ومنتجاته': 'Lupin & products',
+}
   const fmt = (t) => (t === '24:00' ? '00:00' : t)
   const toMins = (t) => {
     if (!t) return null
@@ -240,6 +258,12 @@ export default function PublicMenu() {
     cancelledByShop:{ ar: 'تم إلغاء طلبك من قبل المطعم', en: 'Your order was cancelled by the restaurant' },
     itemUnavail: { ar: 'أصبح غير متوفر في طلبك', en: 'became unavailable in your order' },
     tCancelFail3:{ ar: 'تعذّر إلغاء الطلب، حاول مرة أخرى', en: 'Could not cancel the order, try again' },
+    allergensDesc:{ ar: '{t('allergensDesc')}', en: 'Some menu items may contain one or more of the following allergens' },
+    close:       { ar: 'إغلاق', en: 'Close' },
+    cancelOrder: { ar: 'إلغاء الطلب', en: 'Cancel order' },
+    sendWaLast:  { ar: '{t('sendWaLast')}', en: '💬 Send last order via WhatsApp' },
+    backToMenu:  { ar: '{t('backToMenu')}', en: '← Back to menu for another order' },
+    rewardDefault:{ ar: 'مكافأة', en: 'reward' },
   }
   const t = (key) => (TT[key]?.[lang]) ?? TT[key]?.ar ?? key
 
@@ -1015,7 +1039,7 @@ export default function PublicMenu() {
               </div>
               {ready ? (
                 <div style={{ background:'rgba(255,255,255,0.2)', borderRadius:'11px', padding:'10px 12px', fontSize:'13px', fontWeight:'800' }}>
-                  🎉 مكافأتك جاهزة: {loyalty.reward_description || 'مكافأة'} — اطلبها عند المطعم!
+                  🎉 {isEn ? 'Your reward is ready' : 'مكافأتك جاهزة'}: {loyalty.reward_description || t('rewardDefault')} — {isEn ? 'claim it at the restaurant!' : 'اطلبها عند المطعم!'}
                 </div>
               ) : (
                 <>
@@ -1023,7 +1047,7 @@ export default function PublicMenu() {
                     <div style={{ width:`${pct}%`, height:'100%', background:'white', borderRadius:'100px', transition:'width 0.5s' }}/>
                   </div>
                   <div style={{ fontSize:'12px', opacity:0.92 }}>
-                    باقي {Math.max(0, threshold - balance)} نقطة للحصول على: {loyalty.reward_description || 'مكافأة'}
+                    {isEn ? `${Math.max(0, threshold - balance)} pts left to unlock` : `باقي ${Math.max(0, threshold - balance)} نقطة للحصول على`}: {loyalty.reward_description || t('rewardDefault')}
                   </div>
                 </>
               )}
@@ -1143,7 +1167,7 @@ export default function PublicMenu() {
                   onClick={() => cancelOrderByCustomer(order)}
                   style={{ width:'100%', marginTop:'12px', padding:'10px', borderRadius:'11px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', color:'#EF4444', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}
                 >
-                  إلغاء الطلب
+                  {t('cancelOrder')}
                 </button>
               )}
             </div>
@@ -1156,7 +1180,7 @@ export default function PublicMenu() {
             onClick={sendWhatsAppConfirmation}
             style={{ width:'100%', padding:'15px', borderRadius:'14px', border:'1.5px solid #25D366', background:'rgba(37,211,102,0.08)', color:'#1FA855', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', marginBottom:'12px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}
           >
-            💬 إرسال تأكيد آخر طلب عبر واتساب
+            {t('sendWaLast')}
           </button>
         )}
 
@@ -1165,7 +1189,7 @@ export default function PublicMenu() {
           onClick={() => setOrderPlaced(false)}
           style={{ width:'100%', padding:'15px', borderRadius:'14px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'16px', cursor:'pointer', boxShadow:`0 8px 24px ${brandColor}44` }}
         >
-          ← العودة للمنيو لطلب إضافي
+          {t('backToMenu')}
         </button>
       </div>
     </div>
@@ -1783,7 +1807,7 @@ export default function PublicMenu() {
             <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'2px', margin:'0 auto 16px' }}/>
             <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', marginBottom:'6px', textAlign:'center' }}>⚠️ {t('allergens')}</h3>
             <p style={{ fontSize:'12px', color:'#9CA3AF', textAlign:'center', marginBottom:'18px', lineHeight:'1.6' }}>
-              قد تحتوي أصناف هذا المنيو على واحد أو أكثر من المسبّبات التالية
+              {t('allergensDesc')}
             </p>
             <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
               {restaurant.allergens.map((a, i) => {
@@ -1791,7 +1815,7 @@ export default function PublicMenu() {
                 return (
                   <div key={i} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', background:'#F8F9FB', borderRadius:'12px' }}>
                     <span style={{ fontSize:'18px' }}>{item.icon || '⚠️'}</span>
-                    <span style={{ fontSize:'13px', fontWeight:'600' }}>{item.label}</span>
+                    <span style={{ fontSize:'13px', fontWeight:'600' }}>{isEn ? (ALLERGEN_EN[item.label] || item.label) : item.label}</span>
                   </div>
                 )
               })}
@@ -1800,7 +1824,7 @@ export default function PublicMenu() {
               onClick={() => setShowAllergensModal(false)}
               style={{ width:'100%', marginTop:'18px', padding:'13px', borderRadius:'12px', border:'none', background:'#F3F4F6', color:'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer' }}
             >
-              إغلاق
+              {t('close')}
             </button>
           </div>
         </div>
