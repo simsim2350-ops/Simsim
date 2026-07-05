@@ -164,8 +164,12 @@ export default function Staff() {
 
   const removeMember = async (m) => {
     if (!confirm(`حذف الموظف "${m.username}"؟`)) return
-    const { error } = await supabase.from('restaurant_members').delete().eq('id', m.id)
+    const { data, error } = await supabase.from('restaurant_members').delete().eq('id', m.id).select()
     if (error) { toast.error(error.message); return }
+    if (!data || data.length === 0) {
+      toast.error('لم يُحذف — قد تكون صلاحيتك غير كافية')
+      return
+    }
     toast.success('تم حذف الموظف')
     fetchAll()
   }
