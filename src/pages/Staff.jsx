@@ -163,15 +163,28 @@ export default function Staff() {
   }
 
   const removeMember = async (m) => {
-    if (!confirm(`حذف الموظف "${m.username}"؟`)) return
-    const { data, error } = await supabase.from('restaurant_members').delete().eq('id', m.id).select()
-    if (error) { toast.error(error.message); return }
-    if (!data || data.length === 0) {
-      toast.error('لم يُحذف — قد تكون صلاحيتك غير كافية')
-      return
+    if (!confirm(`حذف الموظف "${m.username}" نهائياً؟`)) return
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-staff', {
+        body: { member_id: m.id },
+      })
+      if (error) {
+        // احتياط: لو الدالة غير منشورة، احذف العضوية مباشرة على الأقل
+        const { data: del, error: delErr } = await supabase.from('restaurant_members').delete().eq('id', m.id).select()
+        if (delErr || !del || del.length === 0) {
+          toast.error('تعذّر الحذف — تأكد من نشر دالة delete-staff')
+          return
+        }
+        toast.success('تم حذف الموظف (الحساب قد يبقى)')
+        fetchAll()
+        return
+      }
+      if (data?.warning) toast.success('تم الحذف (بقي حساب الدخول)')
+      else toast.success('تم حذف الموظف نهائياً')
+      fetchAll()
+    } catch (err) {
+      toast.error(err.message || 'حدث خطأ')
     }
-    toast.success('تم حذف الموظف')
-    fetchAll()
   }
 
   const branchLabel = (scope) => {
