@@ -183,6 +183,14 @@ export default function Staff() {
     return m.allowed_pages.map(k => PAGES.find(p => p.key === k)?.label || k).join('، ')
   }
 
+  const copyLoginLink = () => {
+    const link = `${window.location.origin}/staff-login/${restaurant.slug}`
+    navigator.clipboard?.writeText(link).then(
+      () => toast.success('تم نسخ رابط دخول الموظفين 📋'),
+      () => toast.error('تعذّر النسخ')
+    )
+  }
+
   if (!restaurant || loading) return <Spinner />
 
   return (
@@ -190,6 +198,14 @@ export default function Staff() {
       actions={<button onClick={openAdd} style={{ padding:'10px 16px', borderRadius:'11px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>+ إضافة موظف</button>}
     >
       <div style={{ maxWidth:'760px' }}>
+        <div style={{ background:'#0F1117', borderRadius:'14px', padding:'14px 16px', marginBottom:'14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', flexWrap:'wrap' }}>
+          <div style={{ color:'white' }}>
+            <div style={{ fontWeight:'800', fontSize:'14px', fontFamily:'Cairo,sans-serif' }}>🔗 رابط دخول الموظفين</div>
+            <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.6)', direction:'ltr', textAlign:'left', marginTop:'2px' }}>/staff-login/{restaurant.slug}</div>
+          </div>
+          <button onClick={copyLoginLink} style={{ padding:'9px 16px', borderRadius:'10px', border:'none', background:'#FF6B35', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer' }}>نسخ الرابط</button>
+        </div>
+
         {members.length === 0 ? (
           <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', padding:'40px 20px', textAlign:'center', color:'#9CA3AF' }}>
             <div style={{ fontSize:'40px', marginBottom:'10px' }}>👥</div>
