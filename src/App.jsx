@@ -18,6 +18,7 @@ import Settings from './pages/Settings'
 import Analytics from './pages/Analytics'
 import Loyalty from './pages/Loyalty'
 import Staff from './pages/Staff'
+import StaffLogin from './pages/StaffLogin'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore()
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         <Route path="/reset-password"  element={<ResetPassword />} />
         <Route path="/menu/:slug"      element={<PublicMenu />} />
+        <Route path="/staff-login/:slug" element={<StaffLogin />} />
         <Route path="/onboarding"      element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
         <Route path="/dashboard"       element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/menu"            element={<ProtectedRoute><Menu /></ProtectedRoute>} />
