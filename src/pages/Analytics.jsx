@@ -21,7 +21,8 @@ const breakdown = (o) => {
 
 export default function Analytics() {
   const navigate = useNavigate()
-  const { user, restaurant } = useAuthStore()
+  const { user, restaurant, isOwner, membership } = useAuthStore()
+  const branchLocked = !isOwner && membership?.branch_scope && membership.branch_scope !== 'all'
   const { isMobile, isDesktop } = useBreakpoint()
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('week')
@@ -155,7 +156,7 @@ export default function Analytics() {
       active="analytics"
       title="📊 التحليلات"
       actions={<>
-        {branches.length > 0 && (
+        {branches.length > 0 && !branchLocked && (
           <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} style={{ padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'700', color:'#374151', cursor:'pointer', background:'white' }}>
             <option value="all">🏢 كل الفروع</option>
             <option value="__none__">🏠 الرئيسي</option>

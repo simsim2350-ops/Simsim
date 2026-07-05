@@ -24,7 +24,8 @@ function getTier(orderCount) {
 
 export default function Customers() {
   const navigate = useNavigate()
-  const { user, restaurant } = useAuthStore()
+  const { user, restaurant, isOwner, membership } = useAuthStore()
+  const branchLocked = !isOwner && membership?.branch_scope && membership.branch_scope !== 'all'
   const [orders, setOrders] = useState([])
   const [branches, setBranches] = useState([])
   const [branchFilter, setBranchFilter] = useState('all')
@@ -177,7 +178,7 @@ export default function Customers() {
               <option value="spent">الأكثر إنفاقاً</option>
               <option value="orders">الأكثر طلباً</option>
             </select>
-            {branches.length > 0 && (
+            {branches.length > 0 && !branchLocked && (
               <select
                 value={branchFilter}
                 onChange={e => setBranchFilter(e.target.value)}
