@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { NAV_ITEMS } from '../lib/nav'
+import { canAccess, navPage } from '../lib/permissions'
 
 /**
  * التخطيط الموحّد لكل صفحات لوحة التحكم.
@@ -16,8 +17,12 @@ import { NAV_ITEMS } from '../lib/nav'
  */
 export default function AppShell({ active, title, actions, badges = {}, children }) {
   const navigate = useNavigate()
-  const { user, restaurant, signOut } = useAuthStore()
+  const { user, restaurant, signOut, isOwner, membership } = useAuthStore()
   const { isDesktop } = useBreakpoint()
+
+  // فلترة روابط التنقل حسب صلاحيات المستخدم (الموظف يرى صفحاته المسموحة فقط)
+  const perms = { isOwner, allowedPages: membership?.allowed_pages }
+  const visibleNav = NAV_ITEMS.filter(item => canAccess(navPage(item.key), perms))
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const handleSignOut = async () => { await signOut(); navigate('/login') }
@@ -53,7 +58,7 @@ export default function AppShell({ active, title, actions, badges = {}, children
           )}
 
           <nav style={{ padding:'8px 12px', flex:1, overflowY:'auto' }}>
-            {NAV_ITEMS.map(item => {
+            {visibleNav.map(item => {
               const isActive = item.key === active
               const badge = badges[item.key]
               return (
