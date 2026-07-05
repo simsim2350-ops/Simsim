@@ -42,7 +42,7 @@ const inputStyle = {
 }
 const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px', color:'#374151' }
 
-const emptyForm = { username:'', password:'', allowed_pages:[], branch_id:'', all_pages:false }
+const emptyForm = { username:'', password:'', allowed_pages:[], branch_scope:'all', all_pages:false }
 
 export default function Staff() {
   const navigate = useNavigate()
@@ -64,7 +64,7 @@ export default function Staff() {
     setLoading(true)
     try {
       const [{ data: mem }, { data: br }] = await Promise.all([
-        supabase.from('restaurant_members').select('*, branches(name)').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false }),
+        supabase.from('restaurant_members').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false }),
         supabase.from('branches').select('id, name').eq('restaurant_id', restaurant.id).order('sort_order'),
       ])
       setMembers(mem || [])
@@ -81,7 +81,7 @@ export default function Staff() {
       username: m.username,
       password: '',
       allowed_pages: Array.isArray(m.allowed_pages) ? m.allowed_pages.filter(p => p !== 'all') : [],
-      branch_id: m.branch_id || '',
+      branch_scope: m.branch_scope || 'all',
       all_pages: Array.isArray(m.allowed_pages) && m.allowed_pages.includes('all'),
     })
     setModalOpen(true)
@@ -100,9 +100,9 @@ export default function Staff() {
 
   const handleSave = async () => {
     const username = form.username.trim().toLowerCase()
-    // تحقّق من اسم المستخدم (لاتيني فقط لأنه يُستخدم في الإيميل)
-    if (!/^[a-z0-9._-]{3,}$/.test(username)) {
-      toast.error('اسم المستخدم: حروف إنجليزية/أرقام فقط (3 أحرف على الأقل)')
+    // تحقّق من اسم المستخدم (يبدأ بحرف إنجليزي، ثم حروف/أرقام/_ . -)
+    if (!/^[a-z][a-z0-9._-]{2,}$/.test(username)) {
+      toast.error('اسم المستخدم يبدأ بحرف إنجليزي (3 أحرف على الأقل، بدون مسافات)')
       return
     }
     const pages = form.all_pages ? ['all'] : form.allowed_pages
@@ -114,7 +114,7 @@ export default function Staff() {
         // تعديل الصلاحيات فقط (اسم المستخدم وكلمة المرور لا يُعدّلان هنا)
         const { error } = await supabase.from('restaurant_members').update({
           allowed_pages: pages,
-          branch_id: form.branch_id || null,
+          branch_scope: form.branch_scope || 'all',
         }).eq('id', editing.id)
         if (error) throw error
         toast.success('تم تحديث صلاحيات الموظف')
@@ -142,7 +142,7 @@ export default function Staff() {
           user_id: newUserId,
           username,
           allowed_pages: pages,
-          branch_id: form.branch_id || null,
+          branch_scope: form.branch_scope || 'all',
           is_active: true,
         })
         if (memErr) throw memErr
@@ -168,6 +168,13 @@ export default function Staff() {
     if (error) { toast.error(error.message); return }
     toast.success('تم حذف الموظف')
     fetchAll()
+  }
+
+  const branchLabel = (scope) => {
+    if (!scope || scope === 'all') return 'كل الفروع'
+    if (scope === 'main') return '🏠 الفرع الرئيسي'
+    const b = branches.find(x => x.id === scope)
+    return b ? `🏢 ${b.name}` : '🏢 فرع'
   }
 
   const pagesSummary = (m) => {
@@ -199,8 +206,7 @@ export default function Staff() {
                     <div>
                       <div style={{ fontWeight:'800', fontSize:'15px', fontFamily:'Cairo,sans-serif' }}>{m.username}</div>
                       <div style={{ fontSize:'12px', color:'#6B7280' }}>
-                        {pagesSummary(m)}
-                        {m.branches?.name ? ` · 🏢 ${m.branches.name}` : ' · كل الفروع'}
+                        {pagesSummary(m)} · {branchLabel(m.branch_scope)}
                       </div>
                     </div>
                   </div>
@@ -258,9 +264,10 @@ export default function Staff() {
 
             <div style={{ marginBottom:'18px' }}>
               <label style={labelStyle}>الفرع</label>
-              <select style={inputStyle} value={form.branch_id} onChange={e => setForm(f=>({...f,branch_id:e.target.value}))}>
-                <option value="">كل الفروع</option>
-                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              <select style={inputStyle} value={form.branch_scope} onChange={e => setForm(f=>({...f,branch_scope:e.target.value}))}>
+                <option value="all">كل الفروع</option>
+                <option value="main">🏠 الفرع الرئيسي</option>
+                {branches.map(b => <option key={b.id} value={b.id}>🏢 {b.name}</option>)}
               </select>
               <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'4px' }}>لو اخترت فرعاً، الموظف يرى طلبات هذا الفرع فقط.</div>
             </div>
