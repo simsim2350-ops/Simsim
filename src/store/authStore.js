@@ -5,6 +5,8 @@ export const useAuthStore = create((set, get) => ({
   user: null,
   session: null,
   restaurant: null,
+  membership: null,   // سجل عضوية الموظف (null لصاحب المطعم)
+  isOwner: false,     // هل المستخدم الحالي صاحب المطعم؟
   loading: true,
 
   initialize: async () => {
@@ -32,19 +34,38 @@ export const useAuthStore = create((set, get) => ({
         set({ user: session.user, session })
         await get().fetchRestaurant(session.user.id)
       } else {
-        set({ user: null, session: null, restaurant: null })
+        set({ user: null, session: null, restaurant: null, membership: null, isOwner: false })
       }
     })
   },
 
   fetchRestaurant: async (userId) => {
     try {
-      const { data } = await supabase
+      // 1) هل المستخدم صاحب مطعم؟
+      const { data: owned } = await supabase
         .from('restaurants')
         .select('*')
         .eq('owner_id', userId)
-        .single()
-      if (data) set({ restaurant: data })
+        .maybeSingle()
+      if (owned) {
+        set({ restaurant: owned, membership: null, isOwner: true })
+        return
+      }
+      // 2) هل هو موظف (عضو فعّال)؟
+      const { data: mem } = await supabase
+        .from('restaurant_members')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .maybeSingle()
+      if (mem) {
+        const { data: rest } = await supabase
+          .from('restaurants')
+          .select('*')
+          .eq('id', mem.restaurant_id)
+          .maybeSingle()
+        if (rest) set({ restaurant: rest, membership: mem, isOwner: false })
+      }
     } catch (err) {
       console.error('Restaurant error:', err)
     }
@@ -71,7 +92,7 @@ export const useAuthStore = create((set, get) => ({
 
   signOut: async () => {
     await supabase.auth.signOut()
-    set({ user: null, session: null, restaurant: null })
+    set({ user: null, session: null, restaurant: null, membership: null, isOwner: false })
   },
 
   resetPassword: async (email) => {
