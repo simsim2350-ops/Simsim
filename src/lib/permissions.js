@@ -1,0 +1,43 @@
+// ============================================================
+// مصدر الحقيقة الوحيد لمنطق صلاحيات الموظفين.
+// يُستخدم في AppShell (فلترة التنقل) و App (حماية المسارات).
+// ============================================================
+
+// صفحات حصرية لصاحب المطعم فقط — لا تُمنح لأي موظف إطلاقاً
+export const OWNER_ONLY = ['dashboard', 'settings', 'staff']
+
+// ترتيب الصفحات القابلة للتخصيص (لتحديد أول صفحة يُوجَّه إليها الموظف)
+export const PAGE_ORDER = ['orders', 'menu', 'branches', 'customers', 'analytics', 'loyalty', 'qr']
+
+// مسار كل صفحة
+export const PAGE_PATH = {
+  orders: '/orders', menu: '/menu', branches: '/branches',
+  customers: '/customers', analytics: '/analytics', loyalty: '/loyalty', qr: '/qr',
+}
+
+// مفتاح عنصر التنقل → مفتاح الصلاحية (products و menu نفس الصفحة)
+export function navPage(key) {
+  return key === 'products' ? 'menu' : key
+}
+
+// هل يملك المستخدم صلاحية صفحة معيّنة؟
+// perms = { isOwner, allowedPages }
+export function canAccess(pageKey, perms) {
+  const { isOwner, allowedPages } = perms || {}
+  if (isOwner) return true
+  if (OWNER_ONLY.includes(pageKey)) return false
+  const pages = Array.isArray(allowedPages) ? allowedPages : []
+  if (pages.includes('all')) return true
+  return pages.includes(pageKey)
+}
+
+// أول مسار مسموح للمستخدم (لتوجيهه بعد الدخول أو عند منعه من صفحة)
+export function firstAllowedPath(perms) {
+  const { isOwner, allowedPages } = perms || {}
+  if (isOwner) return '/dashboard'
+  const pages = Array.isArray(allowedPages) ? allowedPages : []
+  for (const p of PAGE_ORDER) {
+    if (pages.includes('all') || pages.includes(p)) return PAGE_PATH[p]
+  }
+  return null // لا صفحات مسموحة
+}
