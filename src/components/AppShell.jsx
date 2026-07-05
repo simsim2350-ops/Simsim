@@ -21,7 +21,7 @@ export default function AppShell({ active, title, actions, badges = {}, children
   const { isDesktop } = useBreakpoint()
 
   // فلترة روابط التنقل حسب صلاحيات المستخدم (الموظف يرى صفحاته المسموحة فقط)
-  const perms = { isOwner, allowedPages: membership?.allowed_pages }
+  const perms = { isOwner, allowedPages: membership?.allowed_pages, branchScope: membership?.branch_scope }
   const visibleNav = NAV_ITEMS.filter(item => canAccess(navPage(item.key), perms))
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
