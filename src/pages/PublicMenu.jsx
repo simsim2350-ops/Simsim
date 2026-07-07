@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, Component } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
+import { vatBreakdown } from '../lib/pricing'
 
 // مصيدة أخطاء: تعرض رسالة الخطأ على الشاشة بدل الشاشة البيضاء (للتشخيص)
 class ErrBoundary extends Component {
@@ -778,9 +779,8 @@ function PublicMenuInner() {
     }))
 
     const deliveryFee = orderType === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0
-    // الأسعار المعروضة شاملة ض.ق.م 15% — نفكّ الضريبة للخلف
-    const net = cartTotal / 1.15
-    const tax = cartTotal - net
+    // الأسعار المعروضة شاملة ض.ق.م 15% — نفكّ الضريبة للخلف (lib/pricing)
+    const { net, tax } = vatBreakdown(cartTotal)
     const total = cartTotal + deliveryFee
 
     const { data, error } = await supabase.from('orders').insert({
@@ -1570,7 +1570,7 @@ function PublicMenuInner() {
                 <span>{t('totalVat')}</span><span>{cartTotal.toFixed(2)} ﷼</span>
               </div>
               <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#9CA3AF', marginBottom: orderType === 'delivery' && restaurant?.delivery_fee > 0 ? '4px' : '8px' }}>
-                <span>{t('vatLine')}</span><span>{(cartTotal - cartTotal / 1.15).toFixed(2)} ﷼</span>
+                <span>{t('vatLine')}</span><span>{vatBreakdown(cartTotal).tax.toFixed(2)} ﷼</span>
               </div>
               {orderType === 'delivery' && Number(restaurant?.delivery_fee) > 0 && (
                 <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:'#9CA3AF', marginBottom:'8px' }}>

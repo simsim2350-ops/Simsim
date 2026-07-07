@@ -4,20 +4,13 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { orderBreakdown as breakdown } from '../lib/pricing'
 
 const PERIOD_DAYS = { week: 7, month: 30, quarter: 90 }
 const STATUS_LABELS = { pending:'انتظار', preparing:'تحضير', ready:'جاهز', completed:'مكتمل', cancelled:'ملغي' }
 const STATUS_COLORS = { pending:'#F59E0B', preparing:'#3B82F6', ready:'#10B981', completed:'#6B7280', cancelled:'#EF4444' }
 const TYPE_LABELS = { dine_in:'محلي', takeaway:'سفري', delivery:'توصيل' }
 const TYPE_COLORS = { dine_in:'#7C3AED', takeaway:'#F59E0B', delivery:'#0EA5E9' }
-
-// نفكّ الضريبة من الإجمالي (شامل ض.ق.م 15%) — متوافق مع كل الطلبات
-const breakdown = (o) => {
-  const deliv = Number(o.delivery_fee) || 0
-  const gross = Math.max(0, (Number(o.total) || 0) - deliv)
-  const net = gross / 1.15
-  return { total: Number(o.total) || 0, net, tax: gross - net, deliv }
-}
 
 export default function Analytics() {
   const navigate = useNavigate()

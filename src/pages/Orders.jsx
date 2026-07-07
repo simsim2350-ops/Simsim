@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { vatBreakdown, orderBreakdown, itemsGross } from '../lib/pricing'
 
 const STATUS = {
   pending:   { label:'انتظار',      bg:'#FEF3C7', color:'#92400E', next:'preparing', nextLabel:'✓ قبول وتحضير' },
@@ -174,13 +175,6 @@ export default function Orders() {
     return () => supabase.removeChannel(ch)
   }
 
-  // إعادة حساب الإجماليات من الأصناف
-  const recalc = (items) => {
-    const subtotal = items.reduce((s, it) => it.unavailable ? s : s + (it.price * it.qty), 0)
-    const tax = subtotal * 0.15
-    return { subtotal, tax, total: subtotal + tax }
-  }
-
   // توست تراجع
   const showUndo = (orderId, prevStatus, msg) => {
     toast((t) => (
@@ -244,9 +238,7 @@ export default function Orders() {
   const toggleItemUnavailable = async (order, itemIndex) => {
     const items = Array.isArray(order.items) ? order.items : []
     const updatedItems = items.map((it, i) => i === itemIndex ? { ...it, unavailable: !it.unavailable } : it)
-    const newGross = updatedItems.reduce((sum, it) => it.unavailable ? sum : sum + (it.price * it.qty), 0) // شامل الضريبة
-    const newNet = newGross / 1.15
-    const newTax = newGross - newNet
+    const { gross: newGross, net: newNet, tax: newTax } = vatBreakdown(itemsGross(updatedItems))
     const newTotal = newGross + (Number(order.delivery_fee) || 0)
     const allUnavailable = updatedItems.every(it => it.unavailable)
     const updatePayload = { items: updatedItems, subtotal: newNet, tax: newTax, total: newTotal }
@@ -606,10 +598,7 @@ export default function Orders() {
 
                 <div style={{ background:'#F8F9FB', borderRadius:'10px', padding:'10px 12px', marginBottom:'14px', border:'1px solid #E5E7EB' }}>
                   {(() => {
-                    const deliv = Number(order.delivery_fee) || 0
-                    const gross = Math.max(0, Number(order.total || 0) - deliv) // شامل الضريبة
-                    const net = gross / 1.15
-                    const taxAmt = gross - net
+                    const { deliv, net, tax: taxAmt } = orderBreakdown(order)
                     return (
                       <>
                         <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#9CA3AF', marginBottom:'4px' }}><span>الصافي (قبل الضريبة)</span><span>{net.toFixed(2)} ﷼</span></div>

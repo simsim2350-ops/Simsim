@@ -17,13 +17,14 @@ src/
   components/AppShell.jsx      ← التخطيط الموحّد (سايدبار + توب-بار + تجاوب)
   hooks/useBreakpoint.js       ← نقطة التحوّل الحيّة المشتركة
   lib/nav.js                   ← مصدر روابط التنقل الوحيد
+  lib/pricing.js               ← مصدر منطق التسعير/الضريبة الوحيد (ADR-1)
   lib/supabase.js , uploadImage.js
   store/authStore
   pages/*.jsx
 ```
 
 ## 3) القرارات المعمارية الموثّقة (ADR مختصر)
-- **[ADR-1] الضريبة = خيار (أ):** السعر المعروض **شامل ض.ق.م 15%**. تُفكّ للخلف: `net = (total - delivery) / 1.15`, `tax = gross - net`. مطبّق في: PublicMenu (السلة/الإنشاء)، Orders (الفاتورة + تعليم غير متوفر)، Analytics (صافي/محصّلة). يعمل للطلبات القديمة والجديدة معاً.
+- **[ADR-1] الضريبة = خيار (أ):** السعر المعروض **شامل ض.ق.م 15%**. تُفكّ للخلف: `net = (total - delivery) / 1.15`, `tax = gross - net`. **المنطق موحّد في `lib/pricing.js`** (`VAT_RATE`, `vatBreakdown`, `orderBreakdown`, `itemsGross`) ويستهلكه: PublicMenu (السلة/الإنشاء)، Orders (الفاتورة + تعليم غير متوفر)، Analytics (صافي/محصّلة). يعمل للطلبات القديمة والجديدة معاً.
 - **[ADR-2] الولاء:** النقاط تُحسب حيّاً من الطلبات المكتملة (`earned = floor(Σtotal × rate)`) − الاستبدالات. لا يوجد ledger للنقاط.
 - **[ADR-3] صلاحيات الطلبات:** المطعم **ممنوع** يعدّل كمية/يحذف صنفاً (فقط "غير متوفر"). الإلغاء **قبل القبول (pending) فقط**. زر تراجع مؤقت مسموح.
 - **[ADR-4] أوقات العمل:** `opening_hours` JSONB على `restaurants` و`branches` (مصفوفة 7، الأحد=0). `null = مفتوح دائماً`. لكل فرع أوقاته؛ يُقرأ في المنيو كـ `branch?.opening_hours || restaurant.opening_hours`. `is_active` = غلق يدوي فوري منفصل.
@@ -47,23 +48,24 @@ src/
 `isMobile < 768` · `isTablet 768–1024` · `isDesktop ≥ 1024`. حيّة (تتحدّث مع resize).
 
 ## 6) الديون التقنية (Technical Debt) — أولوية
-1. **[قيد المعالجة] تكرار السايدبار/التوب-بار** → يُحلّ بـ AppShell (rollout جارٍ).
-2. **[مفتوح] منطق التسعير/الضريبة مكرّر** → يُنقل لاحقاً إلى `lib/pricing.js` موحّد.
-3. **[مفتوح] لا CI/اختبارات** → أي رفع قد يكسر البيلد. يُنصح بإضافة فحص build على PR.
+1. **[منجز ✅] تكرار السايدبار/التوب-بار** → حُلّ بـ AppShell (كل صفحات اللوحة تستخدمه).
+2. **[منجز ✅] منطق التسعير/الضريبة مكرّر** → وُحّد في `lib/pricing.js` (وأُزيلت دالة `recalc` الميتة في Orders التي كانت تخالف ADR-1 بإضافة الضريبة فوق السعر).
+3. **[مُدار] لا اختبارات** → يوجد فحص build على PR/push (`.github/workflows/ci.yml`). لا اختبارات وحدات بعد.
 4. **[مُدار] تعدّد نسخ الملفات** → يُدار باتفاقية مصدر الحقيقة + هذا الملف.
 
-## 7) حالة تطبيق AppShell (Rollout)
+## 7) حالة تطبيق AppShell (Rollout) — مكتمل ✅
 | الصفحة | AppShell | تجاوب | ملاحظات |
 |---|---|---|---|
 | Settings | ✅ | ✅ | نموذج مرجعي |
-| Dashboard | ⏳ | ✅ | متجاوبة، لم تُنقل لـ AppShell بعد |
-| Analytics | ⏳ | ✅ | متجاوبة، لم تُنقل بعد |
-| Orders | ⏳ | ✅ | متجاوبة (كانبان)، لم تُنقل بعد |
-| Menu | ❌ | ❌ | تحتاج رفع النسخة الحالية |
-| Customers | ❌ | ❌ | تحتاج رفع النسخة الحالية |
-| Branches | ❌ | ❌ | تحتاج رفع + إرجاع أوقات الفرع القديمة |
-| QRCode | ❌ | ❌ | تحتاج رفع النسخة الحالية |
-| Loyalty | ⏳ | ❌ | نسخة الفريق التقني |
+| Dashboard | ✅ | ✅ | |
+| Analytics | ✅ | ✅ | |
+| Orders | ✅ | ✅ | كانبان |
+| Menu | ✅ | ✅ | |
+| Customers | ✅ | ✅ | |
+| Branches | ✅ | ✅ | |
+| QRCode | ✅ | ✅ | |
+| Loyalty | ✅ | ✅ | |
+| Staff | ✅ | ✅ | |
 
 ## 8) ملفات SQL المطلوبة في Supabase
 `opening_hours_migration.sql` · `orders_cancel_reason.sql` · `reviews_table.sql` · `loyalty_tables.sql` · `get_orders_status_rpc.sql`
