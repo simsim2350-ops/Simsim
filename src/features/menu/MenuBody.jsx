@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import ProductItem from './ProductItem'
 
 // جسم المنيو: شريط الأقسام (مع scroll-spy) + نتائج البحث + الأكثر مبيعاً + الأقسام وأصنافها
@@ -9,6 +9,14 @@ export default function MenuBody({
   brandColor, priceColor, descColor, isEn, t, tx, layout,
 }) {
   const categoryObserverRef = useRef(null)
+  const [catsOpen, setCatsOpen] = useState(false) // قائمة كل الأقسام (زر ☰)
+
+  // الانتقال لقسم: من التبويب مباشرة أو من قائمة ☰ (مع مهلة قصيرة لإغلاقها أولاً)
+  const goToCategory = (catId, fromSheet = false) => {
+    setActiveCategory(catId)
+    const scroll = () => document.getElementById(`cat-${catId}`)?.scrollIntoView({ behavior:'smooth', block:'start' })
+    if (fromSheet) { setCatsOpen(false); setTimeout(scroll, 60) } else scroll()
+  }
 
   // Scroll-spy: رصد القسم الظاهر حالياً أثناء التمرير، وتمييزه تلقائياً في شريط التبويبات + تمرير الشريط لإظهاره
   useEffect(() => {
@@ -68,35 +76,57 @@ export default function MenuBody({
 
   return (
     <>
-      {/* Category tabs */}
+      {/* Category tabs — نصية رفيعة بخط سفلي + زر ☰ لكل الأقسام */}
       {!searchQuery && (
-        <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', overflowX:'auto', display:'flex', padding:'0 8px', position:'sticky', top:0, zIndex:10, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
-          {categories.map(cat => (
-            <div
-              key={cat.id}
-              id={`tab-${cat.id}`}
-              onClick={() => {
-                setActiveCategory(cat.id)
-                document.getElementById(`cat-${cat.id}`)?.scrollIntoView({ behavior:'smooth', block:'start' })
-              }}
-              style={{
-                display:'flex', flexDirection:'column', alignItems:'center', gap:'2px',
-                padding:'6px 10px', cursor:'pointer', flexShrink:0,
-                borderBottom: activeCategory === cat.id ? `2.5px solid ${brandColor}` : '2.5px solid transparent',
-                color: activeCategory === cat.id ? brandColor : '#6B7280',
-                transition:'all 0.2s',
-              }}
-            >
-              {cat.cover_url ? (
-                <div style={{ width:'34px', height:'34px', borderRadius:'50%', overflow:'hidden', flexShrink:0 }}>
-                  <img loading="lazy" decoding="async" src={cat.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+        <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', alignItems:'center', padding:'0 4px', position:'sticky', top:0, zIndex:10, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+          <button onClick={() => setCatsOpen(true)} aria-label="كل الأقسام" style={{ border:'none', background:'none', fontSize:'17px', color:'#374151', padding:'8px 10px', cursor:'pointer', flexShrink:0, lineHeight:1 }}>☰</button>
+          <div style={{ overflowX:'auto', display:'flex', flex:1 }}>
+            {categories.map(cat => (
+              <div
+                key={cat.id}
+                id={`tab-${cat.id}`}
+                onClick={() => goToCategory(cat.id)}
+                style={{
+                  padding:'11px 11px 9px', cursor:'pointer', flexShrink:0, whiteSpace:'nowrap',
+                  fontSize:'13px', fontFamily:'Cairo,sans-serif',
+                  fontWeight: activeCategory === cat.id ? '900' : '700',
+                  borderBottom: activeCategory === cat.id ? `2.5px solid ${brandColor}` : '2.5px solid transparent',
+                  color: activeCategory === cat.id ? '#0F1117' : '#9CA3AF',
+                  transition:'all 0.2s',
+                }}
+              >
+                {tx(cat,'name')}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* قائمة كل الأقسام — تفتح من زر ☰ */}
+      {catsOpen && (
+        <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={() => setCatsOpen(false)}>
+          <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', animation:'fadeIn 0.2s ease' }}/>
+          <div onClick={e => e.stopPropagation()} style={{ position:'relative', background:'white', width:'100%', maxWidth:'480px', borderRadius:'24px 24px 0 0', padding:'12px 16px 24px', maxHeight:'70vh', overflowY:'auto', animation:'slideUp 0.25s ease' }}>
+            <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 14px' }}/>
+            <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', margin:'0 0 12px', textAlign:'center' }}>{t('allCats')}</h3>
+            {categories.map(cat => {
+              const count = products.filter(p => p.category_id === cat.id).length
+              const isActive = activeCategory === cat.id
+              return (
+                <div key={cat.id} onClick={() => goToCategory(cat.id, true)} style={{ display:'flex', alignItems:'center', gap:'11px', padding:'11px 10px', borderRadius:'12px', cursor:'pointer', background: isActive ? `${brandColor}0D` : 'transparent', marginBottom:'2px' }}>
+                  {cat.cover_url ? (
+                    <div style={{ width:'36px', height:'36px', borderRadius:'10px', overflow:'hidden', flexShrink:0 }}>
+                      <img loading="lazy" decoding="async" src={cat.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                    </div>
+                  ) : (
+                    <span style={{ fontSize:'20px', width:'36px', textAlign:'center' }}>{cat.emoji}</span>
+                  )}
+                  <span style={{ flex:1, fontSize:'14px', fontWeight: isActive ? '900' : '700', fontFamily:'Cairo,sans-serif', color: isActive ? brandColor : '#0F1117' }}>{tx(cat,'name')}</span>
+                  <span style={{ fontSize:'11px', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 9px', borderRadius:'100px' }}>{count}</span>
                 </div>
-              ) : (
-                <span style={{ fontSize:'15px' }}>{cat.emoji}</span>
-              )}
-              <span style={{ fontSize:'11px', fontWeight:'700', whiteSpace:'nowrap' }}>{tx(cat,'name')}</span>
-            </div>
-          ))}
+              )
+            })}
+          </div>
         </div>
       )}
 
