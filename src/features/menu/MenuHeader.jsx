@@ -1,5 +1,9 @@
+import { useEffect, useRef, useState } from 'react'
 import { SOCIAL_ICONS } from './SocialIcons'
 import { estimatedPrepTime } from './helpers'
+
+// أقصى عدد أحرف يظهر من وصف المطعم (قرار المالك)
+const DESC_MAX_CHARS = 105
 
 // هيدر المنيو — الهندسة الجديدة (مستلهمة من تطبيقات التوصيل):
 // هيرو مصوّر بكامل العرض + أزرار عائمة، ثم ورقة بيضاء بزوايا دائرية تحوي:
@@ -11,6 +15,18 @@ export default function MenuHeader({
   searchQuery, setSearchQuery,
   hasBranches, onChangeBranch,
 }) {
+  // البحث مخفي افتراضياً — يفتح بزر عائم على الهيرو (يوفّر مساحة عمودية)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const searchInputRef = useRef(null)
+  useEffect(() => { if (searchOpen) searchInputRef.current?.focus() }, [searchOpen])
+  const toggleSearch = () => {
+    if (searchOpen) { setSearchOpen(false); setSearchQuery('') }
+    else setSearchOpen(true)
+  }
+
+  // قصّ الوصف عند الحد الأقصى
+  const fullDesc = tx(restaurant, 'description')
+  const desc = fullDesc && fullDesc.length > DESC_MAX_CHARS ? fullDesc.slice(0, DESC_MAX_CHARS).trim() + '…' : fullDesc
   // خلية إحصائيات واحدة (حالة الفتح / وقت التجهيز / التوصيل)
   const statCells = [
     {
@@ -47,6 +63,11 @@ export default function MenuHeader({
           {isEn ? 'ع' : 'EN'}
         </button>
 
+        {/* زر البحث — عائم تحت زر اللغة، يفتح/يغلق حقل البحث */}
+        <button onClick={toggleSearch} style={{ position:'absolute', top:'64px', left:'14px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background: searchOpen ? brandColor : 'rgba(255,255,255,0.95)', color: searchOpen ? 'white' : '#374151', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          {searchOpen ? '✕' : '🔍'}
+        </button>
+
         {/* زر طلباتي — عائم بعداد حي */}
         {hasOrders && (
           <button onClick={onShowOrders} style={{ position:'absolute', top:'18px', right:'14px', padding:'10px 15px', borderRadius:'100px', border:'none', background:brandColor, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', boxShadow:`0 6px 18px ${brandColor}66` }}>
@@ -60,7 +81,27 @@ export default function MenuHeader({
 
       {/* ===== الورقة البيضاء المنزلقة ===== */}
       <div style={{ position:'relative', marginTop:'-26px', background:'white', borderRadius:'26px 26px 0 0', boxShadow:'0 -10px 30px rgba(15,17,23,0.16)', paddingTop:'10px' }}>
-        <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 12px' }}/>
+        <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 10px' }}/>
+
+        {/* حقل البحث — يظهر فقط عند فتحه من الزر العائم */}
+        {searchOpen && (
+          <div style={{ padding:'0 14px 10px' }}>
+            <div style={{ background:'#F8F9FB', borderRadius:'100px', border:`1.5px solid ${brandColor}55`, display:'flex', alignItems:'center', overflow:'hidden' }}>
+              <span style={{ padding:'9px 14px', fontSize:'15px', color:'#9CA3AF' }}>🔍</span>
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder={t('search')}
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ flex:1, padding:'9px 4px', border:'none', outline:'none', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'transparent', textAlign:'right' }}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} style={{ padding:'9px 14px', background:'none', border:'none', fontSize:'15px', cursor:'pointer', color:'#9CA3AF' }}>✕</button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* الهوية: شعار + اسم + فرع مع زر تغيير */}
         <div style={{ display:'flex', alignItems:'center', gap:'12px', padding:'0 16px' }}>
@@ -84,9 +125,9 @@ export default function MenuHeader({
           </div>
         </div>
 
-        {/* وصف المطعم — يكتبه صاحب المطعم من الإعدادات (يدعم الترجمة) */}
-        {tx(restaurant,'description') && (
-          <p style={{ fontSize:'13px', color:descColor, lineHeight:'1.7', margin:'10px 16px 0' }}>{tx(restaurant,'description')}</p>
+        {/* وصف المطعم — يكتبه صاحب المطعم من الإعدادات (يدعم الترجمة)، ويُقص عند 105 أحرف */}
+        {desc && (
+          <p style={{ fontSize:'12.5px', color:descColor, lineHeight:'1.65', margin:'8px 16px 0' }}>{desc}</p>
         )}
 
         {/* الموقع + رابط الخريطة */}
@@ -131,7 +172,7 @@ export default function MenuHeader({
         )}
 
         {/* بطاقة الإحصائيات: الحالة · التجهيز · التوصيل */}
-        <div style={{ display:'flex', margin:'13px 14px 0', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'15px', padding:'11px 4px' }}>
+        <div style={{ display:'flex', margin:'10px 14px 14px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'15px', padding:'9px 4px' }}>
           {statCells.map((c, i) => (
             <div key={i} style={{ flex:1, textAlign:'center', borderRight: i > 0 ? '1px solid #E9ECF1' : 'none', padding:'0 4px' }}>
               <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'12.5px', color:c.color, whiteSpace:'nowrap' }}>{c.value}</div>
@@ -140,22 +181,6 @@ export default function MenuHeader({
           ))}
         </div>
 
-        {/* البحث */}
-        <div style={{ padding:'12px 14px 14px' }}>
-          <div style={{ background:'#F8F9FB', borderRadius:'100px', border:'1.5px solid #EEF0F4', display:'flex', alignItems:'center', overflow:'hidden' }}>
-            <span style={{ padding:'10px 14px', fontSize:'15px', color:'#9CA3AF' }}>🔍</span>
-            <input
-              type="text"
-              placeholder={t('search')}
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{ flex:1, padding:'10px 4px', border:'none', outline:'none', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'transparent', textAlign:'right' }}
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} style={{ padding:'10px 14px', background:'none', border:'none', fontSize:'15px', cursor:'pointer', color:'#9CA3AF' }}>✕</button>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   )
