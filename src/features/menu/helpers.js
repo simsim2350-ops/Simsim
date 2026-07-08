@@ -1,5 +1,23 @@
 // دوال مساعدة نقية لمنيو الزبون — بلا React وبلا حالة
 
+// اسم الصنف داخل الطلب/السلة: يُطابق الصنف الحالي لجلب الترجمة، وإلا الاسم المخزّن
+export const makeItemName = (isEn, products) => (item) => {
+  if (isEn && item?.id) {
+    const pr = products.find(p => p.id === item.id)
+    if (pr?.name_en) return pr.name_en
+  }
+  return item?.name || ''
+}
+
+// وقت تجهيز تقديري ديناميكي: وقت أساسي + دقائق إضافية لكل طلب نشط حالياً بالمطبخ
+export function estimatedPrepTime(activeOrdersCount) {
+  const base = 10
+  const perOrder = 3
+  const min = base + activeOrdersCount * perOrder
+  const max = min + 10
+  return `${min}-${max}`
+}
+
 // شارة مستوى السعرات: 🟢 منخفض (<300) / 🟡 متوسط (300-600) / 🔴 مرتفع (600+)
 export function getCalorieBadge(calories) {
   if (calories == null) return null
