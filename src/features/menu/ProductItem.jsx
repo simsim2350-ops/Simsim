@@ -10,9 +10,12 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
   // لو الصنف بدون خيارات: نجمع كل عناصر السلة بنفس id (مفتاح بدون خيارات دائماً ثابت)
   const qty = hasOptions ? 0 : cart.filter(i => i.id === product.id).reduce((s,i) => s + i.qty, 0)
 
+  // إضافة سريعة: الصنف بلا خيارات يُضاف للسلة بضغطة واحدة؛ الصنف بخيارات يفتح المودال (الاختيار إجباري)
+  const quickAdd = hasOptions ? onAdd : () => onQtyChange(1)
+
   const qtyControl = qty === 0 ? (
     <button
-      onClick={onAdd}
+      onClick={quickAdd}
       style={{ position:'absolute', bottom:'6px', left:'6px', width:'30px', height:'30px', borderRadius:'50%', border:'none', background: brandColor, color:'white', fontSize:'20px', fontWeight:'300', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:`0 4px 12px ${brandColor}55`, lineHeight:'1' }}
     >
       +
@@ -21,7 +24,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
     <div style={{ position:'absolute', bottom:'5px', left:'4px', display:'flex', alignItems:'center', background:'#0F1117', borderRadius:'100px', overflow:'hidden', boxShadow:'0 4px 12px rgba(0,0,0,0.3)' }}>
       <button onClick={() => onQtyChange(-1)} style={{ width:'26px', height:'26px', background:'none', border:'none', color:'white', fontSize:'17px', cursor:'pointer', fontWeight:'300', display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
       <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color:'white', minWidth:'20px', textAlign:'center' }}>{qty}</span>
-      <button onClick={onAdd} style={{ width:'26px', height:'26px', background:'none', border:'none', color:'white', fontSize:'17px', cursor:'pointer', fontWeight:'300', display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
+      <button onClick={quickAdd} style={{ width:'26px', height:'26px', background:'none', border:'none', color:'white', fontSize:'17px', cursor:'pointer', fontWeight:'300', display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
     </div>
   )
 

@@ -57,6 +57,12 @@ function PublicMenuInner() {
     ? computeOpenStatus(branch?.opening_hours || restaurant.opening_hours)
     : { open: true, unknown: true, nextText: '', todayText: '' }
 
+  // اقتراحات السلة: من الأكثر مبيعاً، غير موجود في السلة، وبلا خيارات إجبارية (حتى تكون الإضافة بضغطة واحدة)
+  const cartSuggestions = bestSellers
+    .filter(p => !cart.some(i => i.id === p.id))
+    .filter(p => !(Array.isArray(p.options) && p.options.some(g => g.required)))
+    .slice(0, 3)
+
   // Loading — هيكل يحاكي شكل المنيو بدل شاشة فارغة
   if (loading) return <MenuSkeleton />
 
@@ -239,6 +245,8 @@ function PublicMenuInner() {
           removeFromCart={removeFromCart}
           incrementCartItem={incrementCartItem}
           onClose={() => setCartOpen(false)}
+          suggestions={cartSuggestions}
+          onAddSuggestion={(p) => addToCart(p, 1)}
         />
       )}
 

@@ -102,6 +102,7 @@ export const TT = {
   sendWaLast:  { ar: '💬 إرسال تأكيد آخر طلب عبر واتساب', en: '💬 Send last order via WhatsApp' },
   backToMenu:  { ar: '← العودة للمنيو لطلب إضافي', en: '← Back to menu for another order' },
   rewardDefault:{ ar: 'مكافأة', en: 'reward' },
+  suggestTitle: { ar: 'يكمّل طلبك 👌', en: 'Goes well with it 👌' },
 }
 
 // مصنع دالة الترجمة: fallback للعربي عند غياب الترجمة
