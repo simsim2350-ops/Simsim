@@ -58,6 +58,12 @@ export default function Orders() {
   const [view, setView] = useState(() => localStorage.getItem('orders_view') || 'kanban')
   useEffect(() => { localStorage.setItem('orders_view', view) }, [view])
 
+  // قفل تمرير الصفحة خلف نافذة تفاصيل الطلب طول ما هي مفتوحة (يمنع تحرّك الشاشة تحتها أثناء التمرير داخلها)
+  useEffect(() => {
+    document.body.style.overflow = selectedOrder ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [selectedOrder])
+
   // أعمدة مطويّة (تُحفظ)
   const [collapsed, setCollapsed] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem('orders_collapsed') || '[]')) } catch { return new Set() }
