@@ -1,0 +1,119 @@
+import { useEffect, useRef, useState } from 'react'
+import { supabase } from '../../../lib/supabase'
+
+// جلب بيانات المنيو: المطعم + الفرع/الفروع + الأقسام + الأصناف + الأكثر مبيعاً + عدد الطلبات النشطة (حي)
+export function useMenuData(slug, branchId) {
+  const [branch, setBranch] = useState(null)
+  const [branchList, setBranchList] = useState([])   // كل الفروع النشطة (لصفحة اختيار الفرع)
+  const [branchPicked, setBranchPicked] = useState(false) // هل حسم الزبون اختيار الفرع؟
+  const [restaurant, setRestaurant] = useState(null)
+  const [categories, setCategories] = useState([])
+  const [products, setProducts] = useState([])
+  const [bestSellers, setBestSellers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
+  const [activeCategory, setActiveCategory] = useState(null)
+  const [restaurantActiveOrdersCount, setActiveOrdersCount] = useState(0)
+  const restaurantLoadChannelRef = useRef(null)
+
+  useEffect(() => {
+    fetchMenu()
+  }, [slug])
+
+  useEffect(() => {
+    return () => {
+      if (restaurantLoadChannelRef.current) supabase.removeChannel(restaurantLoadChannelRef.current)
+    }
+  }, [])
+
+  const fetchMenu = async () => {
+    try {
+      // Fetch restaurant
+      const { data: rest, error } = await supabase
+        .from('restaurants')
+        .select('*')
+        .eq('slug', slug)
+        .eq('is_active', true)
+        .single()
+
+      if (error || !rest) { setNotFound(true); return }
+      setRestaurant(rest)
+
+      // لو الرابط يحتوي معرّف فرع، نجلب بياناته لعرض اسمه وربط الطلب به
+      if (branchId) {
+        const { data: br } = await supabase
+          .from('branches')
+          .select('*')
+          .eq('id', branchId)
+          .eq('restaurant_id', rest.id)
+          .eq('is_active', true)
+          .single()
+        if (br) setBranch(br)
+        setBranchPicked(true) // الفرع محدد مسبقاً من الرابط، لا حاجة لصفحة الاختيار
+      } else {
+        // لا يوجد فرع في الرابط: نجلب كل الفروع النشطة لعرض صفحة "اختر فرعك"
+        const { data: brs } = await supabase
+          .from('branches')
+          .select('*')
+          .eq('restaurant_id', rest.id)
+          .eq('is_active', true)
+          .order('sort_order')
+        const list = brs || []
+        setBranchList(list)
+        // نعرض صفحة الاختيار فقط لو فيه فرع نشط واحد على الأقل، وإلا نكمل مباشرة (الفرع الرئيسي)
+        if (list.length === 0) setBranchPicked(true)
+      }
+
+      // عدد الطلبات النشطة حالياً لحساب وقت تجهيز تقديري ديناميكي (عبر RPC آمن)
+      const { data: activeCount } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id })
+      setActiveOrdersCount(activeCount || 0)
+
+      // Fetch categories & products
+      const [{ data: cats }, { data: prods }] = await Promise.all([
+        supabase.from('categories').select('*').eq('restaurant_id', rest.id).eq('is_visible', true).order('sort_order'),
+        supabase.from('products').select('*').eq('restaurant_id', rest.id).eq('is_available', true).order('sort_order'),
+      ])
+
+      if (cats) { setCategories(cats); if (cats.length > 0) setActiveCategory(cats[0].id) }
+      if (prods) setProducts(prods)
+
+      // حساب الأصناف الأكثر مبيعاً من الطلبات الفعلية (غير الملغاة) خلال آخر 30 يوماً (عبر RPC آمن)
+      const { data: pastOrders } = await supabase.rpc('get_recent_order_items', { p_restaurant_id: rest.id })
+
+      if (pastOrders && prods) {
+        const salesCount = {}
+        pastOrders.forEach(o => {
+          const orderItems = Array.isArray(o.items) ? o.items : []
+          orderItems.forEach(it => {
+            if (it.unavailable) return
+            salesCount[it.id] = (salesCount[it.id] || 0) + (it.qty || 1)
+          })
+        })
+        const ranked = prods
+          .filter(p => salesCount[p.id] > 0)
+          .sort((a, b) => salesCount[b.id] - salesCount[a.id])
+          .slice(0, 4)
+        setBestSellers(ranked)
+      }
+
+      // تحديث عدد الطلبات النشطة لحظياً مع كل طلب جديد أو تغيّر حالة
+      if (restaurantLoadChannelRef.current) supabase.removeChannel(restaurantLoadChannelRef.current)
+      restaurantLoadChannelRef.current = supabase.channel(`restaurant-load-${rest.id}`)
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'orders', filter: `restaurant_id=eq.${rest.id}` },
+          async () => {
+            const { data: c } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id })
+            setActiveOrdersCount(c || 0)
+          }
+        ).subscribe()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return {
+    restaurant, branch, setBranch, branchList, branchPicked, setBranchPicked,
+    categories, products, bestSellers, loading, notFound,
+    activeCategory, setActiveCategory, restaurantActiveOrdersCount,
+  }
+}
