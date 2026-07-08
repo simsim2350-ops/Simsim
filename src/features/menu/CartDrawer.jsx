@@ -7,6 +7,7 @@ export default function CartDrawer({
   customerName, setCustomerName, customerPhone, setCustomerPhone,
   tableNumber, setTableNumber, deliveryAddress, setDeliveryAddress,
   openStatus, placeOrder, removeFromCart, incrementCartItem, onClose,
+  suggestions = [], onAddSuggestion,
 }) {
   return (
     <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
@@ -46,6 +47,29 @@ export default function CartDrawer({
             </div>
           ))}
         </div>
+
+        {/* اقتراحات "يكمّل طلبك" — من الأكثر مبيعاً، غير الموجود في السلة، وبلا خيارات إجبارية (إضافة بضغطة) */}
+        {suggestions.length > 0 && (
+          <div style={{ padding:'10px 20px 12px', borderTop:'1px solid #F3F4F6', flexShrink:0 }}>
+            <div style={{ fontSize:'12px', fontWeight:'800', color:'#6B7280', marginBottom:'8px' }}>{t('suggestTitle')}</div>
+            <div style={{ display:'flex', gap:'8px', overflowX:'auto', paddingBottom:'2px' }}>
+              {suggestions.map(p => (
+                <div key={p.id} onClick={() => onAddSuggestion(p)} style={{ display:'flex', alignItems:'center', gap:'8px', border:'1.5px solid #E5E7EB', borderRadius:'12px', padding:'7px 10px', cursor:'pointer', flexShrink:0, background:'white' }}>
+                  <div style={{ width:'34px', height:'34px', borderRadius:'9px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', overflow:'hidden', flexShrink:0 }}>
+                    {p.image_url
+                      ? <img loading="lazy" decoding="async" src={p.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      : (p.emoji || '🍽️')}
+                  </div>
+                  <div>
+                    <div style={{ fontSize:'12px', fontWeight:'700', whiteSpace:'nowrap', maxWidth:'110px', overflow:'hidden', textOverflow:'ellipsis' }}>{(isEn && p.name_en) ? p.name_en : p.name}</div>
+                    <div style={{ fontSize:'11px', fontWeight:'800', color:brandColor }}>+{p.price} ﷼</div>
+                  </div>
+                  <span style={{ width:'22px', height:'22px', borderRadius:'50%', background:brandColor, color:'white', fontSize:'15px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontWeight:'300' }}>+</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Summary — الأسعار شاملة ض.ق.م 15% */}
         <div style={{ padding:'12px 20px', background:'#F8F9FB', borderTop:'1px solid #E5E7EB', flexShrink:0 }}>
