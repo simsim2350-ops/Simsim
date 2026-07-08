@@ -163,6 +163,8 @@ function PublicMenuInner() {
         onShowAllergens={() => setShowAllergensModal(true)}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        hasBranches={branchList.length > 0}
+        onChangeBranch={() => { setBranchPicked(false); window.scrollTo(0, 0) }}
       />
 
       {/* Category tabs + menu content */}
