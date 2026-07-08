@@ -20,8 +20,11 @@ export default function CartDrawer({
           <button onClick={onClose} style={{ width:'32px', height:'32px', borderRadius:'50%', border:'1.5px solid #E5E7EB', background:'white', fontSize:'18px', cursor:'pointer', color:'#6B7280' }}>✕</button>
         </div>
 
+        {/* الجسم القابل للتمرير: العناصر + الاقتراحات + الملخص — شريط تمرير واحد للسلة كلها */}
+        <div style={{ flex:1, overflowY:'auto', minHeight:0 }}>
+
         {/* Cart items */}
-        <div style={{ flex:1, overflowY:'auto', padding:'12px 20px' }}>
+        <div style={{ padding:'12px 20px' }}>
           {cart.map((item) => (
             <div key={item.cartKey} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 0', borderBottom:'1px solid #F3F4F6' }}>
               <div style={{ width:'48px', height:'48px', borderRadius:'12px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px', flexShrink:0, overflow:'hidden' }}>
@@ -184,6 +187,8 @@ export default function CartDrawer({
           >
             {openStatus.open ? t('confirmOrder') : t('closedBtn')}
           </button>
+        </div>
+
         </div>
       </div>
     </div>
