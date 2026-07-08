@@ -172,7 +172,7 @@ export default function MenuHeader({
         )}
 
         {/* بطاقة الإحصائيات: الحالة · التجهيز · التوصيل */}
-        <div style={{ display:'flex', margin:'8px 14px 12px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'15px', padding:'9px 4px' }}>
+        <div style={{ display:'flex', margin:'8px 14px 8px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'15px', padding:'9px 4px' }}>
           {statCells.map((c, i) => (
             <div key={i} style={{ flex:1, textAlign:'center', borderRight: i > 0 ? '1px solid #E9ECF1' : 'none', padding:'0 4px' }}>
               <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'12.5px', color:c.color, whiteSpace:'nowrap' }}>{c.value}</div>

@@ -80,21 +80,21 @@ export default function MenuBody({
                 document.getElementById(`cat-${cat.id}`)?.scrollIntoView({ behavior:'smooth', block:'start' })
               }}
               style={{
-                display:'flex', flexDirection:'column', alignItems:'center', gap:'3px',
-                padding:'10px 14px', cursor:'pointer', flexShrink:0,
+                display:'flex', flexDirection:'column', alignItems:'center', gap:'2px',
+                padding:'6px 10px', cursor:'pointer', flexShrink:0,
                 borderBottom: activeCategory === cat.id ? `2.5px solid ${brandColor}` : '2.5px solid transparent',
                 color: activeCategory === cat.id ? brandColor : '#6B7280',
                 transition:'all 0.2s',
               }}
             >
               {cat.cover_url ? (
-                <div style={{ width:'48px', height:'48px', borderRadius:'50%', overflow:'hidden', flexShrink:0 }}>
+                <div style={{ width:'34px', height:'34px', borderRadius:'50%', overflow:'hidden', flexShrink:0 }}>
                   <img loading="lazy" decoding="async" src={cat.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 </div>
               ) : (
-                <span style={{ fontSize:'18px' }}>{cat.emoji}</span>
+                <span style={{ fontSize:'15px' }}>{cat.emoji}</span>
               )}
-              <span style={{ fontSize:'12px', fontWeight:'700', whiteSpace:'nowrap' }}>{tx(cat,'name')}</span>
+              <span style={{ fontSize:'11px', fontWeight:'700', whiteSpace:'nowrap' }}>{tx(cat,'name')}</span>
             </div>
           ))}
         </div>
