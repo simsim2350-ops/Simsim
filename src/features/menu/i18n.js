@@ -103,6 +103,7 @@ export const TT = {
   backToMenu:  { ar: '← العودة للمنيو لطلب إضافي', en: '← Back to menu for another order' },
   rewardDefault:{ ar: 'مكافأة', en: 'reward' },
   suggestTitle: { ar: 'يكمّل طلبك 👌', en: 'Goes well with it 👌' },
+  allCats:     { ar: 'كل الأقسام', en: 'All categories' },
 }
 
 // مصنع دالة الترجمة: fallback للعربي عند غياب الترجمة
