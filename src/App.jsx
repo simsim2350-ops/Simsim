@@ -1,25 +1,38 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from './store/authStore'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import ForgotPassword from './pages/ForgotPassword'
-import ResetPassword from './pages/ResetPassword'
-import Onboarding from './pages/Onboarding'
-import Customers from './pages/Customers'
-import Branches from './pages/Branches'
-import Dashboard from './pages/Dashboard'
-import Menu from './pages/Menu'
-import Orders from './pages/Orders'
-import PublicMenu from './pages/PublicMenu'
-import QRCodePage from './pages/QRCode'
-import Settings from './pages/Settings'
-import Analytics from './pages/Analytics'
-import Loyalty from './pages/Loyalty'
-import Staff from './pages/Staff'
-import StaffLogin from './pages/StaffLogin'
 import { canAccess, firstAllowedPath } from './lib/permissions'
+
+// تحميل كسول لكل الصفحات: زبون المنيو لا يحمّل كود اللوحة، والعكس صحيح
+const Login          = lazy(() => import('./pages/Login'))
+const Register       = lazy(() => import('./pages/Register'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword  = lazy(() => import('./pages/ResetPassword'))
+const Onboarding     = lazy(() => import('./pages/Onboarding'))
+const Customers      = lazy(() => import('./pages/Customers'))
+const Branches       = lazy(() => import('./pages/Branches'))
+const Dashboard      = lazy(() => import('./pages/Dashboard'))
+const Menu           = lazy(() => import('./pages/Menu'))
+const Orders         = lazy(() => import('./pages/Orders'))
+const PublicMenu     = lazy(() => import('./pages/PublicMenu'))
+const QRCodePage     = lazy(() => import('./pages/QRCode'))
+const Settings       = lazy(() => import('./pages/Settings'))
+const Analytics      = lazy(() => import('./pages/Analytics'))
+const Loyalty        = lazy(() => import('./pages/Loyalty'))
+const Staff          = lazy(() => import('./pages/Staff'))
+const StaffLogin     = lazy(() => import('./pages/StaffLogin'))
+
+// نفس شاشة التحميل المعتمدة في ProtectedRoute — تُعرض أثناء جلب chunk الصفحة
+function PageLoader() {
+  return (
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0F1117', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
+      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,107,53,0.3)', borderTopColor:'#FF6B35', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      جارٍ التحميل...
+    </div>
+  )
+}
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore()
@@ -64,6 +77,7 @@ export default function App() {
         success: { iconTheme: { primary:'#10B981', secondary:'white' } },
         error:   { iconTheme: { primary:'#EF4444', secondary:'white' } },
       }}/>
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/"                element={<Navigate to="/login" replace />} />
         <Route path="/login"           element={<PublicRoute><Login /></PublicRoute>} />
@@ -85,6 +99,7 @@ export default function App() {
         <Route path="/staff"           element={<ProtectedRoute><RequirePage page="staff"><Staff /></RequirePage></ProtectedRoute>} />
         <Route path="*"                element={<Navigate to="/login" replace />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }
