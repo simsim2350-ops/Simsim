@@ -80,8 +80,8 @@ export default function MenuHeader({
       </div>
 
       {/* ===== الورقة البيضاء المنزلقة ===== */}
-      <div style={{ position:'relative', marginTop:'-26px', background:'white', borderRadius:'26px 26px 0 0', boxShadow:'0 -10px 30px rgba(15,17,23,0.16)', paddingTop:'10px' }}>
-        <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 10px' }}/>
+      <div style={{ position:'relative', marginTop:'-26px', background:'white', borderRadius:'26px 26px 0 0', boxShadow:'0 -10px 30px rgba(15,17,23,0.16)', paddingTop:'8px' }}>
+        <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 8px' }}/>
 
         {/* حقل البحث — يظهر فقط عند فتحه من الزر العائم */}
         {searchOpen && (
@@ -112,7 +112,7 @@ export default function MenuHeader({
           </div>
           <div style={{ flex:1, minWidth:0 }}>
             <h1 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'19px', color:'#0F1117', margin:0 }}>{restaurant.name}</h1>
-            <div style={{ display:'flex', alignItems:'center', gap:'7px', marginTop:'4px', flexWrap:'wrap' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'7px', marginTop:'2px', flexWrap:'wrap' }}>
               {branch
                 ? <span style={{ fontSize:'11.5px', fontWeight:'700', color:'#6B7280' }}>🏢 {isEn && branch.name_en ? branch.name_en : branch.name}</span>
                 : (hasBranches && <span style={{ fontSize:'11.5px', fontWeight:'700', color:'#6B7280' }}>🏠 {isEn ? 'Main branch' : 'الفرع الرئيسي'}</span>)}
@@ -127,7 +127,7 @@ export default function MenuHeader({
 
         {/* وصف المطعم — يكتبه صاحب المطعم من الإعدادات (يدعم الترجمة)، ويُقص عند 105 أحرف */}
         {desc && (
-          <p style={{ fontSize:'12.5px', color:descColor, lineHeight:'1.5', margin:'5px 16px 0' }}>{desc}</p>
+          <p style={{ fontSize:'12.5px', color:descColor, lineHeight:'1.45', margin:'3px 16px 0' }}>{desc}</p>
         )}
 
         {/* الموقع + رابط الخريطة */}
@@ -136,7 +136,7 @@ export default function MenuHeader({
           const mapsUrl = branch?.maps_url
           if (!addr && !mapsUrl) return null
           return (
-            <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'4px 16px 0', flexWrap:'wrap' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'2px 16px 0', flexWrap:'wrap' }}>
               {addr && (
                 <span style={{ fontSize:'12px', color:'#6B7280', display:'inline-flex', alignItems:'center', gap:'4px' }}>📍 {addr}</span>
               )}
@@ -151,7 +151,7 @@ export default function MenuHeader({
 
         {/* روابط التواصل + زر المسبّبات */}
         {((restaurant.social_links && Object.values(restaurant.social_links).some(v => v)) || (Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0)) && (
-          <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'6px 16px 0', flexWrap:'wrap' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'4px 16px 0', flexWrap:'wrap' }}>
             {restaurant.social_links && ['instagram', 'whatsapp_social', 'snapchat', 'twitter', 'tiktok']
               .filter(key => restaurant.social_links[key])
               .map(key => {
@@ -172,7 +172,7 @@ export default function MenuHeader({
         )}
 
         {/* بطاقة الإحصائيات: الحالة · التجهيز · التوصيل */}
-        <div style={{ display:'flex', margin:'8px 14px 8px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'15px', padding:'9px 4px' }}>
+        <div style={{ display:'flex', margin:'6px 14px 6px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'15px', padding:'7px 4px' }}>
           {statCells.map((c, i) => (
             <div key={i} style={{ flex:1, textAlign:'center', borderRight: i > 0 ? '1px solid #E9ECF1' : 'none', padding:'0 4px' }}>
               <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'12.5px', color:c.color, whiteSpace:'nowrap' }}>{c.value}</div>
