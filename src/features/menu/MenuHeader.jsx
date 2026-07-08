@@ -127,7 +127,7 @@ export default function MenuHeader({
 
         {/* وصف المطعم — يكتبه صاحب المطعم من الإعدادات (يدعم الترجمة)، ويُقص عند 105 أحرف */}
         {desc && (
-          <p style={{ fontSize:'12.5px', color:descColor, lineHeight:'1.65', margin:'8px 16px 0' }}>{desc}</p>
+          <p style={{ fontSize:'12.5px', color:descColor, lineHeight:'1.5', margin:'5px 16px 0' }}>{desc}</p>
         )}
 
         {/* الموقع + رابط الخريطة */}
@@ -136,7 +136,7 @@ export default function MenuHeader({
           const mapsUrl = branch?.maps_url
           if (!addr && !mapsUrl) return null
           return (
-            <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'8px 16px 0', flexWrap:'wrap' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'4px 16px 0', flexWrap:'wrap' }}>
               {addr && (
                 <span style={{ fontSize:'12px', color:'#6B7280', display:'inline-flex', alignItems:'center', gap:'4px' }}>📍 {addr}</span>
               )}
@@ -151,7 +151,7 @@ export default function MenuHeader({
 
         {/* روابط التواصل + زر المسبّبات */}
         {((restaurant.social_links && Object.values(restaurant.social_links).some(v => v)) || (Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0)) && (
-          <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'10px 16px 0', flexWrap:'wrap' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'6px 16px 0', flexWrap:'wrap' }}>
             {restaurant.social_links && ['instagram', 'whatsapp_social', 'snapchat', 'twitter', 'tiktok']
               .filter(key => restaurant.social_links[key])
               .map(key => {
@@ -172,7 +172,7 @@ export default function MenuHeader({
         )}
 
         {/* بطاقة الإحصائيات: الحالة · التجهيز · التوصيل */}
-        <div style={{ display:'flex', margin:'10px 14px 14px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'15px', padding:'9px 4px' }}>
+        <div style={{ display:'flex', margin:'8px 14px 12px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'15px', padding:'9px 4px' }}>
           {statCells.map((c, i) => (
             <div key={i} style={{ flex:1, textAlign:'center', borderRight: i > 0 ? '1px solid #E9ECF1' : 'none', padding:'0 4px' }}>
               <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'12.5px', color:c.color, whiteSpace:'nowrap' }}>{c.value}</div>
