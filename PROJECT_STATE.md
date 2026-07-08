@@ -7,9 +7,10 @@
 
 ## 1) الـ Stack
 - **الواجهة:** React + Vite، عربية RTL، خطوط Cairo/Tajawal، هوية برتقالية (#FF6B35→#E85A24) / كحلي (#0F1117).
-- **الخلفية:** Supabase (Postgres + Auth + Realtime + Storage) + RLS.
-- **النشر:** Vercel.
-- **الحالة:** `authStore` (Zustand) — يوفّر `user`, `restaurant`, `fetchRestaurant`, `signOut`.
+- **الخلفية:** Supabase (Postgres + Auth + Realtime + Storage + Edge Functions) + RLS مفعّلة على كل الجداول.
+- **النشر:** Vercel (production: `sim50.vercel.app` / `simsim50.vercel.app`). **الدمج في main = النشر** (إنشاء PR وحده لا ينشر).
+- **الحماية:** فرع `main` محمي — CI «Build (Vite)» إلزامي قبل الدمج + منع force push + منع الحذف.
+- **الحالة:** `authStore` (Zustand) — يوفّر `user`, `restaurant`, `fetchRestaurant`, `signOut`, `isOwner`, `membership`.
 
 ## 2) بنية المجلدات (المعتمدة)
 ```
@@ -18,10 +19,12 @@ src/
   hooks/useBreakpoint.js       ← نقطة التحوّل الحيّة المشتركة
   lib/nav.js                   ← مصدر روابط التنقل الوحيد
   lib/pricing.js               ← مصدر منطق التسعير/الضريبة الوحيد (ADR-1)
+  lib/permissions.js           ← منطق صلاحيات الموظفين (canAccess, navPage)
   lib/supabase.js , uploadImage.js
   store/authStore
-  pages/*.jsx
+  pages/*.jsx                  ← تشمل Staff (إدارة الموظفين) و StaffLogin (دخول الموظف)
 ```
+- **خادمية:** Edge Function `delete-staff` (service_role) — حذف كامل لحساب الموظف بعد التحقق من المالك.
 
 ## 3) القرارات المعمارية الموثّقة (ADR مختصر)
 - **[ADR-1] الضريبة = خيار (أ):** السعر المعروض **شامل ض.ق.م 15%**. تُفكّ للخلف: `net = (total - delivery) / 1.15`, `tax = gross - net`. **المنطق موحّد في `lib/pricing.js`** (`VAT_RATE`, `vatBreakdown`, `orderBreakdown`, `itemsGross`) ويستهلكه: PublicMenu (السلة/الإنشاء)، Orders (الفاتورة + تعليم غير متوفر)، Analytics (صافي/محصّلة). يعمل للطلبات القديمة والجديدة معاً.
@@ -29,6 +32,10 @@ src/
 - **[ADR-3] صلاحيات الطلبات:** المطعم **ممنوع** يعدّل كمية/يحذف صنفاً (فقط "غير متوفر"). الإلغاء **قبل القبول (pending) فقط**. زر تراجع مؤقت مسموح.
 - **[ADR-4] أوقات العمل:** `opening_hours` JSONB على `restaurants` و`branches` (مصفوفة 7، الأحد=0). `null = مفتوح دائماً`. لكل فرع أوقاته؛ يُقرأ في المنيو كـ `branch?.opening_hours || restaurant.opening_hours`. `is_active` = غلق يدوي فوري منفصل.
 - **[ADR-5] التخطيط المشترك (AppShell):** كل صفحات اللوحة تستخدم `<AppShell>`. ممنوع تكرار السايدبار/التوب-بار داخل الصفحات.
+- **[ADR-6] المنيو ثنائي اللغة (عربي/إنجليزي):** أعمدة `_en` منفصلة في الجداول (وصف المطعم، الأقسام، الأصناف، الفروع، المسبّبات). اسم المطعم **لا يُترجم** (قرار المؤسس). زر تبديل 🌐 مع حفظ الاختيار في localStorage و**fallback للعربي** عند غياب الترجمة. **الاتجاه ثابت RTL** (قلب LTR يكسر التصميم — مجرّب). المسبّبات data-driven عبر `label_en` مدمجة (وليس خريطة ثوابت منفصلة).
+- **[ADR-7] ألوان المنيو المخصّصة:** أعمدة اختيارية `price_color` و`description_color` (NULL = الافتراضي)، تُدار من الإعدادات.
+- **[ADR-8] مصادقة الموظفين:** إيميل وهمي حتمي `username.slug@staff.simsim.app` يُنشأ عبر **عميل Supabase ثانوي** (`persistSession:false`) حتى لا يُخرج صاحب المطعم من جلسته — بدل بناء مصادقة مخصّصة أو كشف service_role في المتصفح. يتطلب **تعطيل تأكيد الإيميل** في Supabase.
+- **[ADR-9] خصوصية الطلبات:** أُغلقت ثغرة `orders_select_public` (كانت تكشف بيانات العملاء). البديل: دالتا RPC آمنتان `get_active_orders_count` + `get_recent_order_items`، وحُذفت السياسة المكشوفة.
 
 ## 4) واجهة AppShell
 ```jsx
@@ -46,6 +53,15 @@ src/
 
 ## 5) نقاط التحوّل (useBreakpoint)
 `isMobile < 768` · `isTablet 768–1024` · `isDesktop ≥ 1024`. حيّة (تتحدّث مع resize).
+
+## 5-ب) نظام صلاحيات الموظفين 🔐 (مكتمل)
+- **قاعدة البيانات:** جدول `restaurant_members` (user_id, restaurant_id, username, allowed_pages, branch_scope, is_active) + دوال RLS: `is_restaurant_owner`, `has_restaurant_access`, `member_branch_scope`.
+- **الدخول:** صفحة `StaffLogin` على `/staff-login/:slug` (اسم مستخدم + كلمة مرور).
+- **الحماية طبقتان:** RLS يفلتر البيانات بالفرع + الواجهة (AppShell يفلتر التنقل، App.jsx يحمي المسارات).
+- **تصنيف الصفحات:**
+  - خاصة بالفرع (تُفلتر بفرع الموظف): الطلبات، التحليلات، العملاء.
+  - مشتركة (تتطلب نطاق "كل الفروع"): المنيو، الفروع، الولاء+التقييمات، QR.
+  - صاحب المطعم فقط: الرئيسية، الإعدادات، الموظفون.
 
 ## 6) الديون التقنية (Technical Debt) — أولوية
 1. **[منجز ✅] تكرار السايدبار/التوب-بار** → حُلّ بـ AppShell (كل صفحات اللوحة تستخدمه).
@@ -67,5 +83,35 @@ src/
 | Loyalty | ✅ | ✅ | |
 | Staff | ✅ | ✅ | |
 
-## 8) ملفات SQL المطلوبة في Supabase
-`opening_hours_migration.sql` · `orders_cancel_reason.sql` · `reviews_table.sql` · `loyalty_tables.sql` · `get_orders_status_rpc.sql`
+## 8) ملفات SQL (نُفّذت في Supabase)
+| الملف | الغرض |
+|---|---|
+| `orders_privacy_phase1.sql` | إغلاق تسريب خصوصية الطلبات (RPCs) — ADR-9 |
+| `menu_colors_migration.sql` | ألوان المنيو (price_color, description_color) — ADR-7 |
+| `menu_i18n_phase1.sql` | ترجمة المنيو (أعمدة `_en`) — ADR-6 |
+| `branches_i18n.sql` | ترجمة الفروع (name_en, address_en) — ADR-6 |
+| `staff_permissions_phase1.sql` | جدول الموظفين + RLS — ADR-8 |
+| `staff_permissions_phase1b.sql` | نطاق الفرع (branch_scope) |
+| `opening_hours_migration.sql` | أوقات العمل — ADR-4 |
+| `orders_cancel_reason.sql` · `reviews_table.sql` · `loyalty_tables.sql` · `get_orders_status_rpc.sql` | ميزات سابقة |
+
+## 9) حقائق تشغيلية 🔑
+- **المفتاح العام** `sb_publishable_` (anon) آمن للعلن — الحماية الحقيقية عبر RLS.
+- **تأكيد الإيميل معطّل** في Supabase — ضروري لدخول الموظفين بالإيميل الوهمي (ADR-8). لا تفعّله.
+- **الكاش:** اختبر التحديثات بنافذة خفية (Incognito) لتفادي JavaScript قديم.
+- **الرفع الناقص خطر:** التعريف والاستدعاء يصلان معاً — يُفضّل رفع الملف كاملاً عند العمل من الجوال.
+
+## 10) خريطة الطريق
+| البند | الحالة / الأولوية |
+|---|---|
+| 🎯 لوحة Super Admin (تحكّم مركزي بكل المطاعم مع حفظ خصوصيتها) | **عالية — الخطوة التالية للمنصّة** |
+| خطة تطوير المينيو الإلكتروني (فصل الحزم، اختبارات، تفكيك PublicMenu، Skeleton/صور، بحث، طبقة تجارية) | معتمدة كخطة — بانتظار أمر التنفيذ |
+| ترجمة الأصناف/الأقسام المتبقية (إدخال من صاحب المطعم) | مستمرة |
+| 🔮 تطبيق التوصيل (سِمسِم كجهة توصيل للمطاعم المفعّلة للخيار) | مستقبلية |
+| توحيد التسعير `lib/pricing.js` | ✅ منجز (PR #49) |
+| إضافة `package-lock.json` + `.gitignore` | ✅ منجز (PR #49) |
+
+## 11) الرؤية (كما حدّدها المؤسس)
+1. **صاحب المطعم:** يسجّل، يدير مطعمه، QR، طلبات، موظفون. ✅
+2. **صاحب سِمسِم:** تحكّم مركزي بكل المطاعم مع حفظ خصوصيتها. 🎯 التالي
+3. **تطبيق توصيل:** سِمسِم جهة التوصيل للمطاعم التي تفعّل الخيار. 🔮
