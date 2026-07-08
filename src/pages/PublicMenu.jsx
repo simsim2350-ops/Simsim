@@ -10,6 +10,7 @@ import { useCart } from '../features/menu/hooks/useCart'
 import { useCheckout } from '../features/menu/hooks/useCheckout'
 import { useLoyalty } from '../features/menu/hooks/useLoyalty'
 import { useReviews } from '../features/menu/hooks/useReviews'
+import MenuSkeleton from '../features/menu/MenuSkeleton'
 import MenuHeader from '../features/menu/MenuHeader'
 import MenuBody from '../features/menu/MenuBody'
 import ProductModal from '../features/menu/ProductModal'
@@ -56,14 +57,8 @@ function PublicMenuInner() {
     ? computeOpenStatus(branch?.opening_hours || restaurant.opening_hours)
     : { open: true, unknown: true, nextText: '', todayText: '' }
 
-  // Loading
-  if (loading) return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F8F9FB', flexDirection:'column', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
-      <div style={{ width:'48px', height:'48px', border:`3px solid rgba(0,0,0,0.1)`, borderTopColor: brandColor, borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
-      <span style={{ color:'#9CA3AF', fontSize:'14px' }}>{t('loadingMenu')}</span>
-    </div>
-  )
+  // Loading — هيكل يحاكي شكل المنيو بدل شاشة فارغة
+  if (loading) return <MenuSkeleton />
 
   // Not found
   if (notFound) return (

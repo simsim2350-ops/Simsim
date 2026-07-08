@@ -35,7 +35,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
             overflow:'hidden', boxShadow:'0 6px 18px rgba(0,0,0,0.10)', border:'3px solid white', cursor:'pointer',
           }}>
             {product.image_url
-              ? <img src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+              ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
               : product.emoji}
           </div>
           {product.is_featured && (
@@ -60,7 +60,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
         <div style={{ position:'relative' }}>
           <div onClick={onAdd} style={{ width:'100%', aspectRatio:'1/1', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'46px', overflow:'hidden', cursor:'pointer' }}>
             {product.image_url
-              ? <img src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+              ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
               : product.emoji}
           </div>
           {product.is_featured && (
@@ -101,7 +101,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
       <div style={{ position:'relative', flexShrink:0 }}>
         <div onClick={onAdd} style={{ width:'88px', height:'88px', borderRadius:'14px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'42px', border:'1px solid #E5E7EB', overflow:'hidden', cursor:'pointer' }}>
           {product.image_url
-            ? <img src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+            ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
             : product.emoji}
         </div>
         {qtyControl}
