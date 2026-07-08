@@ -89,7 +89,7 @@ export default function MenuBody({
             >
               {cat.cover_url ? (
                 <div style={{ width:'48px', height:'48px', borderRadius:'50%', overflow:'hidden', flexShrink:0 }}>
-                  <img src={cat.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                  <img loading="lazy" decoding="async" src={cat.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 </div>
               ) : (
                 <span style={{ fontSize:'18px' }}>{cat.emoji}</span>
@@ -152,7 +152,7 @@ export default function MenuBody({
               <div style={{ padding:'16px 16px 10px', display:'flex', alignItems:'center', gap:'10px' }}>
                 {cat.cover_url ? (
                   <div style={{ width:'36px', height:'36px', borderRadius:'10px', overflow:'hidden', flexShrink:0 }}>
-                    <img src={cat.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                    <img loading="lazy" decoding="async" src={cat.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                   </div>
                 ) : (
                   <span style={{ fontSize:'20px' }}>{cat.emoji}</span>

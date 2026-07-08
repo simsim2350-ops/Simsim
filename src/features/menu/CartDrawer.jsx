@@ -25,7 +25,7 @@ export default function CartDrawer({
             <div key={item.cartKey} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 0', borderBottom:'1px solid #F3F4F6' }}>
               <div style={{ width:'48px', height:'48px', borderRadius:'12px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px', flexShrink:0, overflow:'hidden' }}>
                 {item.image_url
-                  ? <img src={item.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                  ? <img loading="lazy" decoding="async" src={item.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                   : item.emoji}
               </div>
               <div style={{ flex:1, minWidth:0 }}>
