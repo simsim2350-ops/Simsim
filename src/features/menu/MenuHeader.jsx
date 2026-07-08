@@ -35,7 +35,7 @@ export default function MenuHeader({
   return (
     <div>
       {/* ===== الهيرو: غلاف المطعم بكامل العرض (أو تدرّج بلون الهوية كبديل تلقائي) ===== */}
-      <div style={{ height:'210px', position:'relative', overflow:'hidden', background:`linear-gradient(160deg, ${brandColor}, ${brandColor}88)` }}>
+      <div style={{ height:'170px', position:'relative', overflow:'hidden', background:`linear-gradient(160deg, ${brandColor}, ${brandColor}88)` }}>
         {restaurant.cover_url && (
           <img src={restaurant.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
         )}
