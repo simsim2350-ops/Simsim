@@ -29,7 +29,7 @@ function PublicMenuInner() {
   const {
     restaurant, branch, setBranch, branchList, branchPicked, setBranchPicked,
     categories, products, bestSellers, loading, notFound,
-    activeCategory, setActiveCategory, restaurantActiveOrdersCount,
+    activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating,
   } = useMenuData(slug, branchId)
   const { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer } = useActiveOrders(slug, t)
   const { cart, setCart, cartOpen, setCartOpen, addToCart, removeFromCart, incrementCartItem, cartTotal, cartCount } = useCart(t)
@@ -165,6 +165,8 @@ function PublicMenuInner() {
         setSearchQuery={setSearchQuery}
         hasBranches={branchList.length > 0}
         onChangeBranch={() => { setBranchPicked(false); window.scrollTo(0, 0) }}
+        rating={rating}
+        loyalty={loyalty}
       />
 
       {/* Category tabs + menu content */}

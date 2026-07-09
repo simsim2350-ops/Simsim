@@ -14,6 +14,7 @@ export function useMenuData(slug, branchId) {
   const [notFound, setNotFound] = useState(false)
   const [activeCategory, setActiveCategory] = useState(null)
   const [restaurantActiveOrdersCount, setActiveOrdersCount] = useState(0)
+  const [rating, setRating] = useState(null) // { avg, count } — متوسط تقييم المطعم للعرض العام
   const restaurantLoadChannelRef = useRef(null)
 
   useEffect(() => {
@@ -68,6 +69,16 @@ export function useMenuData(slug, branchId) {
       const { data: activeCount } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id })
       setActiveOrdersCount(activeCount || 0)
 
+      // متوسط تقييم المطعم (RPC آمن — sql/get_restaurant_rating.sql)
+      // لو الدالة غير منفذة في Supabase بعد: نتجاهل بصمت وتُخفى النجوم
+      try {
+        const { data: rt, error: rtErr } = await supabase.rpc('get_restaurant_rating', { p_restaurant_id: rest.id })
+        const row = Array.isArray(rt) ? rt[0] : rt
+        if (!rtErr && row && Number(row.review_count) > 0) {
+          setRating({ avg: Number(row.avg_rating), count: Number(row.review_count) })
+        }
+      } catch { /* تجاهل — النجوم اختيارية */ }
+
       // Fetch categories & products
       const [{ data: cats }, { data: prods }] = await Promise.all([
         supabase.from('categories').select('*').eq('restaurant_id', rest.id).eq('is_visible', true).order('sort_order'),
@@ -114,6 +125,6 @@ export function useMenuData(slug, branchId) {
   return {
     restaurant, branch, setBranch, branchList, branchPicked, setBranchPicked,
     categories, products, bestSellers, loading, notFound,
-    activeCategory, setActiveCategory, restaurantActiveOrdersCount,
+    activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating,
   }
 }
