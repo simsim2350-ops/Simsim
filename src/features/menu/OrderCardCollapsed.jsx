@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import OrderItemRow from './OrderItemRow'
 
 // بطاقة طلب سابق (مكتمل/ملغي) — منطوية في صفّ مدمج مع زر «اطلب تاني»،
 // تنفتح بالنقر لعرض الأصناف والإجمالي والتقييم.
@@ -67,15 +68,9 @@ export default function OrderCardCollapsed({
 
       {/* التفاصيل عند التوسيع */}
       {open && (
-        <div style={{ borderTop:'1px solid #F3F4F6', padding:'12px 14px' }}>
+        <div style={{ borderTop:'1px solid #F3F4F6', padding:'10px 14px 12px' }}>
           {items.map((item, i) => (
-            <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 0', opacity: item.unavailable ? 0.55 : 1 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-                <span style={{ fontSize:'15px' }}>{item.emoji || '🍽️'}</span>
-                <span style={{ fontSize:'12.5px', fontWeight:'600', textDecoration: item.unavailable ? 'line-through' : 'none' }}>{itemName(item)} × {item.qty}</span>
-              </div>
-              <span style={{ fontSize:'12px', fontWeight:'700', color:'#9CA3AF' }}>{((Number(item.price) || 0) * (item.qty || 1)).toFixed(2)} ﷼</span>
-            </div>
+            <OrderItemRow key={i} item={item} itemName={itemName} isEn={isEn} t={t} />
           ))}
           <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13.5px', paddingTop:'8px', marginTop:'4px', borderTop:'1px solid #F3F4F6' }}>
             <span>{t('total')}</span>
