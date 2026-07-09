@@ -7,7 +7,8 @@ export function useCart(t) {
   const [cartOpen, setCartOpen] = useState(false)
 
   // selectedOptions: [{ groupName, choiceName, price }] — قائمة مفسّرة من الخيارات المختارة
-  const addToCart = (product, qty = 1, note = '', selectedOptions = []) => {
+  // silent: يكتم توست الإضافة (يُستخدم عند إعادة الطلب لتفادي عشرات التوستات — ملخّص واحد بدلها)
+  const addToCart = (product, qty = 1, note = '', selectedOptions = [], silent = false) => {
     const optionsPrice = selectedOptions.reduce((s, o) => s + (o.price || 0), 0)
     const finalPrice = product.price + optionsPrice
     // مفتاح فريد للعنصر: نفس الصنف بخيارات مختلفة = عنصر سلة مختلف
@@ -23,7 +24,7 @@ export function useCart(t) {
         selectedOptions,
       }]
     })
-    toast.success(`✅ ${t('tAdded')}`)
+    if (!silent) toast.success(`✅ ${t('tAdded')}`)
   }
 
   const removeFromCart = (cartKey) => {
