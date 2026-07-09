@@ -135,6 +135,8 @@ export const TT = {
   filterCancelled:{ ar: 'الملغية', en: 'Cancelled' },
   searchOrder:    { ar: 'ابحث برقم الطلب...', en: 'Search by order number...' },
   noOrdersFilter: { ar: 'لا طلبات مطابقة', en: 'No matching orders' },
+  emptyTitle:  { ar: 'لا طلبات بعد', en: 'No orders yet' },
+  emptySub:    { ar: 'ابدأ رحلتك مع ألذّ الأطباق — طلبك الأول على بُعد نقرة.', en: 'Start with our tastiest dishes — your first order is one tap away.' },
 }
 
 // مصنع دالة الترجمة: fallback للعربي عند غياب الترجمة

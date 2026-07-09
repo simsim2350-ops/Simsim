@@ -4,6 +4,7 @@ import OrdersHeader from './OrdersHeader'
 import LoyaltyCard from './LoyaltyCard'
 import OrderCardActive from './OrderCardActive'
 import OrderCardCollapsed from './OrderCardCollapsed'
+import EmptyOrders from './EmptyOrders'
 
 const IS_ACTIVE = (s) => ['pending','preparing','ready'].includes(s)
 
@@ -50,7 +51,12 @@ export default function OrdersScreen({
 
   return (
     <div style={{ minHeight:'100vh', background:'#F8F9FB', direction:'rtl', fontFamily:'Tajawal,sans-serif', maxWidth:'480px', margin:'0 auto', position:'relative', boxShadow:'0 0 60px rgba(15,17,23,0.12)' }}>
-      <style>{`@media(min-width:600px){body{background:#E9ECF2}}`}</style>
+      <style>{`
+        @keyframes ordIn{ from{ opacity:0; transform:translateY(12px) } to{ opacity:1; transform:none } }
+        .ord-in{ animation:ordIn .4s ease both }
+        @media (prefers-reduced-motion: reduce){ .ord-in{ animation:none } }
+        @media(min-width:600px){ body{ background:#E9ECF2 } }
+      `}</style>
 
       <OrdersHeader
         brandColor={brandColor} isEn={isEn} t={t}
@@ -62,6 +68,10 @@ export default function OrdersScreen({
         {/* بطاقة الولاء — تظهر لو البرنامج مفعّل والزبون معروف */}
         {loyalty && <LoyaltyCard loyalty={loyalty} brandColor={brandColor} isEn={isEn} t={t} />}
 
+        {activeOrders.length === 0 ? (
+          <EmptyOrders brandColor={brandColor} t={t} onBack={onBack} />
+        ) : (
+        <>
         {/* أزرار العمليات — منقولة للأعلى */}
         <div style={{ display:'flex', gap:'8px', marginBottom:'16px' }}>
           <button
@@ -81,7 +91,7 @@ export default function OrdersScreen({
         </div>
 
         {/* فلاتر لاصقة + بحث برقم الطلب */}
-        {activeOrders.length > 0 && (
+        {(
           <div style={{ position:'sticky', top:0, zIndex:20, background:'#F8F9FB', paddingTop:'2px', marginBottom:'12px' }}>
             <div style={{ display:'flex', gap:'7px', overflowX:'auto', paddingBottom:'10px' }}>
               {filterDefs.map(f => {
@@ -112,7 +122,7 @@ export default function OrdersScreen({
         )}
 
         {/* لا نتائج مطابقة للفلتر/البحث */}
-        {activeOrders.length > 0 && filtered.length === 0 && (
+        {filtered.length === 0 && (
           <div style={{ textAlign:'center', padding:'40px 20px', color:'#9CA3AF' }}>
             <div style={{ fontSize:'38px', opacity:0.3, marginBottom:'10px' }}>🔍</div>
             <div style={{ fontSize:'13px', fontWeight:'700', color:'#374151' }}>{t('noOrdersFilter')}</div>
@@ -121,38 +131,42 @@ export default function OrdersScreen({
 
         {/* قيد التنفيذ الآن — مفتوح بالكامل مع التتبّع */}
         {activeList.length > 0 && <div style={sec}>{t('activeNow')}</div>}
-        {activeList.map(order => (
-          <OrderCardActive
-            key={order.id}
-            order={order}
-            brandColor={brandColor}
-            isEn={isEn}
-            t={t}
-            itemName={itemName}
-            prepTime={prepTime}
-            onMessage={onMessage}
-            onCancel={cancelOrderByCustomer}
-          />
+        {activeList.map((order, i) => (
+          <div key={order.id} className="ord-in" style={{ animationDelay:`${i * 45}ms` }}>
+            <OrderCardActive
+              order={order}
+              brandColor={brandColor}
+              isEn={isEn}
+              t={t}
+              itemName={itemName}
+              prepTime={prepTime}
+              onMessage={onMessage}
+              onCancel={cancelOrderByCustomer}
+            />
+          </div>
         ))}
 
         {/* طلبات سابقة — منطوية مع «اطلب تاني» */}
         {pastList.length > 0 && <div style={sec}>{t('pastSection')}</div>}
-        {pastList.map(order => (
-          <OrderCardCollapsed
-            key={order.id}
-            order={order}
-            brandColor={brandColor}
-            isEn={isEn}
-            t={t}
-            itemName={itemName}
-            reviewedIds={reviewedIds}
-            reviewDraft={reviewDraft}
-            setDraft={setDraft}
-            submitReview={submitReview}
-            submittingReview={submittingReview}
-            onReorder={onReorder}
-          />
+        {pastList.map((order, i) => (
+          <div key={order.id} className="ord-in" style={{ animationDelay:`${(activeList.length + i) * 45}ms` }}>
+            <OrderCardCollapsed
+              order={order}
+              brandColor={brandColor}
+              isEn={isEn}
+              t={t}
+              itemName={itemName}
+              reviewedIds={reviewedIds}
+              reviewDraft={reviewDraft}
+              setDraft={setDraft}
+              submitReview={submitReview}
+              submittingReview={submittingReview}
+              onReorder={onReorder}
+            />
+          </div>
         ))}
+        </>
+        )}
       </div>
     </div>
   )
