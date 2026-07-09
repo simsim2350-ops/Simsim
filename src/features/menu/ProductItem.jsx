@@ -42,7 +42,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
               : product.emoji}
           </div>
           {product.is_featured && (
-            <span style={{ position:'absolute', top:'-2px', right:'-2px', fontSize:'9px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 6px', borderRadius:'100px', boxShadow:'0 2px 6px rgba(0,0,0,0.1)' }}>⭐</span>
+            <span style={{ position:'absolute', top:'-2px', right:'-2px', fontSize:'11px', fontWeight:'800', padding:'1px 5px', borderRadius:'100px', boxShadow:'0 2px 6px rgba(0,0,0,0.12)', background:'#FEF3C7' }}>🔥</span>
           )}
           <div style={{ position:'absolute', bottom:'-2px', left:'50%', transform:'translateX(50%)' }}>
             {qtyControl}
@@ -67,7 +67,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
               : product.emoji}
           </div>
           {product.is_featured && (
-            <span style={{ position:'absolute', top:'8px', right:'8px', fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>{isEn ? '⭐ Featured' : '⭐ مميز'}</span>
+            <span style={{ position:'absolute', top:'8px', right:'8px', fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>{isEn ? '🔥 Most Ordered' : '🔥 الأكثر طلباً'}</span>
           )}
           {qtyControl}
         </div>
@@ -86,7 +86,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
     <div style={{ background:'white', padding:'14px 16px', display:'flex', gap:'12px', alignItems:'center' }}>
       <div onClick={onAdd} style={{ flex:1, minWidth:0, cursor:'pointer' }}>
         {product.is_featured && (
-          <span style={{ fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px', marginBottom:'4px', display:'inline-block' }}>{isEn ? '⭐ Featured' : '⭐ مميز'}</span>
+          <span style={{ fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px', marginBottom:'4px', display:'inline-block' }}>{isEn ? '🔥 Most Ordered' : '🔥 الأكثر طلباً'}</span>
         )}
         <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', color:'#0F1117', marginBottom:'4px' }}>{pName}</div>
         {pDesc && (

@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import ProductItem from './ProductItem'
+import HProductCard from './HProductCard'
 
-// جسم المنيو: شريط الأقسام (مع scroll-spy) + نتائج البحث + الأكثر مبيعاً + الأقسام وأصنافها
+// جسم المنيو: شريط الأقسام (مع scroll-spy) + يعجب زبائننا (أفقي) + الأكثر طلباً (عمودي) + الأقسام
 export default function MenuBody({
   categories, products, bestSellers, searchQuery,
   activeCategory, setActiveCategory,
   cart, addToCart, removeFromCart, onOpenProduct,
   brandColor, priceColor, descColor, isEn, t, tx, layout,
 }) {
+  // «الأكثر طلباً» = الأصناف التي علّمها صاحب المطعم (is_featured) — يُعرض منها 4 في القسم
+  const mostOrdered = products.filter(p => p.is_featured).slice(0, 4)
   const categoryObserverRef = useRef(null)
   const [catsOpen, setCatsOpen] = useState(false) // قائمة كل الأقسام (زر ☰)
 
@@ -155,18 +158,39 @@ export default function MenuBody({
           </div>
         )}
 
-        {/* Best sellers */}
+        {/* يعجب زبائننا — تلقائية من المبيعات، شريط أفقي منزلق بـ4 أصناف */}
         {!searchQuery && bestSellers.length > 0 && (
+          <div style={{ marginBottom:'10px' }}>
+            <div style={{ padding:'16px 16px 10px' }}>
+              <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color:'#0F1117', margin:0 }}>{t('bestSellers')}</h2>
+            </div>
+            <div style={{ display:'flex', gap:'10px', overflowX:'auto', padding:'0 16px 4px', WebkitOverflowScrolling:'touch' }}>
+              {bestSellers.map(prod => (
+                <HProductCard
+                  key={prod.id}
+                  product={prod}
+                  onOpen={() => onOpenProduct(prod)}
+                  onQuickAdd={() => addToCart(prod, 1)}
+                  brandColor={brandColor}
+                  priceColor={priceColor}
+                  isEn={isEn}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* الأكثر طلباً — اختيار صاحب المطعم (is_featured)، عرض عمودي بنفس طريقة عرض المطعم */}
+        {!searchQuery && mostOrdered.length > 0 && (
           <div style={{ marginBottom:'8px' }}>
-            <div style={{ padding:'16px 16px 10px', display:'flex', alignItems:'center', gap:'8px' }}>
-              <span style={{ fontSize:'20px' }}>🔥</span>
-              <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color:'#0F1117' }}>{t('bestSellers')}</h2>
+            <div style={{ padding:'16px 16px 10px' }}>
+              <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color:'#0F1117', margin:0 }}>{t('mostOrdered')}</h2>
             </div>
             <div className="sm-products" style={['grid','circles'].includes(layout)
               ? { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }
               : { display:'flex', flexDirection:'column', gap:'1px', background:'#F3F4F6' }
             }>
-              {bestSellers.map(prod => (
+              {mostOrdered.map(prod => (
                 <ProductItem key={prod.id} {...itemProps(prod)} />
               ))}
             </div>

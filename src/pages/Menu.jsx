@@ -502,7 +502,7 @@ export default function Menu() {
                                         <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6B35' }}>{prod.price} ﷼</span>
                                         {prod.compare_price && <span style={{ fontSize:'12px', color:'#9CA3AF', textDecoration:'line-through' }}>{prod.compare_price} ﷼</span>}
                                         {prod.calories && <span style={{ fontSize:'11px', color:'#9CA3AF' }}>{getCalorieBadge(prod.calories)} {prod.calories} كالوري</span>}
-                                        {prod.is_featured && <span style={{ fontSize:'10px', color:'#92400E', background:'#FEF3C7', padding:'2px 6px', borderRadius:'100px' }}>⭐</span>}
+                                        {prod.is_featured && <span style={{ fontSize:'10px', background:'#FEF3C7', padding:'2px 6px', borderRadius:'100px' }}>🔥</span>}
                                       </div>
                                     </div>
                                     <div style={{ display:'flex', flexDirection:'column', gap:'6px', alignItems:'flex-end', flexShrink:0 }}>
@@ -686,7 +686,7 @@ export default function Menu() {
               </label>
               <label style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
                 <input type="checkbox" checked={prodForm.is_featured} onChange={e => setProdForm(f=>({...f,is_featured:e.target.checked}))} style={{ width:'17px', height:'17px', accentColor:'#FF6B35' }}/>
-                <span style={{ fontSize:'13px', fontWeight:'600' }}>⭐ مميز</span>
+                <span style={{ fontSize:'13px', fontWeight:'600' }}>🔥 الأكثر طلباً</span>
               </label>
             </div>
 
