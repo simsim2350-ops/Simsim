@@ -180,18 +180,15 @@ export default function MenuBody({
           </div>
         )}
 
-        {/* الأكثر طلباً — اختيار صاحب المطعم (is_featured)، عرض عمودي بنفس طريقة عرض المطعم */}
+        {/* الأكثر طلباً — اختيار صاحب المطعم (is_featured)، بطاقات مربعة دائماً (شبكة) بغضّ النظر عن تخطيط المطعم */}
         {!searchQuery && mostOrdered.length > 0 && (
           <div style={{ marginBottom:'8px' }}>
             <div style={{ padding:'16px 16px 10px' }}>
               <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color:'#0F1117', margin:0 }}>{t('mostOrdered')}</h2>
             </div>
-            <div className="sm-products" style={['grid','circles'].includes(layout)
-              ? { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }
-              : { display:'flex', flexDirection:'column', gap:'1px', background:'#F3F4F6' }
-            }>
+            <div className="sm-products" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }}>
               {mostOrdered.map(prod => (
-                <ProductItem key={prod.id} {...itemProps(prod)} />
+                <ProductItem key={prod.id} {...itemProps(prod)} layout="grid" />
               ))}
             </div>
           </div>
