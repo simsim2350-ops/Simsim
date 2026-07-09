@@ -110,6 +110,18 @@ export const TT = {
   kpiOrders:   { ar: 'طلب', en: 'orders' },
   kpiSpend:    { ar: 'الإجمالي', en: 'total' },
   kpiPoints:   { ar: 'نقطة', en: 'points' },
+  activeNow:   { ar: '🔴 قيد التنفيذ الآن', en: '🔴 In progress' },
+  pastSection: { ar: '✅ طلبات سابقة', en: '✅ Past orders' },
+  reorder:     { ar: 'اطلب تاني', en: 'Order again' },
+  ratedShort:  { ar: '★ قيّمته', en: '★ Rated' },
+  notRated:    { ar: 'لم تُقيّم', en: 'Not rated' },
+  itemsUnit:   { ar: 'صنف', en: 'items' },
+  today:       { ar: 'اليوم', en: 'Today' },
+  yesterday:   { ar: 'أمس', en: 'Yesterday' },
+  daysAgo:     { ar: 'منذ {n} أيام', en: '{n} days ago' },
+  reorderAdded:{ ar: 'أُضيفت أصناف طلبك للسلة 🛒', en: 'Order items added to cart 🛒' },
+  reorderSkipped:{ ar: 'بعض الأصناف لم تعد متوفرة وتم تجاهلها', en: 'Some items are no longer available' },
+  reorderNone: { ar: 'أصناف هذا الطلب لم تعد متوفرة', en: "This order's items are no longer available" },
 }
 
 // مصنع دالة الترجمة: fallback للعربي عند غياب الترجمة

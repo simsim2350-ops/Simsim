@@ -1,16 +1,22 @@
-// شاشة "طلباتي" — تتبع كل الطلبات النشطة (الأحدث أولاً) + نقاط الولاء + التقييم + الإلغاء
+// شاشة "طلباتي" — النشط مفتوح بالتتبع، والسابق (مكتمل/ملغي) منطوٍ مع «اطلب تاني»
 import OrdersHeader from './OrdersHeader'
 import LoyaltyCard from './LoyaltyCard'
+import OrderCardCollapsed from './OrderCardCollapsed'
 
 export default function OrdersScreen({
   restaurant, brandColor, isEn, t, itemName,
   activeOrders, liveOrdersCount, loyalty,
   reviewedIds, reviewDraft, setDraft, submitReview, submittingReview,
-  cancelOrderByCustomer, lastOrderSummary, sendWhatsAppConfirmation, onBack,
+  cancelOrderByCustomer, lastOrderSummary, sendWhatsAppConfirmation, onBack, onReorder,
 }) {
   // KPIs — من الطلبات الظاهرة على هذا الجهاز (الإنفاق مدى الحياة = مرحلة لاحقة)
   const ordersCount = activeOrders.length
   const spend = activeOrders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + (Number(o.total) || 0), 0)
+
+  // فصل النشط (يُتتبَّع مفتوحاً) عن السابق (منطوٍ)
+  const activeList = activeOrders.filter(o => ['pending','preparing','ready'].includes(o.status))
+  const pastList = activeOrders.filter(o => ['completed','cancelled'].includes(o.status))
+  const sec = { fontFamily:'Cairo,sans-serif', fontSize:'12px', fontWeight:'900', color:'#9CA3AF', margin:'2px 2px 10px' }
 
   return (
     <div style={{ minHeight:'100vh', background:'#F8F9FB', direction:'rtl', fontFamily:'Tajawal,sans-serif', maxWidth:'480px', margin:'0 auto', position:'relative', boxShadow:'0 0 60px rgba(15,17,23,0.12)' }}>
@@ -44,7 +50,9 @@ export default function OrdersScreen({
           )}
         </div>
 
-        {activeOrders.map(order => {
+        {/* قيد التنفيذ الآن — مفتوح بالكامل مع التتبّع */}
+        {activeList.length > 0 && <div style={sec}>{t('activeNow')}</div>}
+        {activeList.map(order => {
           const statuses = ['pending','preparing','ready','completed']
           const currentIdx = statuses.indexOf(order.status)
           return (
@@ -163,6 +171,25 @@ export default function OrdersScreen({
             </div>
           )
         })}
+
+        {/* طلبات سابقة — منطوية مع «اطلب تاني» */}
+        {pastList.length > 0 && <div style={sec}>{t('pastSection')}</div>}
+        {pastList.map(order => (
+          <OrderCardCollapsed
+            key={order.id}
+            order={order}
+            brandColor={brandColor}
+            isEn={isEn}
+            t={t}
+            itemName={itemName}
+            reviewedIds={reviewedIds}
+            reviewDraft={reviewDraft}
+            setDraft={setDraft}
+            submitReview={submitReview}
+            submittingReview={submittingReview}
+            onReorder={onReorder}
+          />
+        ))}
       </div>
     </div>
   )

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
 import ErrBoundary from '../features/menu/ErrBoundary'
 import { computeOpenStatus, makeItemName } from '../features/menu/helpers'
 import { sendWhatsAppConfirmation, openWhatsAppContact } from '../features/menu/whatsapp'
@@ -51,6 +52,24 @@ function PublicMenuInner() {
   const brandColor = restaurant?.brand_color || '#FF6B35'
   const priceColor = restaurant?.price_color || brandColor
   const descColor = restaurant?.description_color || '#9CA3AF'
+
+  // إعادة الطلب: يعيد أصناف طلب سابق للسلة مطابقاً كلاً منها بالصنف الحالي (سعر/توفّر محدّثان)،
+  // يتجاهل ما لم يعد على المنيو، ثم يفتح المنيو مع ملخّص توست واحد.
+  const reorderToCart = (order) => {
+    const items = Array.isArray(order?.items) ? order.items : []
+    let added = 0, skipped = 0
+    items.forEach(it => {
+      const product = products.find(p => p.id === it.id)
+      if (!product) { skipped++; return }
+      addToCart(product, it.qty || 1, it.notes || '', it.selectedOptions || [], true) // silent
+      added++
+    })
+    if (added === 0) { toast.error(t('reorderNone')); return }
+    setOrderPlaced(false)
+    setCartOpen(true)
+    toast.success(t('reorderAdded'))
+    if (skipped > 0) setTimeout(() => toast(t('reorderSkipped'), { icon: '⚠️' }), 400)
+  }
 
   // حالة فتح المحل (حسب الفرع لو محدد، وإلا المطعم) — تُستخدم لمنع الطلب وقت الإغلاق
   const openStatus = restaurant
@@ -123,6 +142,7 @@ function PublicMenuInner() {
       lastOrderSummary={lastOrderSummary}
       sendWhatsAppConfirmation={() => sendWhatsAppConfirmation({ restaurant, lastOrderSummary, isEn, t })}
       onBack={() => setOrderPlaced(false)}
+      onReorder={reorderToCart}
     />
   )
 
