@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import ErrBoundary from '../features/menu/ErrBoundary'
-import { computeOpenStatus, makeItemName } from '../features/menu/helpers'
-import { sendWhatsAppConfirmation, openWhatsAppContact } from '../features/menu/whatsapp'
+import { computeOpenStatus, makeItemName, estimatedPrepTime } from '../features/menu/helpers'
+import { sendWhatsAppConfirmation, openWhatsAppContact, openWhatsAppAboutOrder } from '../features/menu/whatsapp'
 import { useLang } from '../features/menu/hooks/useLang'
 import { useMenuData } from '../features/menu/hooks/useMenuData'
 import { useActiveOrders } from '../features/menu/hooks/useActiveOrders'
@@ -133,6 +133,7 @@ function PublicMenuInner() {
       activeOrders={activeOrders}
       liveOrdersCount={liveOrdersCount}
       loyalty={loyalty}
+      prepTime={estimatedPrepTime(restaurantActiveOrdersCount)}
       reviewedIds={reviewedIds}
       reviewDraft={reviewDraft}
       setDraft={setDraft}
@@ -143,6 +144,7 @@ function PublicMenuInner() {
       sendWhatsAppConfirmation={() => sendWhatsAppConfirmation({ restaurant, lastOrderSummary, isEn, t })}
       onBack={() => setOrderPlaced(false)}
       onReorder={reorderToCart}
+      onMessage={(order) => openWhatsAppAboutOrder({ restaurant, order, t })}
     />
   )
 
