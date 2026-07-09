@@ -14,6 +14,7 @@ export default function MenuHeader({
   hasOrders, liveOrdersCount, onShowOrders, onShowAllergens,
   searchQuery, setSearchQuery,
   hasBranches, onChangeBranch,
+  rating, loyalty,
 }) {
   // البحث مخفي افتراضياً — يفتح بزر عائم على الهيرو (يوفّر مساحة عمودية)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -112,6 +113,11 @@ export default function MenuHeader({
           </div>
           <div style={{ flex:1, minWidth:0 }}>
             <h1 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'19px', color:'#0F1117', margin:0 }}>{restaurant.name}</h1>
+            {rating && (
+              <div style={{ fontSize:'11.5px', fontWeight:'800', color:'#B08A2E', marginTop:'2px' }}>
+                ★ {rating.avg} <span style={{ color:'#9CA3AF', fontWeight:'700' }}>({rating.count} {isEn ? 'reviews' : 'تقييم'})</span>
+              </div>
+            )}
             <div style={{ display:'flex', alignItems:'center', gap:'7px', marginTop:'2px', flexWrap:'wrap' }}>
               {branch
                 ? <span style={{ fontSize:'11.5px', fontWeight:'700', color:'#6B7280' }}>🏢 {isEn && branch.name_en ? branch.name_en : branch.name}</span>
@@ -180,6 +186,25 @@ export default function MenuHeader({
             </div>
           ))}
         </div>
+
+        {/* بانر نقاط الولاء — للزبون المعروف فقط ولو البرنامج مفعّل (الضغط يفتح التفاصيل في شاشة طلباتي) */}
+        {loyalty && (() => {
+          const threshold = loyalty.reward_threshold || 0
+          const balance = loyalty.balance || 0
+          const ready = threshold > 0 && balance >= threshold
+          const text = ready
+            ? (isEn ? `Your reward is ready: ${loyalty.reward_description || t('rewardDefault')} 🎉` : `مكافأتك جاهزة: ${loyalty.reward_description || t('rewardDefault')} 🎉`)
+            : threshold > 0
+              ? (isEn ? `Your points: ${balance} — ${Math.max(0, threshold - balance)} pts to your reward` : `نقاطك: ${balance} — باقي ${Math.max(0, threshold - balance)} نقطة على مكافأتك`)
+              : (isEn ? `Your points: ${balance}` : `نقاطك: ${balance}`)
+          return (
+            <div onClick={onShowOrders} style={{ margin:'0 14px 10px', background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'13px', padding:'8px 12px', display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
+              <span style={{ fontSize:'15px' }}>🎁</span>
+              <span style={{ flex:1, fontSize:'11.5px', fontWeight:'800', color:'#0F1117', fontFamily:'Cairo,sans-serif' }}>{text}</span>
+              <span style={{ fontSize:'10px', fontWeight:'800', color:brandColor, whiteSpace:'nowrap' }}>{isEn ? 'Details ›' : 'التفاصيل ›'}</span>
+            </div>
+          )
+        })()}
 
       </div>
     </div>
