@@ -1,3 +1,5 @@
+import OrderItemRow from './OrderItemRow'
+
 // بطاقة الطلب النشط — هيدر (رقم + وقت + حالة حيّة) + Timeline + الوقت المتوقّع
 // + الأصناف والإجمالي + أزرار (رسالة للمطعم · إلغاء قبل التحضير)
 export default function OrderCardActive({
@@ -83,15 +85,9 @@ export default function OrderCardActive({
 
       {/* الأصناف + الإجمالي */}
       <div style={{ padding:'2px 15px 12px', borderTop:'1px solid #F3F4F6' }}>
-        <div style={{ paddingTop:'10px' }}>
+        <div style={{ paddingTop:'8px' }}>
           {items.map((item, i) => (
-            <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 0', opacity: item.unavailable ? 0.55 : 1 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-                <span style={{ fontSize:'15px' }}>{item.emoji || '🍽️'}</span>
-                <span style={{ fontSize:'12.5px', fontWeight:'600', textDecoration: item.unavailable ? 'line-through' : 'none' }}>{itemName(item)} × {item.qty}</span>
-                {item.unavailable && <span style={{ fontSize:'9px', fontWeight:'700', color:'#EF4444', background:'#FEF2F2', padding:'2px 6px', borderRadius:'100px' }}>{t('unavailable')}</span>}
-              </div>
-            </div>
+            <OrderItemRow key={i} item={item} itemName={itemName} isEn={isEn} t={t} />
           ))}
           <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', paddingTop:'8px', marginTop:'4px', borderTop:'1px solid #F3F4F6' }}>
             <span>{t('total')}</span>
