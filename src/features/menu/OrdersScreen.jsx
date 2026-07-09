@@ -1,50 +1,49 @@
 // شاشة "طلباتي" — تتبع كل الطلبات النشطة (الأحدث أولاً) + نقاط الولاء + التقييم + الإلغاء
+import OrdersHeader from './OrdersHeader'
+import LoyaltyCard from './LoyaltyCard'
+
 export default function OrdersScreen({
   restaurant, brandColor, isEn, t, itemName,
   activeOrders, liveOrdersCount, loyalty,
   reviewedIds, reviewDraft, setDraft, submitReview, submittingReview,
   cancelOrderByCustomer, lastOrderSummary, sendWhatsAppConfirmation, onBack,
 }) {
+  // KPIs — من الطلبات الظاهرة على هذا الجهاز (الإنفاق مدى الحياة = مرحلة لاحقة)
+  const ordersCount = activeOrders.length
+  const spend = activeOrders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + (Number(o.total) || 0), 0)
+
   return (
     <div style={{ minHeight:'100vh', background:'#F8F9FB', direction:'rtl', fontFamily:'Tajawal,sans-serif', maxWidth:'480px', margin:'0 auto', position:'relative', boxShadow:'0 0 60px rgba(15,17,23,0.12)' }}>
       <style>{`@media(min-width:600px){body{background:#E9ECF2}}`}</style>
-      <div style={{ background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, padding:'32px 24px', textAlign:'center', position:'relative', overflow:'hidden' }}>
-        <div style={{ position:'absolute', inset:0, background:'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1), transparent)', pointerEvents:'none' }}/>
-        <div style={{ fontSize:'56px', marginBottom:'10px', position:'relative' }}>🎉</div>
-        <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'22px', color:'white', marginBottom:'4px' }}>{t('ordersTitle')}</h2>
-        <p style={{ color:'rgba(255,255,255,0.8)', fontSize:'13px' }}>{liveOrdersCount > 0 ? `${liveOrdersCount} ${isEn ? 'active order(s)' : 'طلب نشط'}` : t('prevOrders')}</p>
-      </div>
 
-      <div style={{ padding:'20px 16px' }}>
-        {/* بطاقة نقاط الولاء — تظهر لو البرنامج مفعّل والزبون معروف */}
-        {loyalty && (() => {
-          const threshold = loyalty.reward_threshold || 0
-          const balance = loyalty.balance || 0
-          const ready = threshold > 0 && balance >= threshold
-          const pct = threshold > 0 ? Math.min(100, Math.round((balance / threshold) * 100)) : 0
-          return (
-            <div style={{ background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, borderRadius:'18px', padding:'18px', marginBottom:'16px', color:'white' }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'10px' }}>
-                <span style={{ fontSize:'13px', fontWeight:'700', opacity:0.9 }}>{t('loyaltyPts')}</span>
-                <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'22px', lineHeight:1 }}>{balance}<span style={{ fontSize:'12px', fontWeight:'700', opacity:0.85 }}> {t('ptsUnit')}</span></span>
-              </div>
-              {ready ? (
-                <div style={{ background:'rgba(255,255,255,0.2)', borderRadius:'11px', padding:'10px 12px', fontSize:'13px', fontWeight:'800' }}>
-                  🎉 {isEn ? 'Your reward is ready' : 'مكافأتك جاهزة'}: {loyalty.reward_description || t('rewardDefault')} — {isEn ? 'claim it at the restaurant!' : 'اطلبها عند المطعم!'}
-                </div>
-              ) : (
-                <>
-                  <div style={{ height:'8px', background:'rgba(255,255,255,0.25)', borderRadius:'100px', overflow:'hidden', marginBottom:'8px' }}>
-                    <div style={{ width:`${pct}%`, height:'100%', background:'white', borderRadius:'100px', transition:'width 0.5s' }}/>
-                  </div>
-                  <div style={{ fontSize:'12px', opacity:0.92 }}>
-                    {isEn ? `${Math.max(0, threshold - balance)} pts left to unlock` : `باقي ${Math.max(0, threshold - balance)} نقطة للحصول على`}: {loyalty.reward_description || t('rewardDefault')}
-                  </div>
-                </>
-              )}
-            </div>
-          )
-        })()}
+      <OrdersHeader
+        brandColor={brandColor} isEn={isEn} t={t}
+        ordersCount={ordersCount} spend={spend} points={loyalty?.balance || 0}
+        hasLoyalty={!!loyalty} onBack={onBack}
+      />
+
+      <div style={{ padding:'16px' }}>
+        {/* بطاقة الولاء — تظهر لو البرنامج مفعّل والزبون معروف */}
+        {loyalty && <LoyaltyCard loyalty={loyalty} brandColor={brandColor} isEn={isEn} t={t} />}
+
+        {/* أزرار العمليات — منقولة للأعلى */}
+        <div style={{ display:'flex', gap:'8px', marginBottom:'16px' }}>
+          <button
+            onClick={onBack}
+            style={{ flex:1, padding:'13px', borderRadius:'13px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer', boxShadow:`0 6px 16px ${brandColor}44` }}
+          >
+            {t('browseMenu')}
+          </button>
+          {restaurant?.phone && lastOrderSummary && (
+            <button
+              onClick={sendWhatsAppConfirmation}
+              style={{ padding:'13px 16px', borderRadius:'13px', border:'1.5px solid rgba(37,211,102,0.4)', background:'rgba(37,211,102,0.1)', color:'#1FA855', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer', whiteSpace:'nowrap' }}
+            >
+              💬 {isEn ? 'WhatsApp' : 'واتساب'}
+            </button>
+          )}
+        </div>
+
         {activeOrders.map(order => {
           const statuses = ['pending','preparing','ready','completed']
           const currentIdx = statuses.indexOf(order.status)
@@ -164,24 +163,6 @@ export default function OrdersScreen({
             </div>
           )
         })}
-
-        {/* WhatsApp confirmation لآخر طلب (اختياري) */}
-        {restaurant?.phone && lastOrderSummary && (
-          <button
-            onClick={sendWhatsAppConfirmation}
-            style={{ width:'100%', padding:'15px', borderRadius:'14px', border:'1.5px solid #25D366', background:'rgba(37,211,102,0.08)', color:'#1FA855', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', marginBottom:'12px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}
-          >
-            {t('sendWaLast')}
-          </button>
-        )}
-
-        {/* العودة للمنيو لطلب إضافي — الطلبات الحالية تستمر بالتتبع */}
-        <button
-          onClick={onBack}
-          style={{ width:'100%', padding:'15px', borderRadius:'14px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'16px', cursor:'pointer', boxShadow:`0 8px 24px ${brandColor}44` }}
-        >
-          {t('backToMenu')}
-        </button>
       </div>
     </div>
   )

@@ -106,6 +106,10 @@ export const TT = {
   rewardDefault:{ ar: 'مكافأة', en: 'reward' },
   suggestTitle: { ar: 'يكمّل طلبك 👌', en: 'Goes well with it 👌' },
   allCats:     { ar: 'كل الأقسام', en: 'All categories' },
+  browseMenu:  { ar: '🍽️ تصفّح المنيو', en: '🍽️ Browse menu' },
+  kpiOrders:   { ar: 'طلب', en: 'orders' },
+  kpiSpend:    { ar: 'الإجمالي', en: 'total' },
+  kpiPoints:   { ar: 'نقطة', en: 'points' },
 }
 
 // مصنع دالة الترجمة: fallback للعربي عند غياب الترجمة
