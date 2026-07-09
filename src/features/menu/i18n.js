@@ -122,6 +122,13 @@ export const TT = {
   reorderAdded:{ ar: 'أُضيفت أصناف طلبك للسلة 🛒', en: 'Order items added to cart 🛒' },
   reorderSkipped:{ ar: 'بعض الأصناف لم تعد متوفرة وتم تجاهلها', en: 'Some items are no longer available' },
   reorderNone: { ar: 'أصناف هذا الطلب لم تعد متوفرة', en: "This order's items are no longer available" },
+  etaLabel:    { ar: 'الوقت المتوقّع للتجهيز', en: 'Estimated prep time' },
+  msgRest:     { ar: '💬 رسالة للمطعم', en: '💬 Message restaurant' },
+  stepReceived:{ ar: 'استُلم', en: 'Received' },
+  stepPreparing:{ ar: 'تحضير', en: 'Preparing' },
+  stepReady:   { ar: 'جاهز', en: 'Ready' },
+  stepDelivered:{ ar: 'تسليم', en: 'Delivered' },
+  waAboutOrder:{ ar: 'استفسار بخصوص طلبي رقم', en: 'Inquiry about my order no.' },
 }
 
 // مصنع دالة الترجمة: fallback للعربي عند غياب الترجمة
