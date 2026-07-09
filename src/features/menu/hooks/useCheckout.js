@@ -13,11 +13,13 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
   const [customerPhone, setCustomerPhone] = useState('')
   const [orderNumber, setOrderNumber] = useState('')
   const [lastOrderSummary, setLastOrderSummary] = useState(null) // { items, total, tableNumber } للمشاركة عبر واتساب
+  const [submitting, setSubmitting] = useState(false) // أثناء إرسال الطلب — يمنع الضغط المكرّر
 
   const PHONE_STORAGE_KEY = `simsim_phone_${slug}`       // آخر رقم جوال استخدمه الزبون (لعرض نقاطه)
 
   // Place order
   const placeOrder = async () => {
+    if (submitting) return // حارس: لا نرسل الطلب مرتين
     if (cart.length === 0) { toast.error(t('tCartEmpty')); return }
     // منع الطلب وقت الإغلاق حسب أوقات الفرع/المطعم
     const openStatus = computeOpenStatus(branch?.opening_hours || restaurant.opening_hours)
@@ -45,6 +47,7 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
     const { net, tax } = vatBreakdown(cartTotal)
     const total = cartTotal + deliveryFee
 
+    setSubmitting(true)
     const { data, error } = await supabase.from('orders').insert({
       restaurant_id: restaurant.id,
       branch_id: branch?.id || null,
@@ -65,6 +68,7 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
     if (error) {
       console.error('Order error:', error)
       toast.error(error.message || t('tErr'))
+      setSubmitting(false)
       return
     }
 
@@ -85,6 +89,6 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
   return {
     tableNumber, setTableNumber, orderType, setOrderType,
     deliveryAddress, setDeliveryAddress, customerName, setCustomerName,
-    customerPhone, setCustomerPhone, orderNumber, lastOrderSummary, placeOrder,
+    customerPhone, setCustomerPhone, orderNumber, lastOrderSummary, placeOrder, submitting,
   }
 }

@@ -137,6 +137,7 @@ export const TT = {
   noOrdersFilter: { ar: 'لا طلبات مطابقة', en: 'No matching orders' },
   emptyTitle:  { ar: 'لا طلبات بعد', en: 'No orders yet' },
   emptySub:    { ar: 'ابدأ رحلتك مع ألذّ الأطباق — طلبك الأول على بُعد نقرة.', en: 'Start with our tastiest dishes — your first order is one tap away.' },
+  placingOrder:{ ar: 'جارٍ إرسال الطلب…', en: 'Placing your order…' },
 }
 
 // مصنع دالة الترجمة: fallback للعربي عند غياب الترجمة
