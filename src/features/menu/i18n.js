@@ -129,6 +129,12 @@ export const TT = {
   stepReady:   { ar: 'جاهز', en: 'Ready' },
   stepDelivered:{ ar: 'تسليم', en: 'Delivered' },
   waAboutOrder:{ ar: 'استفسار بخصوص طلبي رقم', en: 'Inquiry about my order no.' },
+  filterAll:      { ar: 'الكل', en: 'All' },
+  filterActive:   { ar: 'الحالية', en: 'Active' },
+  filterCompleted:{ ar: 'المكتملة', en: 'Completed' },
+  filterCancelled:{ ar: 'الملغية', en: 'Cancelled' },
+  searchOrder:    { ar: 'ابحث برقم الطلب...', en: 'Search by order number...' },
+  noOrdersFilter: { ar: 'لا طلبات مطابقة', en: 'No matching orders' },
 }
 
 // مصنع دالة الترجمة: fallback للعربي عند غياب الترجمة
