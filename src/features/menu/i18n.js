@@ -1,7 +1,9 @@
 // قاموس نصوص الواجهة الثابتة لمنيو الزبون (عربي/إنجليزي) — ADR-6
 export const TT = {
   search:      { ar: 'ابحث في المنيو...', en: 'Search the menu...' },
-  bestSellers: { ar: 'الأكثر مبيعاً', en: 'Best Sellers' },
+  bestSellers: { ar: 'يعجب زبائننا 👌', en: 'Loved by our customers 👌' },
+  mostOrdered: { ar: 'الأكثر طلباً 🔥', en: 'Most Ordered 🔥' },
+  mostOrderedBadge: { ar: '🔥 الأكثر طلباً', en: '🔥 Most Ordered' },
   viewCart:    { ar: 'عرض السلة', en: 'View Cart' },
   cart:        { ar: 'السلة', en: 'Cart' },
   totalVat:    { ar: 'المجموع (شامل الضريبة)', en: 'Total (VAT incl.)' },

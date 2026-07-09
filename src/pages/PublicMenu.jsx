@@ -57,8 +57,10 @@ function PublicMenuInner() {
     ? computeOpenStatus(branch?.opening_hours || restaurant.opening_hours)
     : { open: true, unknown: true, nextText: '', todayText: '' }
 
-  // اقتراحات السلة: من الأكثر مبيعاً، غير موجود في السلة، وبلا خيارات إجبارية (حتى تكون الإضافة بضغطة واحدة)
-  const cartSuggestions = bestSellers
+  // اقتراحات السلة: من أصناف «الأكثر طلباً» التي اختارها صاحب المطعم (is_featured)،
+  // غير موجودة في السلة، وبلا خيارات إجبارية (حتى تكون الإضافة بضغطة واحدة)
+  const cartSuggestions = products
+    .filter(p => p.is_featured)
     .filter(p => !cart.some(i => i.id === p.id))
     .filter(p => !(Array.isArray(p.options) && p.options.some(g => g.required)))
     .slice(0, 3)
