@@ -302,6 +302,7 @@ function PublicMenuInner() {
           onClose={() => setCartOpen(false)}
           suggestions={cartSuggestions}
           onAddSuggestion={(p) => addToCart(p, 1)}
+          loyalty={loyalty}
         />
       )}
 
