@@ -6,7 +6,7 @@ import { compressAndUploadImage } from '../lib/uploadImage'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { fetchRecommendationsForProduct, addRecommendation, removeRecommendation, updateRecommendationPriority } from '../lib/recommendationsApi'
+import { fetchRecommendationsForProduct, addRecommendation, removeRecommendation, updateRecommendationPriority, fetchCartWideList, addCartWideItem, removeCartWideItem, updateCartWidePriority, toggleCartWideActive } from '../lib/recommendationsApi'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -86,9 +86,14 @@ export default function Menu() {
   const [recommendations, setRecommendations] = useState([])
   const [recSearch, setRecSearch] = useState('')
 
+  // قائمة اقتراحات السلة العامة — مستقلة تماماً عن قواعد الأصناف الفردية
+  const [cartWideList, setCartWideList] = useState([])
+  const [cwSearch, setCwSearch] = useState('')
+
   useEffect(() => {
     if (!restaurant) return
     fetchAll()
+    loadCartWide()
   }, [restaurant])
 
   // مزامنة التبويب عند التنقل من السايدبار (الأصناف/الأقسام)
@@ -315,6 +320,66 @@ export default function Menu() {
         .slice(0, 6)
     : []
 
+  // ===== قائمة اقتراحات السلة العامة (cart_wide_recommendations) — مستقلة عن قواعد الأصناف الفردية =====
+  const loadCartWide = async () => {
+    try {
+      setCartWideList(await fetchCartWideList(restaurant.id))
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
+  const addCartWide = async (product) => {
+    try {
+      await addCartWideItem(restaurant.id, product.id, cartWideList.length)
+      setCwSearch('')
+      loadCartWide()
+    } catch (err) {
+      toast.error(err.code === '23505' ? 'هذا الصنف مضاف بالفعل' : err.message)
+    }
+  }
+
+  const removeCartWide = async (item) => {
+    try {
+      await removeCartWideItem(item.id)
+      loadCartWide()
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
+  const moveCartWide = async (item, direction) => {
+    const idx = cartWideList.findIndex(r => r.id === item.id)
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (swapIdx < 0 || swapIdx >= cartWideList.length) return
+    const other = cartWideList[swapIdx]
+    try {
+      await Promise.all([
+        updateCartWidePriority(item.id, other.priority),
+        updateCartWidePriority(other.id, item.priority),
+      ])
+      loadCartWide()
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
+  const toggleCartWide = async (item) => {
+    try {
+      await toggleCartWideActive(item.id, !item.is_active)
+      loadCartWide()
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
+  const cwSearchResults = cwSearch.trim()
+    ? products
+        .filter(p => !cartWideList.some(r => r.product?.id === p.id))
+        .filter(p => p.name.toLowerCase().includes(cwSearch.trim().toLowerCase()))
+        .slice(0, 6)
+    : []
+
   // رفع صورة الصنف — تُضغط وتُرفع فوراً عند الاختيار
   const handleProdImageUpload = async (e) => {
     const file = e.target.files?.[0]
@@ -445,7 +510,9 @@ export default function Menu() {
       title="إدارة المنيو"
       actions={<>
         <button onClick={() => navigate('/dashboard')} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'600', fontSize:'12px', cursor:'pointer', color:'#374151' }}>← الرئيسية</button>
-        <button onClick={() => tab === 'categories' ? openAddCat() : openAddProd()} style={{ padding:'7px 14px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>＋ {tab === 'categories' ? 'قسم' : 'صنف'}</button>
+        {tab !== 'suggestions' && (
+          <button onClick={() => tab === 'categories' ? openAddCat() : openAddProd()} style={{ padding:'7px 14px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>＋ {tab === 'categories' ? 'قسم' : 'صنف'}</button>
+        )}
       </>}
     >
 
@@ -454,6 +521,7 @@ export default function Menu() {
           {[
             { key:'categories', label:`📋 الأقسام (${categories.length})` },
             { key:'products', label:`🍽️ الأصناف (${products.length})` },
+            { key:'suggestions', label:`🍽️ اقتراحات السلة (${cartWideList.length})` },
           ].map(t => (
             <div key={t.key} onClick={() => setTab(t.key)} style={{
               padding:'13px 16px', fontSize:'14px', fontWeight:'700',
@@ -587,6 +655,62 @@ export default function Menu() {
                   <button onClick={openAddProd} style={{ padding:'14px', borderRadius:'14px', border:'2px dashed #E5E7EB', background:'transparent', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'14px', color:'#9CA3AF', cursor:'pointer' }}>
                     ＋ إضافة صنف جديد
                   </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SUGGESTIONS — قائمة اقتراحات السلة العامة، مستقلة عن قواعد الأصناف الفردية */}
+          {tab === 'suggestions' && (
+            <div>
+              <div style={{ fontSize:'13px', color:'#9CA3AF', marginBottom:'14px', lineHeight:'1.6' }}>
+                هذه القائمة تظهر في قسم «🍽️ أكمل وجبتك» العام داخل سلة الزبون — بمعزل تماماً عن اقتراحات كل صنف على حدة، وعن «🔥 الأكثر طلباً».
+              </div>
+
+              <div style={{ position:'relative', marginBottom:'16px' }}>
+                <input
+                  value={cwSearch}
+                  onChange={e => setCwSearch(e.target.value)}
+                  placeholder="ابحث عن صنف لإضافته..."
+                  style={{ ...inputStyle, marginTop:0 }}
+                />
+                {cwSearchResults.length > 0 && (
+                  <div style={{ position:'absolute', top:'calc(100% + 4px)', right:0, left:0, background:'white', border:'1.5px solid #E5E7EB', borderRadius:'10px', boxShadow:'0 8px 20px rgba(0,0,0,0.08)', zIndex:10, overflow:'hidden' }}>
+                    {cwSearchResults.map(p => (
+                      <div key={p.id} onClick={() => addCartWide(p)} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'9px 12px', cursor:'pointer', borderBottom:'1px solid #F3F4F6' }}>
+                        <span style={{ fontSize:'15px' }}>{p.emoji || '🍽️'}</span>
+                        <span style={{ flex:1, fontSize:'13px' }}>{p.name}</span>
+                        <span style={{ fontSize:'12px', color:'#9CA3AF' }}>{p.price} ﷼</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {cartWideList.length === 0 ? (
+                <div style={{ textAlign:'center', padding:'50px 16px', color:'#9CA3AF' }}>
+                  <div style={{ fontSize:'42px', opacity:0.3, marginBottom:'12px' }}>🍽️</div>
+                  <div style={{ fontSize:'15px', fontWeight:'700', color:'#374151' }}>لا توجد أصناف في القائمة العامة بعد</div>
+                </div>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+                  {cartWideList.map((item, i) => (
+                    <div key={item.id} style={{ display:'flex', alignItems:'center', gap:'10px', border:'1.5px solid #E5E7EB', borderRadius:'12px', padding:'10px 12px', background:'white' }}>
+                      <div style={{ display:'flex', flexDirection:'column', gap:'0', flexShrink:0 }}>
+                        <button type="button" onClick={() => moveCartWide(item, 'up')} disabled={i === 0} style={{ width:'20px', height:'16px', border:'none', background:'none', cursor: i === 0 ? 'default' : 'pointer', color: i === 0 ? '#E5E7EB' : '#6B7280', fontSize:'10px' }}>▲</button>
+                        <button type="button" onClick={() => moveCartWide(item, 'down')} disabled={i === cartWideList.length - 1} style={{ width:'20px', height:'16px', border:'none', background:'none', cursor: i === cartWideList.length - 1 ? 'default' : 'pointer', color: i === cartWideList.length - 1 ? '#E5E7EB' : '#6B7280', fontSize:'10px' }}>▼</button>
+                      </div>
+                      <span style={{ fontSize:'18px', flexShrink:0 }}>{item.product?.emoji || '🍽️'}</span>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:'13.5px', fontWeight:'700', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.product?.name}</div>
+                        <div style={{ fontSize:'12px', color:'#9CA3AF' }}>{item.product?.price} ﷼</div>
+                      </div>
+                      <button type="button" onClick={() => toggleCartWide(item)} style={{ padding:'5px 8px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background: item.is_active ? '#D1FAE5' : '#F3F4F6', color: item.is_active ? '#065F46' : '#6B7280', fontSize:'11px', fontWeight:'700', cursor:'pointer', flexShrink:0 }}>
+                        {item.is_active ? '👁️' : '🚫'}
+                      </button>
+                      <button type="button" onClick={() => removeCartWide(item)} style={{ width:'30px', height:'30px', flexShrink:0, borderRadius:'8px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'13px' }}>🗑️</button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

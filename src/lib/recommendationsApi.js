@@ -50,3 +50,53 @@ export async function fetchActiveRecommendationsMap(restaurantId) {
   }
   return map
 }
+
+// ===== قائمة اقتراحات السلة العامة (cart_wide_recommendations) — مستقلة تماماً عن قواعد الأصناف الفردية =====
+
+// القائمة كاملة (لوحة التحكم) — مع بيانات الصنف للعرض
+export async function fetchCartWideList(restaurantId) {
+  const { data, error } = await supabase
+    .from('cart_wide_recommendations')
+    .select('id, priority, is_active, product:products(id, name, name_en, emoji, image_url, price)')
+    .eq('restaurant_id', restaurantId)
+    .order('priority')
+  if (error) throw error
+  return data || []
+}
+
+export async function addCartWideItem(restaurantId, productId, priority = 0) {
+  const { data, error } = await supabase
+    .from('cart_wide_recommendations')
+    .insert({ restaurant_id: restaurantId, product_id: productId, priority })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function removeCartWideItem(id) {
+  const { error } = await supabase.from('cart_wide_recommendations').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function updateCartWidePriority(id, priority) {
+  const { error } = await supabase.from('cart_wide_recommendations').update({ priority }).eq('id', id)
+  if (error) throw error
+}
+
+export async function toggleCartWideActive(id, isActive) {
+  const { error } = await supabase.from('cart_wide_recommendations').update({ is_active: isActive }).eq('id', id)
+  if (error) throw error
+}
+
+// معرّفات الأصناف المفعّلة فقط (المنيو العام) — تُحمَّل مرة واحدة مع فتح المنيو، بترتيب الأولوية
+export async function fetchActiveCartWideIds(restaurantId) {
+  const { data, error } = await supabase
+    .from('cart_wide_recommendations')
+    .select('product_id')
+    .eq('restaurant_id', restaurantId)
+    .eq('is_active', true)
+    .order('priority')
+  if (error) throw error
+  return (data || []).map(r => r.product_id)
+}

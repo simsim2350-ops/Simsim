@@ -13,7 +13,7 @@ export default function CartDrawer({
   suggestions = [], onAddSuggestion, onOpenSuggestion, loyalty,
 }) {
   const suggestionBadge = {
-    rules:      { label: t('reasonRules'),      bg:'#FFF1E8', fg:'#C8481B' },
+    curated:    { label: t('reasonCurated'),    bg:'#FFF1E8', fg:'#C8481B' },
     category:   { label: t('reasonCategory'),   bg:'#EAF3FF', fg:'#1E5FBF' },
     bestseller: { label: t('reasonBestseller'), bg:'#FEF3C7', fg:'#92400E' },
   }
