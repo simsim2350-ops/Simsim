@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import ErrBoundary from '../features/menu/ErrBoundary'
 import { computeOpenStatus, makeItemName, estimatedPrepTime } from '../features/menu/helpers'
-import { sendWhatsAppConfirmation, openWhatsAppContact, openWhatsAppAboutOrder } from '../features/menu/whatsapp'
+import { openWhatsAppAboutOrder } from '../features/menu/whatsapp'
 import { useLang } from '../features/menu/hooks/useLang'
 import { useMenuData } from '../features/menu/hooks/useMenuData'
 import { useActiveOrders } from '../features/menu/hooks/useActiveOrders'
@@ -38,7 +38,7 @@ function PublicMenuInner() {
   const {
     tableNumber, setTableNumber, orderType, setOrderType,
     deliveryAddress, setDeliveryAddress, customerName, setCustomerName,
-    customerPhone, setCustomerPhone, orderNote, setOrderNote, lastOrderSummary, placeOrder, submitting,
+    customerPhone, setCustomerPhone, orderNote, setOrderNote, placeOrder, submitting,
   } = useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t })
   const loyalty = useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone })
   const { tables } = useTables(restaurant)
@@ -149,7 +149,6 @@ function PublicMenuInner() {
   // Order placed / tracking screen — يعرض كل الطلبات النشطة، الأحدث أولاً
   if (orderPlaced) return (
     <OrdersScreen
-      restaurant={restaurant}
       brandColor={brandColor}
       isEn={isEn}
       t={t}
@@ -164,8 +163,6 @@ function PublicMenuInner() {
       submitReview={(order) => submitReview(order, { customerName, customerPhone })}
       submittingReview={submittingReview}
       cancelOrderByCustomer={cancelOrderByCustomer}
-      lastOrderSummary={lastOrderSummary}
-      sendWhatsAppConfirmation={() => sendWhatsAppConfirmation({ restaurant, lastOrderSummary, isEn, t })}
       onBack={() => setOrderPlaced(false)}
       onReorder={reorderToCart}
       onMessage={(order) => openWhatsAppAboutOrder({ restaurant, order, t })}
@@ -183,13 +180,11 @@ function PublicMenuInner() {
         /* تابلت: إطار متمركز أنيق (اتجاه أ) */
         @media (min-width: 600px) and (max-width: 1023px) {
           .sm-menu-frame { box-shadow: 0 0 0 100vw #E4E7EE, 0 0 60px rgba(15,17,23,0.14); }
-          .sm-wa-btn { left: calc(50% - 240px + 16px) !important; }
         }
         /* لابتوب: تخطيط عريض + الأصناف عمودين (اتجاه ب) */
         @media (min-width: 1024px) {
           .sm-menu-frame { max-width: 980px !important; box-shadow: 0 0 0 100vw #E4E7EE, 0 0 70px rgba(15,17,23,0.14); }
           .sm-products { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 14px !important; background: transparent !important; padding: 0 16px !important; }
-          .sm-wa-btn { left: calc(50% - 490px + 16px) !important; }
         }
       `}</style>
 
@@ -250,25 +245,6 @@ function PublicMenuInner() {
             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px' }}>{cartTotal} ﷼</span>
           </button>
         </div>
-      )}
-
-      {/* Floating WhatsApp contact button — للاستفسارات العامة بمعزل عن طلب فعلي */}
-      {restaurant?.phone && !cartOpen && (
-        <button
-          onClick={() => openWhatsAppContact({ restaurant, t })}
-          className="sm-wa-btn"
-          style={{
-            position:'fixed', bottom: cartCount > 0 ? '90px' : '20px', left:'16px',
-            width:'52px', height:'52px', borderRadius:'50%', border:'none',
-            background:'#25D366', color:'white', fontSize:'26px',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            boxShadow:'0 6px 20px rgba(37,211,102,0.45)', cursor:'pointer', zIndex:49,
-            transition:'bottom 0.2s',
-          }}
-          aria-label="تواصل عبر واتساب"
-        >
-          💬
-        </button>
       )}
 
       {/* Cart drawer */}

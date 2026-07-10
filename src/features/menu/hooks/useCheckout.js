@@ -13,7 +13,6 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
   const [customerPhone, setCustomerPhone] = useState('')
   const [orderNote, setOrderNote] = useState('') // ملاحظة عامة على الطلب كله (اختيارية)
   const [orderNumber, setOrderNumber] = useState('')
-  const [lastOrderSummary, setLastOrderSummary] = useState(null) // { items, total, tableNumber } للمشاركة عبر واتساب
   const [submitting, setSubmitting] = useState(false) // أثناء إرسال الطلب — يمنع الضغط المكرّر
 
   const PHONE_STORAGE_KEY = `simsim_phone_${slug}`       // آخر رقم جوال استخدمه الزبون (لعرض نقاطه)
@@ -75,7 +74,6 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
     }
 
     setOrderNumber(data.order_number)
-    setLastOrderSummary({ items, total, tableNumber, orderType, deliveryAddress, orderNumber: data.order_number })
     try { localStorage.setItem(PHONE_STORAGE_KEY, cleanPhone) } catch { /* تجاهل */ }
     setOrderPlaced(true)
     setCart([])
@@ -94,6 +92,6 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
     tableNumber, setTableNumber, orderType, setOrderType,
     deliveryAddress, setDeliveryAddress, customerName, setCustomerName,
     customerPhone, setCustomerPhone, orderNote, setOrderNote,
-    orderNumber, lastOrderSummary, placeOrder, submitting,
+    orderNumber, placeOrder, submitting,
   }
 }
