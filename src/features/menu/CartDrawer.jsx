@@ -7,7 +7,7 @@ export default function CartDrawer({
   customerName, setCustomerName, customerPhone, setCustomerPhone,
   tableNumber, setTableNumber, deliveryAddress, setDeliveryAddress,
   orderNote, setOrderNote,
-  openStatus, placeOrder, submitting, removeFromCart, incrementCartItem, onClose,
+  openStatus, placeOrder, submitting, removeFromCart, incrementCartItem, onDeleteItem, onEditItem, onClose,
   suggestions = [], onAddSuggestion,
 }) {
   const finalTotal = cartTotal + (orderType === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0)
@@ -43,6 +43,11 @@ export default function CartDrawer({
                   </div>
                 )}
                 {item.note && <div style={{ fontSize:'11px', color:'#9CA3AF' }}>📝 {item.note}</div>}
+                {/* تعديل ✎ / حذف السطر 🗑 — تحت اسم الصنف حتى لا يضيق الصف */}
+                <div style={{ display:'flex', gap:'6px', marginTop:'5px' }}>
+                  <button onClick={() => onEditItem(item)} aria-label={t('editItemA')} style={{ width:'28px', height:'28px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', fontSize:'13px', cursor:'pointer', color:'#6B7280', display:'flex', alignItems:'center', justifyContent:'center' }}>✎</button>
+                  <button onClick={() => onDeleteItem(item.cartKey)} aria-label={t('delItemA')} style={{ width:'28px', height:'28px', borderRadius:'8px', border:'1.5px solid rgba(239,68,68,0.3)', background:'rgba(239,68,68,0.06)', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>🗑</button>
+                </div>
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:'0', border:'1.5px solid #E5E7EB', borderRadius:'10px', overflow:'hidden', flexShrink:0 }}>
                 <button onClick={() => removeFromCart(item.cartKey)} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', cursor:'pointer', color:brandColor, fontWeight:'300' }}>−</button>

@@ -33,7 +33,7 @@ function PublicMenuInner() {
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating,
   } = useMenuData(slug, branchId)
   const { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer } = useActiveOrders(slug, t)
-  const { cart, setCart, cartOpen, setCartOpen, addToCart, removeFromCart, incrementCartItem, cartTotal, cartCount } = useCart(t)
+  const { cart, setCart, cartOpen, setCartOpen, addToCart, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount } = useCart(t)
   const {
     tableNumber, setTableNumber, orderType, setOrderType,
     deliveryAddress, setDeliveryAddress, customerName, setCustomerName,
@@ -44,6 +44,7 @@ function PublicMenuInner() {
 
   // حالة عرض محلية للصفحة فقط
   const [selectedProduct, setSelectedProduct] = useState(null)
+  const [editingCartItem, setEditingCartItem] = useState(null) // { item, product, initialOptions } — تعديل صنف من السلة (✎)
   const [searchQuery, setSearchQuery] = useState('')
   const [showAllergensModal, setShowAllergensModal] = useState(false)
 
@@ -52,6 +53,27 @@ function PublicMenuInner() {
   const brandColor = restaurant?.brand_color || '#FF6B35'
   const priceColor = restaurant?.price_color || brandColor
   const descColor = restaurant?.description_color || '#9CA3AF'
+
+  // تعديل صنف من السلة (✎): يفتح المودال معبّأً بالكمية/الملاحظة/الخيارات المحفوظة
+  const startEditCartItem = (item) => {
+    const product = products.find(p => p.id === item.id)
+    if (!product) return // الصنف لم يعد على المنيو — نتجاهل
+    // تحويل الخيارات المحفوظة {groupName, choiceName} إلى مؤشرات المودال { groupIdx: choiceIdx | [..] }
+    const initialOptions = {}
+    const groups = Array.isArray(product.options) ? product.options : []
+    groups.forEach((group, gi) => {
+      const sel = (item.selectedOptions || []).filter(o => o.groupName === group.name)
+      if (sel.length === 0) return
+      if (group.type === 'multiple') {
+        const idxs = sel.map(o => group.choices.findIndex(c => c.name === o.choiceName)).filter(i => i >= 0)
+        if (idxs.length > 0) initialOptions[gi] = idxs
+      } else {
+        const idx = group.choices.findIndex(c => c.name === sel[0].choiceName)
+        if (idx >= 0) initialOptions[gi] = idx
+      }
+    })
+    setEditingCartItem({ item, product, initialOptions })
+  }
 
   // إعادة الطلب: يعيد أصناف طلب سابق للسلة مطابقاً كلاً منها بالصنف الحالي (سعر/توفّر محدّثان)،
   // يتجاهل ما لم يعد على المنيو، ثم يفتح المنيو مع ملخّص توست واحد.
@@ -275,6 +297,8 @@ function PublicMenuInner() {
           submitting={submitting}
           removeFromCart={removeFromCart}
           incrementCartItem={incrementCartItem}
+          onDeleteItem={deleteCartItem}
+          onEditItem={startEditCartItem}
           onClose={() => setCartOpen(false)}
           suggestions={cartSuggestions}
           onAddSuggestion={(p) => addToCart(p, 1)}
@@ -291,6 +315,21 @@ function PublicMenuInner() {
           t={t}
           onAdd={addToCart}
           onClose={() => setSelectedProduct(null)}
+        />
+      )}
+
+      {/* مودال تعديل صنف من السلة (✎) — نفس المودال معبّأً مسبقاً، والتأكيد يستبدل السطر */}
+      {editingCartItem && (
+        <ProductModal
+          product={editingCartItem.product}
+          brandColor={brandColor}
+          priceColor={priceColor}
+          isEn={isEn}
+          t={t}
+          initial={{ qty: editingCartItem.item.qty, note: editingCartItem.item.note || '', options: editingCartItem.initialOptions }}
+          submitLabel={t('saveEditB')}
+          onAdd={(product, qty, note, resolved) => updateCartItem(editingCartItem.item.cartKey, product, qty, note, resolved)}
+          onClose={() => setEditingCartItem(null)}
         />
       )}
 

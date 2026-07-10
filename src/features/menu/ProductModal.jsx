@@ -4,10 +4,12 @@ import { getCalorieBadge } from './helpers'
 
 // مودال تفاصيل الصنف: الخيارات + الكمية + الملاحظة + السحب للإغلاق.
 // يملك حالته الداخلية — تُصفَّر تلقائياً مع كل فتح لأن المودال يُركَّب من جديد.
-export default function ProductModal({ product, brandColor, priceColor, isEn, t, onAdd, onClose }) {
-  const [qty, setQty] = useState(1)
-  const [note, setNote] = useState('')
-  const [options, setOptions] = useState({}) // { groupIdx: choiceIdx | [choiceIdx,...] }
+// initial: { qty, note, options } لوضع التعديل من السلة (✎) — يعبّئ الحالة مسبقاً
+// submitLabel: نص زر التأكيد (الافتراضي «إضافة للسلة»)
+export default function ProductModal({ product, brandColor, priceColor, isEn, t, onAdd, onClose, initial, submitLabel }) {
+  const [qty, setQty] = useState(initial?.qty ?? 1)
+  const [note, setNote] = useState(initial?.note ?? '')
+  const [options, setOptions] = useState(initial?.options ?? {}) // { groupIdx: choiceIdx | [choiceIdx,...] }
   const [dragOffset, setDragOffset] = useState(0)
   const dragStartYRef = useRef(null)
 
@@ -209,7 +211,7 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
             }}
             style={{ width:'100%', padding:'16px', borderRadius:'14px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:`0 8px 24px ${brandColor}44` }}
           >
-            <span>{t('addToCartB')}</span>
+            <span>{submitLabel || t('addToCartB')}</span>
             <span style={{ background:'rgba(0,0,0,0.15)', padding:'4px 12px', borderRadius:'8px', fontSize:'14px' }}>
               {((product.price + resolveOptions().reduce((s,o)=>s+(o.price||0),0)) * qty).toFixed(2)} ﷼
             </span>
