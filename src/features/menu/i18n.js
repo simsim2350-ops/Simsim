@@ -60,7 +60,7 @@ export const TT = {
   increaseA:   { ar: 'زيادة الكمية', en: 'Increase quantity' },
   emptyCartTitle: { ar: 'سلتك فارغة', en: 'Your cart is empty' },
   browseMenuB: { ar: 'تصفح القائمة', en: 'Browse menu' },
-  orderNotePh: { ar: 'مثال: بدون بصل، التوصيل للاستقبال…', en: 'e.g. no onions, deliver to reception…' },
+  orderNotePh: { ar: 'أخبرنا بأي تفاصيل تود إضافتها.', en: 'e.g. no onions, deliver to reception…' },
   addrReq:     { ar: '📍 عنوان التوصيل', en: '📍 Delivery address' },
   closedTitle: { ar: 'المحل مغلق الآن', en: 'Closed now' },
   noteRest:    { ar: '💬 ملاحظتك للمطعم', en: '💬 Note to the restaurant' },
