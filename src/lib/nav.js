@@ -8,6 +8,7 @@ export const NAV_ITEMS = [
   { key: 'customers', icon: '👥', label: 'العملاء',            path: '/customers' },
   { key: 'loyalty',   icon: '🎁', label: 'الولاء والتقييمات',  path: '/loyalty' },
   { key: 'branches',  icon: '🏢', label: 'الفروع',             path: '/branches' },
+  { key: 'tables',    icon: '🪑', label: 'الطاولات',            path: '/tables' },
   { key: 'qr',        icon: '📱', label: 'QR Code',            path: '/qr' },
   { key: 'analytics', icon: '📈', label: 'التحليلات',          path: '/analytics' },
   { key: 'staff',     icon: '👥', label: 'الموظفون',           path: '/staff' },
