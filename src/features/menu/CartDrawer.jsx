@@ -6,6 +6,7 @@ export default function CartDrawer({
   orderType, setOrderType,
   customerName, setCustomerName, customerPhone, setCustomerPhone,
   tableNumber, setTableNumber, deliveryAddress, setDeliveryAddress,
+  orderNote, setOrderNote,
   openStatus, placeOrder, submitting, removeFromCart, incrementCartItem, onClose,
   suggestions = [], onAddSuggestion,
 }) {
@@ -169,6 +170,18 @@ export default function CartDrawer({
               />
             </div>
           )}
+
+          {/* ملاحظة عامة على الطلب — اختيارية، تُحفظ في orders.notes */}
+          <div style={{ marginBottom:'12px' }}>
+            <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>{t('orderNoteL')}</label>
+            <textarea
+              placeholder={t('orderNotePh')}
+              value={orderNote}
+              onChange={e => setOrderNote(e.target.value)}
+              maxLength={200}
+              style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', minHeight:'60px', resize:'vertical' }}
+            />
+          </div>
 
           {!openStatus.open && (
             <div style={{ display:'flex', alignItems:'flex-start', gap:'8px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.25)', borderRadius:'12px', padding:'12px 14px' }}>

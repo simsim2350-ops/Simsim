@@ -11,6 +11,7 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
   const [deliveryAddress, setDeliveryAddress] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
+  const [orderNote, setOrderNote] = useState('') // ملاحظة عامة على الطلب كله (اختيارية)
   const [orderNumber, setOrderNumber] = useState('')
   const [lastOrderSummary, setLastOrderSummary] = useState(null) // { items, total, tableNumber } للمشاركة عبر واتساب
   const [submitting, setSubmitting] = useState(false) // أثناء إرسال الطلب — يمنع الضغط المكرّر
@@ -62,7 +63,7 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
       tax,
       delivery_fee: deliveryFee,
       total,
-      notes: '',
+      notes: orderNote.trim(),
     }).select().single()
 
     if (error) {
@@ -78,6 +79,8 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
     setOrderPlaced(true)
     setCart([])
     setCartOpen(false)
+    setOrderNote('')
+    setSubmitting(false)
 
     // إضافة الطلب الجديد فوق قائمة الطلبات النشطة (الأحدث أولاً) — الاشتراك في تحديثاته يحصل تلقائياً
     setActiveOrders(prev => [
@@ -89,6 +92,7 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
   return {
     tableNumber, setTableNumber, orderType, setOrderType,
     deliveryAddress, setDeliveryAddress, customerName, setCustomerName,
-    customerPhone, setCustomerPhone, orderNumber, lastOrderSummary, placeOrder, submitting,
+    customerPhone, setCustomerPhone, orderNote, setOrderNote,
+    orderNumber, lastOrderSummary, placeOrder, submitting,
   }
 }
