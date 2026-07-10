@@ -207,29 +207,29 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
             />
           </div>
 
-          {/* اقتراحات مخصّصة لهذا الصنف — تُضاف مباشرة للسلة دون إغلاق هذه النافذة */}
+          {/* اقتراحات مخصّصة لهذا الصنف — تُضاف مباشرة للسلة دون إغلاق هذه النافذة (نفس مقاس بطاقات "أكمل وجبتك") */}
           {companions.length > 0 && (
             <div style={{ marginBottom:'20px' }}>
-              <div style={{ fontSize:'13px', fontWeight:'800', fontFamily:'Cairo,sans-serif', marginBottom:'10px' }}>{t('companionTitle')}</div>
-              <div style={{ display:'flex', gap:'8px', overflowX:'auto', paddingBottom:'2px' }}>
+              <div style={{ fontSize:'13.5px', fontWeight:'800', fontFamily:'Cairo,sans-serif', marginBottom:'10px' }}>{t('companionTitle')}</div>
+              <div style={{ display:'flex', gap:'10px', overflowX:'auto', paddingBottom:'2px' }}>
                 {companions.map(p => (
                   <button
                     type="button"
                     key={p.id}
                     onClick={() => onAddCompanion(p)}
                     aria-label={`${t('addToCartB')}: ${(isEn && p.name_en) ? p.name_en : p.name}`}
-                    style={{ display:'flex', alignItems:'center', gap:'8px', border:'1.5px solid #E5E7EB', borderRadius:'12px', padding:'7px 10px', flexShrink:0, background:'white', textAlign:'start' }}
+                    style={{ width:'112px', flexShrink:0, display:'flex', flexDirection:'column', gap:'6px', border:'1.5px solid #E5E7EB', borderRadius:'14px', padding:'10px', background:'white', textAlign:'start' }}
                   >
-                    <div style={{ width:'34px', height:'34px', borderRadius:'9px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', overflow:'hidden', flexShrink:0 }}>
+                    <div style={{ width:'56px', height:'56px', borderRadius:'12px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'26px', overflow:'hidden' }}>
                       {p.image_url
                         ? <img loading="lazy" decoding="async" src={p.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                         : (p.emoji || '🍽️')}
                     </div>
-                    <div>
-                      <div style={{ fontSize:'12px', fontWeight:'700', whiteSpace:'nowrap', maxWidth:'110px', overflow:'hidden', textOverflow:'ellipsis' }}>{(isEn && p.name_en) ? p.name_en : p.name}</div>
-                      <div style={{ fontSize:'11px', fontWeight:'800', color:brandColor }}>+{p.price} ﷼</div>
+                    <div style={{ fontSize:'12px', fontWeight:'700', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{(isEn && p.name_en) ? p.name_en : p.name}</div>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'4px' }}>
+                      <span style={{ fontSize:'11.5px', fontWeight:'800', color:brandColor }}>{p.price} ﷼</span>
+                      <span style={{ width:'20px', height:'20px', borderRadius:'50%', background:brandColor, color:'white', fontSize:'14px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontWeight:'300' }}>+</span>
                     </div>
-                    <span style={{ width:'22px', height:'22px', borderRadius:'50%', background:brandColor, color:'white', fontSize:'15px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontWeight:'300' }}>+</span>
                   </button>
                 ))}
               </div>
