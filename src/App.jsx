@@ -12,6 +12,7 @@ const ResetPassword  = lazy(() => import('./pages/ResetPassword'))
 const Onboarding     = lazy(() => import('./pages/Onboarding'))
 const Customers      = lazy(() => import('./pages/Customers'))
 const Branches       = lazy(() => import('./pages/Branches'))
+const Tables         = lazy(() => import('./pages/Tables'))
 const Dashboard      = lazy(() => import('./pages/Dashboard'))
 const Menu           = lazy(() => import('./pages/Menu'))
 const Orders         = lazy(() => import('./pages/Orders'))
@@ -92,6 +93,7 @@ export default function App() {
         <Route path="/orders"          element={<ProtectedRoute><RequirePage page="orders"><Orders /></RequirePage></ProtectedRoute>} />
         <Route path="/customers"       element={<ProtectedRoute><RequirePage page="customers"><Customers /></RequirePage></ProtectedRoute>} />
         <Route path="/branches"        element={<ProtectedRoute><RequirePage page="branches"><Branches /></RequirePage></ProtectedRoute>} />
+        <Route path="/tables"          element={<ProtectedRoute><RequirePage page="tables"><Tables /></RequirePage></ProtectedRoute>} />
         <Route path="/qr"              element={<ProtectedRoute><RequirePage page="qr"><QRCodePage /></RequirePage></ProtectedRoute>} />
         <Route path="/settings"        element={<ProtectedRoute><RequirePage page="settings"><Settings /></RequirePage></ProtectedRoute>} />
         <Route path="/analytics"       element={<ProtectedRoute><RequirePage page="analytics"><Analytics /></RequirePage></ProtectedRoute>} />

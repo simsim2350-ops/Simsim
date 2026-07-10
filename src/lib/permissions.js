@@ -8,14 +8,14 @@ export const OWNER_ONLY = ['dashboard', 'settings', 'staff']
 
 // صفحات مشتركة على مستوى المطعم كله (منيو/فروع/ولاء+تقييمات/QR).
 // تتطلب صلاحية "كل الفروع" — يُمنع منها الموظف المقيّد بفرع محدّد.
-export const SHARED_PAGES = ['menu', 'branches', 'loyalty', 'qr']
+export const SHARED_PAGES = ['menu', 'branches', 'tables', 'loyalty', 'qr']
 
 // ترتيب الصفحات القابلة للتخصيص (لتحديد أول صفحة يُوجَّه إليها الموظف)
-export const PAGE_ORDER = ['orders', 'menu', 'branches', 'customers', 'analytics', 'loyalty', 'qr']
+export const PAGE_ORDER = ['orders', 'menu', 'branches', 'tables', 'customers', 'analytics', 'loyalty', 'qr']
 
 // مسار كل صفحة
 export const PAGE_PATH = {
-  orders: '/orders', menu: '/menu', branches: '/branches',
+  orders: '/orders', menu: '/menu', branches: '/branches', tables: '/tables',
   customers: '/customers', analytics: '/analytics', loyalty: '/loyalty', qr: '/qr',
 }
 
