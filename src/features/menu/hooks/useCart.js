@@ -1,10 +1,31 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 
+const CART_TTL_MS = 6 * 60 * 60 * 1000 // 6 ساعات — سلة أقدم من كذا تُهمَل تفادياً لأسعار قديمة
+
 // حالة السلة وعملياتها — المفتاح الفريد: نفس الصنف بخيارات/ملاحظة مختلفة = عنصر سلة مختلف
-export function useCart(t) {
+// السلة تُحفظ في localStorage فتنجو من تحديث الصفحة (F5) أو إغلاق المتصفح بالخطأ
+export function useCart(slug, t) {
   const [cart, setCart] = useState([])
   const [cartOpen, setCartOpen] = useState(false)
+  const CART_STORAGE_KEY = `simsim_cart_${slug}`
+
+  // تحميل السلة المحفوظة عند فتح المطعم لأول مرة في هذه الجلسة
+  useEffect(() => {
+    if (!slug) return
+    try {
+      const saved = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || 'null')
+      if (saved && Date.now() - (saved.savedAt || 0) < CART_TTL_MS && Array.isArray(saved.items)) {
+        setCart(saved.items)
+      }
+    } catch { /* تجاهل */ }
+  }, [slug])
+
+  // حفظ السلة في localStorage عند أي تغيير
+  useEffect(() => {
+    if (!slug) return
+    try { localStorage.setItem(CART_STORAGE_KEY, JSON.stringify({ items: cart, savedAt: Date.now() })) } catch { /* تجاهل */ }
+  }, [cart, slug])
 
   // selectedOptions: [{ groupName, choiceName, price }] — قائمة مفسّرة من الخيارات المختارة
   // silent: يكتم توست الإضافة (يُستخدم عند إعادة الطلب لتفادي عشرات التوستات — ملخّص واحد بدلها)
