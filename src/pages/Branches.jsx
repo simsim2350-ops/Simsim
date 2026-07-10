@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 function Spinner() {
   return (
@@ -31,6 +32,7 @@ export default function Branches() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingBranch, setEditingBranch] = useState(null)
   const [form, setForm] = useState({ name:'', name_en:'', address:'', address_en:'', phone:'', maps_url:'', is_active:true })
+  const [confirmDelete, setConfirmDelete] = useState(null)
 
   useEffect(() => {
     if (!restaurant) return
@@ -103,7 +105,6 @@ export default function Branches() {
   }
 
   const deleteBranch = async (branch) => {
-    if (!window.confirm(`حذف فرع "${branch.name}"؟ الطلبات المرتبطة به ستفقد ربطها بالفرع لكنها لن تُحذف.`)) return
     const { error } = await supabase.from('branches').delete().eq('id', branch.id)
     if (error) { toast.error(error.message); return }
     toast.success('تم حذف الفرع')
@@ -185,7 +186,7 @@ export default function Branches() {
                         {branch.is_active ? '👁️' : '🚫'}
                       </button>
                       <button onClick={() => openEdit(branch)} style={{ width:'30px', height:'30px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', cursor:'pointer', fontSize:'13px' }}>✏️</button>
-                      <button onClick={() => deleteBranch(branch)} style={{ width:'30px', height:'30px', borderRadius:'8px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'13px' }}>🗑️</button>
+                      <button onClick={() => setConfirmDelete(branch)} style={{ width:'30px', height:'30px', borderRadius:'8px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'13px' }}>🗑️</button>
                     </div>
                   </div>
 
@@ -261,6 +262,15 @@ export default function Branches() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="حذف الفرع"
+        body={confirmDelete ? `حذف فرع "${confirmDelete.name}"؟ الطلبات المرتبطة به ستفقد ربطها بالفرع لكنها لن تُحذف.` : ''}
+        confirmLabel="حذف"
+        onCancel={() => setConfirmDelete(null)}
+        onConfirm={() => { deleteBranch(confirmDelete); setConfirmDelete(null) }}
+      />
     </AppShell>
   )
 }

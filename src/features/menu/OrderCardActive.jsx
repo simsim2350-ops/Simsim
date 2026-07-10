@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import OrderItemRow from './OrderItemRow'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 // بطاقة الطلب النشط — هيدر (رقم + وقت + حالة حيّة) + Timeline + الوقت المتوقّع
 // + الأصناف والإجمالي + أزرار (رسالة للمطعم · إلغاء قبل التحضير)
@@ -113,27 +114,15 @@ export default function OrderCardActive({
         )}
       </div>
 
-      {/* تأكيد الإلغاء — بطاقة داخل المنصّة بدل نافذة المتصفح */}
-      {confirmOpen && (
-        <div style={{ position:'fixed', inset:0, zIndex:120, display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
-          <div onClick={() => setConfirmOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', animation:'fadeIn 0.15s ease' }}/>
-          <div style={{ background:'white', borderRadius:'20px', width:'100%', maxWidth:'340px', padding:'22px', position:'relative', textAlign:'center' }}>
-            <div style={{ fontSize:'34px', marginBottom:'10px' }}>❓</div>
-            <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', marginBottom:'6px' }}>{t('cancelConfirmTitle')}</div>
-            <div style={{ fontSize:'13px', color:'#6B7280', marginBottom:'20px' }}>{t('cancelConfirmBody').replace('{n}', order.orderNumber)}</div>
-            <div style={{ display:'flex', gap:'10px' }}>
-              <button
-                onClick={() => setConfirmOpen(false)}
-                style={{ flex:1, padding:'12px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}
-              >{t('cancelConfirmBack')}</button>
-              <button
-                onClick={() => { setConfirmOpen(false); onCancel(order) }}
-                style={{ flex:1, padding:'12px', borderRadius:'12px', border:'none', background:'#E11D48', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer' }}
-              >{t('cancelConfirmYes')}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmOpen}
+        title={t('cancelConfirmTitle')}
+        body={t('cancelConfirmBody').replace('{n}', order.orderNumber)}
+        cancelLabel={t('cancelConfirmBack')}
+        confirmLabel={t('cancelConfirmYes')}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => { setConfirmOpen(false); onCancel(order) }}
+      />
     </div>
   )
 }

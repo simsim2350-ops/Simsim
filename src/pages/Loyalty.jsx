@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 
 function Spinner() {
@@ -36,6 +37,7 @@ export default function Loyalty() {
   const [branches, setBranches] = useState([])
   const [reviews, setReviews] = useState([])
   const [reviewBranch, setReviewBranch] = useState('all')
+  const [confirmRedeem, setConfirmRedeem] = useState(null)
 
   useEffect(() => {
     if (!restaurant) { setLoading(false); return }
@@ -105,10 +107,15 @@ export default function Loyalty() {
     }).sort((a,b) => b.balance - a.balance)
   }, [orders, redemptions, earnRate])
 
+  const openRedeemConfirm = (c) => {
+    const pts = parseInt(rewardThreshold) || 0
+    if (c.balance < pts) { toast.error('رصيد نقاط العميل لا يكفي للمكافأة'); return }
+    setConfirmRedeem(c)
+  }
+
   const recordRedemption = async (c) => {
     const pts = parseInt(rewardThreshold) || 0
     if (c.balance < pts) { toast.error('رصيد نقاط العميل لا يكفي للمكافأة'); return }
-    if (!window.confirm(`تسجيل استبدال مكافأة لـ ${c.name || c.phone}؟\nسيُخصم ${pts} نقطة (${rewardDescription})`)) return
     try {
       const { data, error } = await supabase.from('loyalty_redemptions').insert({
         restaurant_id: restaurant.id,
@@ -243,7 +250,7 @@ export default function Loyalty() {
                             <div style={{ fontSize:'10px', color:'#9CA3AF' }}>نقطة</div>
                           </div>
                           {ready && (
-                            <button onClick={() => recordRedemption(c)} style={{ flexShrink:0, padding:'7px 10px', borderRadius:'9px', border:'none', background:'#10B981', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer' }}>
+                            <button onClick={() => openRedeemConfirm(c)} style={{ flexShrink:0, padding:'7px 10px', borderRadius:'9px', border:'none', background:'#10B981', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer' }}>
                               🎁 استبدال
                             </button>
                           )}
@@ -314,6 +321,17 @@ export default function Loyalty() {
           )}
 
         </div>
+
+      <ConfirmDialog
+        open={!!confirmRedeem}
+        icon="🎁"
+        danger={false}
+        title="تسجيل استبدال مكافأة"
+        body={confirmRedeem ? `تسجيل استبدال مكافأة لـ ${confirmRedeem.name || confirmRedeem.phone}؟ سيُخصم ${parseInt(rewardThreshold) || 0} نقطة (${rewardDescription})` : ''}
+        confirmLabel="تأكيد الاستبدال"
+        onCancel={() => setConfirmRedeem(null)}
+        onConfirm={() => { recordRedemption(confirmRedeem); setConfirmRedeem(null) }}
+      />
     </AppShell>
   )
 }

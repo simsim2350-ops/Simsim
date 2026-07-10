@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import { fetchAllTables, createTable, updateTable, deleteTable } from '../lib/tablesApi'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 function Spinner() {
   return (
@@ -33,6 +34,7 @@ export default function Tables() {
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingTable, setEditingTable] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(null)
   const [tableNumber, setTableNumber] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -89,7 +91,6 @@ export default function Tables() {
   }
 
   const remove = async (tb) => {
-    if (!window.confirm(`حذف الطاولة "${tb.table_number}"؟`)) return
     try {
       await deleteTable(tb.id)
       toast.success('تم حذف الطاولة')
@@ -188,7 +189,7 @@ export default function Tables() {
                       {tb.status === 'active' ? '👁️' : '🚫'}
                     </button>
                     <button onClick={() => openEdit(tb)} style={{ width:'30px', height:'30px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', cursor:'pointer', fontSize:'13px' }}>✏️</button>
-                    <button onClick={() => remove(tb)} style={{ width:'30px', height:'30px', borderRadius:'8px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'13px' }}>🗑️</button>
+                    <button onClick={() => setConfirmDelete(tb)} style={{ width:'30px', height:'30px', borderRadius:'8px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'13px' }}>🗑️</button>
                   </div>
                 </div>
               ))}
@@ -231,6 +232,15 @@ export default function Tables() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="حذف الطاولة"
+        body={confirmDelete ? `حذف الطاولة "${confirmDelete.table_number}"؟` : ''}
+        confirmLabel="حذف"
+        onCancel={() => setConfirmDelete(null)}
+        onConfirm={() => { remove(confirmDelete); setConfirmDelete(null) }}
+      />
     </AppShell>
   )
 }
