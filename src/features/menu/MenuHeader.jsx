@@ -30,18 +30,19 @@ export default function MenuHeader({
   const desc = fullDesc && fullDesc.length > DESC_MAX_CHARS ? fullDesc.slice(0, DESC_MAX_CHARS).trim() + '…' : fullDesc
   // خلية إحصائيات واحدة (حالة الفتح / وقت التجهيز / التوصيل)
   const statCells = [
-    {
+    ...((restaurant?.show_hours ?? true) ? [{
       value: openStatus.open ? t('openNow') : t('closedNow'),
       color: openStatus.open ? '#10B981' : '#EF4444',
       sub: openStatus.open
         ? (!openStatus.unknown && openStatus.todayText ? openStatus.todayText : '')
         : (openStatus.nextText || ''),
-    },
-    {
+      ltr: openStatus.open,
+    }] : []),
+    ...((restaurant?.show_prep_time ?? true) ? [{
       value: `${estimatedPrepTime(activeOrdersCount)} ${t('minShort')}`,
       color: '#0F1117',
       sub: isEn ? 'Prep time' : 'وقت التجهيز',
-    },
+    }] : []),
     ...(restaurant?.delivery_enabled ? [{
       value: Number(restaurant.delivery_fee) > 0 ? `${Number(restaurant.delivery_fee).toFixed(0)} ﷼` : (isEn ? 'Free' : 'مجاني'),
       color: '#0F1117',
@@ -132,7 +133,7 @@ export default function MenuHeader({
         </div>
 
         {/* وصف المطعم — يكتبه صاحب المطعم من الإعدادات (يدعم الترجمة)، ويُقص عند 105 أحرف */}
-        {desc && (
+        {(restaurant.show_description ?? true) && desc && (
           <p style={{ fontSize:'12.5px', color:descColor, lineHeight:'1.45', margin:'3px 16px 0' }}>{desc}</p>
         )}
 
@@ -156,9 +157,9 @@ export default function MenuHeader({
         })()}
 
         {/* روابط التواصل + زر المسبّبات */}
-        {((restaurant.social_links && Object.values(restaurant.social_links).some(v => v)) || (Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0)) && (
+        {(((restaurant.show_social_links ?? true) && restaurant.social_links && Object.values(restaurant.social_links).some(v => v)) || ((restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0)) && (
           <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'4px 16px 0', flexWrap:'wrap' }}>
-            {restaurant.social_links && ['instagram', 'whatsapp_social', 'snapchat', 'twitter', 'tiktok']
+            {(restaurant.show_social_links ?? true) && restaurant.social_links && ['instagram', 'whatsapp_social', 'snapchat', 'twitter', 'tiktok']
               .filter(key => restaurant.social_links[key])
               .map(key => {
                 const Icon = SOCIAL_ICONS[key]
@@ -169,7 +170,7 @@ export default function MenuHeader({
                   </a>
                 )
               })}
-            {Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0 && (
+            {(restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0 && (
               <button onClick={onShowAllergens} style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 11px', borderRadius:'100px', border:'1.5px solid #FDE68A', background:'#FFFBEB', color:'#92400E', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer' }}>
                 ⚠️ {t('allergens')}
               </button>
@@ -182,7 +183,7 @@ export default function MenuHeader({
           {statCells.map((c, i) => (
             <div key={i} style={{ flex:1, textAlign:'center', borderRight: i > 0 ? '1px solid #E9ECF1' : 'none', padding:'0 4px' }}>
               <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'12.5px', color:c.color, whiteSpace:'nowrap' }}>{c.value}</div>
-              {c.sub && <div style={{ fontSize:'9.5px', color:'#9CA3AF', fontWeight:'700', marginTop:'3px', direction: i === 0 && openStatus.open ? 'ltr' : 'rtl' }}>{c.sub}</div>}
+              {c.sub && <div style={{ fontSize:'9.5px', color:'#9CA3AF', fontWeight:'700', marginTop:'3px', direction: c.ltr ? 'ltr' : 'rtl' }}>{c.sub}</div>}
             </div>
           ))}
         </div>
