@@ -40,8 +40,31 @@ export function useCart(t) {
     setCart(prev => prev.map(i => i.cartKey === cartKey ? { ...i, qty: i.qty + 1 } : i))
   }
 
+  // حذف السطر بالكامل مهما كانت الكمية (زر 🗑 في السلة)
+  const deleteCartItem = (cartKey) => {
+    setCart(prev => prev.filter(i => i.cartKey !== cartKey))
+  }
+
+  // استبدال عنصر بعد تعديله من المودال (زر ✎) — لو نتج سطر مطابق لسطر موجود يُدمجان
+  const updateCartItem = (oldCartKey, product, qty, note, selectedOptions = []) => {
+    const optionsPrice = selectedOptions.reduce((s, o) => s + (o.price || 0), 0)
+    const finalPrice = product.price + optionsPrice
+    const optionsKey = selectedOptions.map(o => `${o.groupName}:${o.choiceName}`).sort().join('|')
+    const cartKey = `${product.id}__${optionsKey}__${note}`
+    setCart(prev => {
+      const existing = prev.find(i => i.cartKey === cartKey && i.cartKey !== oldCartKey)
+      if (existing) {
+        return prev.filter(i => i.cartKey !== oldCartKey)
+          .map(i => i.cartKey === cartKey ? { ...i, qty: i.qty + qty } : i)
+      }
+      return prev.map(i => i.cartKey === oldCartKey
+        ? { cartKey, id: product.id, name: product.name, emoji: product.emoji, image_url: product.image_url, price: finalPrice, basePrice: product.price, qty, note, selectedOptions }
+        : i)
+    })
+  }
+
   const cartTotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0)
   const cartCount = cart.reduce((sum, i) => sum + i.qty, 0)
 
-  return { cart, setCart, cartOpen, setCartOpen, addToCart, removeFromCart, incrementCartItem, cartTotal, cartCount }
+  return { cart, setCart, cartOpen, setCartOpen, addToCart, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount }
 }
