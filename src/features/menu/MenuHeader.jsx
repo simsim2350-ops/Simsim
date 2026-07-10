@@ -80,8 +80,8 @@ export default function MenuHeader({
         )}
       </div>
 
-      {/* ===== الورقة البيضاء المنزلقة ===== */}
-      <div style={{ position:'relative', marginTop:'-26px', background:'white', borderRadius:'26px 26px 0 0', boxShadow:'0 -10px 30px rgba(15,17,23,0.16)', paddingTop:'8px' }}>
+      {/* ===== البطاقة العائمة فوق الهيرو (هوامش جانبية + زوايا مدوّرة بالكامل) ===== */}
+      <div style={{ position:'relative', margin:'-26px 16px 14px', background:'white', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)', paddingTop:'8px' }}>
         <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 8px' }}/>
 
         {/* حقل البحث — يظهر فقط عند فتحه من الزر العائم */}
