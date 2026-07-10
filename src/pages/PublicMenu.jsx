@@ -294,6 +294,9 @@ function PublicMenuInner() {
           t={t}
           onAdd={addToCart}
           onClose={() => setSelectedProduct(null)}
+          products={products}
+          recommendationsMap={recommendationsMap}
+          onAddCompanion={(p) => addToCart(p, 1)}
         />
       )}
 
@@ -309,6 +312,9 @@ function PublicMenuInner() {
           submitLabel={t('saveEditB')}
           onAdd={(product, qty, note, resolved) => updateCartItem(editingCartItem.item.cartKey, product, qty, note, resolved)}
           onClose={() => setEditingCartItem(null)}
+          products={products}
+          recommendationsMap={recommendationsMap}
+          onAddCompanion={(p) => addToCart(p, 1)}
         />
       )}
 
