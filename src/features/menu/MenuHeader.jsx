@@ -10,13 +10,14 @@ const HERO_HEIGHT = 170
 const RANGE_END = 260
 
 const clamp01 = v => Math.min(1, Math.max(0, v))
-// تلاشي + انزياح خفيف لعنصر ثانوي ضمن نطاق فرعي من التقدّم العام (0..1) — بدون أي CSS transition
+const lerp = (a, b, t) => a + (b - a) * t
+// تلاشي opacity فقط لعنصر ثانوي ضمن نطاق فرعي من التقدّم العام (0..1) — بدون أي CSS transition
 // (التحديث مستمر كل إطار عبر JS، فإضافة transition تجعل العنصر "يلاحق" القيمة بتأخير)
+// عناصر ثانوية فقط (الوصف/التواصل/الولاء/الإحصائيات...) — الهوية (شعار/اسم/تقييم) لا تُخفى أبداً، تتحرك بترانسفورم منفصل
 const fadeStyle = (progress, start, end) => {
   const t = clamp01((progress - start) / (end - start))
   return {
     opacity: 1 - t,
-    transform: `translateY(${(t * -6).toFixed(2)}px) scale(${(1 - t * 0.05).toFixed(3)})`,
     pointerEvents: t > 0.6 ? 'none' : 'auto',
   }
 }
@@ -57,7 +58,8 @@ export default function MenuHeader({
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
-  const isCompact = progress >= 0.999 // فقط لطيّ المساحة نهائياً بعد اكتمال التلاشي (لا تأثير بصري لأن كل شيء بداخله شفاف بالفعل)
+  // طيّ المساحة النهائي (بعد أن يكون كل المحتوى الثانوي شفافاً بالفعل) — قيمة مستمرة أيضاً، لا قفزة منفردة
+  const collapseT = clamp01((progress - 0.85) / 0.15)
 
   // قصّ الوصف عند الحد الأقصى
   const fullDesc = tx(restaurant, 'description')
@@ -90,6 +92,13 @@ export default function MenuHeader({
   const fadeStats = fadeStyle(progress, 0.12, 0.32)     // خلية الإحصائيات (وقت التجهيز/ساعات العمل) + صفّ الفرع
   const fadeSocial = fadeStyle(progress, 0.28, 0.48)    // التواصل + المسبّبات
   const fadeDesc = fadeStyle(progress, 0.44, 0.64)      // الوصف + الموقع
+
+  // الهوية (شعار + اسم + تقييم): لا تختفي أبداً — نفس العناصر، تتحرك بترانسفورم مستمر فقط (بلا opacity)
+  const identityT = clamp01(progress / 0.9)
+  const identityStyle = {
+    transform: `translateY(${lerp(0, -3, identityT).toFixed(2)}px) scale(${lerp(1, 0.9, identityT).toFixed(3)})`,
+    transformOrigin: 'top right',
+  }
 
   return (
     <div>
@@ -132,21 +141,22 @@ export default function MenuHeader({
         )}
       </div>
 
-      {/* ===== البطاقة العائمة — نفس العنصر يتحوّل تدريجياً (Morph) لنسخة مصغّرة لاصقة عند التمرير ===== */}
+      {/* ===== البطاقة العائمة — نفس العنصر يتحوّل تدريجياً (Morph) لنسخة مصغّرة لاصقة عند التمرير =====
+          هوية البطاقة (هوامش/زوايا/ظل) تبقى ثابتة طوال الحركة — الانكماش يأتي فقط من تلاشي المحتوى الثانوي
+          وطيّه في النهاية، لا من قفزة في شكل الحاوية نفسها (هذا ما كان يسبّب اختفاء الهوية للحظة) */}
       <div style={{
         position:'sticky', top:0, zIndex:30,
-        margin: isCompact ? '0' : '-26px 16px 14px',
+        margin:'-26px 16px 14px',
         background:'white',
-        borderRadius: isCompact ? '0 0 18px 18px' : '22px',
-        boxShadow: isCompact ? '0 6px 18px rgba(15,17,23,0.14)' : '0 10px 30px rgba(15,17,23,0.16)',
-        paddingTop: isCompact ? '6px' : '8px',
-        paddingBottom: isCompact ? '6px' : 0,
+        borderRadius:'22px',
+        boxShadow:'0 10px 30px rgba(15,17,23,0.16)',
+        paddingTop:'8px',
       }}>
         {/* انتقال ناعم بين البطاقة ومنطقة المنتجات (ظل متدرّج ثابت) */}
         <div style={{ position:'absolute', left:0, right:0, bottom:'-14px', height:'14px', background:'linear-gradient(180deg, rgba(15,17,23,0.07), rgba(15,17,23,0))', pointerEvents:'none' }}/>
 
-        {/* مقبض السحب + حقل البحث — يتلاشيان أولاً، ثم تُطوى مساحتهما نهائياً بعد اكتمال التحوّل */}
-        <div style={{ maxHeight: isCompact ? 0 : 160, overflow:'hidden', transition: isCompact ? 'max-height .2s ease' : 'none' }}>
+        {/* مقبض السحب + حقل البحث — يتلاشيان أولاً، ثم تُطوى مساحتهما نهائياً بعد اكتمال التلاشي (لا قفزة مرئية لأنها شفافة بالفعل) */}
+        <div style={{ maxHeight: lerp(160, 0, collapseT), overflow:'hidden' }}>
           <div style={fadeUtility}>
             <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 8px' }}/>
 
@@ -172,8 +182,8 @@ export default function MenuHeader({
           </div>
         </div>
 
-        {/* الهوية: شعار + اسم + تقييم + حالة الفتح (تبقى ظاهرة دائماً — النسخة المصغّرة النهائية) */}
-        <div style={{ display:'flex', alignItems:'center', gap:'12px', padding:'0 16px' }}>
+        {/* الهوية: شعار + اسم + تقييم + حالة الفتح — نفس العناصر دائماً بلا opacity، تتحرك بترانسفورم مستمر فقط */}
+        <div style={{ display:'flex', alignItems:'center', gap:'12px', padding:'0 16px', ...identityStyle }}>
           <div style={{ width:'56px', height:'56px', borderRadius:'16px', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'26px', flexShrink:0, overflow:'hidden', boxShadow:'0 5px 14px rgba(15,17,23,0.18)' }}>
             {restaurant.logo_url
               ? <img src={restaurant.logo_url} alt={restaurant.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
@@ -193,7 +203,7 @@ export default function MenuHeader({
                 {openStatus.open ? t('openNow') : t('closedNow')}
               </div>
             )}
-            <div style={{ maxHeight: isCompact ? 0 : 40, overflow:'hidden', transition: isCompact ? 'max-height .2s ease' : 'none' }}>
+            <div style={{ maxHeight: lerp(40, 0, collapseT), overflow:'hidden' }}>
               <div style={{ ...fadeStats, display:'flex', alignItems:'center', gap:'7px', marginTop:'2px', flexWrap:'wrap' }}>
                 {branch
                   ? <span style={{ fontSize:'11.5px', fontWeight:'700', color:'#6B7280' }}>🏢 {isEn && branch.name_en ? branch.name_en : branch.name}</span>
@@ -209,7 +219,7 @@ export default function MenuHeader({
         </div>
 
         {/* بقية أقسام البطاقة (الوصف/الموقع/التواصل/الإحصائيات/الولاء) — تتلاشى بالأولوية، ثم تُطوى مساحتها نهائياً */}
-        <div style={{ maxHeight: isCompact ? 0 : 800, overflow:'hidden', transition: isCompact ? 'max-height .2s ease' : 'none' }}>
+        <div style={{ maxHeight: lerp(800, 0, collapseT), overflow:'hidden' }}>
           {/* وصف المطعم — يكتبه صاحب المطعم من الإعدادات (يدعم الترجمة)، ويُقص عند 105 أحرف */}
           {(restaurant.show_description ?? true) && desc && (
             <p style={{ ...fadeDesc, fontSize:'12.5px', color:descColor, lineHeight:'1.45', margin:'3px 16px 0' }}>{desc}</p>
