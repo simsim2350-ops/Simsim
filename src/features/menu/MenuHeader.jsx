@@ -8,7 +8,6 @@ const DESC_MAX_CHARS = 105
 // Sticky Morph: طول مسافة التمرير (px) حتى اكتمال تحوّل البطاقة لنسخة مصغّرة لاصقة
 const HERO_HEIGHT = 170
 const RANGE_END = 260
-const PIN_BUFFER = RANGE_END - HERO_HEIGHT + 26 // يبقي الهيرو ثابتاً بصرياً طوال مدة التحوّل
 
 const clamp01 = v => Math.min(1, Math.max(0, v))
 // تلاشي + انزياح خفيف لعنصر ثانوي ضمن نطاق فرعي من التقدّم العام (0..1) — بدون أي CSS transition
@@ -94,39 +93,43 @@ export default function MenuHeader({
 
   return (
     <div>
-      {/* ===== الهيرو: ثابت بصرياً (sticky) طوال مدة التحوّل، ثم يتلاشى تدريجياً عند اكتمال الانكماش ===== */}
-      <div style={{ height: `${HERO_HEIGHT + PIN_BUFFER}px` }}>
-        <div style={{
-          position:'sticky', top:0, height:`${HERO_HEIGHT}px`, zIndex:0,
-          overflow:'hidden', background:`linear-gradient(160deg, ${brandColor}, ${brandColor}88)`,
-          opacity: 1 - clamp01((progress - 0.6) / 0.4),
-        }}>
-          {restaurant.cover_url && (
-            <img src={restaurant.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
-          )}
-          {/* تظليل خفيف أسفل الهيرو ليبرز انزلاق الورقة */}
-          <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, rgba(0,0,0,0.12), transparent 30%, transparent 70%, rgba(0,0,0,0.18))', pointerEvents:'none' }}/>
+      {/* ===== فاصل يحافظ على ارتفاع الصفحة مكان الهيرو (الهيرو نفسه fixed، خارج تدفّق المستند) ===== */}
+      <div style={{ height:`${HERO_HEIGHT}px` }}/>
 
-          {/* زر اللغة — عائم */}
-          <button onClick={toggleLang} style={{ position:'absolute', top:'18px', left:'14px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', color:'#374151', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            {isEn ? 'ع' : 'EN'}
+      {/* ===== الهيرو: مثبّت على الشاشة (fixed) طوال مدة التحوّل فلا يتحرك إطلاقاً، ثم يتلاشى تدريجياً عند اكتمال الانكماش =====
+          (fixed بدل sticky+حاوية أطول: يمنع أي مسافة فارغة بين الهيرو والبطاقة، لأن البطاقة تبدأ متداخلة معه دائماً وتتقدّم فوقه فقط) */}
+      <div style={{
+        position:'fixed', top:0, left:'50%', transform:'translateX(-50%)',
+        width:'100%', maxWidth:'480px', height:`${HERO_HEIGHT}px`, zIndex:5,
+        overflow:'hidden', background:`linear-gradient(160deg, ${brandColor}, ${brandColor}88)`,
+        opacity: 1 - clamp01((progress - 0.6) / 0.4),
+        pointerEvents: progress > 0.55 ? 'none' : 'auto',
+      }}>
+        {restaurant.cover_url && (
+          <img src={restaurant.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+        )}
+        {/* تظليل خفيف أسفل الهيرو ليبرز انزلاق الورقة */}
+        <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, rgba(0,0,0,0.12), transparent 30%, transparent 70%, rgba(0,0,0,0.18))', pointerEvents:'none' }}/>
+
+        {/* زر اللغة — عائم */}
+        <button onClick={toggleLang} style={{ position:'absolute', top:'18px', left:'14px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', color:'#374151', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          {isEn ? 'ع' : 'EN'}
+        </button>
+
+        {/* زر البحث — عائم تحت زر اللغة، يفتح/يغلق حقل البحث */}
+        <button onClick={toggleSearch} style={{ position:'absolute', top:'64px', left:'14px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background: searchOpen ? brandColor : 'rgba(255,255,255,0.95)', color: searchOpen ? 'white' : '#374151', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          {searchOpen ? '✕' : '🔍'}
+        </button>
+
+        {/* زر طلباتي — عائم بعداد حي */}
+        {hasOrders && (
+          <button onClick={onShowOrders} style={{ position:'absolute', top:'18px', right:'14px', padding:'10px 15px', borderRadius:'100px', border:'none', background:brandColor, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', boxShadow:`0 6px 18px ${brandColor}66` }}>
+            📋 {t('myOrders')}
+            {liveOrdersCount > 0 && (
+              <span style={{ background:'rgba(255,255,255,0.3)', borderRadius:'100px', padding:'1px 7px', fontSize:'11px' }}>{liveOrdersCount}</span>
+            )}
           </button>
-
-          {/* زر البحث — عائم تحت زر اللغة، يفتح/يغلق حقل البحث */}
-          <button onClick={toggleSearch} style={{ position:'absolute', top:'64px', left:'14px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background: searchOpen ? brandColor : 'rgba(255,255,255,0.95)', color: searchOpen ? 'white' : '#374151', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            {searchOpen ? '✕' : '🔍'}
-          </button>
-
-          {/* زر طلباتي — عائم بعداد حي */}
-          {hasOrders && (
-            <button onClick={onShowOrders} style={{ position:'absolute', top:'18px', right:'14px', padding:'10px 15px', borderRadius:'100px', border:'none', background:brandColor, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', boxShadow:`0 6px 18px ${brandColor}66` }}>
-              📋 {t('myOrders')}
-              {liveOrdersCount > 0 && (
-                <span style={{ background:'rgba(255,255,255,0.3)', borderRadius:'100px', padding:'1px 7px', fontSize:'11px' }}>{liveOrdersCount}</span>
-              )}
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {/* ===== البطاقة العائمة — نفس العنصر يتحوّل تدريجياً (Morph) لنسخة مصغّرة لاصقة عند التمرير ===== */}
