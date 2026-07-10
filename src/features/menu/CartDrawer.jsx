@@ -25,9 +25,18 @@ export default function CartDrawer({
 
         <div style={{ padding:'0 20px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid #E5E7EB', flexShrink:0 }}>
           <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px' }}>🛒 {t('cartYours')} ({cartCount})</h3>
-          <button onClick={onClose} style={{ width:'32px', height:'32px', borderRadius:'50%', border:'1.5px solid #E5E7EB', background:'white', fontSize:'18px', cursor:'pointer', color:'#6B7280' }}>✕</button>
+          <button type="button" onClick={onClose} aria-label={t('closeA')} style={{ width:'32px', height:'32px', borderRadius:'50%', border:'1.5px solid #E5E7EB', background:'white', fontSize:'18px', color:'#6B7280' }}>✕</button>
         </div>
 
+        {/* سلة فارغة — تحدث لو حذف الزبون آخر صنف وهو داخل الدرج (زر 🗑) */}
+        {cart.length === 0 ? (
+          <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'12px', padding:'40px 20px', textAlign:'center' }}>
+            <span style={{ fontSize:'44px' }}>🛒</span>
+            <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', color:'#374151' }}>{t('emptyCartTitle')}</div>
+            <button type="button" onClick={onClose} style={{ marginTop:'8px', padding:'12px 24px', borderRadius:'12px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px' }}>{t('browseMenuB')}</button>
+          </div>
+        ) : (
+        <>
         {/* الجسم القابل للتمرير: العناصر + الاقتراحات + الملخص — شريط تمرير واحد للسلة كلها */}
         <div style={{ flex:1, overflowY:'auto', minHeight:0 }}>
 
@@ -55,9 +64,9 @@ export default function CartDrawer({
                 </div>
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:'0', border:'1.5px solid #E5E7EB', borderRadius:'10px', overflow:'hidden', flexShrink:0 }}>
-                <button onClick={() => removeFromCart(item.cartKey)} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', cursor:'pointer', color:brandColor, fontWeight:'300' }}>−</button>
+                <button type="button" onClick={() => removeFromCart(item.cartKey)} aria-label={t('decreaseA')} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', color:brandColor, fontWeight:'300' }}>−</button>
                 <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', minWidth:'24px', textAlign:'center', borderRight:'1px solid #E5E7EB', borderLeft:'1px solid #E5E7EB', lineHeight:'30px' }}>{item.qty}</span>
-                <button onClick={() => incrementCartItem(item.cartKey)} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', cursor:'pointer', color:brandColor, fontWeight:'300' }}>+</button>
+                <button type="button" onClick={() => incrementCartItem(item.cartKey)} aria-label={t('increaseA')} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', color:brandColor, fontWeight:'300' }}>+</button>
               </div>
               <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', flexShrink:0, minWidth:'50px', textAlign:'left' }}>{(item.price * item.qty).toFixed(2)} ﷼</div>
             </div>
@@ -70,7 +79,7 @@ export default function CartDrawer({
             <div style={{ fontSize:'12px', fontWeight:'800', color:'#6B7280', marginBottom:'8px' }}>{t('suggestTitle')}</div>
             <div style={{ display:'flex', gap:'8px', overflowX:'auto', paddingBottom:'2px' }}>
               {suggestions.map(p => (
-                <div key={p.id} onClick={() => onAddSuggestion(p)} style={{ display:'flex', alignItems:'center', gap:'8px', border:'1.5px solid #E5E7EB', borderRadius:'12px', padding:'7px 10px', cursor:'pointer', flexShrink:0, background:'white' }}>
+                <button type="button" key={p.id} onClick={() => onAddSuggestion(p)} aria-label={`${t('addToCartB')}: ${(isEn && p.name_en) ? p.name_en : p.name}`} style={{ display:'flex', alignItems:'center', gap:'8px', border:'1.5px solid #E5E7EB', borderRadius:'12px', padding:'7px 10px', flexShrink:0, background:'white', textAlign:'start' }}>
                   <div style={{ width:'34px', height:'34px', borderRadius:'9px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', overflow:'hidden', flexShrink:0 }}>
                     {p.image_url
                       ? <img loading="lazy" decoding="async" src={p.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
@@ -81,7 +90,7 @@ export default function CartDrawer({
                     <div style={{ fontSize:'11px', fontWeight:'800', color:brandColor }}>+{p.price} ﷼</div>
                   </div>
                   <span style={{ width:'22px', height:'22px', borderRadius:'50%', background:brandColor, color:'white', fontSize:'15px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontWeight:'300' }}>+</span>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -121,11 +130,13 @@ export default function CartDrawer({
                 { key:'takeaway', icon:'🥡', label:t('takeaway2') },
                 ...(restaurant?.delivery_enabled ? [{ key:'delivery', icon:'🛵', label:t('deliveryT') }] : []),
               ].map(opt => (
-                <div
+                <button
+                  type="button"
                   key={opt.key}
                   onClick={() => setOrderType(opt.key)}
+                  aria-pressed={orderType===opt.key}
                   style={{
-                    padding:'12px 8px', borderRadius:'11px', cursor:'pointer', textAlign:'center',
+                    padding:'12px 8px', borderRadius:'11px', textAlign:'center',
                     border:`1.5px solid ${orderType===opt.key ? brandColor : '#E5E7EB'}`,
                     background: orderType===opt.key ? `${brandColor}0D` : 'white',
                     transition:'all 0.15s',
@@ -133,7 +144,7 @@ export default function CartDrawer({
                 >
                   <div style={{ fontSize:'20px', marginBottom:'4px' }}>{opt.icon}</div>
                   <div style={{ fontSize:'12px', fontWeight:'700', color: orderType===opt.key ? brandColor : '#374151' }}>{opt.label}</div>
-                </div>
+                </button>
               ))}
             </div>
             {orderType === 'delivery' && restaurant?.delivery_fee > 0 && (
@@ -248,6 +259,7 @@ export default function CartDrawer({
         {/* زر التأكيد الثابت — خارج التمرير، يحمل السعر، ويتعطّل مع سبينر أثناء الإرسال */}
         <div style={{ flexShrink:0, background:'white', borderTop:'1px solid #E5E7EB', padding:'11px 16px 14px', boxShadow:'0 -8px 24px rgba(20,14,28,0.06)' }}>
           <button
+            type="button"
             onClick={placeOrder}
             disabled={!canSubmit}
             style={{ width:'100%', height:'52px', borderRadius:'15px', border:'none', background: canSubmit ? `linear-gradient(135deg, ${brandColor}, ${brandColor}CC)` : '#E5E7EB', color: canSubmit ? 'white' : '#9CA3AF', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', cursor: canSubmit ? 'pointer' : 'not-allowed', boxShadow: canSubmit ? `0 8px 22px ${brandColor}44` : 'none', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 20px' }}
@@ -270,6 +282,8 @@ export default function CartDrawer({
             )}
           </button>
         </div>
+        </>
+        )}
       </div>
     </div>
   )
