@@ -42,6 +42,7 @@ export default function Settings() {
     phone: '', whatsapp_message: '', address: '', currency: 'SAR - ريال سعودي',
     delivery_enabled: false, delivery_fee: '',
     recommendations_enabled: true, recommendations_count: 4,
+    show_description: true, show_social_links: true, show_allergens: true, show_hours: true, show_prep_time: true,
     social_links: { instagram:'', whatsapp_social:'', snapchat:'', twitter:'', tiktok:'' },
     allergens: [],
     menu_layout: 'list',
@@ -85,6 +86,11 @@ export default function Settings() {
         delivery_enabled: restaurant.delivery_enabled || false,
         recommendations_enabled: restaurant.recommendations_enabled ?? true,
         recommendations_count: restaurant.recommendations_count ?? 4,
+        show_description: restaurant.show_description ?? true,
+        show_social_links: restaurant.show_social_links ?? true,
+        show_allergens: restaurant.show_allergens ?? true,
+        show_hours: restaurant.show_hours ?? true,
+        show_prep_time: restaurant.show_prep_time ?? true,
         social_links: { instagram:'', whatsapp_social:'', snapchat:'', twitter:'', tiktok:'', ...(restaurant.social_links || {}) },
         allergens: Array.isArray(restaurant.allergens)
           ? restaurant.allergens.map(a => {
@@ -135,6 +141,11 @@ export default function Settings() {
           delivery_fee: restForm.delivery_fee ? parseFloat(restForm.delivery_fee) : 0,
           recommendations_enabled: restForm.recommendations_enabled,
           recommendations_count: parseInt(restForm.recommendations_count) || 4,
+          show_description: restForm.show_description,
+          show_social_links: restForm.show_social_links,
+          show_allergens: restForm.show_allergens,
+          show_hours: restForm.show_hours,
+          show_prep_time: restForm.show_prep_time,
           social_links: restForm.social_links,
           allergens: restForm.allergens,
           menu_layout: restForm.menu_layout,
@@ -450,6 +461,30 @@ export default function Settings() {
                         <input style={{ ...inputStyle, direction:'ltr', textAlign:'left', maxWidth:'100px' }} type="number" min="1" max="8" value={restForm.recommendations_count} onChange={e => setRestForm(f=>({...f,recommendations_count:e.target.value}))} />
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Menu card modularity — كل قسم في بطاقة المطعم يُظهَر أو يُخفى بمعزل عن وجود بياناته */}
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🎛️ عناصر بطاقة المطعم</div>
+                  <div style={{ padding:'6px 18px' }}>
+                    {[
+                      { key:'show_description', label:'الوصف' },
+                      { key:'show_social_links', label:'وسائل التواصل الاجتماعي' },
+                      { key:'show_allergens', label:'مسبّبات الحساسية' },
+                      { key:'show_hours', label:'حالة الفتح/ساعات العمل' },
+                      { key:'show_prep_time', label:'وقت التجهيز' },
+                    ].map((row, i, arr) => (
+                      <div key={row.key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 0', borderBottom: i < arr.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
+                        <span style={{ fontSize:'13.5px', fontWeight:'600' }}>{row.label}</span>
+                        <label style={{ position:'relative', width:'42px', height:'23px', cursor:'pointer', flexShrink:0 }}>
+                          <input type="checkbox" checked={restForm[row.key]} onChange={e => setRestForm(f=>({...f,[row.key]:e.target.checked}))} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
+                          <div style={{ position:'absolute', inset:0, background: restForm[row.key] ? '#10B981' : '#E5E7EB', borderRadius:'23px', transition:'0.3s' }}>
+                            <div style={{ position:'absolute', width:'17px', height:'17px', background:'white', borderRadius:'50%', top:'3px', left: restForm[row.key] ? '22px' : '3px', transition:'0.3s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
+                          </div>
+                        </label>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
