@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { vatBreakdown } from '../../lib/pricing'
 
 // درج السلة: العناصر + الملخص المالي + نوع الطلب + بيانات الزبون + زر التأكيد
@@ -17,6 +18,13 @@ export default function CartDrawer({
   const loyaltyReady = loyaltyThreshold > 0 && loyaltyBalance >= loyaltyThreshold
   const loyaltyPct = loyaltyThreshold > 0 ? Math.min(100, Math.round((loyaltyBalance / loyaltyThreshold) * 100)) : 0
   const loyaltyReward = loyalty?.reward_description || t('rewardDefault')
+
+  // قفل تمرير الصفحة خلف السلة طول ما هي مفتوحة (يمنع تحرّك المنيو أثناء التمرير داخل السلة)
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
   return (
     <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
       <div onClick={onClose} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', animation:'fadeIn 0.2s ease' }}/>
