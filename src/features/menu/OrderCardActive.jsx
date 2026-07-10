@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import OrderItemRow from './OrderItemRow'
 
 // بطاقة الطلب النشط — هيدر (رقم + وقت + حالة حيّة) + Timeline + الوقت المتوقّع
@@ -5,6 +6,8 @@ import OrderItemRow from './OrderItemRow'
 export default function OrderCardActive({
   order, brandColor, isEn, t, itemName, prepTime, onMessage, onCancel,
 }) {
+  // تأكيد الإلغاء داخل المنصّة بنفس هوية سمسم — بديل عن نافذة المتصفح الافتراضية
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const statuses = ['pending','preparing','ready','completed']
   const currentIdx = statuses.indexOf(order.status)
   const items = Array.isArray(order.items) ? order.items : []
@@ -104,11 +107,33 @@ export default function OrderCardActive({
         >{t('msgRest')}</button>
         {order.status === 'pending' && (
           <button
-            onClick={() => onCancel(order)}
+            onClick={() => setConfirmOpen(true)}
             style={{ flex:1, padding:'11px', borderRadius:'12px', border:'none', background:'#FEECEF', color:'#E11D48', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer' }}
           >✕ {t('cancelOrder')}</button>
         )}
       </div>
+
+      {/* تأكيد الإلغاء — بطاقة داخل المنصّة بدل نافذة المتصفح */}
+      {confirmOpen && (
+        <div style={{ position:'fixed', inset:0, zIndex:120, display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
+          <div onClick={() => setConfirmOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', animation:'fadeIn 0.15s ease' }}/>
+          <div style={{ background:'white', borderRadius:'20px', width:'100%', maxWidth:'340px', padding:'22px', position:'relative', textAlign:'center' }}>
+            <div style={{ fontSize:'34px', marginBottom:'10px' }}>❓</div>
+            <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', marginBottom:'6px' }}>{t('cancelConfirmTitle')}</div>
+            <div style={{ fontSize:'13px', color:'#6B7280', marginBottom:'20px' }}>{t('cancelConfirmBody').replace('{n}', order.orderNumber)}</div>
+            <div style={{ display:'flex', gap:'10px' }}>
+              <button
+                onClick={() => setConfirmOpen(false)}
+                style={{ flex:1, padding:'12px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}
+              >{t('cancelConfirmBack')}</button>
+              <button
+                onClick={() => { setConfirmOpen(false); onCancel(order) }}
+                style={{ flex:1, padding:'12px', borderRadius:'12px', border:'none', background:'#E11D48', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer' }}
+              >{t('cancelConfirmYes')}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -129,8 +129,8 @@ export function useActiveOrders(slug, t) {
   }, [slug])
 
   // إلغاء الطلب من جهة العميل نفسه — متاح فقط وهو لا يزال "انتظار" قبل أن يبدأ المطعم التحضير
+  // التأكيد يحصل داخل المنصّة قبل استدعاء هذه الدالة (OrderCardActive) — وليس هنا
   const cancelOrderByCustomer = async (order) => {
-    if (!window.confirm(`هل تريد إلغاء طلب ${order.orderNumber}؟`)) return
     const { error } = await supabase
       .from('orders')
       .update({ status: 'cancelled', cancelled_by: 'customer' })
