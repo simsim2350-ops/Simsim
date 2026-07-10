@@ -9,10 +9,10 @@ import EmptyOrders from './EmptyOrders'
 const IS_ACTIVE = (s) => ['pending','preparing','ready'].includes(s)
 
 export default function OrdersScreen({
-  restaurant, brandColor, isEn, t, itemName,
+  brandColor, isEn, t, itemName,
   activeOrders, liveOrdersCount, loyalty, prepTime,
   reviewedIds, reviewDraft, setDraft, submitReview, submittingReview,
-  cancelOrderByCustomer, lastOrderSummary, sendWhatsAppConfirmation, onBack, onReorder, onMessage,
+  cancelOrderByCustomer, onBack, onReorder, onMessage,
 }) {
   const [filter, setFilter] = useState('all')   // all | active | completed | cancelled
   const [q, setQ] = useState('')                // بحث برقم الطلب
@@ -84,14 +84,6 @@ export default function OrdersScreen({
           >
             {t('browseMenu')}
           </button>
-          {restaurant?.phone && lastOrderSummary && (
-            <button
-              onClick={sendWhatsAppConfirmation}
-              style={{ padding:'13px 16px', borderRadius:'13px', border:'1.5px solid rgba(37,211,102,0.4)', background:'rgba(37,211,102,0.1)', color:'#1FA855', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer', whiteSpace:'nowrap' }}
-            >
-              💬 {isEn ? 'WhatsApp' : 'واتساب'}
-            </button>
-          )}
         </div>
 
         {/* فلاتر لاصقة + بحث برقم الطلب */}
