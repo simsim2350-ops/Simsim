@@ -152,13 +152,24 @@ export default function CartDrawer({
               style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', marginBottom:'10px' }}
             />
             <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>{t('phoneReq')} *</label>
-            <input
-              type="tel"
-              placeholder={t('phonePh')}
-              value={customerPhone}
-              onChange={e => setCustomerPhone(e.target.value)}
-              style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', direction:'ltr' }}
-            />
+            <div style={{ display:'flex', alignItems:'center', gap:'8px', direction:'ltr' }}>
+              <span style={{ flexShrink:0, padding:'11px 12px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', fontWeight:'700', color:'#6B7280', background:'#F8F9FB' }}>+966</span>
+              <input
+                type="tel"
+                placeholder={t('phonePh')}
+                value={customerPhone}
+                onChange={e => {
+                  let digits = e.target.value.replace(/[^\d]/g, '')
+                  if (digits.startsWith('00966')) digits = digits.slice(5)
+                  else if (digits.startsWith('966')) digits = digits.slice(3)
+                  if (digits.startsWith('0')) digits = digits.slice(1)
+                  digits = digits.slice(0, 9)
+                  if (digits && digits[0] !== '5') return // الجوال السعودي يبدأ دائماً بـ5
+                  setCustomerPhone(digits)
+                }}
+                style={{ flex:1, minWidth:0, padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right' }}
+              />
+            </div>
           </div>
 
           {/* Table number — محلي فقط */}

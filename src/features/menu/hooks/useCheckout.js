@@ -31,11 +31,12 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
     if (orderType === 'dine_in' && !tableNumber.trim()) { toast.error(t('tEnterTable')); return }
     if (orderType === 'delivery' && !deliveryAddress.trim()) { toast.error(t('tEnterAddr')); return }
     if (!customerPhone.trim()) { toast.error(t('tEnterPhone')); return }
-    const cleanPhone = customerPhone.replace(/[^\d]/g, '')
-    if (cleanPhone.length < 8 || cleanPhone.length > 15) {
+    // رقم الجوال السعودي: 9 أرقام تبدأ بـ5 (حقل السلة نفسه يمنع أي إدخال آخر أثناء الكتابة)
+    if (!/^5\d{8}$/.test(customerPhone)) {
       toast.error(t('tBadPhone'))
       return
     }
+    const cleanPhone = customerPhone
 
     const items = cart.map(i => ({
       id: i.id, name: i.name, emoji: i.emoji, image_url: i.image_url,
