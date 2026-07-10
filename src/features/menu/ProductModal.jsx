@@ -117,7 +117,7 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
         >
           <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'2px', margin:'12px auto' }}/>
 
-          <div style={{ height:'300px', background: product.image_url ? '#F8F9FB' : `linear-gradient(135deg, ${brandColor}22, ${brandColor}08)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'100px', overflow:'hidden' }}>
+          <div style={{ height:'190px', background: product.image_url ? '#F8F9FB' : `linear-gradient(135deg, ${brandColor}22, ${brandColor}08)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'70px', overflow:'hidden' }}>
             {product.image_url
               ? <img src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
               : product.emoji}
