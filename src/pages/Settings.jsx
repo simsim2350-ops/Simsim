@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { compressAndUploadImage } from '../lib/uploadImage'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 
 const BRAND_COLORS = ['#FF6B35','#E85A24','#10B981','#3B82F6','#8B5CF6','#EC4899','#F59E0B','#0F1117']
@@ -33,6 +34,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
   const { isMobile } = useBreakpoint()
   // Restaurant form
   const [restForm, setRestForm] = useState({
@@ -851,11 +853,7 @@ export default function Settings() {
                       تحذير: الإجراءات التالية لا يمكن التراجع عنها. تأكد قبل المتابعة.
                     </div>
                     <button
-                      onClick={() => {
-                        if (window.confirm('هل أنت متأكد من حذف كل بيانات المطعم؟ لا يمكن التراجع!')) {
-                          toast.error('حذف المطعم غير متاح الآن')
-                        }
-                      }}
+                      onClick={() => setConfirmDeleteAll(true)}
                       style={{ padding:'12px', borderRadius:'12px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', color:'#EF4444', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}
                     >
                       🗑️ حذف بيانات المطعم
@@ -867,6 +865,16 @@ export default function Settings() {
 
           </div>
         </div>
+
+      <ConfirmDialog
+        open={confirmDeleteAll}
+        icon="⚠️"
+        title="حذف بيانات المطعم"
+        body="هل أنت متأكد من حذف كل بيانات المطعم؟ لا يمكن التراجع!"
+        confirmLabel="حذف نهائياً"
+        onCancel={() => setConfirmDeleteAll(false)}
+        onConfirm={() => { setConfirmDeleteAll(false); toast.error('حذف المطعم غير متاح الآن') }}
+      />
     </AppShell>
   )
 }

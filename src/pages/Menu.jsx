@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { compressAndUploadImage } from '../lib/uploadImage'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -77,6 +78,8 @@ export default function Menu() {
   const [prodForm, setProdForm] = useState({ name:'', name_en:'', description:'', description_en:'', price:'', compare_price:'', category_id:'', emoji:'🍽️', image_url:'', calories:'', is_available:true, is_featured:false, options:[] })
   const [uploadingCatImage, setUploadingCatImage] = useState(false)
   const [uploadingProdImage, setUploadingProdImage] = useState(false)
+  const [confirmDeleteCat, setConfirmDeleteCat] = useState(null)
+  const [confirmDeleteProd, setConfirmDeleteProd] = useState(null)
 
   useEffect(() => {
     if (!restaurant) return
@@ -163,7 +166,6 @@ export default function Menu() {
   }
 
   const deleteCat = async (id) => {
-    if (!window.confirm('هل تريد حذف هذا القسم؟')) return
     const { error } = await supabase.from('categories').delete().eq('id', id)
     if (error) { toast.error(error.message); return }
     toast.success('تم الحذف')
@@ -363,7 +365,6 @@ export default function Menu() {
   }
 
   const deleteProd = async (id) => {
-    if (!window.confirm('هل تريد حذف هذا الصنف؟')) return
     const { error } = await supabase.from('products').delete().eq('id', id)
     if (error) { toast.error(error.message); return }
     toast.success('تم الحذف')
@@ -443,7 +444,7 @@ export default function Menu() {
                                 {cat.is_visible ? '👁️' : '🚫'}
                               </button>
                               <button onClick={() => openEditCat(cat)} style={{ width:'32px', height:'32px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', cursor:'pointer', fontSize:'14px' }}>✏️</button>
-                              <button onClick={() => deleteCat(cat.id)} style={{ width:'32px', height:'32px', borderRadius:'8px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'14px' }}>🗑️</button>
+                              <button onClick={() => setConfirmDeleteCat(cat)} style={{ width:'32px', height:'32px', borderRadius:'8px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'14px' }}>🗑️</button>
                             </div>
                           </div>
                         </SortableCard>
@@ -511,7 +512,7 @@ export default function Menu() {
                                       </button>
                                       <div style={{ display:'flex', gap:'5px' }}>
                                         <button onClick={() => openEditProd(prod)} style={{ width:'30px', height:'30px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', cursor:'pointer', fontSize:'13px' }}>✏️</button>
-                                        <button onClick={() => deleteProd(prod.id)} style={{ width:'30px', height:'30px', borderRadius:'8px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'13px' }}>🗑️</button>
+                                        <button onClick={() => setConfirmDeleteProd(prod)} style={{ width:'30px', height:'30px', borderRadius:'8px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'13px' }}>🗑️</button>
                                       </div>
                                     </div>
                                   </div>
@@ -789,6 +790,22 @@ export default function Menu() {
         </div>
       )}
 
+      <ConfirmDialog
+        open={!!confirmDeleteCat}
+        title="حذف القسم"
+        body={confirmDeleteCat ? `حذف قسم "${confirmDeleteCat.name}"؟` : ''}
+        confirmLabel="حذف"
+        onCancel={() => setConfirmDeleteCat(null)}
+        onConfirm={() => { deleteCat(confirmDeleteCat.id); setConfirmDeleteCat(null) }}
+      />
+      <ConfirmDialog
+        open={!!confirmDeleteProd}
+        title="حذف الصنف"
+        body={confirmDeleteProd ? `حذف صنف "${confirmDeleteProd.name}"؟` : ''}
+        confirmLabel="حذف"
+        onCancel={() => setConfirmDeleteProd(null)}
+        onConfirm={() => { deleteProd(confirmDeleteProd.id); setConfirmDeleteProd(null) }}
+      />
     </AppShell>
   )
 }
