@@ -10,8 +10,13 @@ export default function CartDrawer({
   tableNumber, setTableNumber, deliveryAddress, setDeliveryAddress,
   orderNote, setOrderNote, tables = [],
   openStatus, placeOrder, submitting, removeFromCart, incrementCartItem, onDeleteItem, onEditItem, onClose,
-  suggestions = [], onAddSuggestion, loyalty,
+  suggestions = [], onAddSuggestion, onOpenSuggestion, loyalty,
 }) {
+  const suggestionBadge = {
+    rules:      { label: t('reasonRules'),      bg:'#FFF1E8', fg:'#C8481B' },
+    category:   { label: t('reasonCategory'),   bg:'#EAF3FF', fg:'#1E5FBF' },
+    bestseller: { label: t('reasonBestseller'), bg:'#FEF3C7', fg:'#92400E' },
+  }
   const finalTotal = cartTotal + (orderType === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0)
   const canSubmit = openStatus.open && !submitting
   const loyaltyThreshold = loyalty?.reward_threshold || 0
@@ -82,25 +87,36 @@ export default function CartDrawer({
           ))}
         </div>
 
-        {/* اقتراحات "يكمّل طلبك" — من الأكثر مبيعاً، غير الموجود في السلة، وبلا خيارات إجبارية (إضافة بضغطة) */}
+        {/* محرك الاقتراحات الذكي — قواعد المطعم ← نفس القسم ← الأكثر مبيعاً (بهذا الترتيب) */}
         {suggestions.length > 0 && (
-          <div style={{ padding:'10px 20px 12px', borderTop:'1px solid #F3F4F6', flexShrink:0 }}>
-            <div style={{ fontSize:'12px', fontWeight:'800', color:'#6B7280', marginBottom:'8px' }}>{t('suggestTitle')}</div>
-            <div style={{ display:'flex', gap:'8px', overflowX:'auto', paddingBottom:'2px' }}>
-              {suggestions.map(p => (
-                <button type="button" key={p.id} onClick={() => onAddSuggestion(p)} aria-label={`${t('addToCartB')}: ${(isEn && p.name_en) ? p.name_en : p.name}`} style={{ display:'flex', alignItems:'center', gap:'8px', border:'1.5px solid #E5E7EB', borderRadius:'12px', padding:'7px 10px', flexShrink:0, background:'white', textAlign:'start' }}>
-                  <div style={{ width:'34px', height:'34px', borderRadius:'9px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', overflow:'hidden', flexShrink:0 }}>
-                    {p.image_url
-                      ? <img loading="lazy" decoding="async" src={p.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                      : (p.emoji || '🍽️')}
-                  </div>
-                  <div>
-                    <div style={{ fontSize:'12px', fontWeight:'700', whiteSpace:'nowrap', maxWidth:'110px', overflow:'hidden', textOverflow:'ellipsis' }}>{(isEn && p.name_en) ? p.name_en : p.name}</div>
-                    <div style={{ fontSize:'11px', fontWeight:'800', color:brandColor }}>+{p.price} ﷼</div>
-                  </div>
-                  <span style={{ width:'22px', height:'22px', borderRadius:'50%', background:brandColor, color:'white', fontSize:'15px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontWeight:'300' }}>+</span>
-                </button>
-              ))}
+          <div style={{ padding:'12px 20px 14px', borderTop:'1px solid #F3F4F6', flexShrink:0 }}>
+            <div style={{ fontSize:'13.5px', fontWeight:'800', fontFamily:'Cairo,sans-serif', marginBottom:'10px' }}>{t('suggestTitle')}</div>
+            <div style={{ display:'flex', gap:'10px', overflowX:'auto', paddingBottom:'2px' }}>
+              {suggestions.map(({ product: p, reason }) => {
+                const needsConfig = Array.isArray(p.options) && p.options.some(g => g.required)
+                const badge = suggestionBadge[reason] || suggestionBadge.bestseller
+                return (
+                  <button
+                    type="button"
+                    key={p.id}
+                    onClick={() => needsConfig ? onOpenSuggestion(p) : onAddSuggestion(p)}
+                    aria-label={`${t('addToCartB')}: ${(isEn && p.name_en) ? p.name_en : p.name}`}
+                    style={{ width:'112px', flexShrink:0, display:'flex', flexDirection:'column', gap:'6px', border:'1.5px solid #E5E7EB', borderRadius:'14px', padding:'10px', background:'white', textAlign:'start' }}
+                  >
+                    <div style={{ width:'56px', height:'56px', borderRadius:'12px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'26px', overflow:'hidden' }}>
+                      {p.image_url
+                        ? <img loading="lazy" decoding="async" src={p.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                        : (p.emoji || '🍽️')}
+                    </div>
+                    <span style={{ alignSelf:'flex-start', fontSize:'10px', fontWeight:'800', fontFamily:'Cairo,sans-serif', padding:'2px 7px', borderRadius:'100px', background:badge.bg, color:badge.fg, whiteSpace:'nowrap' }}>{badge.label}</span>
+                    <div style={{ fontSize:'12px', fontWeight:'700', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{(isEn && p.name_en) ? p.name_en : p.name}</div>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'4px' }}>
+                      <span style={{ fontSize:'11.5px', fontWeight:'800', color:brandColor }}>{p.price} ﷼</span>
+                      <span style={{ width:'20px', height:'20px', borderRadius:'50%', background:brandColor, color:'white', fontSize:'14px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontWeight:'300' }}>{needsConfig ? '›' : '+'}</span>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           </div>
         )}

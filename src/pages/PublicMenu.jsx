@@ -11,6 +11,8 @@ import { useCart } from '../features/menu/hooks/useCart'
 import { useCheckout } from '../features/menu/hooks/useCheckout'
 import { useLoyalty } from '../features/menu/hooks/useLoyalty'
 import { useTables } from '../features/menu/hooks/useTables'
+import { useRecommendationRules } from '../features/menu/hooks/useRecommendationRules'
+import { useSmartSuggestions } from '../features/menu/hooks/useSmartSuggestions'
 import { useReviews } from '../features/menu/hooks/useReviews'
 import MenuSkeleton from '../features/menu/MenuSkeleton'
 import MenuHeader from '../features/menu/MenuHeader'
@@ -42,6 +44,7 @@ function PublicMenuInner() {
   } = useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t })
   const loyalty = useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone })
   const { tables } = useTables(restaurant)
+  const recommendationsMap = useRecommendationRules(restaurant)
   const { reviewedIds, reviewDraft, setDraft, submitReview, submittingReview } = useReviews({ slug, restaurant, branch, t })
 
   // حالة عرض محلية للصفحة فقط
@@ -100,13 +103,8 @@ function PublicMenuInner() {
     ? computeOpenStatus(branch?.opening_hours || restaurant.opening_hours)
     : { open: true, unknown: true, nextText: '', todayText: '' }
 
-  // اقتراحات السلة: من أصناف «الأكثر طلباً» التي اختارها صاحب المطعم (is_featured)،
-  // غير موجودة في السلة، وبلا خيارات إجبارية (حتى تكون الإضافة بضغطة واحدة)
-  const cartSuggestions = products
-    .filter(p => p.is_featured)
-    .filter(p => !cart.some(i => i.id === p.id))
-    .filter(p => !(Array.isArray(p.options) && p.options.some(g => g.required)))
-    .slice(0, 3)
+  // محرك الاقتراحات الذكي: قواعد المطعم اليدوية ← نفس القسم ← الأكثر مبيعاً (ADR-13)
+  const cartSuggestions = useSmartSuggestions({ cart, products, restaurant, recommendationsMap })
 
   // Loading — هيكل يحاكي شكل المنيو بدل شاشة فارغة
   if (loading) return <MenuSkeleton />
@@ -281,6 +279,7 @@ function PublicMenuInner() {
           onClose={() => setCartOpen(false)}
           suggestions={cartSuggestions}
           onAddSuggestion={(p) => addToCart(p, 1)}
+          onOpenSuggestion={(p) => setSelectedProduct(p)}
           loyalty={loyalty}
         />
       )}
