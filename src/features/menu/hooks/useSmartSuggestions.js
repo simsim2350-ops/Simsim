@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 
-// محرك الاقتراحات الذكي — سلسلة أولويات تتوقف حين يكتمل العدد المطلوب:
-// 1) قواعد يدوية (ربطها المطعم) 2) نفس القسم 3) الأكثر طلباً (شبكة أمان أخيرة)
-// كل اقتراح يحمل reason لعرض شارة السبب في الواجهة (rules | category | bestseller)
-export function useSmartSuggestions({ cart, products, restaurant, recommendationsMap }) {
+// محرك الاقتراحات الذكي لقسم السلة العام — سلسلة أولويات تتوقف حين يكتمل العدد المطلوب:
+// 1) قائمة السلة العامة المُنسَّقة يدوياً (مستقلة تماماً عن قواعد الأصناف الفردية) 2) نفس القسم 3) الأكثر طلباً (شبكة أمان أخيرة)
+// كل اقتراح يحمل reason لعرض شارة السبب في الواجهة (curated | category | bestseller)
+export function useSmartSuggestions({ cart, products, restaurant, cartWideIds = [] }) {
   const cartKey = cart.map(i => i.id).sort().join(',') // تغيّر الكمية فقط لا يُعيد الحساب
   const enabled = restaurant?.recommendations_enabled !== false
   const count = restaurant?.recommendations_count || 4
@@ -19,14 +19,10 @@ export function useSmartSuggestions({ cart, products, restaurant, recommendation
       picked.set(product.id, { product, reason })
     }
 
-    // 1) قواعد يدوية — بترتيب أصناف السلة
-    for (const item of cart) {
+    // 1) قائمة السلة العامة — يختارها صاحب المطعم بمعزل عن قواعد الأصناف الفردية وعن is_featured
+    for (const pid of cartWideIds) {
       if (picked.size >= count) break
-      const recommendedIds = recommendationsMap.get(item.id) || []
-      for (const rid of recommendedIds) {
-        if (picked.size >= count) break
-        tryAdd(products.find(p => p.id === rid), 'rules')
-      }
+      tryAdd(products.find(p => p.id === pid), 'curated')
     }
 
     // 2) نفس القسم — لأقسام أصناف السلة، لو ما اكتمل العدد بعد
@@ -53,5 +49,5 @@ export function useSmartSuggestions({ cart, products, restaurant, recommendation
 
     return [...picked.values()].slice(0, count)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cartKey, enabled, count, products, recommendationsMap])
+  }, [cartKey, enabled, count, products, cartWideIds])
 }

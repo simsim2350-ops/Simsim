@@ -13,6 +13,7 @@ import { useLoyalty } from '../features/menu/hooks/useLoyalty'
 import { useTables } from '../features/menu/hooks/useTables'
 import { useRecommendationRules } from '../features/menu/hooks/useRecommendationRules'
 import { useSmartSuggestions } from '../features/menu/hooks/useSmartSuggestions'
+import { useCartWideIds } from '../features/menu/hooks/useCartWideIds'
 import { useReviews } from '../features/menu/hooks/useReviews'
 import MenuSkeleton from '../features/menu/MenuSkeleton'
 import MenuHeader from '../features/menu/MenuHeader'
@@ -45,6 +46,7 @@ function PublicMenuInner() {
   const loyalty = useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone })
   const { tables } = useTables(restaurant)
   const recommendationsMap = useRecommendationRules(restaurant)
+  const cartWideIds = useCartWideIds(restaurant)
   const { reviewedIds, reviewDraft, setDraft, submitReview, submittingReview } = useReviews({ slug, restaurant, branch, t })
 
   // حالة عرض محلية للصفحة فقط
@@ -104,7 +106,7 @@ function PublicMenuInner() {
     : { open: true, unknown: true, nextText: '', todayText: '' }
 
   // محرك الاقتراحات الذكي: قواعد المطعم اليدوية ← نفس القسم ← الأكثر مبيعاً (ADR-13)
-  const cartSuggestions = useSmartSuggestions({ cart, products, restaurant, recommendationsMap })
+  const cartSuggestions = useSmartSuggestions({ cart, products, restaurant, cartWideIds })
 
   // Loading — هيكل يحاكي شكل المنيو بدل شاشة فارغة
   if (loading) return <MenuSkeleton />

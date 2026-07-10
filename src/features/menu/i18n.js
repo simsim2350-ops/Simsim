@@ -121,7 +121,7 @@ export const TT = {
   backToMenu:  { ar: '← العودة للمنيو لطلب إضافي', en: '← Back to menu for another order' },
   rewardDefault:{ ar: 'مكافأة', en: 'reward' },
   suggestTitle: { ar: '🍽️ أكمل وجبتك', en: '🍽️ Complete your meal' },
-  reasonRules:      { ar: 'يُكمّل طلبك', en: 'Pairs with this' },
+  reasonCurated:    { ar: 'اختيار المطعم', en: "Chef's pick" },
   reasonCategory:   { ar: 'من نفس القسم', en: 'Same category' },
   reasonBestseller: { ar: 'الأكثر طلباً', en: 'Bestseller' },
   companionTitle: { ar: '🍟 غالباً يُطلب مع هذا الصنف', en: '🍟 Often ordered with this' },
