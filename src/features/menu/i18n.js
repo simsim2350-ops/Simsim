@@ -51,6 +51,8 @@ export const TT = {
   nameOpt:     { ar: '👤 اسمك (اختياري)', en: '👤 Your name (optional)' },
   phoneReq:    { ar: '📱 رقم جوالك', en: '📱 Your phone' },
   tableReq:    { ar: '🪑 رقم الطاولة', en: '🪑 Table number' },
+  orderNoteL:  { ar: '💬 ملاحظة على الطلب (اختياري)', en: '💬 Order note (optional)' },
+  orderNotePh: { ar: 'مثال: بدون بصل، التوصيل للاستقبال…', en: 'e.g. no onions, deliver to reception…' },
   addrReq:     { ar: '📍 عنوان التوصيل', en: '📍 Delivery address' },
   closedTitle: { ar: 'المحل مغلق الآن', en: 'Closed now' },
   noteRest:    { ar: '💬 ملاحظتك للمطعم', en: '💬 Note to the restaurant' },

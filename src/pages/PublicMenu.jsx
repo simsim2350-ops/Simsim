@@ -37,7 +37,7 @@ function PublicMenuInner() {
   const {
     tableNumber, setTableNumber, orderType, setOrderType,
     deliveryAddress, setDeliveryAddress, customerName, setCustomerName,
-    customerPhone, setCustomerPhone, lastOrderSummary, placeOrder, submitting,
+    customerPhone, setCustomerPhone, orderNote, setOrderNote, lastOrderSummary, placeOrder, submitting,
   } = useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t })
   const loyalty = useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone })
   const { reviewedIds, reviewDraft, setDraft, submitReview, submittingReview } = useReviews({ slug, restaurant, branch, t })
@@ -268,6 +268,8 @@ function PublicMenuInner() {
           setTableNumber={setTableNumber}
           deliveryAddress={deliveryAddress}
           setDeliveryAddress={setDeliveryAddress}
+          orderNote={orderNote}
+          setOrderNote={setOrderNote}
           openStatus={openStatus}
           placeOrder={placeOrder}
           submitting={submitting}
