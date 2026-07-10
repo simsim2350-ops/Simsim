@@ -77,24 +77,8 @@ export default function CartDrawer({
           </div>
         )}
 
-        {/* Summary — الأسعار شاملة ض.ق.م 15% */}
-        <div style={{ padding:'12px 20px', background:'#F8F9FB', borderTop:'1px solid #E5E7EB', flexShrink:0 }}>
-          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:'#9CA3AF', marginBottom:'4px' }}>
-            <span>{t('totalVat')}</span><span>{cartTotal.toFixed(2)} ﷼</span>
-          </div>
-          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#9CA3AF', marginBottom: orderType === 'delivery' && restaurant?.delivery_fee > 0 ? '4px' : '8px' }}>
-            <span>{t('vatLine')}</span><span>{vatBreakdown(cartTotal).tax.toFixed(2)} ﷼</span>
-          </div>
-          {orderType === 'delivery' && Number(restaurant?.delivery_fee) > 0 && (
-            <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:'#9CA3AF', marginBottom:'8px' }}>
-              <span>{t('deliveryFee')}</span><span>{Number(restaurant.delivery_fee).toFixed(2)} ﷼</span>
-            </div>
-          )}
-          <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', paddingTop:'8px', borderTop:'1px solid #E5E7EB', marginBottom:'12px' }}>
-            <span>{t('total')}</span>
-            <span style={{ color:brandColor }}>{(cartTotal + (orderType === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0)).toFixed(2)} ﷼</span>
-          </div>
-
+        {/* نوع الطلب + بيانات الزبون + ملاحظة الطلب — قبل الملخص المالي */}
+        <div style={{ padding:'14px 20px 2px', borderTop:'1px solid #E5E7EB', flexShrink:0 }}>
           {/* Order type */}
           <div style={{ marginBottom:'14px' }}>
             <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px' }}>{t('orderTypeR')} *</label>
@@ -182,9 +166,28 @@ export default function CartDrawer({
               style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', minHeight:'60px', resize:'vertical' }}
             />
           </div>
+        </div>
+
+        {/* الملخص المالي — آخر ما يراه الزبون قبل زر التأكيد (الأسعار شاملة ض.ق.م 15%) */}
+        <div style={{ padding:'12px 20px', background:'#F8F9FB', borderTop:'1px solid #E5E7EB', flexShrink:0 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:'#9CA3AF', marginBottom:'4px' }}>
+            <span>{t('totalVat')}</span><span>{cartTotal.toFixed(2)} ﷼</span>
+          </div>
+          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#9CA3AF', marginBottom: orderType === 'delivery' && restaurant?.delivery_fee > 0 ? '4px' : '8px' }}>
+            <span>{t('vatLine')}</span><span>{vatBreakdown(cartTotal).tax.toFixed(2)} ﷼</span>
+          </div>
+          {orderType === 'delivery' && Number(restaurant?.delivery_fee) > 0 && (
+            <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:'#9CA3AF', marginBottom:'8px' }}>
+              <span>{t('deliveryFee')}</span><span>{Number(restaurant.delivery_fee).toFixed(2)} ﷼</span>
+            </div>
+          )}
+          <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', paddingTop:'8px', borderTop:'1px solid #E5E7EB' }}>
+            <span>{t('total')}</span>
+            <span style={{ color:brandColor }}>{(cartTotal + (orderType === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0)).toFixed(2)} ﷼</span>
+          </div>
 
           {!openStatus.open && (
-            <div style={{ display:'flex', alignItems:'flex-start', gap:'8px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.25)', borderRadius:'12px', padding:'12px 14px' }}>
+            <div style={{ display:'flex', alignItems:'flex-start', gap:'8px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.25)', borderRadius:'12px', padding:'12px 14px', marginTop:'12px' }}>
               <span style={{ fontSize:'18px', flexShrink:0 }}>🔴</span>
               <div>
                 <div style={{ fontSize:'13px', fontWeight:'800', color:'#B91C1C', marginBottom:'2px' }}>{t('closedTitle')}</div>
