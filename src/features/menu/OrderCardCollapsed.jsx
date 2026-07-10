@@ -8,11 +8,14 @@ export default function OrderCardCollapsed({
   reviewedIds, reviewDraft, setDraft, submitReview, submittingReview,
   onReorder,
 }) {
-  const [open, setOpen] = useState(false)
   const items = Array.isArray(order.items) ? order.items : []
   const isCancelled = order.status === 'cancelled'
   const count = items.reduce((s, i) => s + (i.qty || 1), 0)
   const reviewed = reviewedIds.includes(order.id)
+  // الطلب المكتمل غير المُقيَّم يبقى مفتوحاً إجبارياً حتى يرسل الزبون تقييمه — لا يُطوى تلقائياً ولا يدوياً
+  const needsReview = !isCancelled && !reviewed
+  const [manualOpen, setManualOpen] = useState(false)
+  const open = needsReview || manualOpen
 
   // زمن الطلب المختصر
   const timeAgo = (() => {
@@ -33,8 +36,8 @@ export default function OrderCardCollapsed({
 
   return (
     <div style={{ background:'white', border:'1px solid #E5E7EB', borderRadius:'16px', boxShadow:'0 4px 14px rgba(15,17,23,0.05)', marginBottom:'11px', overflow:'hidden' }}>
-      {/* الصف المنطوي */}
-      <div onClick={() => setOpen(o => !o)} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 14px', cursor:'pointer' }}>
+      {/* الصف المنطوي — معطّل الطي طول ما الطلب بانتظار تقييم الزبون */}
+      <div onClick={() => !needsReview && setManualOpen(o => !o)} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 14px', cursor: needsReview ? 'default' : 'pointer' }}>
         {/* صور مكدّسة */}
         <div style={{ display:'flex', flexShrink:0, direction:'ltr' }}>
           {thumbs.map((it, i) => (
