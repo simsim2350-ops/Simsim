@@ -10,6 +10,7 @@ import { useActiveOrders } from '../features/menu/hooks/useActiveOrders'
 import { useCart } from '../features/menu/hooks/useCart'
 import { useCheckout } from '../features/menu/hooks/useCheckout'
 import { useLoyalty } from '../features/menu/hooks/useLoyalty'
+import { useTables } from '../features/menu/hooks/useTables'
 import { useReviews } from '../features/menu/hooks/useReviews'
 import MenuSkeleton from '../features/menu/MenuSkeleton'
 import MenuHeader from '../features/menu/MenuHeader'
@@ -40,6 +41,7 @@ function PublicMenuInner() {
     customerPhone, setCustomerPhone, orderNote, setOrderNote, lastOrderSummary, placeOrder, submitting,
   } = useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t })
   const loyalty = useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone })
+  const { tables } = useTables(restaurant)
   const { reviewedIds, reviewDraft, setDraft, submitReview, submittingReview } = useReviews({ slug, restaurant, branch, t })
 
   // حالة عرض محلية للصفحة فقط
@@ -292,6 +294,7 @@ function PublicMenuInner() {
           setDeliveryAddress={setDeliveryAddress}
           orderNote={orderNote}
           setOrderNote={setOrderNote}
+          tables={tables}
           openStatus={openStatus}
           placeOrder={placeOrder}
           submitting={submitting}

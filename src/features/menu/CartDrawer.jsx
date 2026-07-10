@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { vatBreakdown } from '../../lib/pricing'
+import TableSelect from './TableSelect'
 
 // درج السلة: العناصر + الملخص المالي + نوع الطلب + بيانات الزبون + زر التأكيد
 export default function CartDrawer({
@@ -7,7 +8,7 @@ export default function CartDrawer({
   orderType, setOrderType,
   customerName, setCustomerName, customerPhone, setCustomerPhone,
   tableNumber, setTableNumber, deliveryAddress, setDeliveryAddress,
-  orderNote, setOrderNote,
+  orderNote, setOrderNote, tables = [],
   openStatus, placeOrder, submitting, removeFromCart, incrementCartItem, onDeleteItem, onEditItem, onClose,
   suggestions = [], onAddSuggestion, loyalty,
 }) {
@@ -191,17 +192,22 @@ export default function CartDrawer({
             </div>
           </div>
 
-          {/* Table number — محلي فقط */}
+          {/* رقم الطاولة — محلي فقط. Dropdown من طاولات المطعم المفعّلة؛ لو المطعم لم يُعرِّف طاولات بعد
+              (لوحة التحكم فارغة)، نتراجع للحقل النصي القديم حتى لا نعطّل طلبات "داخل المطعم" */}
           {orderType === 'dine_in' && (
             <div style={{ marginBottom:'12px' }}>
               <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>{t('tableReq')} *</label>
-              <input
-                type="text"
-                placeholder={t('tablePh')}
-                value={tableNumber}
-                onChange={e => setTableNumber(e.target.value)}
-                style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right' }}
-              />
+              {tables.length > 0 ? (
+                <TableSelect tables={tables} value={tableNumber} onChange={setTableNumber} brandColor={brandColor} t={t} />
+              ) : (
+                <input
+                  type="text"
+                  placeholder={t('tablePh')}
+                  value={tableNumber}
+                  onChange={e => setTableNumber(e.target.value)}
+                  style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right' }}
+                />
+              )}
             </div>
           )}
 
