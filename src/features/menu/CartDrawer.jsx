@@ -8,10 +8,15 @@ export default function CartDrawer({
   tableNumber, setTableNumber, deliveryAddress, setDeliveryAddress,
   orderNote, setOrderNote,
   openStatus, placeOrder, submitting, removeFromCart, incrementCartItem, onDeleteItem, onEditItem, onClose,
-  suggestions = [], onAddSuggestion,
+  suggestions = [], onAddSuggestion, loyalty,
 }) {
   const finalTotal = cartTotal + (orderType === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0)
   const canSubmit = openStatus.open && !submitting
+  const loyaltyThreshold = loyalty?.reward_threshold || 0
+  const loyaltyBalance = loyalty?.balance || 0
+  const loyaltyReady = loyaltyThreshold > 0 && loyaltyBalance >= loyaltyThreshold
+  const loyaltyPct = loyaltyThreshold > 0 ? Math.min(100, Math.round((loyaltyBalance / loyaltyThreshold) * 100)) : 0
+  const loyaltyReward = loyalty?.reward_description || t('rewardDefault')
   return (
     <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
       <div onClick={onClose} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', animation:'fadeIn 0.2s ease' }}/>
@@ -78,6 +83,29 @@ export default function CartDrawer({
                   <span style={{ width:'22px', height:'22px', borderRadius:'50%', background:brandColor, color:'white', fontSize:'15px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontWeight:'300' }}>+</span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* ولاء هادئ — تحفيز بلا إزعاج، بلا CTA؛ المكافأة تُطلب عند المطعم (ADR-2) */}
+        {loyalty && (
+          <div style={{ margin:'12px 20px 0', padding:'10px 12px', background:'#FFF8F0', border:'1px solid #FCE8D6', borderRadius:'12px', display:'flex', alignItems:'center', gap:'10px' }}>
+            <span style={{ fontSize:'16px', flexShrink:0 }}>⭐</span>
+            <div style={{ flex:1, minWidth:0 }}>
+              {loyaltyReady ? (
+                <div style={{ fontSize:'12px', fontWeight:'800', color:'#374151' }}>
+                  🎉 {isEn ? `Your reward is ready: ${loyaltyReward}` : `مكافأتك جاهزة: ${loyaltyReward}`}
+                </div>
+              ) : (
+                <>
+                  <div style={{ fontSize:'12px', fontWeight:'700', color:'#374151', marginBottom:'6px' }}>
+                    {isEn ? `${Math.max(0, loyaltyThreshold - loyaltyBalance)} pts left for: ${loyaltyReward}` : `باقي ${Math.max(0, loyaltyThreshold - loyaltyBalance)} نقطة على: ${loyaltyReward}`}
+                  </div>
+                  <div style={{ height:'5px', background:'#FCE8D6', borderRadius:'100px', overflow:'hidden' }}>
+                    <div style={{ width:`${loyaltyPct}%`, height:'100%', background:brandColor, borderRadius:'100px' }}/>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
