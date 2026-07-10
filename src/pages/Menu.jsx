@@ -6,6 +6,7 @@ import { compressAndUploadImage } from '../lib/uploadImage'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { fetchRecommendationsForProduct, addRecommendation, removeRecommendation, updateRecommendationPriority } from '../lib/recommendationsApi'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -80,6 +81,10 @@ export default function Menu() {
   const [uploadingProdImage, setUploadingProdImage] = useState(false)
   const [confirmDeleteCat, setConfirmDeleteCat] = useState(null)
   const [confirmDeleteProd, setConfirmDeleteProd] = useState(null)
+
+  // محرك الاقتراحات الذكي — قواعد الصنف الجاري تعديله فقط (تُدار فوراً، لا تنتظر زر الحفظ)
+  const [recommendations, setRecommendations] = useState([])
+  const [recSearch, setRecSearch] = useState('')
 
   useEffect(() => {
     if (!restaurant) return
@@ -252,8 +257,63 @@ export default function Menu() {
       is_featured: prod.is_featured,
       options: Array.isArray(prod.options) ? prod.options : [],
     })
+    setRecSearch('')
+    loadRecommendations(prod.id)
     setProdModal(true)
   }
+
+  // ===== محرك الاقتراحات الذكي (product_recommendations) =====
+  const loadRecommendations = async (productId) => {
+    try {
+      setRecommendations(await fetchRecommendationsForProduct(productId))
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
+  const addRec = async (recommendedProduct) => {
+    try {
+      await addRecommendation(restaurant.id, editingProd.id, recommendedProduct.id, recommendations.length)
+      setRecSearch('')
+      loadRecommendations(editingProd.id)
+    } catch (err) {
+      toast.error(err.code === '23505' ? 'هذا الصنف مقترَح بالفعل' : err.message)
+    }
+  }
+
+  const removeRec = async (rec) => {
+    try {
+      await removeRecommendation(rec.id)
+      loadRecommendations(editingProd.id)
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
+  const moveRec = async (rec, direction) => {
+    const idx = recommendations.findIndex(r => r.id === rec.id)
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (swapIdx < 0 || swapIdx >= recommendations.length) return
+    const other = recommendations[swapIdx]
+    try {
+      await Promise.all([
+        updateRecommendationPriority(rec.id, other.priority),
+        updateRecommendationPriority(other.id, rec.priority),
+      ])
+      loadRecommendations(editingProd.id)
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
+  // نتائج البحث لإضافة اقتراح: يستبعد الصنف نفسه والأصناف المُضافة أصلاً
+  const recSearchResults = recSearch.trim()
+    ? products
+        .filter(p => p.id !== editingProd?.id)
+        .filter(p => !recommendations.some(r => r.recommended?.id === p.id))
+        .filter(p => p.name.toLowerCase().includes(recSearch.trim().toLowerCase()))
+        .slice(0, 6)
+    : []
 
   // رفع صورة الصنف — تُضغط وتُرفع فوراً عند الاختيار
   const handleProdImageUpload = async (e) => {
@@ -779,6 +839,52 @@ export default function Menu() {
                 </div>
               )}
             </div>
+
+            {/* محرك الاقتراحات الذكي — يظهر فقط لصنف محفوظ فعلاً (يحتاج معرّفاً) */}
+            {editingProd && (
+              <div style={{ marginBottom:'18px' }}>
+                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px', color:'#374151' }}>
+                  🔗 اقتراح مع هذا الصنف <span style={{ fontWeight:'400', color:'#9CA3AF' }}>— تظهر هذه الأصناف في السلة عند إضافة الزبون لـ«{editingProd.name}»</span>
+                </label>
+
+                {recommendations.length > 0 && (
+                  <div style={{ display:'flex', flexDirection:'column', gap:'6px', marginBottom:'10px' }}>
+                    {recommendations.map((rec, i) => (
+                      <div key={rec.id} style={{ display:'flex', alignItems:'center', gap:'8px', border:'1.5px solid #E5E7EB', borderRadius:'10px', padding:'7px 10px', background:'white' }}>
+                        <div style={{ display:'flex', flexDirection:'column', gap:'0', flexShrink:0 }}>
+                          <button type="button" onClick={() => moveRec(rec, 'up')} disabled={i === 0} style={{ width:'18px', height:'14px', border:'none', background:'none', cursor: i === 0 ? 'default' : 'pointer', color: i === 0 ? '#E5E7EB' : '#6B7280', fontSize:'9px' }}>▲</button>
+                          <button type="button" onClick={() => moveRec(rec, 'down')} disabled={i === recommendations.length - 1} style={{ width:'18px', height:'14px', border:'none', background:'none', cursor: i === recommendations.length - 1 ? 'default' : 'pointer', color: i === recommendations.length - 1 ? '#E5E7EB' : '#6B7280', fontSize:'9px' }}>▼</button>
+                        </div>
+                        <span style={{ fontSize:'16px', flexShrink:0 }}>{rec.recommended?.emoji || '🍽️'}</span>
+                        <span style={{ flex:1, fontSize:'13px', fontWeight:'600', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{rec.recommended?.name}</span>
+                        <span style={{ fontSize:'12px', color:'#9CA3AF', flexShrink:0 }}>{rec.recommended?.price} ﷼</span>
+                        <button type="button" onClick={() => removeRec(rec)} style={{ width:'24px', height:'24px', flexShrink:0, borderRadius:'7px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'11px' }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ position:'relative' }}>
+                  <input
+                    value={recSearch}
+                    onChange={e => setRecSearch(e.target.value)}
+                    placeholder="ابحث عن صنف لإضافته كاقتراح..."
+                    style={{ ...inputStyle, marginTop:0 }}
+                  />
+                  {recSearchResults.length > 0 && (
+                    <div style={{ position:'absolute', top:'calc(100% + 4px)', right:0, left:0, background:'white', border:'1.5px solid #E5E7EB', borderRadius:'10px', boxShadow:'0 8px 20px rgba(0,0,0,0.08)', zIndex:10, overflow:'hidden' }}>
+                      {recSearchResults.map(p => (
+                        <div key={p.id} onClick={() => addRec(p)} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'9px 12px', cursor:'pointer', borderBottom:'1px solid #F3F4F6' }}>
+                          <span style={{ fontSize:'15px' }}>{p.emoji || '🍽️'}</span>
+                          <span style={{ flex:1, fontSize:'13px' }}>{p.name}</span>
+                          <span style={{ fontSize:'12px', color:'#9CA3AF' }}>{p.price} ﷼</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div style={{ display:'flex', gap:'10px' }}>
               <button onClick={() => setProdModal(false)} style={{ flex:1, padding:'13px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'600', fontSize:'14px', cursor:'pointer', color:'#6B7280' }}>إلغاء</button>

@@ -41,6 +41,7 @@ export default function Settings() {
     name: '', slug: '', description: '', description_en: '',
     phone: '', whatsapp_message: '', address: '', currency: 'SAR - ريال سعودي',
     delivery_enabled: false, delivery_fee: '',
+    recommendations_enabled: true, recommendations_count: 4,
     social_links: { instagram:'', whatsapp_social:'', snapchat:'', twitter:'', tiktok:'' },
     allergens: [],
     menu_layout: 'list',
@@ -82,6 +83,8 @@ export default function Settings() {
         phone: restaurant.phone || '',
         whatsapp_message: restaurant.whatsapp_message || '',
         delivery_enabled: restaurant.delivery_enabled || false,
+        recommendations_enabled: restaurant.recommendations_enabled ?? true,
+        recommendations_count: restaurant.recommendations_count ?? 4,
         social_links: { instagram:'', whatsapp_social:'', snapchat:'', twitter:'', tiktok:'', ...(restaurant.social_links || {}) },
         allergens: Array.isArray(restaurant.allergens)
           ? restaurant.allergens.map(a => {
@@ -130,6 +133,8 @@ export default function Settings() {
           whatsapp_message: restForm.whatsapp_message,
           delivery_enabled: restForm.delivery_enabled,
           delivery_fee: restForm.delivery_fee ? parseFloat(restForm.delivery_fee) : 0,
+          recommendations_enabled: restForm.recommendations_enabled,
+          recommendations_count: parseInt(restForm.recommendations_count) || 4,
           social_links: restForm.social_links,
           allergens: restForm.allergens,
           menu_layout: restForm.menu_layout,
@@ -419,6 +424,30 @@ export default function Settings() {
                     {restForm.delivery_enabled && (
                       <div><label style={labelStyle}>رسوم التوصيل (ريال)</label>
                         <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} type="number" min="0" step="0.5" value={restForm.delivery_fee} onChange={e => setRestForm(f=>({...f,delivery_fee:e.target.value}))} placeholder="0.00" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Smart recommendations */}
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🍽️ اقتراحات السلة</div>
+                  <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:'14px' }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                      <div>
+                        <div style={{ fontSize:'14px', fontWeight:'700', marginBottom:'3px' }}>تفعيل الاقتراحات</div>
+                        <div style={{ fontSize:'12px', color:'#9CA3AF' }}>عرض قسم «أكمل وجبتك» في سلة الزبون. الربط بين الأصناف يتم من صفحة الأصناف.</div>
+                      </div>
+                      <label style={{ position:'relative', width:'48px', height:'26px', cursor:'pointer', flexShrink:0 }}>
+                        <input type="checkbox" checked={restForm.recommendations_enabled} onChange={e => setRestForm(f=>({...f,recommendations_enabled:e.target.checked}))} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
+                        <div style={{ position:'absolute', inset:0, background: restForm.recommendations_enabled ? '#10B981' : '#E5E7EB', borderRadius:'26px', transition:'0.3s' }}>
+                          <div style={{ position:'absolute', width:'20px', height:'20px', background:'white', borderRadius:'50%', top:'3px', left: restForm.recommendations_enabled ? '25px' : '3px', transition:'0.3s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
+                        </div>
+                      </label>
+                    </div>
+                    {restForm.recommendations_enabled && (
+                      <div><label style={labelStyle}>عدد الاقتراحات المعروضة</label>
+                        <input style={{ ...inputStyle, direction:'ltr', textAlign:'left', maxWidth:'100px' }} type="number" min="1" max="8" value={restForm.recommendations_count} onChange={e => setRestForm(f=>({...f,recommendations_count:e.target.value}))} />
                       </div>
                     )}
                   </div>
