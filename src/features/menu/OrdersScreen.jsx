@@ -46,7 +46,11 @@ export default function OrdersScreen({
 
   // فصل النشط (يُتتبَّع مفتوحاً) عن السابق (منطوٍ)
   const activeList = filtered.filter(o => IS_ACTIVE(o.status))
-  const pastList = filtered.filter(o => ['completed','cancelled'].includes(o.status))
+  // المكتمل غير المُقيَّم يبقى مفتوحاً بانتظار تقييم الزبون (OrderCardCollapsed) — يُقدَّم على البقية ليُلاحَظ فوراً
+  const needsReview = (o) => o.status === 'completed' && !reviewedIds.includes(o.id)
+  const pastList = filtered
+    .filter(o => ['completed','cancelled'].includes(o.status))
+    .sort((a, b) => (needsReview(b) ? 1 : 0) - (needsReview(a) ? 1 : 0))
   const sec = { fontFamily:'Cairo,sans-serif', fontSize:'12px', fontWeight:'900', color:'#9CA3AF', margin:'2px 2px 10px' }
 
   return (
