@@ -6,9 +6,11 @@ export default function CartDrawer({
   orderType, setOrderType,
   customerName, setCustomerName, customerPhone, setCustomerPhone,
   tableNumber, setTableNumber, deliveryAddress, setDeliveryAddress,
-  openStatus, placeOrder, removeFromCart, incrementCartItem, onClose,
+  openStatus, placeOrder, submitting, removeFromCart, incrementCartItem, onClose,
   suggestions = [], onAddSuggestion,
 }) {
+  const finalTotal = cartTotal + (orderType === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0)
+  const canSubmit = openStatus.open && !submitting
   return (
     <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
       <div onClick={onClose} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', animation:'fadeIn 0.2s ease' }}/>
@@ -169,7 +171,7 @@ export default function CartDrawer({
           )}
 
           {!openStatus.open && (
-            <div style={{ display:'flex', alignItems:'flex-start', gap:'8px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.25)', borderRadius:'12px', padding:'12px 14px', marginBottom:'12px' }}>
+            <div style={{ display:'flex', alignItems:'flex-start', gap:'8px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.25)', borderRadius:'12px', padding:'12px 14px' }}>
               <span style={{ fontSize:'18px', flexShrink:0 }}>🔴</span>
               <div>
                 <div style={{ fontSize:'13px', fontWeight:'800', color:'#B91C1C', marginBottom:'2px' }}>{t('closedTitle')}</div>
@@ -179,16 +181,34 @@ export default function CartDrawer({
               </div>
             </div>
           )}
-
-          <button
-            onClick={placeOrder}
-            disabled={!openStatus.open}
-            style={{ width:'100%', padding:'15px', borderRadius:'14px', border:'none', background: openStatus.open ? `linear-gradient(135deg, ${brandColor}, ${brandColor}CC)` : '#E5E7EB', color: openStatus.open ? 'white' : '#9CA3AF', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'16px', cursor: openStatus.open ? 'pointer' : 'not-allowed', boxShadow: openStatus.open ? `0 8px 24px ${brandColor}44` : 'none' }}
-          >
-            {openStatus.open ? t('confirmOrder') : t('closedBtn')}
-          </button>
         </div>
 
+        </div>
+
+        {/* زر التأكيد الثابت — خارج التمرير، يحمل السعر، ويتعطّل مع سبينر أثناء الإرسال */}
+        <div style={{ flexShrink:0, background:'white', borderTop:'1px solid #E5E7EB', padding:'11px 16px 14px', boxShadow:'0 -8px 24px rgba(20,14,28,0.06)' }}>
+          <button
+            onClick={placeOrder}
+            disabled={!canSubmit}
+            style={{ width:'100%', height:'52px', borderRadius:'15px', border:'none', background: canSubmit ? `linear-gradient(135deg, ${brandColor}, ${brandColor}CC)` : '#E5E7EB', color: canSubmit ? 'white' : '#9CA3AF', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', cursor: canSubmit ? 'pointer' : 'not-allowed', boxShadow: canSubmit ? `0 8px 22px ${brandColor}44` : 'none', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 20px' }}
+          >
+            {submitting ? (
+              <>
+                <span style={{ display:'flex', alignItems:'center', gap:'9px' }}>
+                  <span style={{ width:'17px', height:'17px', border:'2.5px solid rgba(255,255,255,0.4)', borderTopColor:'white', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
+                  {t('placingOrder')}
+                </span>
+                <span/>
+              </>
+            ) : openStatus.open ? (
+              <>
+                <span>{t('confirmOrder')}</span>
+                <span style={{ background:'rgba(0,0,0,0.16)', padding:'5px 12px', borderRadius:'10px', fontSize:'14px' }}>{finalTotal.toFixed(2)} ﷼</span>
+              </>
+            ) : (
+              <span style={{ width:'100%', textAlign:'center' }}>{t('closedBtn')}</span>
+            )}
+          </button>
         </div>
       </div>
     </div>
