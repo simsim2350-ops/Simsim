@@ -6,7 +6,8 @@ import { getCalorieBadge } from './helpers'
 // يملك حالته الداخلية — تُصفَّر تلقائياً مع كل فتح لأن المودال يُركَّب من جديد.
 // initial: { qty, note, options } لوضع التعديل من السلة (✎) — يعبّئ الحالة مسبقاً
 // submitLabel: نص زر التأكيد (الافتراضي «إضافة للسلة»)
-export default function ProductModal({ product, brandColor, priceColor, isEn, t, onAdd, onClose, initial, submitLabel }) {
+// products/recommendationsMap/onAddCompanion: اقتراحات مخصّصة لهذا الصنف تحديداً (قواعد المطعم اليدوية فقط، بلا خيارات إجبارية لإضافة فورية)
+export default function ProductModal({ product, brandColor, priceColor, isEn, t, onAdd, onClose, initial, submitLabel, products = [], recommendationsMap, onAddCompanion }) {
   const [qty, setQty] = useState(initial?.qty ?? 1)
   const [note, setNote] = useState(initial?.note ?? '')
   const [options, setOptions] = useState(initial?.options ?? {}) // { groupIdx: choiceIdx | [choiceIdx,...] }
@@ -54,6 +55,11 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
     })
     return resolved
   }
+
+  // اقتراحات مخصّصة لهذا الصنف (قواعد المطعم اليدوية فقط — بلا تسلسل احتياطي، دقة أعلى من عمومية)
+  const companions = (recommendationsMap?.get(product.id) || [])
+    .map(id => products.find(p => p.id === id))
+    .filter(p => p && p.is_available && !(Array.isArray(p.options) && p.options.some(g => g.required)))
 
   const toggleSingleOption = (groupIdx, choiceIdx) => {
     setOptions(prev => ({ ...prev, [groupIdx]: choiceIdx }))
@@ -200,6 +206,35 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
               style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'#F8F9FB', outline:'none', textAlign:'right', direction:'rtl', resize:'none' }}
             />
           </div>
+
+          {/* اقتراحات مخصّصة لهذا الصنف — تُضاف مباشرة للسلة دون إغلاق هذه النافذة */}
+          {companions.length > 0 && (
+            <div style={{ marginBottom:'20px' }}>
+              <div style={{ fontSize:'13px', fontWeight:'800', fontFamily:'Cairo,sans-serif', marginBottom:'10px' }}>{t('companionTitle')}</div>
+              <div style={{ display:'flex', gap:'8px', overflowX:'auto', paddingBottom:'2px' }}>
+                {companions.map(p => (
+                  <button
+                    type="button"
+                    key={p.id}
+                    onClick={() => onAddCompanion(p)}
+                    aria-label={`${t('addToCartB')}: ${(isEn && p.name_en) ? p.name_en : p.name}`}
+                    style={{ display:'flex', alignItems:'center', gap:'8px', border:'1.5px solid #E5E7EB', borderRadius:'12px', padding:'7px 10px', flexShrink:0, background:'white', textAlign:'start' }}
+                  >
+                    <div style={{ width:'34px', height:'34px', borderRadius:'9px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', overflow:'hidden', flexShrink:0 }}>
+                      {p.image_url
+                        ? <img loading="lazy" decoding="async" src={p.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                        : (p.emoji || '🍽️')}
+                    </div>
+                    <div>
+                      <div style={{ fontSize:'12px', fontWeight:'700', whiteSpace:'nowrap', maxWidth:'110px', overflow:'hidden', textOverflow:'ellipsis' }}>{(isEn && p.name_en) ? p.name_en : p.name}</div>
+                      <div style={{ fontSize:'11px', fontWeight:'800', color:brandColor }}>+{p.price} ﷼</div>
+                    </div>
+                    <span style={{ width:'22px', height:'22px', borderRadius:'50%', background:brandColor, color:'white', fontSize:'15px', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontWeight:'300' }}>+</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <button
             onClick={() => {

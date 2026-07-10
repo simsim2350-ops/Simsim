@@ -124,6 +124,7 @@ export const TT = {
   reasonRules:      { ar: 'يُكمّل طلبك', en: 'Pairs with this' },
   reasonCategory:   { ar: 'من نفس القسم', en: 'Same category' },
   reasonBestseller: { ar: 'الأكثر طلباً', en: 'Bestseller' },
+  companionTitle: { ar: '🍟 غالباً يُطلب مع هذا الصنف', en: '🍟 Often ordered with this' },
   allCats:     { ar: 'كل الأقسام', en: 'All categories' },
   browseMenu:  { ar: '🍽️ تصفّح المنيو', en: '🍽️ Browse menu' },
   kpiOrders:   { ar: 'طلب', en: 'orders' },
