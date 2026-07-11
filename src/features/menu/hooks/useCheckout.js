@@ -5,7 +5,7 @@ import { vatBreakdown } from '../../../lib/pricing'
 import { computeOpenStatus } from '../helpers'
 
 // بيانات نموذج الطلب + إنشاء الطلب في قاعدة البيانات (ADR-1: الأسعار شاملة الضريبة، تُفكّ للخلف)
-export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t }) {
+export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, appliedCoupon, discountAmount = 0, removeCoupon }) {
   const [tableNumber, setTableNumber] = useState('')
   const [orderType, setOrderType] = useState('dine_in') // dine_in | takeaway | delivery
   const [deliveryAddress, setDeliveryAddress] = useState('')
@@ -44,9 +44,11 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
     }))
 
     const deliveryFee = orderType === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0
-    // الأسعار المعروضة شاملة ض.ق.م 15% — نفكّ الضريبة للخلف (lib/pricing)
-    const { net, tax } = vatBreakdown(cartTotal)
-    const total = cartTotal + deliveryFee
+    // الخصم يُطبَّق على المجموع الفرعي قبل رسوم التوصيل (الكوبون لا يخفّض رسوم التوصيل)
+    const discountedSubtotal = Math.max(0, cartTotal - discountAmount)
+    // الأسعار المعروضة شاملة ض.ق.م 15% — نفكّ الضريبة للخلف (lib/pricing)، محسوبة بعد الخصم
+    const { net, tax } = vatBreakdown(discountedSubtotal)
+    const total = discountedSubtotal + deliveryFee
 
     setSubmitting(true)
     const { data, error } = await supabase.from('orders').insert({
@@ -64,6 +66,8 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
       delivery_fee: deliveryFee,
       total,
       notes: orderNote.trim(),
+      coupon_code: appliedCoupon?.code || null,
+      discount_amount: discountAmount,
     }).select().single()
 
     if (error) {
@@ -80,6 +84,7 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
     setCartOpen(false)
     setOrderNote('')
     setSubmitting(false)
+    removeCoupon?.()
 
     // إضافة الطلب الجديد فوق قائمة الطلبات النشطة (الأحدث أولاً) — الاشتراك في تحديثاته يحصل تلقائياً
     setActiveOrders(prev => [

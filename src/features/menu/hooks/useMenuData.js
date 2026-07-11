@@ -16,6 +16,8 @@ export function useMenuData(slug, branchId) {
   const [restaurantActiveOrdersCount, setActiveOrdersCount] = useState(0)
   const [rating, setRating] = useState(null) // { avg, count } — متوسط تقييم المطعم للعرض العام
   const [loyaltyEnabled, setLoyaltyEnabled] = useState(false) // هل برنامج الولاء مفعّل؟ (بلا حاجة لهوية الزبون — لعرض تشويقي عام)
+  const [banners, setBanners] = useState([]) // بانرات العروض النشطة ضمن نطاقها الزمني (لصفحة اختيار الفرع)
+  const [coupons, setCoupons] = useState([]) // الكوبونات النشطة غير المنتهية (للعرض فقط — التحقق الفعلي عند الدفع منفصل)
   const restaurantLoadChannelRef = useRef(null)
 
   useEffect(() => {
@@ -82,6 +84,17 @@ export function useMenuData(slug, branchId) {
         setLoyaltyEnabled(!!loy?.enabled)
       } catch { /* تجاهل — التشويق اختياري */ }
 
+      // بانرات العروض وكوبونات النشطة (المرحلة 1 من صفحة اختيار الفرع التسويقية)
+      try {
+        const now = new Date().toISOString()
+        const [{ data: bnrs }, { data: cpns }] = await Promise.all([
+          supabase.from('banners').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order'),
+          supabase.from('coupons').select('*').eq('restaurant_id', rest.id).eq('is_active', true),
+        ])
+        setBanners((bnrs || []).filter(b => (!b.starts_at || b.starts_at <= now) && (!b.ends_at || b.ends_at >= now)))
+        setCoupons((cpns || []).filter(c => !c.expires_at || c.expires_at >= now))
+      } catch { /* تجاهل — البانرات والكوبونات اختيارية */ }
+
       // Fetch categories & products
       const [{ data: cats }, { data: prods }] = await Promise.all([
         supabase.from('categories').select('*').eq('restaurant_id', rest.id).eq('is_visible', true).order('sort_order'),
@@ -129,5 +142,6 @@ export function useMenuData(slug, branchId) {
     restaurant, branch, setBranch, branchList, branchPicked, setBranchPicked,
     categories, products, bestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
+    banners, coupons,
   }
 }

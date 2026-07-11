@@ -9,6 +9,7 @@ import { useMenuData } from '../features/menu/hooks/useMenuData'
 import { useActiveOrders } from '../features/menu/hooks/useActiveOrders'
 import { useCart } from '../features/menu/hooks/useCart'
 import { useCheckout } from '../features/menu/hooks/useCheckout'
+import { useCoupon } from '../features/menu/hooks/useCoupon'
 import { useLoyalty } from '../features/menu/hooks/useLoyalty'
 import { useTables } from '../features/menu/hooks/useTables'
 import { useRecommendationRules } from '../features/menu/hooks/useRecommendationRules'
@@ -36,14 +37,16 @@ function PublicMenuInner() {
     restaurant, branch, setBranch, branchList, branchPicked, setBranchPicked,
     categories, products, bestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
+    banners, coupons,
   } = useMenuData(slug, branchId)
   const { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer } = useActiveOrders(slug, t)
   const { cart, setCart, cartOpen, setCartOpen, addToCart, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount } = useCart(slug, t)
+  const { couponInput, setCouponInput, appliedCoupon, applyCoupon, removeCoupon, applying: applyingCoupon, discountAmount } = useCoupon({ restaurant, cartTotal })
   const {
     tableNumber, setTableNumber, orderType, setOrderType,
     deliveryAddress, setDeliveryAddress, customerName, setCustomerName,
     customerPhone, setCustomerPhone, orderNote, setOrderNote, placeOrder, submitting,
-  } = useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t })
+  } = useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, appliedCoupon, discountAmount, removeCoupon })
   const loyalty = useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone })
   const { tables } = useTables(restaurant)
   const recommendationsMap = useRecommendationRules(restaurant)
@@ -147,6 +150,8 @@ function PublicMenuInner() {
         products={products}
         rating={rating}
         loyaltyEnabled={loyaltyEnabled}
+        banners={banners}
+        coupons={coupons}
       />
     )
   }
@@ -306,6 +311,13 @@ function PublicMenuInner() {
           onAddSuggestion={(p) => addToCart(p, 1)}
           onOpenSuggestion={(p) => setSelectedProduct(p)}
           loyalty={loyalty}
+          couponInput={couponInput}
+          setCouponInput={setCouponInput}
+          appliedCoupon={appliedCoupon}
+          applyCoupon={applyCoupon}
+          removeCoupon={removeCoupon}
+          applyingCoupon={applyingCoupon}
+          discountAmount={discountAmount}
         />
       )}
 
