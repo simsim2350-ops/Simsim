@@ -1,8 +1,11 @@
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
+
 // بطاقة تأكيد موحّدة داخل المنصّة — بديل عن window.confirm() الأصلي بلا هوية بصرية.
 // تُستخدم لأي إجراء يحتاج تأكيداً قبل التنفيذ (حذف/استبدال/إلغاء...) في لوحة التحكم والمنيو العام معاً.
 export default function ConfirmDialog({
   open, icon = '❓', title, body, confirmLabel, cancelLabel = 'إلغاء', danger = true, onConfirm, onCancel,
 }) {
+  useBodyScrollLock(open) // يُستدعى دائماً (لا بعد return مبكر) احتراماً لقواعد الخطّافات
   if (!open) return null
   return (
     <div style={{ position:'fixed', inset:0, zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>

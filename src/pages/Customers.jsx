@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import ErrBoundary from '../features/menu/ErrBoundary'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 function Spinner() {
   return (
@@ -61,6 +62,9 @@ function CustomersInner() {
 
   const [detailCustomer, setDetailCustomer] = useState(null)
   const [detailTab, setDetailTab] = useState('overview')
+  // قفل تمرير الصفحة خلف أي نافذة منزلقة مفتوحة (فلاتر أكثر / لوحة تفاصيل العميل)
+  useBodyScrollLock(moreFiltersOpen)
+  useBodyScrollLock(!!detailCustomer)
 
   useEffect(() => {
     if (!restaurant) return

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import ProductItem from './ProductItem'
 import HProductCard from './HProductCard'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 
 // جسم المنيو: شريط الأقسام (مع scroll-spy) + يعجب زبائننا (أفقي) + الأكثر طلباً (عمودي) + الأقسام
 export default function MenuBody({
@@ -13,6 +14,7 @@ export default function MenuBody({
   const mostOrdered = products.filter(p => p.is_featured).slice(0, 4)
   const categoryObserverRef = useRef(null)
   const [catsOpen, setCatsOpen] = useState(false) // قائمة كل الأقسام (زر ☰)
+  useBodyScrollLock(catsOpen) // قفل تمرير الصفحة الخلفية طول ما القائمة مفتوحة
 
   // الانتقال لقسم: من التبويب مباشرة أو من قائمة ☰ (مع مهلة قصيرة لإغلاقها أولاً)
   const goToCategory = (catId, fromSheet = false) => {

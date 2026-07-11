@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 
 // قائمة اختيار رقم الطاولة (طلب داخل المطعم فقط) — Dropdown حقيقي وليس حقل نص:
 // الزبون يختار من الطاولات المفعّلة التي عرّفها صاحب المطعم فقط، بلا كتابة يدوية.
@@ -6,6 +7,7 @@ import { useState } from 'react'
 export default function TableSelect({ tables, value, onChange, brandColor, t }) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
+  useBodyScrollLock(open) // قفل إضافي (فوق قفل السلة) طول ما قائمة الطاولات مفتوحة
 
   const filtered = search.trim()
     ? tables.filter(tb => tb.table_number.toLowerCase().includes(search.trim().toLowerCase()))
