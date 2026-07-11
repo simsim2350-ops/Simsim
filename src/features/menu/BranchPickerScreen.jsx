@@ -1,36 +1,27 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
-import { computeOpenStatus } from './helpers'
+import { computeOpenStatus, copyToClipboard } from './helpers'
 import { SOCIAL_ICONS } from './SocialIcons'
 
 // شاشة "اختر فرعك" — تظهر لو فيه فروع نشطة ولم يُحدَّد فرع في الرابط.
 // صفحة تسويقية على مراحل: المرحلة 0 (Hero + الأكثر طلباً + بطاقات فروع + لماذا
 // تختارنا + تشويق الولاء + التواصل، بلا أي جدول جديد) + المرحلة 1 (بانرات العروض
-// وكوبونات حقيقية — جدولا banners/coupons الجديدان). التحكم الكامل من اللوحة
-// (سحب/إفلات/جدولة/تخصيص لكل فرع) مؤجَّل لمرحلة لاحقة منفصلة.
+// وكوبونات حقيقية). القرار المعماري (الخيار 3): هذه الشاشة تعرض فقط العروض
+// "العامة" (بلا فرع محدد) — أي بانر/كوبون مخصَّص لفرع بعينه يظهر حصرياً في
+// شريط المنيو نفسه (MenuHeader) حيث سياق الفرع محسوم فعلياً، بلا تعارض.
 export default function BranchPickerScreen({ restaurant, branchList, brandColor, isEn, t, tx, onChoose, products, rating, loyaltyEnabled, banners = [], coupons = [] }) {
   const restaurantStatus = computeOpenStatus(restaurant.opening_hours)
   const totalBranches = branchList.length + 1 // +1 للفرع الرئيسي
   const featuredProducts = (products || []).filter(p => p.is_featured).slice(0, 4)
   const hasSocial = restaurant.social_links && Object.values(restaurant.social_links).some(v => v)
+  const generalBanners = banners.filter(b => !b.branch_id)
+  const generalCoupons = coupons.filter(c => !c.branch_id)
 
   const scrollToBranches = () => document.getElementById('sm-branch-section')?.scrollIntoView({ behavior:'smooth', block:'start' })
 
   const copyCoupon = async (code) => {
     try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(code)
-      } else {
-        const textarea = document.createElement('textarea')
-        textarea.value = code
-        textarea.style.position = 'fixed'
-        textarea.style.opacity = '0'
-        document.body.appendChild(textarea)
-        textarea.focus()
-        textarea.select()
-        document.execCommand('copy')
-        document.body.removeChild(textarea)
-      }
+      await copyToClipboard(code)
       toast.success(isEn ? 'Code copied 📋' : 'تم نسخ الكود 📋')
     } catch {
       toast.error(isEn ? 'Could not copy' : 'تعذّر النسخ')
@@ -41,12 +32,12 @@ export default function BranchPickerScreen({ restaurant, branchList, brandColor,
   const BannerCarousel = () => {
     const [idx, setIdx] = useState(0)
     useEffect(() => {
-      if (banners.length <= 1) return
-      const timer = setInterval(() => setIdx(i => (i + 1) % banners.length), 4500)
+      if (generalBanners.length <= 1) return
+      const timer = setInterval(() => setIdx(i => (i + 1) % generalBanners.length), 4500)
       return () => clearInterval(timer)
     }, [])
-    if (banners.length === 0) return null
-    const b = banners[idx]
+    if (generalBanners.length === 0) return null
+    const b = generalBanners[idx]
     return (
       <div>
         <div style={{ borderRadius:'16px', overflow:'hidden', position:'relative', background: b.image_url ? '#0F1117' : 'linear-gradient(120deg,#1F2430,#0F1117)' }}>
@@ -61,9 +52,9 @@ export default function BranchPickerScreen({ restaurant, branchList, brandColor,
             </button>
           </div>
         </div>
-        {banners.length > 1 && (
+        {generalBanners.length > 1 && (
           <div style={{ display:'flex', gap:'5px', justifyContent:'center', marginTop:'8px' }}>
-            {banners.map((_, i) => (
+            {generalBanners.map((_, i) => (
               <span key={i} style={{ width: i === idx ? '16px' : '6px', height:'6px', borderRadius:'100px', background: i === idx ? brandColor : '#E5E7EB', transition:'all 0.2s' }}/>
             ))}
           </div>
@@ -152,15 +143,15 @@ export default function BranchPickerScreen({ restaurant, branchList, brandColor,
 
       <div style={{ padding:'16px', display:'flex', flexDirection:'column', gap:'20px', maxWidth:'520px', margin:'0 auto' }}>
 
-        {/* بانر العروض */}
-        {banners.length > 0 && <BannerCarousel/>}
+        {/* بانر العروض — عام فقط (بلا فرع محدد) */}
+        {generalBanners.length > 0 && <BannerCarousel/>}
 
-        {/* الكوبونات */}
-        {coupons.length > 0 && (
+        {/* الكوبونات — عامة فقط (بلا فرع محدد) */}
+        {generalCoupons.length > 0 && (
           <div>
             <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', color:'#0F1117', margin:'0 0 10px' }}>🎟️ {isEn ? 'Available coupons' : 'الكوبونات المتاحة'}</h2>
             <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-              {coupons.map(c => (
+              {generalCoupons.map(c => (
                 <div key={c.id} style={{ display:'flex', alignItems:'center', gap:'10px', background:'white', border:`1.5px dashed ${brandColor}`, borderRadius:'13px', padding:'10px 12px' }}>
                   <span style={{ fontWeight:'900', fontSize:'15px', color:brandColor, flexShrink:0 }}>
                     {c.discount_type === 'percent' ? `${c.discount_value}%` : `${c.discount_value} ﷼`}

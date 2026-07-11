@@ -18,7 +18,23 @@ export default function MenuHeader({
   onToggleSearch,
   hasBranches, onChangeBranch,
   rating, loyalty,
+  banners = [], coupons = [],
 }) {
+  // شريط ترويجي مضغوط (خانة واحدة فقط) — أهم بانر/كوبون منطبق على الفرع الحالي.
+  // القرار المعماري (الخيار 3): البانرات/الكوبونات المخصَّصة لفرع بعينه (branch_id) تظهر
+  // حصرياً هنا (حيث سياق الفرع محسوم فعلياً)، بأولوية أعلى من العروض العامة؛ يمكن إغلاقه لهذه الجلسة.
+  const [promoDismissed, setPromoDismissed] = useState(false)
+  const activePromo = (() => {
+    const relevant = (items) => items
+      .filter(x => !x.branch_id || x.branch_id === branch?.id)
+      .sort((a, b) => (b.branch_id ? 1 : 0) - (a.branch_id ? 1 : 0))
+    const relevantBanners = relevant(banners)
+    if (relevantBanners.length > 0) return { type: 'banner', data: relevantBanners[0] }
+    const relevantCoupons = relevant(coupons)
+    if (relevantCoupons.length > 0) return { type: 'coupon', data: relevantCoupons[0] }
+    return null
+  })()
+
   // Sticky Morph (مبدأ 6): صفّ الهوية (شعار+اسم+تقييم+حالة) عنصر sticky واحد يبقى مرئياً 100% دائماً
   //   بلا opacity/transform عليه إطلاقاً — لا يمكن أن يختفي. بقية المحتوى (وصف/تواصل/إحصائيات/ولاء)
   //   ينزلق طبيعياً خلف صفّ الهوية ويختفي بالتمرير (بلا حسابات ارتفاع هشّة).
@@ -208,6 +224,31 @@ export default function MenuHeader({
             </div>
           ))}
         </div>
+
+        {/* شريط ترويجي مضغوط — خانة واحدة فقط، بلا ازدحام، قابل للإغلاق لهذه الجلسة */}
+        {!promoDismissed && activePromo && (
+          <div style={{ margin:'0 14px 4px' }}>
+            {activePromo.type === 'banner' ? (
+              <div style={{ display:'flex', alignItems:'center', gap:'8px', background:`linear-gradient(120deg, ${brandColor}, ${brandColor}CC)`, borderRadius:'13px', padding:'10px 10px 10px 12px', color:'white' }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12.5px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activePromo.data.title}</div>
+                  {activePromo.data.subtitle && <div style={{ fontSize:'11px', opacity:0.9, marginTop:'2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activePromo.data.subtitle}</div>}
+                </div>
+                <button onClick={() => setPromoDismissed(true)} aria-label={isEn ? 'Dismiss' : 'إغلاق'} style={{ flexShrink:0, width:'22px', height:'22px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.25)', color:'white', fontSize:'12px', cursor:'pointer' }}>✕</button>
+              </div>
+            ) : (
+              <div style={{ display:'flex', alignItems:'center', gap:'8px', background:`${brandColor}12`, border:`1.5px dashed ${brandColor}`, borderRadius:'13px', padding:'9px 10px 9px 12px' }}>
+                <span style={{ fontSize:'16px', flexShrink:0 }}>🎟️</span>
+                <span style={{ flex:1, fontSize:'12px', fontWeight:'700', color:'#0F1117', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                  {isEn
+                    ? `Code ${activePromo.data.code}: ${activePromo.data.discount_type === 'percent' ? activePromo.data.discount_value + '% off' : activePromo.data.discount_value + ' SAR off'}`
+                    : `كود ${activePromo.data.code}: خصم ${activePromo.data.discount_type === 'percent' ? activePromo.data.discount_value + '%' : activePromo.data.discount_value + ' ﷼'}`}
+                </span>
+                <button onClick={() => setPromoDismissed(true)} aria-label={isEn ? 'Dismiss' : 'إغلاق'} style={{ flexShrink:0, width:'22px', height:'22px', borderRadius:'50%', border:'none', background:'rgba(0,0,0,0.06)', color:'#6B7280', fontSize:'12px', cursor:'pointer' }}>✕</button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* بانر نقاط الولاء — للزبون المعروف فقط ولو البرنامج مفعّل (الضغط يفتح التفاصيل في شاشة طلباتي) */}
         {loyalty && (() => {
