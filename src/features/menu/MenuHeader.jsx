@@ -190,7 +190,7 @@ export default function MenuHeader({
         {/* الموقع + رابط الخريطة */}
         {(() => {
           const addr = branch?.address || restaurant.address
-          const mapsUrl = branch?.maps_url
+          const mapsUrl = branch?.maps_url || restaurant.maps_url
           if (!addr && !mapsUrl) return null
           return (
             <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'1px 16px 0', flexWrap:'wrap' }}>
