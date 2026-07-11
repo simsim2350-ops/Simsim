@@ -148,7 +148,7 @@ function CustomersInner() {
       const earned = loyaltyProgram?.enabled ? Math.floor(c.completedSpent * (Number(loyaltyProgram.earn_rate) || 0)) : 0
 
       return {
-        phone, name, orders: byTime.slice().reverse(), // للعرض: الأحدث أولاً
+        phone: c.phone, name, orders: byTime.slice().reverse(), // للعرض: الأحدث أولاً
         orderCount, totalSpent, avgOrderValue, lastOrderAt, firstOrderAt,
         branchId, branchIds, mostOrderedBranchKey, favoriteProducts,
         daysSinceLast, isNewCustomer, isActive, recentOrders30,
