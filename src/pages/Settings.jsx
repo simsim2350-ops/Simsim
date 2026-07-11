@@ -296,10 +296,10 @@ export default function Settings() {
 
   const TABS = [
     { key:'restaurant', label:'🏪 المطعم' },
-    { key:'hours',      label:'🕐 أوقات العمل' },
-    { key:'profile',    label:'👤 الملف الشخصي' },
-    { key:'password',   label:'🔒 كلمة المرور' },
-    { key:'danger',     label:'⚠️ متقدم' },
+    { key:'display',    label:'🎨 العرض' },
+    { key:'operations', label:'🚦 التشغيل' },
+    { key:'account',    label:'👤 الحساب' },
+    { key:'danger',     label:'⚠️ الخطر' },
   ]
 
   return (
@@ -323,10 +323,12 @@ export default function Settings() {
         <div style={{ flex:1, overflowY:'auto', padding:'16px' }}>
           <div style={{ maxWidth:'600px', margin:'0 auto' }}>
 
-            {/* ===== RESTAURANT TAB ===== */}
-            {activeTab === 'restaurant' && (
+            {/* ===== تبويبات المطعم/العرض/التشغيل — كلها تحرّر restForm فتتشارك زر الحفظ ===== */}
+            {['restaurant','display','operations'].includes(activeTab) && (
               <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
 
+                {/* معلومات المطعم — تبويب المطعم */}
+                {activeTab === 'restaurant' && (
                 <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
                   <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🏪 معلومات المطعم</div>
                   <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:'14px' }}>
@@ -405,7 +407,10 @@ export default function Settings() {
                   </div>
                 </div>
 
-                {/* Delivery settings */}
+                )}
+
+                {/* خيارات التوصيل — تبويب التشغيل */}
+                {activeTab === 'operations' && (
                 <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
                   <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🚚 خيارات التوصيل</div>
                   <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:'14px' }}>
@@ -429,6 +434,10 @@ export default function Settings() {
                   </div>
                 </div>
 
+                )}
+
+                {/* تبويب العرض — عناصر البطاقة + شكل الأصناف + الألوان (كلها بصرية) */}
+                {activeTab === 'display' && (<>
                 {/* عناصر بطاقة المطعم — Accordion يدمج مفتاح الإظهار مع محتواه (ADR-16) */}
                 <Accordion icon="🎛️" title="عناصر بطاقة المطعم">
                   <div style={{ padding:'2px 4px 4px', fontSize:'11.5px', color:'#9CA3AF', margin:'8px 16px 0', lineHeight:'1.5' }}>
@@ -686,7 +695,10 @@ export default function Settings() {
                   </div>
                 </div>
 
-                {/* Restaurant status */}
+                </>)}
+
+                {/* حالة المطعم — تبويب التشغيل */}
+                {activeTab === 'operations' && (
                 <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
                   <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>📡 حالة المطعم</div>
                   <div style={{ padding:'16px 18px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
@@ -707,16 +719,16 @@ export default function Settings() {
                   </div>
                 </div>
 
+                )}
+
                 <button onClick={saveRestaurant} disabled={loading} style={{ padding:'14px', borderRadius:'13px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', boxShadow:'0 6px 20px rgba(255,107,53,0.35)', opacity:loading?0.8:1 }}>
                   {loading ? 'جارٍ الحفظ...' : '💾 حفظ إعدادات المطعم'}
                 </button>
-              </div>
-            )}
 
-            {/* ===== HOURS TAB ===== */}
-            {activeTab === 'hours' && (
-              <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
-                <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🕐 أوقات العمل</div>
+                {/* أوقات العمل — تبويب التشغيل (محرّر مستقل بزرّه الخاص) */}
+                {activeTab === 'operations' && (
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🕐 أوقات العمل</div>
                 {branches.length > 0 && (
                   <div style={{ padding:'12px 16px 0' }}>
                     <label style={{ display:'block', fontSize:'12px', fontWeight:'700', color:'#6B7280', marginBottom:'6px' }}>اختر الفرع لضبط أوقاته:</label>
@@ -757,11 +769,14 @@ export default function Settings() {
                     {loading ? 'جارٍ الحفظ...' : '💾 حفظ أوقات العمل'}
                   </button>
                 </div>
+                </div>
+                )}
+
               </div>
             )}
 
-            {/* ===== PROFILE TAB ===== */}
-            {activeTab === 'profile' && (
+            {/* ===== تبويب الحساب: الملف + كلمة المرور + الاشتراك + رابط المنيو ===== */}
+            {activeTab === 'account' && (
               <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
                 <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
                   <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>👤 الملف الشخصي</div>
@@ -802,8 +817,8 @@ export default function Settings() {
               </div>
             )}
 
-            {/* ===== PASSWORD TAB ===== */}
-            {activeTab === 'password' && (
+            {/* كلمة المرور — ضمن تبويب الحساب */}
+            {activeTab === 'account' && (
               <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
                 <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🔒 تغيير كلمة المرور</div>
                 <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:'14px' }}>
@@ -833,10 +848,12 @@ export default function Settings() {
               </div>
             )}
 
-            {/* ===== DANGER TAB ===== */}
-            {activeTab === 'danger' && (
+            {/* ===== تبويبا الحساب/الخطر — يتشاركان هذه الحاوية ===== */}
+            {['account','danger'].includes(activeTab) && (
               <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
 
+                {/* رابط المنيو + الاشتراك — تبويب الحساب */}
+                {activeTab === 'account' && (<>
                 {/* Menu URL */}
                 <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
                   <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🔗 رابط المنيو</div>
@@ -889,7 +906,10 @@ export default function Settings() {
                   </div>
                 </div>
 
-                {/* Danger zone */}
+                </>)}
+
+                {/* منطقة الخطر — تبويب الخطر فقط */}
+                {activeTab === 'danger' && (
                 <div style={{ background:'white', borderRadius:'16px', border:'1.5px solid #FEE2E2', overflow:'hidden' }}>
                   <div style={{ padding:'14px 18px', borderBottom:'1px solid #FEE2E2', fontSize:'14px', fontWeight:'800', color:'#EF4444' }}>⚠️ منطقة الخطر</div>
                   <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:'10px' }}>
@@ -904,6 +924,8 @@ export default function Settings() {
                     </button>
                   </div>
                 </div>
+                )}
+
               </div>
             )}
 
