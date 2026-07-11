@@ -116,7 +116,7 @@ export default function MenuHeader({
       </div>
 
       {/* ===== البطاقة العائمة فوق الهيرو (هوامش جانبية + زوايا مدوّرة) — تدفّق طبيعي، تنزلق للأعلى ===== */}
-      <div style={{ position:'relative', zIndex:10, margin:'-46px 16px 0', background:'white', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
+      <div style={{ position:'relative', zIndex:10, margin:'-56px 16px 0', background:'white', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
 
         {/* رأس البطاقة (شعار + اسم + تقييم + حالة الفتح) — تدفّق طبيعي ضمن البطاقة، ينزلق مع الصفحة.
             التثبيت الدائم يتكفّل به «الهيدر المصغّر» المنفصل أدناه (لتفادي التعارض مع شريط الأقسام). */}
