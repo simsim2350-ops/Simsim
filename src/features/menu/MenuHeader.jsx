@@ -114,7 +114,7 @@ export default function MenuHeader({
       </div>
 
       {/* ===== البطاقة العائمة فوق الهيرو (هوامش جانبية + زوايا مدوّرة) — تدفّق طبيعي، تنزلق للأعلى ===== */}
-      <div style={{ position:'relative', zIndex:10, margin:'-34px 16px 0', background:'white', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
+      <div style={{ position:'relative', zIndex:10, margin:'-46px 16px 0', background:'white', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
 
         {/* صفّ الهوية — عنصر sticky يبقى مرئياً 100% دائماً (شعار + اسم + تقييم + حالة الفتح) =====
             هو نفسه «الهيدر المصغّر» عند الالتصاق. خلفية بيضاء معتمة ليختفي خلفه المحتوى الثانوي أثناء انزلاقه. */}
@@ -233,7 +233,7 @@ export default function MenuHeader({
         )}
 
         {/* بطاقة الإحصائيات: الحالة · التجهيز · التوصيل */}
-        <div style={{ display:'flex', margin:'6px 14px 6px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'15px', padding:'7px 4px' }}>
+        <div style={{ display:'flex', margin:'6px 14px 2px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'15px', padding:'7px 4px' }}>
           {statCells.map((c, i) => (
             <div key={i} style={{ flex:1, textAlign:'center', borderRight: i > 0 ? '1px solid #E9ECF1' : 'none', padding:'0 4px' }}>
               <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'12.5px', color:c.color, whiteSpace:'nowrap' }}>{c.value}</div>
@@ -253,7 +253,7 @@ export default function MenuHeader({
               ? (isEn ? `Your points: ${balance} — ${Math.max(0, threshold - balance)} pts to your reward` : `نقاطك: ${balance} — باقي ${Math.max(0, threshold - balance)} نقطة على مكافأتك`)
               : (isEn ? `Your points: ${balance}` : `نقاطك: ${balance}`)
           return (
-            <div onClick={onShowOrders} style={{ margin:'0 14px 10px', background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'13px', padding:'8px 12px', display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
+            <div onClick={onShowOrders} style={{ margin:'0 14px 4px', background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'13px', padding:'8px 12px', display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
               <span style={{ fontSize:'15px' }}>🎁</span>
               <span style={{ flex:1, fontSize:'11.5px', fontWeight:'800', color:'#0F1117', fontFamily:'Cairo,sans-serif' }}>{text}</span>
               <span style={{ fontSize:'10px', fontWeight:'800', color:brandColor, whiteSpace:'nowrap' }}>{isEn ? 'Details ›' : 'التفاصيل ›'}</span>
