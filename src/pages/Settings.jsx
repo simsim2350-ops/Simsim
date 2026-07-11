@@ -730,7 +730,7 @@ export default function Settings() {
                 <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
                   <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🕐 أوقات العمل</div>
                 {branches.length > 0 && (
-                  <div style={{ padding:'12px 16px 0' }}>
+                  <div style={{ padding:'10px 12px 0' }}>
                     <label style={{ display:'block', fontSize:'12px', fontWeight:'700', color:'#6B7280', marginBottom:'6px' }}>اختر الفرع لضبط أوقاته:</label>
                     <select value={hoursTarget} onChange={e => setHoursTarget(e.target.value)} style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', fontWeight:'700', color:'#0F1117', background:'white', cursor:'pointer', outline:'none' }}>
                       <option value="__main__">🏠 الفرع الرئيسي (المطعم كله)</option>
@@ -739,24 +739,24 @@ export default function Settings() {
                     <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>لكل فرع أوقاته المستقلة. الفرع الرئيسي يُطبّق عند عدم تحديد أوقات للفرع.</div>
                   </div>
                 )}
-                <div style={{ padding:'12px 16px', display:'flex', flexDirection:'column', gap:'8px' }}>
+                <div style={{ padding:'10px 12px', display:'flex', flexDirection:'column', gap:'6px' }}>
                   {hours.map((h, i) => (
-                    <div key={h.day} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background: h.open ? 'white' : '#F8F9FB' }}>
+                    <div key={h.day} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'8px 9px', borderRadius:'11px', border:'1.5px solid #E5E7EB', background: h.open ? 'white' : '#F8F9FB' }}>
                       {/* Toggle */}
-                      <label style={{ position:'relative', width:'36px', height:'20px', cursor:'pointer', flexShrink:0 }}>
+                      <label style={{ position:'relative', width:'34px', height:'19px', cursor:'pointer', flexShrink:0 }}>
                         <input type="checkbox" checked={h.open} onChange={e => updateHour(i,'open',e.target.checked)} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
-                        <div style={{ position:'absolute', inset:0, background: h.open ? '#10B981' : '#E5E7EB', borderRadius:'20px', transition:'0.3s' }}>
-                          <div style={{ position:'absolute', width:'14px', height:'14px', background:'white', borderRadius:'50%', top:'3px', left: h.open ? '19px' : '3px', transition:'0.3s', boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                        <div style={{ position:'absolute', inset:0, background: h.open ? '#10B981' : '#E5E7EB', borderRadius:'19px', transition:'0.3s' }}>
+                          <div style={{ position:'absolute', width:'13px', height:'13px', background:'white', borderRadius:'50%', top:'3px', left: h.open ? '18px' : '3px', transition:'0.3s', boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
                         </div>
                       </label>
 
-                      <span style={{ fontSize:'13px', fontWeight:'700', width:'52px', flexShrink:0, color: h.open ? '#0F1117' : '#9CA3AF' }}>{h.day}</span>
+                      <span style={{ fontSize:'12.5px', fontWeight:'700', width:'42px', flexShrink:0, color: h.open ? '#0F1117' : '#9CA3AF' }}>{h.day}</span>
 
                       {h.open ? (
-                        <div style={{ display:'flex', alignItems:'center', gap:'6px', flex:1, justifyContent:'flex-end', direction:'ltr' }}>
-                          <input type="time" value={h.from} onChange={e => updateHour(i,'from',e.target.value)} style={{ padding:'5px 6px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'12px', outline:'none', width:'92px' }}/>
-                          <span style={{ color:'#9CA3AF', fontSize:'12px' }}>—</span>
-                          <input type="time" value={h.to} onChange={e => updateHour(i,'to',e.target.value)} style={{ padding:'5px 6px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'12px', outline:'none', width:'92px' }}/>
+                        <div style={{ display:'flex', alignItems:'center', gap:'4px', flex:1, justifyContent:'flex-end', direction:'ltr', minWidth:0 }}>
+                          <input type="time" value={h.from} onChange={e => updateHour(i,'from',e.target.value)} style={{ padding:'5px 4px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'11.5px', outline:'none', width:'78px', minWidth:0 }}/>
+                          <span style={{ color:'#9CA3AF', fontSize:'11px', flexShrink:0 }}>—</span>
+                          <input type="time" value={h.to} onChange={e => updateHour(i,'to',e.target.value)} style={{ padding:'5px 4px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'11.5px', outline:'none', width:'78px', minWidth:0 }}/>
                         </div>
                       ) : (
                         <span style={{ fontSize:'13px', color:'#9CA3AF', flex:1 }}>مغلق</span>
@@ -764,7 +764,7 @@ export default function Settings() {
                     </div>
                   ))}
                 </div>
-                <div style={{ padding:'0 16px 16px' }}>
+                <div style={{ padding:'0 12px 14px' }}>
                   <button onClick={saveHours} disabled={loading} style={{ width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity: loading ? 0.8 : 1 }}>
                     {loading ? 'جارٍ الحفظ...' : '💾 حفظ أوقات العمل'}
                   </button>
