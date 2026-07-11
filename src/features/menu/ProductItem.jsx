@@ -1,6 +1,6 @@
 import { getCalorieBadge } from './helpers'
 
-// بطاقة صنف واحدة في المنيو — تدعم 3 تخطيطات: list (افتراضي) / grid / circles
+// بطاقة صنف واحدة في المنيو — تدعم 4 تخطيطات: list (افتراضي) / grid / circles / showcase
 export default function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor, descColor, isEn, layout = 'list' }) {
   const _priceColor = priceColor || brandColor
   const _descColor = descColor || '#9CA3AF'
@@ -82,6 +82,36 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
     )
   }
 
+  if (layout === 'showcase') {
+    return (
+      <div style={{ background:'white', borderRadius:'14px', overflow:'hidden', border:'1px solid #F0F0F0' }}>
+        <div style={{ position:'relative' }}>
+          <div onClick={onAdd} style={{ width:'100%', aspectRatio:'1/1', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'52px', overflow:'hidden', cursor:'pointer' }}>
+            {product.image_url
+              ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+              : product.emoji}
+          </div>
+          {product.is_featured && (
+            <span style={{ position:'absolute', top:'8px', right:'8px', fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>{isEn ? '🔥 Most Ordered' : '🔥 الأكثر طلباً'}</span>
+          )}
+          {qtyControl}
+        </div>
+        <div onClick={onAdd} style={{ padding:'12px 14px', cursor:'pointer' }}>
+          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', color:'#0F1117', marginBottom:'4px' }}>{pName}</div>
+          {pDesc && (
+            <div style={{ fontSize:'12px', color:_descColor, lineHeight:'1.5', marginBottom:'8px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+              {pDesc}
+            </div>
+          )}
+          <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', color: _priceColor }}>{product.price} ﷼</span>
+            {product.compare_price && <span style={{ fontSize:'12px', color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ background:'white', padding:'14px 16px', display:'flex', gap:'12px', alignItems:'center' }}>
       <div onClick={onAdd} style={{ flex:1, minWidth:0, cursor:'pointer' }}>
@@ -102,7 +132,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
       </div>
 
       <div style={{ position:'relative', flexShrink:0 }}>
-        <div onClick={onAdd} style={{ width:'88px', height:'88px', borderRadius:'14px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'42px', border:'1px solid #E5E7EB', overflow:'hidden', cursor:'pointer' }}>
+        <div onClick={onAdd} style={{ width:'145px', height:'145px', borderRadius:'14px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'42px', border:'1px solid #E5E7EB', overflow:'hidden', cursor:'pointer' }}>
           {product.image_url
             ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
             : product.emoji}

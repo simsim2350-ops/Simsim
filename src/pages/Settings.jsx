@@ -582,6 +582,7 @@ export default function Settings() {
                     {[
                       { key:'list', label:'قائمة', desc:'صورة صغيرة جانبية' },
                       { key:'grid', label:'شبكة', desc:'صورة كبيرة مربعة' },
+                      { key:'showcase', label:'بطاقة', desc:'صورة كبيرة بعمود واحد' },
                       { key:'circles', label:'دوائر', desc:'صورة دائرية أنيقة' },
                     ].map(opt => (
                       <div
@@ -611,6 +612,13 @@ export default function Settings() {
                                 <div style={{ width:'70%', height:'3px', background:'#E5E7EB', borderRadius:'2px' }}/>
                               </div>
                             ))}
+                          </div>
+                        )}
+                        {opt.key === 'showcase' && (
+                          <div style={{ marginBottom:'10px' }}>
+                            <div style={{ width:'100%', height:'46px', background:'#E5E7EB', borderRadius:'6px', marginBottom:'4px' }}/>
+                            <div style={{ width:'100%', height:'3px', background:'#E5E7EB', borderRadius:'2px', marginBottom:'3px' }}/>
+                            <div style={{ width:'60%', height:'3px', background:'#E5E7EB', borderRadius:'2px' }}/>
                           </div>
                         )}
                         {opt.key === 'circles' && (
