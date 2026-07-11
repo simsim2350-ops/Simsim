@@ -506,7 +506,7 @@ export default function Menu() {
 
   return (
     <AppShell
-      active={tab === 'products' ? 'products' : 'menu'}
+      active="menu"
       title="إدارة المنيو"
       actions={<>
         <button onClick={() => navigate('/dashboard')} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'600', fontSize:'12px', cursor:'pointer', color:'#374151' }}>← الرئيسية</button>

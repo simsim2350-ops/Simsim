@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useBreakpoint } from '../hooks/useBreakpoint'
-import { NAV_ITEMS } from '../lib/nav'
+import { NAV_GROUPS } from '../lib/nav'
 import { canAccess, navPage } from '../lib/permissions'
 
 /**
@@ -22,7 +22,10 @@ export default function AppShell({ active, title, actions, badges = {}, children
 
   // فلترة روابط التنقل حسب صلاحيات المستخدم (الموظف يرى صفحاته المسموحة فقط)
   const perms = { isOwner, allowedPages: membership?.allowed_pages, branchScope: membership?.branch_scope }
-  const visibleNav = NAV_ITEMS.filter(item => canAccess(navPage(item.key), perms))
+  // فلترة عناصر كل مجموعة حسب الصلاحيات، ثم إسقاط المجموعات التي فرغت (لا يظهر عنوان مجموعة بلا عناصر)
+  const visibleGroups = NAV_GROUPS
+    .map(g => ({ ...g, items: g.items.filter(item => canAccess(navPage(item.key), perms)) }))
+    .filter(g => g.items.length > 0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const handleSignOut = async () => { await signOut(); navigate('/login') }
@@ -58,18 +61,25 @@ export default function AppShell({ active, title, actions, badges = {}, children
           )}
 
           <nav style={{ padding:'8px 12px', flex:1, overflowY:'auto' }}>
-            {visibleNav.map(item => {
-              const isActive = item.key === active
-              const badge = badges[item.key]
-              return (
-                <div key={item.key} onClick={() => isActive ? setSidebarOpen(false) : go(item)} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px', borderRadius:'10px', cursor:'pointer', background: isActive ? 'rgba(255,107,53,0.12)' : 'transparent', color: isActive ? '#FF6B35' : 'rgba(255,255,255,0.55)', fontSize:'13px', fontWeight:'600', marginBottom:'2px', position:'relative' }}>
-                  {isActive && <div style={{ position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', width:'3px', height:'20px', background:'#FF6B35', borderRadius:'0 3px 3px 0' }}/>}
-                  <span style={{ fontSize:'16px', width:'20px', textAlign:'center' }}>{item.icon}</span>
-                  {item.label}
-                  {badge > 0 && <span style={{ marginRight:'auto', background:'#FF6B35', color:'white', fontSize:'10px', fontWeight:'800', padding:'2px 7px', borderRadius:'100px' }}>{badge}</span>}
-                </div>
-              )
-            })}
+            {visibleGroups.map((group, gi) => (
+              <div key={group.label || `g${gi}`} style={{ marginBottom:'6px' }}>
+                {group.label && (
+                  <div style={{ padding:'10px 14px 4px', fontSize:'10.5px', fontWeight:'800', letterSpacing:'0.06em', color:'rgba(255,255,255,0.28)' }}>{group.label}</div>
+                )}
+                {group.items.map(item => {
+                  const isActive = item.key === active
+                  const badge = badges[item.key]
+                  return (
+                    <div key={item.key} onClick={() => isActive ? setSidebarOpen(false) : go(item)} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px', borderRadius:'10px', cursor:'pointer', background: isActive ? 'rgba(255,107,53,0.12)' : 'transparent', color: isActive ? '#FF6B35' : 'rgba(255,255,255,0.55)', fontSize:'13px', fontWeight:'600', marginBottom:'2px', position:'relative' }}>
+                      {isActive && <div style={{ position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', width:'3px', height:'20px', background:'#FF6B35', borderRadius:'0 3px 3px 0' }}/>}
+                      <span style={{ fontSize:'16px', width:'20px', textAlign:'center' }}>{item.icon}</span>
+                      {item.label}
+                      {badge > 0 && <span style={{ marginRight:'auto', background:'#FF6B35', color:'white', fontSize:'10px', fontWeight:'800', padding:'2px 7px', borderRadius:'100px' }}>{badge}</span>}
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
           </nav>
 
           <div style={{ padding:'12px', borderTop:'1px solid rgba(255,255,255,0.06)', flexShrink:0 }}>
