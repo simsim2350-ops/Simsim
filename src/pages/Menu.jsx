@@ -62,7 +62,7 @@ function SortableCard({ id, children }) {
 export default function Menu() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, restaurant } = useAuthStore()
+  const { user, restaurant, fetchRestaurant } = useAuthStore()
   const [tab, setTab] = useState(location.state?.tab === 'products' ? 'products' : 'categories')
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
@@ -89,6 +89,41 @@ export default function Menu() {
   // قائمة اقتراحات السلة العامة — مستقلة تماماً عن قواعد الأصناف الفردية
   const [cartWideList, setCartWideList] = useState([])
   const [cwSearch, setCwSearch] = useState('')
+
+  // إعدادات تفعيل الاقتراحات + عددها — أصبحت تُدار من هنا (المكان الوحيد لكل ما يخصّ الاقتراحات)
+  const [recEnabled, setRecEnabled] = useState(restaurant?.recommendations_enabled ?? true)
+  const [recCount, setRecCount] = useState(restaurant?.recommendations_count ?? 4)
+  const [savingRec, setSavingRec] = useState(false)
+  useEffect(() => {
+    if (!restaurant) return
+    setRecEnabled(restaurant.recommendations_enabled ?? true)
+    setRecCount(restaurant.recommendations_count ?? 4)
+  }, [restaurant])
+
+  // حفظ فوري لإعدادات الاقتراحات في restaurants + تحديث الحالة العامة
+  const saveRecSettings = async (patch) => {
+    if (!restaurant) return
+    setSavingRec(true)
+    try {
+      const { error } = await supabase.from('restaurants').update(patch).eq('id', restaurant.id)
+      if (error) throw error
+      if (user) await fetchRestaurant(user.id)
+    } catch (e) {
+      toast.error('تعذّر حفظ إعدادات الاقتراحات')
+    } finally {
+      setSavingRec(false)
+    }
+  }
+  const toggleRecEnabled = () => {
+    const v = !recEnabled
+    setRecEnabled(v)
+    saveRecSettings({ recommendations_enabled: v })
+  }
+  const commitRecCount = () => {
+    const n = Math.min(8, Math.max(1, parseInt(recCount) || 4))
+    setRecCount(n)
+    saveRecSettings({ recommendations_count: n })
+  }
 
   useEffect(() => {
     if (!restaurant) return
@@ -663,6 +698,34 @@ export default function Menu() {
           {/* SUGGESTIONS — قائمة اقتراحات السلة العامة، مستقلة عن قواعد الأصناف الفردية */}
           {tab === 'suggestions' && (
             <div>
+              {/* إعدادات الاقتراحات — نُقلت هنا من صفحة الإعدادات ليكون كل ما يخصّ الاقتراحات في مكان واحد */}
+              <div style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding:'14px 16px', marginBottom:'16px' }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px' }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:'14px', fontWeight:'800', marginBottom:'3px' }}>تفعيل قسم «أكمل وجبتك»</div>
+                    <div style={{ fontSize:'12px', color:'#9CA3AF', lineHeight:'1.5' }}>عرض الاقتراحات في سلة الزبون. عند الإيقاف لا يظهر القسم إطلاقاً.</div>
+                  </div>
+                  <label style={{ position:'relative', width:'48px', height:'26px', cursor: savingRec ? 'wait' : 'pointer', flexShrink:0, opacity: savingRec ? 0.6 : 1 }}>
+                    <input type="checkbox" checked={recEnabled} disabled={savingRec} onChange={toggleRecEnabled} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
+                    <div style={{ position:'absolute', inset:0, background: recEnabled ? '#10B981' : '#E5E7EB', borderRadius:'26px', transition:'0.3s' }}>
+                      <div style={{ position:'absolute', width:'20px', height:'20px', background:'white', borderRadius:'50%', top:'3px', left: recEnabled ? '25px' : '3px', transition:'0.3s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
+                    </div>
+                  </label>
+                </div>
+                {recEnabled && (
+                  <div style={{ marginTop:'14px', paddingTop:'14px', borderTop:'1px solid #F3F4F6', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px' }}>
+                    <label style={{ fontSize:'13px', fontWeight:'700', color:'#374151' }}>عدد الاقتراحات المعروضة</label>
+                    <input
+                      style={{ ...inputStyle, marginTop:0, direction:'ltr', textAlign:'center', maxWidth:'84px' }}
+                      type="number" min="1" max="8"
+                      value={recCount}
+                      onChange={e => setRecCount(e.target.value)}
+                      onBlur={commitRecCount}
+                    />
+                  </div>
+                )}
+              </div>
+
               <div style={{ fontSize:'13px', color:'#9CA3AF', marginBottom:'14px', lineHeight:'1.6' }}>
                 هذه القائمة تظهر في قسم «🍽️ أكمل وجبتك» العام داخل سلة الزبون — بمعزل تماماً عن اقتراحات كل صنف على حدة، وعن «🔥 الأكثر طلباً».
               </div>
