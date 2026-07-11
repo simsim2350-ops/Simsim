@@ -6,6 +6,7 @@ import { compressAndUploadImage } from '../lib/uploadImage'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { fetchRecommendationsForProduct, addRecommendation, removeRecommendation, updateRecommendationPriority, fetchCartWideList, addCartWideItem, removeCartWideItem, updateCartWidePriority, toggleCartWideActive } from '../lib/recommendationsApi'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
@@ -71,6 +72,8 @@ export default function Menu() {
   // Modals
   const [catModal, setCatModal] = useState(false)
   const [prodModal, setProdModal] = useState(false)
+  useBodyScrollLock(catModal)
+  useBodyScrollLock(prodModal)
   const [editingCat, setEditingCat] = useState(null)
   const [editingProd, setEditingProd] = useState(null)
 

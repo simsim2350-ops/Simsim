@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 function Spinner() {
   return (
@@ -30,6 +31,7 @@ export default function Branches() {
   const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
+  useBodyScrollLock(modalOpen)
   const [editingBranch, setEditingBranch] = useState(null)
   const [form, setForm] = useState({ name:'', name_en:'', address:'', address_en:'', phone:'', maps_url:'', is_active:true })
   const [confirmDelete, setConfirmDelete] = useState(null)

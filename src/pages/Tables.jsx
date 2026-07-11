@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import { fetchAllTables, createTable, updateTable, deleteTable } from '../lib/tablesApi'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 function Spinner() {
   return (
@@ -33,6 +34,7 @@ export default function Tables() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
+  useBodyScrollLock(modalOpen)
   const [editingTable, setEditingTable] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [tableNumber, setTableNumber] = useState('')

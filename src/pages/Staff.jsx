@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 // عميل ثانوي لإنشاء حسابات الموظفين دون التأثير على جلسة صاحب المطعم
 const signupClient = createClient(
@@ -51,6 +52,7 @@ export default function Staff() {
   const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
+  useBodyScrollLock(modalOpen)
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(emptyForm)

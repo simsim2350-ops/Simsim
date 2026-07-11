@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { vatBreakdown, orderBreakdown, itemsGross } from '../lib/pricing'
 
 const STATUS = {
@@ -58,11 +59,10 @@ export default function Orders() {
   const [view, setView] = useState(() => localStorage.getItem('orders_view') || 'kanban')
   useEffect(() => { localStorage.setItem('orders_view', view) }, [view])
 
-  // قفل تمرير الصفحة خلف نافذة تفاصيل الطلب طول ما هي مفتوحة (يمنع تحرّك الشاشة تحتها أثناء التمرير داخلها)
-  useEffect(() => {
-    document.body.style.overflow = selectedOrder ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [selectedOrder])
+  // قفل تمرير الصفحة خلف نافذة تفاصيل الطلب أو نافذة سبب الإلغاء طول ما إحداهما مفتوحة
+  // (عدّاد مشترك يدعم الحالتين معاً — نافذة الإلغاء تُفتح فوق نافذة التفاصيل)
+  useBodyScrollLock(!!selectedOrder)
+  useBodyScrollLock(!!cancelTarget)
 
   // أعمدة مطويّة (تُحفظ)
   const [collapsed, setCollapsed] = useState(() => {

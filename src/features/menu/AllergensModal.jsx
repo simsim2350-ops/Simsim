@@ -1,7 +1,9 @@
 import ErrBoundary from './ErrBoundary'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 
 // مودال مسبّبات الحساسية — بياناته data-driven من restaurant.allergens (نص أو كائن {label, icon, label_en})
 export default function AllergensModal({ restaurant, isEn, t, onClose }) {
+  useBodyScrollLock() // قفل تمرير الصفحة الخلفية طول ما المودال مفتوح
   return (
     <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={onClose}>
       <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)' }}/>

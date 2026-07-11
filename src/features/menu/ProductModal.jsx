@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { getCalorieBadge } from './helpers'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 
 // مودال تفاصيل الصنف: الخيارات + الكمية + الملاحظة + السحب للإغلاق.
 // يملك حالته الداخلية — تُصفَّر تلقائياً مع كل فتح لأن المودال يُركَّب من جديد.
@@ -15,10 +16,7 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
   const dragStartYRef = useRef(null)
 
   // قفل تمرير الصفحة خلف الـ Modal طول ما هي مفتوحة (يمنع تحرّك المنيو أثناء سحب الـ Modal)
-  useEffect(() => {
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
-  }, [])
+  useBodyScrollLock()
 
   // التحقق من اكتمال كل مجموعات الخيارات الإجبارية
   const validateOptions = () => {

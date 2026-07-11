@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { NAV_GROUPS } from '../lib/nav'
 import { canAccess, navPage } from '../lib/permissions'
 
@@ -27,6 +28,8 @@ export default function AppShell({ active, title, actions, badges = {}, children
     .map(g => ({ ...g, items: g.items.filter(item => canAccess(navPage(item.key), perms)) }))
     .filter(g => g.items.length > 0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  // قفل تمرير الصفحة خلف السايدبار المنزلق طول ما هو مفتوح على الجوال/التابلت
+  useBodyScrollLock(sidebarOpen && !isDesktop)
 
   const handleSignOut = async () => { await signOut(); navigate('/login') }
   const go = (item) => {
