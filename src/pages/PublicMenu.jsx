@@ -18,6 +18,7 @@ import { useReviews } from '../features/menu/hooks/useReviews'
 import MenuSkeleton from '../features/menu/MenuSkeleton'
 import MenuHeader from '../features/menu/MenuHeader'
 import MenuBody from '../features/menu/MenuBody'
+import SearchOverlay from '../features/menu/SearchOverlay'
 import ProductModal from '../features/menu/ProductModal'
 import CartDrawer from '../features/menu/CartDrawer'
 import AllergensModal from '../features/menu/AllergensModal'
@@ -52,7 +53,7 @@ function PublicMenuInner() {
   // حالة عرض محلية للصفحة فقط
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [editingCartItem, setEditingCartItem] = useState(null) // { item, product, initialOptions } — تعديل صنف من السلة (✎)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
   const [showAllergensModal, setShowAllergensModal] = useState(false)
 
   // ===== مشتقات =====
@@ -204,8 +205,7 @@ function PublicMenuInner() {
         liveOrdersCount={liveOrdersCount}
         onShowOrders={() => setOrderPlaced(true)}
         onShowAllergens={() => setShowAllergensModal(true)}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
+        onToggleSearch={() => setSearchOpen(true)}
         hasBranches={branchList.length > 0}
         onChangeBranch={() => { setBranchPicked(false); window.scrollTo(0, 0) }}
         rating={rating}
@@ -217,9 +217,28 @@ function PublicMenuInner() {
         categories={categories}
         products={products}
         bestSellers={bestSellers}
-        searchQuery={searchQuery}
         activeCategory={activeCategory}
         setActiveCategory={setActiveCategory}
+        cart={cart}
+        addToCart={addToCart}
+        removeFromCart={removeFromCart}
+        onOpenProduct={setSelectedProduct}
+        brandColor={brandColor}
+        priceColor={priceColor}
+        descColor={descColor}
+        isEn={isEn}
+        t={t}
+        tx={tx}
+        layout={restaurant.menu_layout}
+      />
+
+      {/* شاشة البحث المستقلة — تفتح من أي زر بحث في الهيدر بغضّ النظر عن موضع التمرير */}
+      <SearchOverlay
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        products={products}
+        categories={categories}
+        bestSellers={bestSellers}
         cart={cart}
         addToCart={addToCart}
         removeFromCart={removeFromCart}
