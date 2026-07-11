@@ -116,13 +116,13 @@ export default function MenuHeader({
       </div>
 
       {/* ===== البطاقة العائمة فوق الهيرو (هوامش جانبية + زوايا مدوّرة) — تدفّق طبيعي، تنزلق للأعلى ===== */}
-      <div style={{ position:'relative', zIndex:10, margin:'-46px 16px 0', background:'white', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
+      <div style={{ position:'relative', zIndex:10, margin:'-56px 16px 0', background:'white', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
 
         {/* رأس البطاقة (شعار + اسم + تقييم + حالة الفتح) — تدفّق طبيعي ضمن البطاقة، ينزلق مع الصفحة.
             التثبيت الدائم يتكفّل به «الهيدر المصغّر» المنفصل أدناه (لتفادي التعارض مع شريط الأقسام). */}
-        <div style={{ paddingTop:'8px' }}>
+        <div style={{ paddingTop:'6px' }}>
           {/* مقبض السحب */}
-          <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 8px' }}/>
+          <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 6px' }}/>
 
           {/* حقل البحث — يظهر فقط عند فتحه من الزر العائم */}
           {searchOpen && (
@@ -145,7 +145,7 @@ export default function MenuHeader({
           )}
 
           {/* الهوية: شعار + اسم + تقييم + حالة الفتح */}
-          <div style={{ display:'flex', alignItems:'center', gap:'12px', padding:'0 16px 10px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'12px', padding:'0 16px 7px' }}>
             <div style={{ width:'56px', height:'56px', borderRadius:'16px', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'26px', flexShrink:0, overflow:'hidden', boxShadow:'0 5px 14px rgba(15,17,23,0.18)' }}>
               {restaurant.logo_url
                 ? <img src={restaurant.logo_url} alt={restaurant.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
@@ -184,7 +184,7 @@ export default function MenuHeader({
 
         {/* وصف المطعم — يكتبه صاحب المطعم من الإعدادات (يدعم الترجمة)، ويُقص عند 105 أحرف */}
         {(restaurant.show_description ?? true) && desc && (
-          <p style={{ fontSize:'12.5px', color:descColor, lineHeight:'1.45', margin:'6px 16px 0' }}>{desc}</p>
+          <p style={{ fontSize:'12.5px', color:descColor, lineHeight:'1.45', margin:'4px 16px 0' }}>{desc}</p>
         )}
 
         {/* الموقع + رابط الخريطة */}
@@ -193,7 +193,7 @@ export default function MenuHeader({
           const mapsUrl = branch?.maps_url
           if (!addr && !mapsUrl) return null
           return (
-            <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'2px 16px 0', flexWrap:'wrap' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'1px 16px 0', flexWrap:'wrap' }}>
               {addr && (
                 <span style={{ fontSize:'12px', color:'#6B7280', display:'inline-flex', alignItems:'center', gap:'4px' }}>📍 {addr}</span>
               )}
@@ -208,7 +208,7 @@ export default function MenuHeader({
 
         {/* روابط التواصل + زر المسبّبات */}
         {(((restaurant.show_social_links ?? true) && restaurant.social_links && Object.values(restaurant.social_links).some(v => v)) || ((restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0)) && (
-          <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'4px 16px 0', flexWrap:'wrap' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'3px 16px 0', flexWrap:'wrap' }}>
             {(restaurant.show_social_links ?? true) && restaurant.social_links && ['instagram', 'whatsapp_social', 'snapchat', 'twitter', 'tiktok']
               .filter(key => restaurant.social_links[key])
               .map(key => {
@@ -229,7 +229,7 @@ export default function MenuHeader({
         )}
 
         {/* بطاقة الإحصائيات: الحالة · التجهيز · التوصيل */}
-        <div style={{ display:'flex', margin:'6px 14px 2px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'15px', padding:'7px 4px' }}>
+        <div style={{ display:'flex', margin:'5px 14px 2px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'15px', padding:'6px 4px' }}>
           {statCells.map((c, i) => (
             <div key={i} style={{ flex:1, textAlign:'center', borderRight: i > 0 ? '1px solid #E9ECF1' : 'none', padding:'0 4px' }}>
               <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'12.5px', color:c.color, whiteSpace:'nowrap' }}>{c.value}</div>
@@ -249,7 +249,7 @@ export default function MenuHeader({
               ? (isEn ? `Your points: ${balance} — ${Math.max(0, threshold - balance)} pts to your reward` : `نقاطك: ${balance} — باقي ${Math.max(0, threshold - balance)} نقطة على مكافأتك`)
               : (isEn ? `Your points: ${balance}` : `نقاطك: ${balance}`)
           return (
-            <div onClick={onShowOrders} style={{ margin:'0 14px 4px', background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'13px', padding:'8px 12px', display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
+            <div onClick={onShowOrders} style={{ margin:'0 14px 4px', background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'13px', padding:'6px 12px', display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
               <span style={{ fontSize:'15px' }}>🎁</span>
               <span style={{ flex:1, fontSize:'11.5px', fontWeight:'800', color:'#0F1117', fontFamily:'Cairo,sans-serif' }}>{text}</span>
               <span style={{ fontSize:'10px', fontWeight:'800', color:brandColor, whiteSpace:'nowrap' }}>{isEn ? 'Details ›' : 'التفاصيل ›'}</span>
