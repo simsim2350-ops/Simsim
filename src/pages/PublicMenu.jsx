@@ -35,7 +35,7 @@ function PublicMenuInner() {
   const {
     restaurant, branch, setBranch, branchList, branchPicked, setBranchPicked,
     categories, products, bestSellers, loading, notFound,
-    activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating,
+    activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
   } = useMenuData(slug, branchId)
   const { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer } = useActiveOrders(slug, t)
   const { cart, setCart, cartOpen, setCartOpen, addToCart, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount } = useCart(slug, t)
@@ -142,7 +142,11 @@ function PublicMenuInner() {
         brandColor={brandColor}
         isEn={isEn}
         t={t}
+        tx={tx}
         onChoose={chooseBranch}
+        products={products}
+        rating={rating}
+        loyaltyEnabled={loyaltyEnabled}
       />
     )
   }
