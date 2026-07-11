@@ -150,8 +150,9 @@ export default function MenuBody({
                 <div style={{ fontSize:'14px', fontWeight:'700', color:'#374151' }}>{t('noResults')}</div>
               </div>
             ) : (
-              <div className="sm-products" style={['grid','circles'].includes(layout)
-                ? { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }
+              <div className="sm-products" style={
+                ['grid','circles'].includes(layout) ? { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }
+                : layout === 'showcase' ? { display:'flex', flexDirection:'column', gap:'10px', padding:'0 16px' }
                 : { display:'flex', flexDirection:'column', gap:'1px', background:'#E5E7EB', borderRadius:'16px', overflow:'hidden' }
               }>
                 {allFiltered.map(prod => <ProductItem key={prod.id} {...itemProps(prod)} />)}
@@ -213,8 +214,9 @@ export default function MenuBody({
                 <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color:'#0F1117' }}>{tx(cat,'name')}</h2>
                 <span style={{ fontSize:'12px', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 8px', borderRadius:'100px' }}>{catProducts.length}</span>
               </div>
-              <div className="sm-products" style={['grid','circles'].includes(layout)
-                ? { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }
+              <div className="sm-products" style={
+                ['grid','circles'].includes(layout) ? { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }
+                : layout === 'showcase' ? { display:'flex', flexDirection:'column', gap:'10px', padding:'0 16px' }
                 : { display:'flex', flexDirection:'column', gap:'1px', background:'#F3F4F6' }
               }>
                 {catProducts.map(prod => (
