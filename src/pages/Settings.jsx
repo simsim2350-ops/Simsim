@@ -6,6 +6,7 @@ import { compressAndUploadImage } from '../lib/uploadImage'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { Accordion, AccordionItem } from '../components/Accordion'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 
 const BRAND_COLORS = ['#FF6B35','#E85A24','#10B981','#3B82F6','#8B5CF6','#EC4899','#F59E0B','#0F1117']
@@ -375,13 +376,6 @@ export default function Settings() {
                       </div>
                     </div>
 
-                    <div><label style={labelStyle}>الوصف</label>
-                      <textarea style={{ ...inputStyle, minHeight:'80px', resize:'vertical' }} value={restForm.description} onChange={e => setRestForm(f=>({...f,description:e.target.value}))} placeholder="وصف مطعمك..." />
-                    </div>
-                    <div><label style={{ ...labelStyle, color:'#6B7280' }}>🇬🇧 الوصف (إنجليزي) — اختياري</label>
-                      <textarea style={{ ...inputStyle, minHeight:'80px', resize:'vertical', direction:'ltr', textAlign:'left' }} value={restForm.description_en} onChange={e => setRestForm(f=>({...f,description_en:e.target.value}))} placeholder="Your restaurant description..." />
-                    </div>
-
                     <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:'12px' }}>
                       <div><label style={labelStyle}>رقم التواصل (واتساب) *</label>
                         <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} type="tel" value={restForm.phone} onChange={e => setRestForm(f=>({...f,phone:e.target.value}))} placeholder="9665XXXXXXXX" />
@@ -435,62 +429,60 @@ export default function Settings() {
                   </div>
                 </div>
 
-                {/* Menu card modularity — كل قسم في بطاقة المطعم يُظهَر أو يُخفى بمعزل عن وجود بياناته */}
-                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
-                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🎛️ عناصر بطاقة المطعم</div>
-                  <div style={{ padding:'6px 18px' }}>
-                    {[
-                      { key:'show_description', label:'الوصف' },
-                      { key:'show_social_links', label:'وسائل التواصل الاجتماعي' },
-                      { key:'show_allergens', label:'مسبّبات الحساسية' },
-                      { key:'show_hours', label:'حالة الفتح/ساعات العمل' },
-                      { key:'show_prep_time', label:'وقت التجهيز' },
-                    ].map((row, i, arr) => (
-                      <div key={row.key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 0', borderBottom: i < arr.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
-                        <span style={{ fontSize:'13.5px', fontWeight:'600' }}>{row.label}</span>
-                        <label style={{ position:'relative', width:'42px', height:'23px', cursor:'pointer', flexShrink:0 }}>
-                          <input type="checkbox" checked={restForm[row.key]} onChange={e => setRestForm(f=>({...f,[row.key]:e.target.checked}))} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
-                          <div style={{ position:'absolute', inset:0, background: restForm[row.key] ? '#10B981' : '#E5E7EB', borderRadius:'23px', transition:'0.3s' }}>
-                            <div style={{ position:'absolute', width:'17px', height:'17px', background:'white', borderRadius:'50%', top:'3px', left: restForm[row.key] ? '22px' : '3px', transition:'0.3s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
-                          </div>
-                        </label>
-                      </div>
-                    ))}
+                {/* عناصر بطاقة المطعم — Accordion يدمج مفتاح الإظهار مع محتواه (ADR-16) */}
+                <Accordion icon="🎛️" title="عناصر بطاقة المطعم">
+                  <div style={{ padding:'2px 4px 4px', fontSize:'11.5px', color:'#9CA3AF', margin:'8px 16px 0', lineHeight:'1.5' }}>
+                    كل عنصر: المفتاح يتحكّم بظهوره في بطاقة المنيو، ويُفتح لتحرير محتواه.
                   </div>
-                </div>
 
-                {/* Social links */}
-                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
-                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🔗 روابط التواصل الاجتماعي</div>
-                  <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:'12px' }}>
-                    {[
-                      { key:'instagram', icon:'📷', label:'إنستقرام', placeholder:'https://instagram.com/your_page' },
-                      { key:'whatsapp_social', icon:'💬', label:'واتساب', placeholder:'https://wa.me/9665XXXXXXXX' },
-                      { key:'snapchat', icon:'👻', label:'سناب شات', placeholder:'https://snapchat.com/add/your_username' },
-                      { key:'twitter', icon:'🐦', label:'تويتر / X', placeholder:'https://x.com/your_page' },
-                      { key:'tiktok', icon:'🎵', label:'تيك توك', placeholder:'https://tiktok.com/@your_page' },
-                    ].map(s => (
-                      <div key={s.key}>
-                        <label style={labelStyle}>{s.icon} {s.label}</label>
-                        <input
-                          style={{ ...inputStyle, direction:'ltr', textAlign:'left' }}
-                          value={restForm.social_links[s.key]}
-                          onChange={e => setRestForm(f => ({ ...f, social_links: { ...f.social_links, [s.key]: e.target.value } }))}
-                          placeholder={s.placeholder}
-                        />
-                      </div>
-                    ))}
-                    <div style={{ fontSize:'11px', color:'#9CA3AF' }}>اتركها فاضية لإخفاء أي منصة لا تستخدمها</div>
-                  </div>
-                </div>
-
-                {/* Allergens */}
-                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
-                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>⚠️ مسبّبات الحساسية</div>
-                  <div style={{ padding:'16px 18px' }}>
-                    <div style={{ fontSize:'12px', color:'#9CA3AF', marginBottom:'12px', lineHeight:'1.6' }}>
-                      حدّد المسبّبات الموجودة في أصنافك بشكل عام. تظهر هذه القائمة للعميل في المنيو العام عبر زر "مسبّبات الحساسية"
+                  {/* الوصف */}
+                  <AccordionItem
+                    title="الوصف"
+                    desc="نبذة تظهر أعلى بطاقة المطعم"
+                    toggle={{ checked: restForm.show_description, onChange: e => setRestForm(f=>({...f,show_description:e.target.checked})) }}
+                  >
+                    <div><label style={labelStyle}>الوصف</label>
+                      <textarea style={{ ...inputStyle, minHeight:'80px', resize:'vertical', marginTop:0 }} value={restForm.description} onChange={e => setRestForm(f=>({...f,description:e.target.value}))} placeholder="وصف مطعمك..." />
                     </div>
+                    <div style={{ marginTop:'12px' }}><label style={{ ...labelStyle, color:'#6B7280' }}>🇬🇧 الوصف (إنجليزي) — اختياري</label>
+                      <textarea style={{ ...inputStyle, minHeight:'80px', resize:'vertical', direction:'ltr', textAlign:'left', marginTop:0 }} value={restForm.description_en} onChange={e => setRestForm(f=>({...f,description_en:e.target.value}))} placeholder="Your restaurant description..." />
+                    </div>
+                  </AccordionItem>
+
+                  {/* وسائل التواصل */}
+                  <AccordionItem
+                    title="وسائل التواصل الاجتماعي"
+                    desc="روابط إنستقرام / واتساب / سناب / X / تيك توك"
+                    toggle={{ checked: restForm.show_social_links, onChange: e => setRestForm(f=>({...f,show_social_links:e.target.checked})) }}
+                  >
+                    <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+                      {[
+                        { key:'instagram', icon:'📷', label:'إنستقرام', placeholder:'https://instagram.com/your_page' },
+                        { key:'whatsapp_social', icon:'💬', label:'واتساب', placeholder:'https://wa.me/9665XXXXXXXX' },
+                        { key:'snapchat', icon:'👻', label:'سناب شات', placeholder:'https://snapchat.com/add/your_username' },
+                        { key:'twitter', icon:'🐦', label:'تويتر / X', placeholder:'https://x.com/your_page' },
+                        { key:'tiktok', icon:'🎵', label:'تيك توك', placeholder:'https://tiktok.com/@your_page' },
+                      ].map(s => (
+                        <div key={s.key}>
+                          <label style={labelStyle}>{s.icon} {s.label}</label>
+                          <input
+                            style={{ ...inputStyle, direction:'ltr', textAlign:'left', marginTop:0 }}
+                            value={restForm.social_links[s.key]}
+                            onChange={e => setRestForm(f => ({ ...f, social_links: { ...f.social_links, [s.key]: e.target.value } }))}
+                            placeholder={s.placeholder}
+                          />
+                        </div>
+                      ))}
+                      <div style={{ fontSize:'11px', color:'#9CA3AF' }}>اتركها فاضية لإخفاء أي منصة لا تستخدمها</div>
+                    </div>
+                  </AccordionItem>
+
+                  {/* مسبّبات الحساسية */}
+                  <AccordionItem
+                    title="مسبّبات الحساسية"
+                    desc="قائمة تظهر للعميل عبر زر في المنيو"
+                    toggle={{ checked: restForm.show_allergens, onChange: e => setRestForm(f=>({...f,show_allergens:e.target.checked})) }}
+                  >
                     <div style={{ display:'flex', flexDirection:'column', gap:'4px', marginBottom:'14px' }}>
                       {COMMON_ALLERGENS.map(a => {
                         const checked = restForm.allergens.some(x => x.label === a.label)
@@ -527,7 +519,7 @@ export default function Settings() {
                     <div style={{ display:'flex', gap:'8px', marginTop:'8px' }}>
                       <input
                         id="custom-allergen-input"
-                        style={{ ...inputStyle, flex:1 }}
+                        style={{ ...inputStyle, flex:1, marginTop:0 }}
                         placeholder="مسبّب آخر غير مذكور بالأعلى..."
                         onKeyDown={e => {
                           if (e.key === 'Enter') {
@@ -554,8 +546,25 @@ export default function Settings() {
                         إضافة
                       </button>
                     </div>
-                  </div>
-                </div>
+                  </AccordionItem>
+
+                  {/* حالة الفتح/الساعات — مفتاح فقط (تُدار من تبويب أوقات العمل) */}
+                  <AccordionItem
+                    title="حالة الفتح وساعات العمل"
+                    desc="تُدار من تبويب «أوقات العمل»"
+                    expandable={false}
+                    toggle={{ checked: restForm.show_hours, onChange: e => setRestForm(f=>({...f,show_hours:e.target.checked})) }}
+                  />
+
+                  {/* وقت التجهيز — مفتاح فقط (يُحسب تلقائياً) */}
+                  <AccordionItem
+                    title="وقت التجهيز"
+                    desc="يُحسب تلقائياً حسب الطلبات النشطة"
+                    expandable={false}
+                    last
+                    toggle={{ checked: restForm.show_prep_time, onChange: e => setRestForm(f=>({...f,show_prep_time:e.target.checked})) }}
+                  />
+                </Accordion>
 
                 {/* Menu layout */}
                 <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
