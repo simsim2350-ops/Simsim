@@ -1,5 +1,22 @@
 // دوال مساعدة نقية لمنيو الزبون — بلا React وبلا حالة
 
+// نسخ نص للحافظة — يدعم المتصفحات الحديثة، ويتراجع لطريقة textarea في السياقات غير الآمنة (http)
+export async function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text)
+    return
+  }
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.style.position = 'fixed'
+  textarea.style.opacity = '0'
+  document.body.appendChild(textarea)
+  textarea.focus()
+  textarea.select()
+  document.execCommand('copy')
+  document.body.removeChild(textarea)
+}
+
 // اسم الصنف داخل الطلب/السلة: يُطابق الصنف الحالي لجلب الترجمة، وإلا الاسم المخزّن
 export const makeItemName = (isEn, products) => (item) => {
   if (isEn && item?.id) {

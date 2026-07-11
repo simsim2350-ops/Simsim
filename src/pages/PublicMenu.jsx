@@ -219,6 +219,8 @@ function PublicMenuInner() {
         onChangeBranch={() => { setBranchPicked(false); window.scrollTo(0, 0) }}
         rating={rating}
         loyalty={loyalty}
+        banners={banners}
+        coupons={coupons}
       />
 
       {/* Category tabs + menu content */}
