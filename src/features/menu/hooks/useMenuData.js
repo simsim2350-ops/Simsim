@@ -15,6 +15,7 @@ export function useMenuData(slug, branchId) {
   const [activeCategory, setActiveCategory] = useState(null)
   const [restaurantActiveOrdersCount, setActiveOrdersCount] = useState(0)
   const [rating, setRating] = useState(null) // { avg, count } — متوسط تقييم المطعم للعرض العام
+  const [loyaltyEnabled, setLoyaltyEnabled] = useState(false) // هل برنامج الولاء مفعّل؟ (بلا حاجة لهوية الزبون — لعرض تشويقي عام)
   const restaurantLoadChannelRef = useRef(null)
 
   useEffect(() => {
@@ -75,6 +76,12 @@ export function useMenuData(slug, branchId) {
         }
       } catch { /* تجاهل — النجوم اختيارية */ }
 
+      // هل برنامج الولاء مفعّل؟ (لعرض تشويقي عام في صفحة اختيار الفرع، بلا حاجة لجوال الزبون)
+      try {
+        const { data: loy } = await supabase.from('loyalty_programs').select('enabled').eq('restaurant_id', rest.id).maybeSingle()
+        setLoyaltyEnabled(!!loy?.enabled)
+      } catch { /* تجاهل — التشويق اختياري */ }
+
       // Fetch categories & products
       const [{ data: cats }, { data: prods }] = await Promise.all([
         supabase.from('categories').select('*').eq('restaurant_id', rest.id).eq('is_visible', true).order('sort_order'),
@@ -121,6 +128,6 @@ export function useMenuData(slug, branchId) {
   return {
     restaurant, branch, setBranch, branchList, branchPicked, setBranchPicked,
     categories, products, bestSellers, loading, notFound,
-    activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating,
+    activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
   }
 }
