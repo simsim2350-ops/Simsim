@@ -11,13 +11,15 @@ export default function CartDrawer({
   orderNote, setOrderNote, tables = [],
   openStatus, placeOrder, submitting, removeFromCart, incrementCartItem, onDeleteItem, onEditItem, onClose,
   suggestions = [], onAddSuggestion, onOpenSuggestion, loyalty,
+  couponInput, setCouponInput, appliedCoupon, applyCoupon, removeCoupon, applyingCoupon, discountAmount = 0,
 }) {
   const suggestionBadge = {
     curated:    { label: t('reasonCurated'),    bg:'#FFF1E8', fg:'#C8481B' },
     category:   { label: t('reasonCategory'),   bg:'#EAF3FF', fg:'#1E5FBF' },
     bestseller: { label: t('reasonBestseller'), bg:'#FEF3C7', fg:'#92400E' },
   }
-  const finalTotal = cartTotal + (orderType === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0)
+  const discountedSubtotal = Math.max(0, cartTotal - discountAmount)
+  const finalTotal = discountedSubtotal + (orderType === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0)
   const canSubmit = openStatus.open && !submitting
   const loyaltyThreshold = loyalty?.reward_threshold || 0
   const loyaltyBalance = loyalty?.balance || 0
@@ -248,6 +250,37 @@ export default function CartDrawer({
               style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', minHeight:'60px', resize:'vertical' }}
             />
           </div>
+
+          {/* كوبون الخصم — اختياري */}
+          {applyCoupon && (
+            <div style={{ marginBottom:'12px' }}>
+              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>🎟️ {isEn ? 'Coupon code' : 'كود الخصم'}</label>
+              {appliedCoupon ? (
+                <div style={{ display:'flex', alignItems:'center', gap:'8px', background:'#F0FDF4', border:'1.5px solid #BBF7D0', borderRadius:'11px', padding:'10px 13px' }}>
+                  <span style={{ fontSize:'13px', fontWeight:'800', color:'#166534', direction:'ltr', flex:1 }}>✓ {appliedCoupon.code}</span>
+                  <button type="button" onClick={removeCoupon} style={{ border:'none', background:'none', color:'#B91C1C', fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>{isEn ? 'Remove' : 'إزالة'}</button>
+                </div>
+              ) : (
+                <div style={{ display:'flex', gap:'8px' }}>
+                  <input
+                    type="text"
+                    value={couponInput}
+                    onChange={e => setCouponInput(e.target.value.toUpperCase())}
+                    placeholder={isEn ? 'Enter code' : 'أدخل الكود'}
+                    style={{ flex:1, padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', direction:'ltr' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={applyCoupon}
+                    disabled={applyingCoupon || !couponInput.trim()}
+                    style={{ padding:'0 18px', borderRadius:'11px', border:'none', background: couponInput.trim() ? brandColor : '#E5E7EB', color: couponInput.trim() ? 'white' : '#9CA3AF', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor: couponInput.trim() ? 'pointer' : 'not-allowed' }}
+                  >
+                    {isEn ? 'Apply' : 'تطبيق'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* الملخص المالي — آخر ما يراه الزبون قبل زر التأكيد (الأسعار شاملة ض.ق.م 15%) */}
@@ -255,8 +288,13 @@ export default function CartDrawer({
           <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:'#9CA3AF', marginBottom:'4px' }}>
             <span>{t('totalVat')}</span><span>{cartTotal.toFixed(2)} ﷼</span>
           </div>
+          {appliedCoupon && discountAmount > 0 && (
+            <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:'#166534', fontWeight:'700', marginBottom:'4px' }}>
+              <span>🎟️ {appliedCoupon.code}</span><span>-{discountAmount.toFixed(2)} ﷼</span>
+            </div>
+          )}
           <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#9CA3AF', marginBottom: orderType === 'delivery' && restaurant?.delivery_fee > 0 ? '4px' : '8px' }}>
-            <span>{t('vatLine')}</span><span>{vatBreakdown(cartTotal).tax.toFixed(2)} ﷼</span>
+            <span>{t('vatLine')}</span><span>{vatBreakdown(discountedSubtotal).tax.toFixed(2)} ﷼</span>
           </div>
           {orderType === 'delivery' && Number(restaurant?.delivery_fee) > 0 && (
             <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:'#9CA3AF', marginBottom:'8px' }}>
@@ -265,7 +303,7 @@ export default function CartDrawer({
           )}
           <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', paddingTop:'8px', borderTop:'1px solid #E5E7EB' }}>
             <span>{t('total')}</span>
-            <span style={{ color:brandColor }}>{(cartTotal + (orderType === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0)).toFixed(2)} ﷼</span>
+            <span style={{ color:brandColor }}>{finalTotal.toFixed(2)} ﷼</span>
           </div>
 
           {!openStatus.open && (

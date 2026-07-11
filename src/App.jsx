@@ -21,6 +21,7 @@ const QRCodePage     = lazy(() => import('./pages/QRCode'))
 const Settings       = lazy(() => import('./pages/Settings'))
 const Analytics      = lazy(() => import('./pages/Analytics'))
 const Loyalty        = lazy(() => import('./pages/Loyalty'))
+const Marketing      = lazy(() => import('./pages/Marketing'))
 const Staff          = lazy(() => import('./pages/Staff'))
 const StaffLogin     = lazy(() => import('./pages/StaffLogin'))
 
@@ -98,6 +99,7 @@ export default function App() {
         <Route path="/settings"        element={<ProtectedRoute><RequirePage page="settings"><Settings /></RequirePage></ProtectedRoute>} />
         <Route path="/analytics"       element={<ProtectedRoute><RequirePage page="analytics"><Analytics /></RequirePage></ProtectedRoute>} />
         <Route path="/loyalty"         element={<ProtectedRoute><RequirePage page="loyalty"><Loyalty /></RequirePage></ProtectedRoute>} />
+        <Route path="/marketing"       element={<ProtectedRoute><RequirePage page="marketing"><Marketing /></RequirePage></ProtectedRoute>} />
         <Route path="/staff"           element={<ProtectedRoute><RequirePage page="staff"><Staff /></RequirePage></ProtectedRoute>} />
         <Route path="*"                element={<Navigate to="/login" replace />} />
       </Routes>

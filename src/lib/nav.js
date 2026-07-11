@@ -13,8 +13,9 @@ export const NAV_GROUPS = [
     { key: 'menu', icon: '📋', label: 'المنيو', path: '/menu' },
   ] },
   { label: 'العملاء', items: [
-    { key: 'customers', icon: '👥', label: 'العملاء',           path: '/customers' },
-    { key: 'loyalty',   icon: '🎁', label: 'الولاء والتقييمات', path: '/loyalty' },
+    { key: 'customers',  icon: '👥', label: 'العملاء',           path: '/customers' },
+    { key: 'loyalty',    icon: '🎁', label: 'الولاء والتقييمات', path: '/loyalty' },
+    { key: 'marketing',  icon: '📣', label: 'العروض والكوبونات', path: '/marketing' },
   ] },
   { label: 'الإعداد', items: [
     { key: 'branches', icon: '🏢', label: 'الفروع',    path: '/branches' },
