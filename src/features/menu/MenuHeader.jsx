@@ -94,14 +94,20 @@ export default function MenuHeader({
   const fadeDesc = fadeStyle(progress, 0.44, 0.64)      // الوصف + الموقع
 
   // الهوية (شعار + اسم + تقييم): لا تختفي أبداً — نفس العناصر، تتحرك بترانسفورم مستمر فقط (بلا opacity)
+  // المرجع (transformOrigin) عند الحافة العلوية بالضبط حتى لا يرتفع المحتوى فوق حافة البطاقة أثناء التصغير
+  // (كان `top right` سابقاً يسحب الاسم للأعلى تدريجياً حتى يخرج من حدود البطاقة — راجع فيديو الخلل)
   const identityT = clamp01(progress / 0.9)
   const identityStyle = {
-    transform: `translateY(${lerp(0, -3, identityT).toFixed(2)}px) scale(${lerp(1, 0.9, identityT).toFixed(3)})`,
-    transformOrigin: 'top right',
+    transform: `scale(${lerp(1, 0.92, identityT).toFixed(3)})`,
+    transformOrigin: 'top center',
   }
 
   return (
-    <div>
+    <>
+      {/* لماذا Fragment لا <div>: البطاقة sticky تبقى "ملتصقة" فقط بحدود أقرب حاوية أب لها —
+          لو غلّفنا هنا بـ div خاص بالهيدر (أقصر بكثير من الصفحة)، تنفصل البطاقة وتختفي بعد مسافة تمرير
+          قصيرة بدل أن تبقى ثابتة طوال الصفحة. بالـ Fragment، البطاقة تصبح شقيقة مباشرة لـ MenuBody
+          داخل نفس حاوية الصفحة الطويلة في PublicMenu، فتبقى ملتصقة حتى نهاية التمرير فعلياً. */}
       {/* ===== فاصل يحافظ على ارتفاع الصفحة مكان الهيرو (الهيرو نفسه fixed، خارج تدفّق المستند) ===== */}
       <div style={{ height:`${HERO_HEIGHT}px` }}/>
 
@@ -297,6 +303,6 @@ export default function MenuHeader({
         </div>
 
       </div>
-    </div>
+    </>
   )
 }
