@@ -40,28 +40,24 @@ export function useMenuData(slug, branchId) {
       if (error || !rest) { setNotFound(true); return }
       setRestaurant(rest)
 
-      // لو الرابط يحتوي معرّف فرع، نجلب بياناته لعرض اسمه وربط الطلب به
+      // نجلب كل الفروع النشطة دائماً (بغضّ النظر عن وجود فرع محدد بالرابط) — تلزم لعرض
+      // زر "تغيير" في الهيدر وصفحة "اختر فرعك" مهما كان الفرع الذي دخل منه العميل
+      const { data: brs } = await supabase
+        .from('branches')
+        .select('*')
+        .eq('restaurant_id', rest.id)
+        .eq('is_active', true)
+        .order('sort_order')
+      const list = brs || []
+      setBranchList(list)
+
       if (branchId) {
-        const { data: br } = await supabase
-          .from('branches')
-          .select('*')
-          .eq('id', branchId)
-          .eq('restaurant_id', rest.id)
-          .eq('is_active', true)
-          .single()
+        // الرابط يحتوي معرّف فرع: نحدّده من القائمة المجلوبة أعلاه لعرض اسمه وربط الطلب به
+        const br = list.find(b => b.id === branchId)
         if (br) setBranch(br)
         setBranchPicked(true) // الفرع محدد مسبقاً من الرابط، لا حاجة لصفحة الاختيار
       } else {
-        // لا يوجد فرع في الرابط: نجلب كل الفروع النشطة لعرض صفحة "اختر فرعك"
-        const { data: brs } = await supabase
-          .from('branches')
-          .select('*')
-          .eq('restaurant_id', rest.id)
-          .eq('is_active', true)
-          .order('sort_order')
-        const list = brs || []
-        setBranchList(list)
-        // نعرض صفحة الاختيار فقط لو فيه فرع نشط واحد على الأقل، وإلا نكمل مباشرة (الفرع الرئيسي)
+        // لا يوجد فرع في الرابط: نعرض صفحة الاختيار فقط لو فيه فرع نشط واحد على الأقل، وإلا نكمل مباشرة (الفرع الرئيسي)
         if (list.length === 0) setBranchPicked(true)
       }
 
