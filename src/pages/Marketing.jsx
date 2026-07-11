@@ -383,7 +383,7 @@ export default function Marketing() {
 
             <div style={{ marginBottom:'14px' }}>
               <label style={labelStyle}>الكود *</label>
-              <input style={{ ...inputStyle, direction:'ltr', textAlign:'left', textTransform:'uppercase' }} value={couponForm.code} onChange={e => setCouponForm(f=>({...f,code:e.target.value.toUpperCase()}))} placeholder="WELCOME15" />
+              <input style={{ ...inputStyle, direction:'ltr', textAlign:'left', textTransform:'uppercase' }} value={couponForm.code} onChange={e => setCouponForm(f=>({...f,code:e.target.value.toUpperCase()}))} placeholder="مثال: WELCOME15" />
             </div>
 
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'14px' }}>
