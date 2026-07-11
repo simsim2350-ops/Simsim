@@ -86,7 +86,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
     return (
       <div style={{ background:'white', borderRadius:'14px', overflow:'hidden', border:'1px solid #F0F0F0' }}>
         <div style={{ position:'relative' }}>
-          <div onClick={onAdd} style={{ width:'100%', aspectRatio:'1/1', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'52px', overflow:'hidden', cursor:'pointer' }}>
+          <div onClick={onAdd} style={{ width:'100%', aspectRatio:'4/3', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'52px', overflow:'hidden', cursor:'pointer' }}>
             {product.image_url
               ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
               : product.emoji}
