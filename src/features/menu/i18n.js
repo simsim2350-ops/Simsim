@@ -1,6 +1,7 @@
 // قاموس نصوص الواجهة الثابتة لمنيو الزبون (عربي/إنجليزي) — ADR-6
 export const TT = {
-  search:      { ar: 'ابحث في المنيو...', en: 'Search the menu...' },
+  search:      { ar: 'ابحث عن برجر، شاورما، قهوة...', en: 'Search for burger, shawarma, coffee...' },
+  recentSearches: { ar: 'بحثت عنه مؤخراً', en: 'Recent searches' },
   bestSellers: { ar: 'يعجب زبائننا 👌', en: 'Loved by our customers 👌' },
   mostOrdered: { ar: 'الأكثر طلباً 🔥', en: 'Most Ordered 🔥' },
   mostOrderedBadge: { ar: '🔥 الأكثر طلباً', en: '🔥 Most Ordered' },

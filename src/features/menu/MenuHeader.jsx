@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { SOCIAL_ICONS } from './SocialIcons'
 import { estimatedPrepTime } from './helpers'
 
@@ -15,19 +15,10 @@ export default function MenuHeader({
   restaurant, branch, brandColor, descColor, openStatus, activeOrdersCount,
   isEn, t, tx, toggleLang,
   hasOrders, liveOrdersCount, onShowOrders, onShowAllergens,
-  searchQuery, setSearchQuery,
+  onToggleSearch,
   hasBranches, onChangeBranch,
   rating, loyalty,
 }) {
-  // البحث مخفي افتراضياً — يفتح بزر عائم على الهيرو (يوفّر مساحة عمودية)
-  const [searchOpen, setSearchOpen] = useState(false)
-  const searchInputRef = useRef(null)
-  useEffect(() => { if (searchOpen) searchInputRef.current?.focus() }, [searchOpen])
-  const toggleSearch = () => {
-    if (searchOpen) { setSearchOpen(false); setSearchQuery('') }
-    else setSearchOpen(true)
-  }
-
   // Sticky Morph (مبدأ 6): صفّ الهوية (شعار+اسم+تقييم+حالة) عنصر sticky واحد يبقى مرئياً 100% دائماً
   //   بلا opacity/transform عليه إطلاقاً — لا يمكن أن يختفي. بقية المحتوى (وصف/تواصل/إحصائيات/ولاء)
   //   ينزلق طبيعياً خلف صفّ الهوية ويختفي بالتمرير (بلا حسابات ارتفاع هشّة).
@@ -99,9 +90,9 @@ export default function MenuHeader({
           {isEn ? 'ع' : 'EN'}
         </button>
 
-        {/* زر البحث — عائم بجانب زر اللغة (أفقياً)، يفتح/يغلق حقل البحث */}
-        <button onClick={toggleSearch} style={{ position:'absolute', top:'18px', left:'62px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background: searchOpen ? brandColor : 'rgba(255,255,255,0.95)', color: searchOpen ? 'white' : '#374151', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center' }}>
-          {searchOpen ? '✕' : '🔍'}
+        {/* زر البحث — عائم بجانب زر اللغة (أفقياً)، يفتح شاشة البحث المستقلة */}
+        <button onClick={onToggleSearch} aria-label={isEn ? 'Search' : 'بحث'} style={{ position:'absolute', top:'18px', left:'62px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', color:'#374151', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          🔍
         </button>
 
         {/* زر طلباتي — عائم بعداد حي */}
@@ -123,26 +114,6 @@ export default function MenuHeader({
         <div style={{ paddingTop:'6px' }}>
           {/* مقبض السحب */}
           <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 6px' }}/>
-
-          {/* حقل البحث — يظهر فقط عند فتحه من الزر العائم */}
-          {searchOpen && (
-            <div style={{ padding:'0 14px 10px' }}>
-              <div style={{ background:'#F8F9FB', borderRadius:'100px', border:`1.5px solid ${brandColor}55`, display:'flex', alignItems:'center', overflow:'hidden' }}>
-                <span style={{ padding:'9px 14px', fontSize:'15px', color:'#9CA3AF' }}>🔍</span>
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder={t('search')}
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  style={{ flex:1, padding:'9px 4px', border:'none', outline:'none', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'transparent', textAlign:'right' }}
-                />
-                {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} style={{ padding:'9px 14px', background:'none', border:'none', fontSize:'15px', cursor:'pointer', color:'#9CA3AF' }}>✕</button>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* الهوية: شعار + اسم + تقييم + حالة الفتح */}
           <div style={{ display:'flex', alignItems:'center', gap:'12px', padding:'0 16px 7px' }}>
@@ -289,6 +260,10 @@ export default function MenuHeader({
             )}
           </div>
         </div>
+        {/* زر البحث — متاح دائماً من الهيدر المصغّر الدائم، بغضّ النظر عن موضع التمرير */}
+        <button onClick={onToggleSearch} aria-label={isEn ? 'Search' : 'بحث'} style={{ flexShrink:0, width:'38px', height:'38px', borderRadius:'50%', border:'none', background:'#F3F4F6', color:'#374151', cursor:'pointer', fontSize:'15px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          🔍
+        </button>
         {hasOrders && (
           <button onClick={onShowOrders} aria-label={t('myOrders')} style={{ flexShrink:0, width:'38px', height:'38px', borderRadius:'50%', border:'none', background:`${brandColor}14`, color:brandColor, cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
             📋

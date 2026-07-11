@@ -5,7 +5,7 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 
 // جسم المنيو: شريط الأقسام (مع scroll-spy) + يعجب زبائننا (أفقي) + الأكثر طلباً (عمودي) + الأقسام
 export default function MenuBody({
-  categories, products, bestSellers, searchQuery,
+  categories, products, bestSellers,
   activeCategory, setActiveCategory,
   cart, addToCart, removeFromCart, onOpenProduct,
   brandColor, priceColor, descColor, isEn, t, tx, layout,
@@ -25,7 +25,7 @@ export default function MenuBody({
 
   // Scroll-spy: رصد القسم الظاهر حالياً أثناء التمرير، وتمييزه تلقائياً في شريط التبويبات + تمرير الشريط لإظهاره
   useEffect(() => {
-    if (searchQuery || categories.length === 0) return
+    if (categories.length === 0) return
 
     if (categoryObserverRef.current) categoryObserverRef.current.disconnect()
 
@@ -60,16 +60,10 @@ export default function MenuBody({
       clearTimeout(timer)
       observer.disconnect()
     }
-  }, [categories, searchQuery, bestSellers])
+  }, [categories, bestSellers])
 
   // Filter products
-  const filteredProducts = (catId) => {
-    let prods = products.filter(p => p.category_id === catId)
-    if (searchQuery) prods = products.filter(p => p.name.includes(searchQuery) || (p.description || '').includes(searchQuery))
-    return prods
-  }
-
-  const allFiltered = searchQuery ? products.filter(p => p.name.includes(searchQuery)) : []
+  const filteredProducts = (catId) => products.filter(p => p.category_id === catId)
 
   const itemProps = (prod) => ({
     product: prod,
@@ -82,30 +76,28 @@ export default function MenuBody({
   return (
     <>
       {/* Category tabs — نصية رفيعة بخط سفلي + زر ☰ لكل الأقسام */}
-      {!searchQuery && (
-        <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', alignItems:'center', padding:'0 4px', position:'sticky', top:'56px'/* =ارتفاع الهيدر المصغّر الدائم، ليلتصق أسفله لا خلفه */, zIndex:10, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
-          <button onClick={() => setCatsOpen(true)} aria-label="كل الأقسام" style={{ border:'none', background:'none', fontSize:'17px', color:'#374151', padding:'8px 10px', cursor:'pointer', flexShrink:0, lineHeight:1 }}>☰</button>
-          <div style={{ overflowX:'auto', display:'flex', flex:1 }}>
-            {categories.map(cat => (
-              <div
-                key={cat.id}
-                id={`tab-${cat.id}`}
-                onClick={() => goToCategory(cat.id)}
-                style={{
-                  padding:'11px 11px 9px', cursor:'pointer', flexShrink:0, whiteSpace:'nowrap',
-                  fontSize:'13px', fontFamily:'Cairo,sans-serif',
-                  fontWeight: activeCategory === cat.id ? '900' : '700',
-                  borderBottom: activeCategory === cat.id ? `2.5px solid ${brandColor}` : '2.5px solid transparent',
-                  color: activeCategory === cat.id ? '#0F1117' : '#9CA3AF',
-                  transition:'all 0.2s',
-                }}
-              >
-                {tx(cat,'name')}
-              </div>
-            ))}
-          </div>
+      <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', alignItems:'center', padding:'0 4px', position:'sticky', top:'56px'/* =ارتفاع الهيدر المصغّر الدائم، ليلتصق أسفله لا خلفه */, zIndex:10, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+        <button onClick={() => setCatsOpen(true)} aria-label="كل الأقسام" style={{ border:'none', background:'none', fontSize:'17px', color:'#374151', padding:'8px 10px', cursor:'pointer', flexShrink:0, lineHeight:1 }}>☰</button>
+        <div style={{ overflowX:'auto', display:'flex', flex:1 }}>
+          {categories.map(cat => (
+            <div
+              key={cat.id}
+              id={`tab-${cat.id}`}
+              onClick={() => goToCategory(cat.id)}
+              style={{
+                padding:'11px 11px 9px', cursor:'pointer', flexShrink:0, whiteSpace:'nowrap',
+                fontSize:'13px', fontFamily:'Cairo,sans-serif',
+                fontWeight: activeCategory === cat.id ? '900' : '700',
+                borderBottom: activeCategory === cat.id ? `2.5px solid ${brandColor}` : '2.5px solid transparent',
+                color: activeCategory === cat.id ? '#0F1117' : '#9CA3AF',
+                transition:'all 0.2s',
+              }}
+            >
+              {tx(cat,'name')}
+            </div>
+          ))}
         </div>
-      )}
+      </div>
 
       {/* قائمة كل الأقسام — تفتح من زر ☰ */}
       {catsOpen && (
@@ -138,31 +130,8 @@ export default function MenuBody({
       {/* Menu content */}
       <div style={{ padding:'0 0 100px' }}>
 
-        {/* Search results */}
-        {searchQuery && (
-          <div style={{ padding:'16px' }}>
-            <div style={{ fontSize:'13px', color:'#9CA3AF', marginBottom:'12px' }}>
-              {allFiltered.length} نتيجة لـ "{searchQuery}"
-            </div>
-            {allFiltered.length === 0 ? (
-              <div style={{ textAlign:'center', padding:'40px', color:'#9CA3AF' }}>
-                <div style={{ fontSize:'40px', opacity:0.3, marginBottom:'10px' }}>🔍</div>
-                <div style={{ fontSize:'14px', fontWeight:'700', color:'#374151' }}>{t('noResults')}</div>
-              </div>
-            ) : (
-              <div className="sm-products" style={
-                ['grid','circles'].includes(layout) ? { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }
-                : layout === 'showcase' ? { display:'flex', flexDirection:'column', gap:'10px', padding:'0 16px' }
-                : { display:'flex', flexDirection:'column', gap:'1px', background:'#E5E7EB', borderRadius:'16px', overflow:'hidden' }
-              }>
-                {allFiltered.map(prod => <ProductItem key={prod.id} {...itemProps(prod)} />)}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* يعجب زبائننا — تلقائية من المبيعات، شريط أفقي منزلق بـ4 أصناف */}
-        {!searchQuery && bestSellers.length > 0 && (
+        {bestSellers.length > 0 && (
           <div style={{ marginBottom:'10px' }}>
             <div style={{ padding:'16px 16px 10px' }}>
               <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color:'#0F1117', margin:0 }}>{t('bestSellers')}</h2>
@@ -184,7 +153,7 @@ export default function MenuBody({
         )}
 
         {/* الأكثر طلباً — اختيار صاحب المطعم (is_featured)، بطاقات مربعة دائماً (شبكة) بغضّ النظر عن تخطيط المطعم */}
-        {!searchQuery && mostOrdered.length > 0 && (
+        {mostOrdered.length > 0 && (
           <div style={{ marginBottom:'8px' }}>
             <div style={{ padding:'16px 16px 10px' }}>
               <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color:'#0F1117', margin:0 }}>{t('mostOrdered')}</h2>
@@ -198,7 +167,7 @@ export default function MenuBody({
         )}
 
         {/* Categories */}
-        {!searchQuery && categories.map(cat => {
+        {categories.map(cat => {
           const catProducts = filteredProducts(cat.id)
           if (catProducts.length === 0) return null
           return (
