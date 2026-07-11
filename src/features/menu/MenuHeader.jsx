@@ -114,7 +114,7 @@ export default function MenuHeader({
       </div>
 
       {/* ===== البطاقة العائمة فوق الهيرو (هوامش جانبية + زوايا مدوّرة) — تدفّق طبيعي، تنزلق للأعلى ===== */}
-      <div style={{ position:'relative', zIndex:10, margin:'-26px 16px 14px', background:'white', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
+      <div style={{ position:'relative', zIndex:10, margin:'-34px 16px 0', background:'white', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
 
         {/* صفّ الهوية — عنصر sticky يبقى مرئياً 100% دائماً (شعار + اسم + تقييم + حالة الفتح) =====
             هو نفسه «الهيدر المصغّر» عند الالتصاق. خلفية بيضاء معتمة ليختفي خلفه المحتوى الثانوي أثناء انزلاقه. */}
