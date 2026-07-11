@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
+import ErrBoundary from '../features/menu/ErrBoundary'
 
 function Spinner() {
   return (
@@ -29,7 +30,17 @@ function getTierBadge(orderCount) {
   return { key:'new', label:'🆕 جديد', bg:'#DBEAFE', color:'#1E40AF' }
 }
 
+// مصيدة أخطاء: أي خطأ وقت التشغيل يعرض رسالته بدل شاشة بيضاء فارغة على كامل التطبيق
+// (بلا هذه المصيدة، خطأ غير متوقّع أثناء العرض يُسقط الشجرة بأكملها بما فيها القائمة الجانبية)
 export default function Customers() {
+  return (
+    <ErrBoundary>
+      <CustomersInner />
+    </ErrBoundary>
+  )
+}
+
+function CustomersInner() {
   const navigate = useNavigate()
   const { restaurant, isOwner, membership } = useAuthStore()
   const branchLocked = !isOwner && membership?.branch_scope && membership.branch_scope !== 'all'
