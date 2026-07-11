@@ -81,7 +81,7 @@ export default function MenuBody({
     <>
       {/* Category tabs — نصية رفيعة بخط سفلي + زر ☰ لكل الأقسام */}
       {!searchQuery && (
-        <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', alignItems:'center', padding:'0 4px', position:'sticky', top:0, zIndex:10, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+        <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', alignItems:'center', padding:'0 4px', position:'sticky', top:'56px'/* =ارتفاع الهيدر المصغّر الدائم، ليلتصق أسفله لا خلفه */, zIndex:10, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
           <button onClick={() => setCatsOpen(true)} aria-label="كل الأقسام" style={{ border:'none', background:'none', fontSize:'17px', color:'#374151', padding:'8px 10px', cursor:'pointer', flexShrink:0, lineHeight:1 }}>☰</button>
           <div style={{ overflowX:'auto', display:'flex', flex:1 }}>
             {categories.map(cat => (

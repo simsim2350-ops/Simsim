@@ -44,7 +44,9 @@ export default function MenuHeader({
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
   const heroOpacity = 1 - clamp01((scrollY - 130) / 130) // يبقى كاملاً حتى 130px ثم يتلاشى بالكامل عند 260px
-  const stuck = scrollY > 148                             // البطاقة وصلت أعلى الشاشة والتصقت
+  // الهيدر المصغّر الدائم: عنصر منفصل (fixed) يظهر بتلاشٍ تماماً عندما ينزلق اسم البطاقة الحقيقي تحت أعلى الشاشة
+  // (نطاق 122→164 يطابق لحظة مرور اسم المطعم خلف شريط 56px العلوي، فلا يظهر الاسم مرّتين)
+  const compactT = clamp01((scrollY - 122) / 42)
 
   // قصّ الوصف عند الحد الأقصى
   const fullDesc = tx(restaurant, 'description')
@@ -116,15 +118,9 @@ export default function MenuHeader({
       {/* ===== البطاقة العائمة فوق الهيرو (هوامش جانبية + زوايا مدوّرة) — تدفّق طبيعي، تنزلق للأعلى ===== */}
       <div style={{ position:'relative', zIndex:10, margin:'-46px 16px 0', background:'white', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
 
-        {/* صفّ الهوية — عنصر sticky يبقى مرئياً 100% دائماً (شعار + اسم + تقييم + حالة الفتح) =====
-            هو نفسه «الهيدر المصغّر» عند الالتصاق. خلفية بيضاء معتمة ليختفي خلفه المحتوى الثانوي أثناء انزلاقه. */}
-        <div style={{
-          position:'sticky', top:0, zIndex:20,
-          background:'white',
-          borderRadius: stuck ? '16px 16px 0 0' : '22px 22px 0 0',
-          boxShadow: stuck ? '0 6px 16px rgba(15,17,23,0.10)' : 'none',
-          paddingTop:'8px',
-        }}>
+        {/* رأس البطاقة (شعار + اسم + تقييم + حالة الفتح) — تدفّق طبيعي ضمن البطاقة، ينزلق مع الصفحة.
+            التثبيت الدائم يتكفّل به «الهيدر المصغّر» المنفصل أدناه (لتفادي التعارض مع شريط الأقسام). */}
+        <div style={{ paddingTop:'8px' }}>
           {/* مقبض السحب */}
           <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 8px' }}/>
 
@@ -261,6 +257,46 @@ export default function MenuHeader({
           )
         })()}
 
+      </div>
+
+      {/* ===== الهيدر المصغّر الدائم — عنصر منفصل (fixed) دائم التركيب، يظهر بتلاشٍ عند نزول البطاقة =====
+          يبقى ثابتاً أعلى الشاشة طوال تصفّح المنتجات (فوق شريط الأقسام)، بلا unmount/remount فلا وميض. */}
+      <div style={{
+        position:'fixed', top:0, left:'50%',
+        transform:`translateX(-50%) translateY(${((1 - compactT) * -10).toFixed(1)}px)`,
+        width:'100%', maxWidth:'480px', height:'56px', zIndex:40,
+        background:'white', boxShadow:'0 4px 16px rgba(15,17,23,0.10)',
+        display:'flex', alignItems:'center', gap:'10px', padding:'0 16px',
+        opacity: compactT,
+        pointerEvents: compactT > 0.5 ? 'auto' : 'none',
+      }}>
+        <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'17px', flexShrink:0, overflow:'hidden', boxShadow:'0 3px 9px rgba(15,17,23,0.16)' }}>
+          {restaurant.logo_url
+            ? <img src={restaurant.logo_url} alt={restaurant.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+            : '🍕'}
+        </div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', color:'#0F1117', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{restaurant.name}</div>
+          <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'1px' }}>
+            {rating && (
+              <span style={{ fontSize:'10.5px', fontWeight:'800', color:'#B08A2E', whiteSpace:'nowrap' }}>★ {rating.avg}</span>
+            )}
+            {(restaurant?.show_hours ?? true) && (
+              <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'10.5px', fontWeight:'800', color: openStatus.open ? '#10B981' : '#EF4444', whiteSpace:'nowrap' }}>
+                <span style={{ width:'6px', height:'6px', borderRadius:'50%', background: openStatus.open ? '#10B981' : '#EF4444', flexShrink:0 }}/>
+                {openStatus.open ? t('openNow') : t('closedNow')}
+              </span>
+            )}
+          </div>
+        </div>
+        {hasOrders && (
+          <button onClick={onShowOrders} aria-label={t('myOrders')} style={{ flexShrink:0, width:'38px', height:'38px', borderRadius:'50%', border:'none', background:`${brandColor}14`, color:brandColor, cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
+            📋
+            {liveOrdersCount > 0 && (
+              <span style={{ position:'absolute', top:'-2px', right:'-2px', background:brandColor, color:'white', borderRadius:'100px', minWidth:'16px', height:'16px', fontSize:'10px', fontWeight:'800', display:'flex', alignItems:'center', justifyContent:'center', padding:'0 3px' }}>{liveOrdersCount}</span>
+            )}
+          </button>
+        )}
       </div>
     </>
   )
