@@ -66,7 +66,7 @@ export default function BranchPickerScreen({ restaurant, branchList, brandColor,
           isMain
           name="الفرع الرئيسي"
           address={restaurant.address}
-          mapsUrl={null}
+          mapsUrl={restaurant.maps_url}
           hours={restaurant.opening_hours}
           onPick={() => onChoose(null)}
         />

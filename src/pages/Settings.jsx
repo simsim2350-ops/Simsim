@@ -40,7 +40,7 @@ export default function Settings() {
   // Restaurant form
   const [restForm, setRestForm] = useState({
     name: '', slug: '', description: '', description_en: '',
-    phone: '', whatsapp_message: '', address: '', currency: 'SAR - ريال سعودي',
+    phone: '', whatsapp_message: '', address: '', maps_url: '', currency: 'SAR - ريال سعودي',
     delivery_enabled: false, delivery_fee: '',
     show_description: true, show_social_links: true, show_allergens: true, show_hours: true, show_prep_time: true,
     social_links: { instagram:'', whatsapp_social:'', snapchat:'', twitter:'', tiktok:'' },
@@ -106,6 +106,7 @@ export default function Settings() {
         cover_url: restaurant.cover_url || '',
         delivery_fee: restaurant.delivery_fee ?? '',
         address: restaurant.address || '',
+        maps_url: restaurant.maps_url || '',
         currency: restaurant.currency || 'SAR - ريال سعودي',
         brand_color: restaurant.brand_color || '#FF6B35',
         price_color: restaurant.price_color || '',
@@ -147,6 +148,7 @@ export default function Settings() {
           menu_layout: restForm.menu_layout,
           logo_url: restForm.logo_url,
           address: restForm.address,
+          maps_url: restForm.maps_url,
           currency: restForm.currency.split(' - ')[0],
           brand_color: restForm.brand_color,
           price_color: restForm.price_color || null,
@@ -402,6 +404,10 @@ export default function Settings() {
 
                     <div><label style={labelStyle}>العنوان</label>
                       <input style={inputStyle} value={restForm.address} onChange={e => setRestForm(f=>({...f,address:e.target.value}))} placeholder="الرياض، حي النزهة..." />
+                    </div>
+
+                    <div><label style={labelStyle}>رابط خرائط جوجل (اختياري)</label>
+                      <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} value={restForm.maps_url} onChange={e => setRestForm(f=>({...f,maps_url:e.target.value}))} placeholder="https://maps.google.com/..." />
                     </div>
 
                   </div>
