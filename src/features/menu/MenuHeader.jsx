@@ -99,8 +99,8 @@ export default function MenuHeader({
           {isEn ? 'ع' : 'EN'}
         </button>
 
-        {/* زر البحث — عائم تحت زر اللغة، يفتح/يغلق حقل البحث */}
-        <button onClick={toggleSearch} style={{ position:'absolute', top:'64px', left:'14px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background: searchOpen ? brandColor : 'rgba(255,255,255,0.95)', color: searchOpen ? 'white' : '#374151', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        {/* زر البحث — عائم بجانب زر اللغة (أفقياً)، يفتح/يغلق حقل البحث */}
+        <button onClick={toggleSearch} style={{ position:'absolute', top:'18px', left:'62px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background: searchOpen ? brandColor : 'rgba(255,255,255,0.95)', color: searchOpen ? 'white' : '#374151', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center' }}>
           {searchOpen ? '✕' : '🔍'}
         </button>
 
@@ -116,7 +116,7 @@ export default function MenuHeader({
       </div>
 
       {/* ===== البطاقة العائمة فوق الهيرو (هوامش جانبية + زوايا مدوّرة) — تدفّق طبيعي، تنزلق للأعلى ===== */}
-      <div style={{ position:'relative', zIndex:10, margin:'-56px 16px 0', background:'white', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
+      <div style={{ position:'relative', zIndex:10, margin:'-66px 16px 0', background:'white', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
 
         {/* رأس البطاقة (شعار + اسم + تقييم + حالة الفتح) — تدفّق طبيعي ضمن البطاقة، ينزلق مع الصفحة.
             التثبيت الدائم يتكفّل به «الهيدر المصغّر» المنفصل أدناه (لتفادي التعارض مع شريط الأقسام). */}
