@@ -137,12 +137,12 @@ export default function Menu() {
       setBranches(list)
       setCurrentBranchId(prev => prev || list.find(b => b.is_primary)?.id || list[0]?.id || null)
     })
-    loadCartWide()
   }, [restaurant])
 
   useEffect(() => {
     if (!currentBranchId) return
     fetchAll()
+    loadCartWide()
   }, [currentBranchId])
 
   // مزامنة التبويب عند التنقل من السايدبار (الأصناف/الأقسام)
@@ -373,7 +373,7 @@ export default function Menu() {
   // ===== قائمة اقتراحات السلة العامة (cart_wide_recommendations) — مستقلة عن قواعد الأصناف الفردية =====
   const loadCartWide = async () => {
     try {
-      setCartWideList(await fetchCartWideList(restaurant.id))
+      setCartWideList(await fetchCartWideList(restaurant.id, currentBranchId))
     } catch (err) {
       toast.error(err.message)
     }
@@ -381,7 +381,7 @@ export default function Menu() {
 
   const addCartWide = async (product) => {
     try {
-      await addCartWideItem(restaurant.id, product.id, cartWideList.length)
+      await addCartWideItem(restaurant.id, currentBranchId, product.id, cartWideList.length)
       setCwSearch('')
       loadCartWide()
     } catch (err) {

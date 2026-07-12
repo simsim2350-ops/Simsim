@@ -49,7 +49,7 @@ function PublicMenuInner() {
   const loyalty = useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone })
   const { tables } = useTables(restaurant)
   const recommendationsMap = useRecommendationRules(restaurant)
-  const cartWideIds = useCartWideIds(restaurant)
+  const cartWideIds = useCartWideIds(restaurant, branch)
   const { reviewedIds, reviewDraft, setDraft, submitReview, submittingReview } = useReviews({ slug, restaurant, branch, t })
 
   // حالة عرض محلية للصفحة فقط

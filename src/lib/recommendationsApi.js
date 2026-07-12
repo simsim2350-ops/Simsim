@@ -53,21 +53,22 @@ export async function fetchActiveRecommendationsMap(restaurantId) {
 
 // ===== قائمة اقتراحات السلة العامة (cart_wide_recommendations) — مستقلة تماماً عن قواعد الأصناف الفردية =====
 
-// القائمة كاملة (لوحة التحكم) — مع بيانات الصنف للعرض
-export async function fetchCartWideList(restaurantId) {
+// القائمة كاملة (لوحة التحكم) — مع بيانات الصنف للعرض، مفلترة بالفرع الحالي
+export async function fetchCartWideList(restaurantId, branchId) {
   const { data, error } = await supabase
     .from('cart_wide_recommendations')
     .select('id, priority, is_active, product:products(id, name, name_en, emoji, image_url, price)')
     .eq('restaurant_id', restaurantId)
+    .eq('branch_id', branchId)
     .order('priority')
   if (error) throw error
   return data || []
 }
 
-export async function addCartWideItem(restaurantId, productId, priority = 0) {
+export async function addCartWideItem(restaurantId, branchId, productId, priority = 0) {
   const { data, error } = await supabase
     .from('cart_wide_recommendations')
-    .insert({ restaurant_id: restaurantId, product_id: productId, priority })
+    .insert({ restaurant_id: restaurantId, branch_id: branchId, product_id: productId, priority })
     .select()
     .single()
   if (error) throw error
@@ -89,12 +90,13 @@ export async function toggleCartWideActive(id, isActive) {
   if (error) throw error
 }
 
-// معرّفات الأصناف المفعّلة فقط (المنيو العام) — تُحمَّل مرة واحدة مع فتح المنيو، بترتيب الأولوية
-export async function fetchActiveCartWideIds(restaurantId) {
+// معرّفات الأصناف المفعّلة فقط (المنيو العام) — تُحمَّل مرة واحدة مع فتح المنيو، بترتيب الأولوية، لفرع محدد
+export async function fetchActiveCartWideIds(restaurantId, branchId) {
   const { data, error } = await supabase
     .from('cart_wide_recommendations')
     .select('product_id')
     .eq('restaurant_id', restaurantId)
+    .eq('branch_id', branchId)
     .eq('is_active', true)
     .order('priority')
   if (error) throw error
