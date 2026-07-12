@@ -31,7 +31,10 @@ const toEditorHours = (oh) => (Array.isArray(oh) && oh.length === 7)
   ? oh.map((h, i) => ({ day: DAY_LABELS[i], open: !!h.open, from: h.from || '09:00', to: h.to || '23:00' }))
   : defaultHours()
 
-const EMPTY_FORM = { name:'', name_en:'', address:'', address_en:'', phone:'', maps_url:'', is_active:true, hours: defaultHours() }
+const EMPTY_FORM = {
+  name:'', name_en:'', address:'', address_en:'', phone:'', maps_url:'', is_active:true, hours: defaultHours(),
+  deliveryOverride:false, delivery_enabled:false, delivery_fee:'', takeaway_enabled:true,
+}
 
 export default function Branches() {
   const navigate = useNavigate()
@@ -77,6 +80,10 @@ export default function Branches() {
       maps_url: branch.maps_url || '',
       is_active: branch.is_active,
       hours: toEditorHours(branch.opening_hours),
+      deliveryOverride: branch.delivery_enabled != null,
+      delivery_enabled: branch.delivery_enabled ?? false,
+      delivery_fee: branch.delivery_fee != null ? String(branch.delivery_fee) : '',
+      takeaway_enabled: branch.takeaway_enabled ?? true,
     })
     setModalOpen(true)
   }
@@ -87,6 +94,9 @@ export default function Branches() {
 
   const saveBranch = async () => {
     if (!form.name.trim()) { toast.error('أدخل اسم الفرع'); return }
+    const deliveryFields = form.deliveryOverride
+      ? { delivery_enabled: form.delivery_enabled, delivery_fee: Number(form.delivery_fee) || 0 }
+      : { delivery_enabled: null, delivery_fee: null }
     setSaving(true)
     try {
       if (editingBranch) {
@@ -95,6 +105,7 @@ export default function Branches() {
           address: form.address, address_en: form.address_en || null,
           phone: form.phone, maps_url: form.maps_url, is_active: form.is_active,
           opening_hours: form.hours,
+          ...deliveryFields, takeaway_enabled: form.takeaway_enabled,
         })
         toast.success('تم تحديث الفرع ✅')
       } else {
@@ -104,6 +115,7 @@ export default function Branches() {
           address: form.address, address_en: form.address_en || null,
           phone: form.phone, maps_url: form.maps_url, is_active: form.is_active,
           opening_hours: form.hours,
+          ...deliveryFields, takeaway_enabled: form.takeaway_enabled,
           sort_order: branches.length,
         })
         // نسخ منيو الفرع الأساسي بالكامل — نسخة مستقلة قابلة للتعديل بحرية من الآن
@@ -140,6 +152,12 @@ export default function Branches() {
     await updateBranch(branch.id, { is_active: !branch.is_active })
     loadBranches()
     toast.success(branch.is_active ? 'تم تعطيل الفرع 🚫' : 'تم تفعيل الفرع ✅')
+  }
+
+  const togglePaused = async (branch) => {
+    await updateBranch(branch.id, { is_paused: !branch.is_paused })
+    loadBranches()
+    toast.success(branch.is_paused ? 'تم إلغاء الإغلاق المؤقت ✅' : 'تم إغلاق الفرع مؤقتاً 🚫')
   }
 
   const branchMenuURL = (branch) => restaurant
@@ -198,6 +216,7 @@ export default function Branches() {
                         <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px' }}>{branch.name}</span>
                         {branch.is_primary && <span style={{ fontSize:'10px', fontWeight:'700', color:'#C2410C', background:'#FFEDD5', padding:'2px 7px', borderRadius:'100px' }}>الفرع الرئيسي</span>}
                         {!branch.is_active && <span style={{ fontSize:'10px', fontWeight:'700', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 7px', borderRadius:'100px' }}>معطّل</span>}
+                        {branch.is_paused && <span style={{ fontSize:'10px', fontWeight:'700', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>مغلق مؤقتاً</span>}
                       </div>
                       {branch.address && <div style={{ fontSize:'12px', color:'#9CA3AF' }}>📍 {branch.address}</div>}
                     </div>
@@ -207,6 +226,9 @@ export default function Branches() {
                           {branch.is_active ? '👁️' : '🚫'}
                         </button>
                       )}
+                      <button onClick={() => togglePaused(branch)} style={{ padding:'5px 8px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background: branch.is_paused ? '#FEF3C7' : '#F3F4F6', color: branch.is_paused ? '#92400E' : '#6B7280', fontSize:'11px', fontWeight:'700', cursor:'pointer' }} title="إغلاق مؤقت فوري">
+                        {branch.is_paused ? '▶️' : '⏸️'}
+                      </button>
                       <button onClick={() => openEdit(branch)} style={{ width:'30px', height:'30px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', cursor:'pointer', fontSize:'13px' }}>✏️</button>
                       {!branch.is_primary && (
                         <button onClick={() => setConfirmDelete(branch)} style={{ width:'30px', height:'30px', borderRadius:'8px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'13px' }}>🗑️</button>
@@ -288,6 +310,50 @@ export default function Branches() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            <div style={{ marginBottom:'18px', padding:'12px 14px', background:'#F8F9FB', borderRadius:'11px' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: form.deliveryOverride ? '12px' : 0 }}>
+                <span style={{ fontSize:'13px', fontWeight:'700' }}>🛵 تخصيص إعداد التوصيل لهذا الفرع</span>
+                <label style={{ position:'relative', width:'46px', height:'25px', cursor:'pointer', flexShrink:0 }}>
+                  <input type="checkbox" checked={form.deliveryOverride} onChange={e => setForm(f=>({...f,deliveryOverride:e.target.checked}))} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
+                  <div style={{ position:'absolute', inset:0, background: form.deliveryOverride ? '#10B981' : '#E5E7EB', borderRadius:'26px', transition:'0.3s' }}>
+                    <div style={{ position:'absolute', width:'19px', height:'19px', background:'white', borderRadius:'50%', top:'3px', left: form.deliveryOverride ? '24px' : '3px', transition:'0.3s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
+                  </div>
+                </label>
+              </div>
+              {!form.deliveryOverride && (
+                <div style={{ fontSize:'11.5px', color:'#9CA3AF' }}>يرث هذا الفرع إعداد التوصيل من إعدادات المطعم العامة.</div>
+              )}
+              {form.deliveryOverride && (
+                <>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'10px' }}>
+                    <span style={{ fontSize:'13px' }}>تفعيل التوصيل لهذا الفرع</span>
+                    <label style={{ position:'relative', width:'40px', height:'22px', cursor:'pointer', flexShrink:0 }}>
+                      <input type="checkbox" checked={form.delivery_enabled} onChange={e => setForm(f=>({...f,delivery_enabled:e.target.checked}))} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
+                      <div style={{ position:'absolute', inset:0, background: form.delivery_enabled ? '#10B981' : '#E5E7EB', borderRadius:'22px', transition:'0.3s' }}>
+                        <div style={{ position:'absolute', width:'16px', height:'16px', background:'white', borderRadius:'50%', top:'3px', left: form.delivery_enabled ? '21px' : '3px', transition:'0.3s', boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                      </div>
+                    </label>
+                  </div>
+                  {form.delivery_enabled && (
+                    <div>
+                      <label style={{ ...labelStyle, color:'#6B7280' }}>رسوم التوصيل (﷼)</label>
+                      <input type="number" min="0" step="0.5" style={inputStyle} value={form.delivery_fee} onChange={e => setForm(f=>({...f,delivery_fee:e.target.value}))} placeholder="0" />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'18px', padding:'12px 14px', background:'#F8F9FB', borderRadius:'11px' }}>
+              <span style={{ fontSize:'13px', fontWeight:'700' }}>🥡 السماح بطلبات الاستلام لهذا الفرع</span>
+              <label style={{ position:'relative', width:'46px', height:'25px', cursor:'pointer', flexShrink:0 }}>
+                <input type="checkbox" checked={form.takeaway_enabled} onChange={e => setForm(f=>({...f,takeaway_enabled:e.target.checked}))} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
+                <div style={{ position:'absolute', inset:0, background: form.takeaway_enabled ? '#10B981' : '#E5E7EB', borderRadius:'26px', transition:'0.3s' }}>
+                  <div style={{ position:'absolute', width:'19px', height:'19px', background:'white', borderRadius:'50%', top:'3px', left: form.takeaway_enabled ? '24px' : '3px', transition:'0.3s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
+                </div>
+              </label>
             </div>
 
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px', padding:'12px 14px', background:'#F8F9FB', borderRadius:'11px' }}>

@@ -106,3 +106,18 @@ export function computeOpenStatus(hours) {
 
   return { open, unknown: false, todayText, nextText }
 }
+
+// حالة الفتح الفعلية للفرع: الإغلاق المؤقت (is_paused) يتفوّق فوراً على جدول الساعات الأسبوعي
+export function computeBranchOpenStatus(branch) {
+  if (branch?.is_paused) {
+    return { open: false, unknown: false, todayText: '', nextText: 'مغلق مؤقتاً من صاحب المطعم' }
+  }
+  return computeOpenStatus(branch?.opening_hours)
+}
+
+// إعدادات التوصيل الفعلية: الفرع يرث من المطعم إن لم يُخصَّص له إعداد مستقل (null = وراثة)
+export function effectiveDeliverySettings(branch, restaurant) {
+  const enabled = branch?.delivery_enabled ?? restaurant?.delivery_enabled ?? false
+  const fee = branch?.delivery_fee ?? restaurant?.delivery_fee ?? 0
+  return { enabled, fee }
+}

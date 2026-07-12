@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../../../lib/supabase'
 import { vatBreakdown } from '../../../lib/pricing'
-import { computeOpenStatus } from '../helpers'
+import { computeBranchOpenStatus, effectiveDeliverySettings } from '../helpers'
 
 // بيانات نموذج الطلب + إنشاء الطلب في قاعدة البيانات (ADR-1: الأسعار شاملة الضريبة، تُفكّ للخلف)
 export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, appliedCoupon, discountAmount = 0, removeCoupon }) {
@@ -21,8 +21,8 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
   const placeOrder = async () => {
     if (submitting) return // حارس: لا نرسل الطلب مرتين
     if (cart.length === 0) { toast.error(t('tCartEmpty')); return }
-    // منع الطلب وقت الإغلاق حسب أوقات الفرع (كل فرع ساعاته المستقلة)
-    const openStatus = computeOpenStatus(branch?.opening_hours)
+    // منع الطلب وقت الإغلاق حسب أوقات الفرع (كل فرع ساعاته المستقلة، والإغلاق المؤقت يتفوّق فوراً)
+    const openStatus = computeBranchOpenStatus(branch)
     if (!openStatus.open) {
       toast.error(openStatus.nextText ? `${t('closedTitle')} — ${openStatus.nextText}` : t('tClosed'))
       return
@@ -43,7 +43,7 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
       selectedOptions: i.selectedOptions || [],
     }))
 
-    const deliveryFee = orderType === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0
+    const deliveryFee = orderType === 'delivery' ? (Number(effectiveDeliverySettings(branch, restaurant).fee) || 0) : 0
     // الخصم يُطبَّق على المجموع الفرعي قبل رسوم التوصيل (الكوبون لا يخفّض رسوم التوصيل)
     const discountedSubtotal = Math.max(0, cartTotal - discountAmount)
     // الأسعار المعروضة شاملة ض.ق.م 15% — نفكّ الضريبة للخلف (lib/pricing)، محسوبة بعد الخصم

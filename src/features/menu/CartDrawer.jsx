@@ -9,7 +9,7 @@ export default function CartDrawer({
   customerName, setCustomerName, customerPhone, setCustomerPhone,
   tableNumber, setTableNumber, deliveryAddress, setDeliveryAddress,
   orderNote, setOrderNote, tables = [],
-  openStatus, placeOrder, submitting, removeFromCart, incrementCartItem, onDeleteItem, onEditItem, onClose,
+  openStatus, deliveryEnabled, deliveryFee, takeawayEnabled = true, placeOrder, submitting, removeFromCart, incrementCartItem, onDeleteItem, onEditItem, onClose,
   suggestions = [], onAddSuggestion, onOpenSuggestion, loyalty,
   couponInput, setCouponInput, appliedCoupon, applyCoupon, removeCoupon, applyingCoupon, discountAmount = 0,
 }) {
@@ -19,7 +19,7 @@ export default function CartDrawer({
     bestseller: { label: t('reasonBestseller'), bg:'#FEF3C7', fg:'#92400E' },
   }
   const discountedSubtotal = Math.max(0, cartTotal - discountAmount)
-  const finalTotal = discountedSubtotal + (orderType === 'delivery' ? (Number(restaurant.delivery_fee) || 0) : 0)
+  const finalTotal = discountedSubtotal + (orderType === 'delivery' ? (Number(deliveryFee) || 0) : 0)
   const canSubmit = openStatus.open && !submitting
   const loyaltyThreshold = loyalty?.reward_threshold || 0
   const loyaltyBalance = loyalty?.balance || 0
@@ -148,11 +148,11 @@ export default function CartDrawer({
           {/* Order type */}
           <div style={{ marginBottom:'14px' }}>
             <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px' }}>{t('orderTypeR')} *</label>
-            <div style={{ display:'grid', gridTemplateColumns: restaurant?.delivery_enabled ? 'repeat(3,1fr)' : 'repeat(2,1fr)', gap:'8px' }}>
+            <div style={{ display:'grid', gridTemplateColumns: `repeat(${1 + (takeawayEnabled ? 1 : 0) + (deliveryEnabled ? 1 : 0)},1fr)`, gap:'8px' }}>
               {[
                 { key:'dine_in', icon:'🪑', label:t('dineIn') },
-                { key:'takeaway', icon:'🥡', label:t('takeaway2') },
-                ...(restaurant?.delivery_enabled ? [{ key:'delivery', icon:'🛵', label:t('deliveryT') }] : []),
+                ...(takeawayEnabled ? [{ key:'takeaway', icon:'🥡', label:t('takeaway2') }] : []),
+                ...(deliveryEnabled ? [{ key:'delivery', icon:'🛵', label:t('deliveryT') }] : []),
               ].map(opt => (
                 <button
                   type="button"
@@ -171,8 +171,8 @@ export default function CartDrawer({
                 </button>
               ))}
             </div>
-            {orderType === 'delivery' && restaurant?.delivery_fee > 0 && (
-              <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>+ {Number(restaurant.delivery_fee).toFixed(2)} ﷼ {t('feeSuffix')}</div>
+            {orderType === 'delivery' && deliveryFee > 0 && (
+              <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>+ {Number(deliveryFee).toFixed(2)} ﷼ {t('feeSuffix')}</div>
             )}
           </div>
 
@@ -293,12 +293,12 @@ export default function CartDrawer({
               <span>🎟️ {appliedCoupon.code}</span><span>-{discountAmount.toFixed(2)} ﷼</span>
             </div>
           )}
-          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#9CA3AF', marginBottom: orderType === 'delivery' && restaurant?.delivery_fee > 0 ? '4px' : '8px' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#9CA3AF', marginBottom: orderType === 'delivery' && Number(deliveryFee) > 0 ? '4px' : '8px' }}>
             <span>{t('vatLine')}</span><span>{vatBreakdown(discountedSubtotal).tax.toFixed(2)} ﷼</span>
           </div>
-          {orderType === 'delivery' && Number(restaurant?.delivery_fee) > 0 && (
+          {orderType === 'delivery' && Number(deliveryFee) > 0 && (
             <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:'#9CA3AF', marginBottom:'8px' }}>
-              <span>{t('deliveryFee')}</span><span>{Number(restaurant.delivery_fee).toFixed(2)} ﷼</span>
+              <span>{t('deliveryFee')}</span><span>{Number(deliveryFee).toFixed(2)} ﷼</span>
             </div>
           )}
           <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', paddingTop:'8px', borderTop:'1px solid #E5E7EB' }}>
