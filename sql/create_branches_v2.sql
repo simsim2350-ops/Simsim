@@ -57,7 +57,7 @@ insert into public.branches (restaurant_id, is_primary, name, name_en, address, 
 select
   r.id, true,
   'الفرع الرئيسي', 'Main Branch',
-  r.address, r.address_en, r.phone, r.maps_url, r.opening_hours,
+  r.address, null, r.phone, r.maps_url, r.opening_hours,
   true, 0
 from public.restaurants r
 where not exists (select 1 from public.branches b where b.restaurant_id = r.id and b.is_primary);
