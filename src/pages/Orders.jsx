@@ -162,7 +162,7 @@ export default function Orders() {
     } catch (err) { console.error('Sound play failed:', err) }
   }
 
-  // نغمة واحدة مختلفة عن صوت الطلب الجديد (نغمتين تصاعديتين) — يميّزها الكاشير بالسمع بلا نظر للشاشة
+  // صفّارتان بنفس النغمة (إيقاع مختلف عن صوت الطلب الجديد التصاعدي) — نفس آلية playNewOrderSound المُثبَتة حرفياً
   const playReadySound = () => {
     if (mutedRef.current) return
     try {
@@ -170,14 +170,17 @@ export default function Orders() {
       const ctx = audioCtxRef.current || new AudioCtx()
       audioCtxRef.current = ctx
       if (ctx.state === 'suspended') ctx.resume()
-      const osc = ctx.createOscillator(); const gain = ctx.createGain()
-      osc.type = 'sine'; osc.frequency.value = 1046
+      const playTone = (freq, startTime, duration) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain()
+        osc.type = 'sine'; osc.frequency.value = freq
+        gain.gain.setValueAtTime(0.0001, startTime)
+        gain.gain.exponentialRampToValueAtTime(0.3, startTime + 0.02)
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration)
+        osc.connect(gain); gain.connect(ctx.destination)
+        osc.start(startTime); osc.stop(startTime + duration)
+      }
       const t = ctx.currentTime
-      gain.gain.setValueAtTime(0.0001, t)
-      gain.gain.exponentialRampToValueAtTime(0.3, t + 0.02)
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.25)
-      osc.connect(gain); gain.connect(ctx.destination)
-      osc.start(t); osc.stop(t + 0.25)
+      playTone(1046, t, 0.14); playTone(1046, t + 0.2, 0.14)
     } catch (err) { console.error('Sound play failed:', err) }
   }
 
