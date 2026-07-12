@@ -23,18 +23,17 @@ import SearchOverlay from '../features/menu/SearchOverlay'
 import ProductModal from '../features/menu/ProductModal'
 import CartDrawer from '../features/menu/CartDrawer'
 import AllergensModal from '../features/menu/AllergensModal'
-import BranchPickerScreen from '../features/menu/BranchPickerScreen'
 import OrdersScreen from '../features/menu/OrdersScreen'
 
 function PublicMenuInner() {
   const { slug } = useParams()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const branchId = searchParams.get('branch')
 
   // ===== الحالة عبر الـ hooks (features/menu/hooks) =====
   const { isEn, toggleLang, t, tx } = useLang()
   const {
-    restaurant, branch, setBranch, branchList, branchPicked, setBranchPicked,
+    restaurant, branch,
     categories, products, bestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
     banners, coupons,
@@ -124,38 +123,6 @@ function PublicMenuInner() {
     </div>
   )
 
-  // ===== صفحة "اختر فرعك" — تظهر لو فيه فروع نشطة ولم يُحدَّد فرع في الرابط =====
-  const chooseBranch = (b) => {
-    if (b) {
-      setBranch(b)
-      setSearchParams({ branch: b.id })
-    } else {
-      setBranch(null)
-      setSearchParams({})
-    }
-    setBranchPicked(true)
-    window.scrollTo(0, 0)
-  }
-
-  if (!branchPicked && branchList.length > 0) {
-    return (
-      <BranchPickerScreen
-        restaurant={restaurant}
-        branchList={branchList}
-        brandColor={brandColor}
-        isEn={isEn}
-        t={t}
-        tx={tx}
-        onChoose={chooseBranch}
-        products={products}
-        rating={rating}
-        loyaltyEnabled={loyaltyEnabled}
-        banners={banners}
-        coupons={coupons}
-      />
-    )
-  }
-
   // Order placed / tracking screen — يعرض كل الطلبات النشطة، الأحدث أولاً
   if (orderPlaced) return (
     <OrdersScreen
@@ -215,8 +182,6 @@ function PublicMenuInner() {
         onShowOrders={() => setOrderPlaced(true)}
         onShowAllergens={() => setShowAllergensModal(true)}
         onToggleSearch={() => setSearchOpen(true)}
-        hasBranches={branchList.length > 0}
-        onChangeBranch={() => { setBranchPicked(false); window.scrollTo(0, 0) }}
         rating={rating}
         loyalty={loyalty}
         banners={banners}

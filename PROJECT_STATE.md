@@ -24,7 +24,7 @@ src/
   store/authStore
   features/menu/               ← منيو الزبون مفكّك بالكامل:
       MenuHeader, MenuBody, ProductItem, HProductCard (بطاقة أفقية),
-      ProductModal, CartDrawer, AllergensModal, BranchPickerScreen, MenuSkeleton,
+      ProductModal, CartDrawer, AllergensModal, MenuSkeleton,
       SocialIcons, ErrBoundary, i18n, whatsapp, helpers
     features/menu/ (شاشة طلباتي — ADR-11): OrdersScreen (تجميع), OrdersHeader (KPIs),
       LoyaltyCard, OrderCardActive, OrderCardCollapsed, OrderItemRow, EmptyOrders
