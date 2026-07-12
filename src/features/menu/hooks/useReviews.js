@@ -3,7 +3,7 @@ import { toast } from 'react-hot-toast'
 import { supabase } from '../../../lib/supabase'
 
 // تقييمات الزبون بعد اكتمال الطلب — تصل لصاحب المطعم في لوحة التحكم
-export function useReviews({ slug, restaurant, branch, t }) {
+export function useReviews({ slug, restaurant, t }) {
   const [reviewedIds, setReviewedIds] = useState([])       // طلبات قُيّمت بالفعل
   const [reviewDraft, setReviewDraft] = useState({})       // { [orderId]: { rating, comment } }
   const [submittingReview, setSubmittingReview] = useState(false)
@@ -31,7 +31,6 @@ export function useReviews({ slug, restaurant, branch, t }) {
     try {
       const { error } = await supabase.from('reviews').insert({
         restaurant_id: restaurant.id,
-        branch_id: branch?.id || null,
         order_id: order.id,
         customer_name: customerName.trim() || null,
         customer_phone: customerPhone.replace(/[^\d]/g, '') || null,

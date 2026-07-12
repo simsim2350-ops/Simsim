@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 
-// جلب بيانات المنيو: المطعم + الفرع/الفروع + الأقسام + الأصناف + الأكثر مبيعاً + عدد الطلبات النشطة (حي)
-export function useMenuData(slug, branchId) {
-  const [branch, setBranch] = useState(null)
-  const [branchList, setBranchList] = useState([])   // كل الفروع النشطة (لعرض اسم الفرع/ربط الطلب به)
+// جلب بيانات المنيو: المطعم + الأقسام + الأصناف + الأكثر مبيعاً + عدد الطلبات النشطة (حي)
+export function useMenuData(slug) {
   const [restaurant, setRestaurant] = useState(null)
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
@@ -42,24 +40,6 @@ export function useMenuData(slug, branchId) {
       if (error || !rest) { setNotFound(true); return }
       setRestaurant(rest)
 
-      // نجلب كل الفروع النشطة دائماً (بغضّ النظر عن وجود فرع محدد بالرابط) — تلزم لتحديد
-      // الفرع المطابق لمعرّف الرابط (؟branch=) وربط الطلب به
-      const { data: brs } = await supabase
-        .from('branches')
-        .select('*')
-        .eq('restaurant_id', rest.id)
-        .eq('is_active', true)
-        .order('sort_order')
-      const list = brs || []
-      setBranchList(list)
-
-      if (branchId) {
-        // الرابط يحتوي معرّف فرع: نحدّده من القائمة المجلوبة أعلاه لعرض اسمه وربط الطلب به
-        const br = list.find(b => b.id === branchId)
-        if (br) setBranch(br)
-      }
-      // لا يوجد فرع في الرابط: الفرع يبقى null (الفرع الرئيسي) — المنيو يظهر مباشرة بلا أي بوابة اختيار
-
       // عدد الطلبات النشطة حالياً لحساب وقت تجهيز تقديري ديناميكي (عبر RPC آمن)
       const { data: activeCount } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id })
       setActiveOrdersCount(activeCount || 0)
@@ -74,13 +54,13 @@ export function useMenuData(slug, branchId) {
         }
       } catch { /* تجاهل — النجوم اختيارية */ }
 
-      // هل برنامج الولاء مفعّل؟ (لعرض تشويقي عام في صفحة اختيار الفرع، بلا حاجة لجوال الزبون)
+      // هل برنامج الولاء مفعّل؟ (لعرض تشويقي عام في هيدر المنيو، بلا حاجة لجوال الزبون)
       try {
         const { data: loy } = await supabase.from('loyalty_programs').select('enabled').eq('restaurant_id', rest.id).maybeSingle()
         setLoyaltyEnabled(!!loy?.enabled)
       } catch { /* تجاهل — التشويق اختياري */ }
 
-      // بانرات العروض وكوبونات النشطة (المرحلة 1 من صفحة اختيار الفرع التسويقية)
+      // بانرات العروض وكوبونات النشطة (تُعرض في شريط الترويج بهيدر المنيو)
       try {
         const now = new Date().toISOString()
         const [{ data: bnrs }, { data: cpns }] = await Promise.all([
@@ -135,7 +115,7 @@ export function useMenuData(slug, branchId) {
   }
 
   return {
-    restaurant, branch, setBranch, branchList,
+    restaurant,
     categories, products, bestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
     banners, coupons,

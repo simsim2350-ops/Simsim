@@ -30,8 +30,8 @@ const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', marginB
 const toDatetimeLocal = (iso) => iso ? new Date(iso).toISOString().slice(0, 16) : ''
 const fromDatetimeLocal = (val) => val ? new Date(val).toISOString() : null
 
-const EMPTY_BANNER = { title:'', subtitle:'', image_url:'', cta_text:'اطلب الآن', starts_at:'', ends_at:'', is_active:true, branch_id:'' }
-const EMPTY_COUPON = { code:'', discount_type:'percent', discount_value:'', min_order_amount:'', expires_at:'', is_active:true, branch_id:'' }
+const EMPTY_BANNER = { title:'', subtitle:'', image_url:'', cta_text:'اطلب الآن', starts_at:'', ends_at:'', is_active:true }
+const EMPTY_COUPON = { code:'', discount_type:'percent', discount_value:'', min_order_amount:'', expires_at:'', is_active:true }
 
 export default function Marketing() {
   const navigate = useNavigate()
@@ -40,7 +40,6 @@ export default function Marketing() {
   const [loading, setLoading] = useState(true)
   const [banners, setBanners] = useState([])
   const [coupons, setCoupons] = useState([])
-  const [branches, setBranches] = useState([])
 
   const [bannerModalOpen, setBannerModalOpen] = useState(false)
   const [couponModalOpen, setCouponModalOpen] = useState(false)
@@ -61,21 +60,16 @@ export default function Marketing() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const [{ data: b }, { data: c }, { data: br }] = await Promise.all([
+      const [{ data: b }, { data: c }] = await Promise.all([
         supabase.from('banners').select('*').eq('restaurant_id', restaurant.id).order('sort_order'),
         supabase.from('coupons').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending:false }),
-        supabase.from('branches').select('id,name').eq('restaurant_id', restaurant.id).order('sort_order'),
       ])
       if (b) setBanners(b)
       if (c) setCoupons(c)
-      if (br) setBranches(br)
     } finally {
       setLoading(false)
     }
   }
-
-  // اسم الفرع لعرضه كشارة على بطاقة البانر/الكوبون في القائمة (بلا فرع = عام لكل الفروع)
-  const branchName = (branchId) => branches.find(b => b.id === branchId)?.name
 
   // ===== بانرات =====
   const openAddBanner = () => { setEditingBanner(null); setBannerForm(EMPTY_BANNER); setBannerModalOpen(true) }
@@ -85,7 +79,7 @@ export default function Marketing() {
       title: banner.title, subtitle: banner.subtitle || '', image_url: banner.image_url || '',
       cta_text: banner.cta_text || 'اطلب الآن',
       starts_at: toDatetimeLocal(banner.starts_at), ends_at: toDatetimeLocal(banner.ends_at),
-      is_active: banner.is_active, branch_id: banner.branch_id || '',
+      is_active: banner.is_active,
     })
     setBannerModalOpen(true)
   }
@@ -116,7 +110,6 @@ export default function Marketing() {
       starts_at: fromDatetimeLocal(bannerForm.starts_at),
       ends_at: fromDatetimeLocal(bannerForm.ends_at),
       is_active: bannerForm.is_active,
-      branch_id: bannerForm.branch_id || null,
     }
     try {
       if (editingBanner) {
@@ -155,7 +148,7 @@ export default function Marketing() {
       code: coupon.code, discount_type: coupon.discount_type, discount_value: String(coupon.discount_value),
       min_order_amount: coupon.min_order_amount ? String(coupon.min_order_amount) : '',
       expires_at: coupon.expires_at ? coupon.expires_at.slice(0, 10) : '',
-      is_active: coupon.is_active, branch_id: coupon.branch_id || '',
+      is_active: coupon.is_active,
     })
     setCouponModalOpen(true)
   }
@@ -173,7 +166,6 @@ export default function Marketing() {
       min_order_amount: parseFloat(couponForm.min_order_amount) || 0,
       expires_at: couponForm.expires_at ? new Date(`${couponForm.expires_at}T23:59:59`).toISOString() : null,
       is_active: couponForm.is_active,
-      branch_id: couponForm.branch_id || null,
     }
     try {
       if (editingCoupon) {
@@ -240,7 +232,7 @@ export default function Marketing() {
                 <div style={{ textAlign:'center', padding:'50px 16px', color:'#9CA3AF' }}>
                   <div style={{ fontSize:'44px', opacity:0.3, marginBottom:'10px' }}>🎬</div>
                   <div style={{ fontSize:'15px', fontWeight:'700', color:'#374151', marginBottom:'6px' }}>لا توجد بانرات بعد</div>
-                  <div style={{ fontSize:'13px' }}>البانر العام يظهر في صفحة اختيار الفرع، والبانر الخاص بفرع محدد يظهر في منيو ذلك الفرع</div>
+                  <div style={{ fontSize:'13px' }}>البانرات النشطة تظهر في أعلى منيو المطعم</div>
                 </div>
               ) : (
                 <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
@@ -254,7 +246,6 @@ export default function Marketing() {
                           <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
                             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px' }}>{banner.title}</span>
                             {!banner.is_active && <span style={{ fontSize:'10px', fontWeight:'700', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 7px', borderRadius:'100px' }}>معطّل</span>}
-                            {banner.branch_id && <span style={{ fontSize:'10px', fontWeight:'700', color:'#E85A24', background:'#FFF0EB', padding:'2px 7px', borderRadius:'100px' }}>🏢 {branchName(banner.branch_id) || 'فرع محدد'}</span>}
                           </div>
                           {banner.subtitle && <div style={{ fontSize:'12px', color:'#9CA3AF' }}>{banner.subtitle}</div>}
                           {(banner.starts_at || banner.ends_at) && (
@@ -299,7 +290,6 @@ export default function Marketing() {
                           <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
                             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', direction:'ltr' }}>{coupon.code}</span>
                             {!coupon.is_active && <span style={{ fontSize:'10px', fontWeight:'700', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 7px', borderRadius:'100px' }}>معطّل</span>}
-                            {coupon.branch_id && <span style={{ fontSize:'10px', fontWeight:'700', color:'#E85A24', background:'#FFF0EB', padding:'2px 7px', borderRadius:'100px' }}>🏢 {branchName(coupon.branch_id) || 'فرع محدد'}</span>}
                           </div>
                           <div style={{ fontSize:'12px', color:'#9CA3AF' }}>
                             {coupon.min_order_amount > 0 && `للطلبات فوق ${coupon.min_order_amount} ﷼ · `}
@@ -353,19 +343,6 @@ export default function Marketing() {
               <label style={labelStyle}>نص الزر</label>
               <input style={inputStyle} value={bannerForm.cta_text} onChange={e => setBannerForm(f=>({...f,cta_text:e.target.value}))} placeholder="اطلب الآن" />
             </div>
-
-            {branches.length > 0 && (
-              <div style={{ marginBottom:'14px' }}>
-                <label style={labelStyle}>الفرع</label>
-                <select style={{ ...inputStyle, cursor:'pointer' }} value={bannerForm.branch_id} onChange={e => setBannerForm(f=>({...f,branch_id:e.target.value}))}>
-                  <option value="">كل الفروع</option>
-                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-                <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'5px' }}>
-                  لو اخترت فرعاً محدداً، البانر يظهر فقط في منيو ذلك الفرع (ليس في صفحة اختيار الفرع)
-                </div>
-              </div>
-            )}
 
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'14px' }}>
               <div>
@@ -427,19 +404,6 @@ export default function Marketing() {
               <label style={labelStyle}>الحد الأدنى للطلب (اختياري)</label>
               <input type="number" style={inputStyle} value={couponForm.min_order_amount} onChange={e => setCouponForm(f=>({...f,min_order_amount:e.target.value}))} placeholder="50" />
             </div>
-
-            {branches.length > 0 && (
-              <div style={{ marginBottom:'14px' }}>
-                <label style={labelStyle}>الفرع</label>
-                <select style={{ ...inputStyle, cursor:'pointer' }} value={couponForm.branch_id} onChange={e => setCouponForm(f=>({...f,branch_id:e.target.value}))}>
-                  <option value="">كل الفروع</option>
-                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-                <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'5px' }}>
-                  لو اخترت فرعاً محدداً، الكوبون يظهر فقط في منيو ذلك الفرع (ليس في صفحة اختيار الفرع)
-                </div>
-              </div>
-            )}
 
             <div style={{ marginBottom:'18px' }}>
               <label style={labelStyle}>تاريخ الانتهاء (اختياري)</label>
