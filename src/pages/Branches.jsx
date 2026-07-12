@@ -25,7 +25,13 @@ const inputStyle = {
 }
 const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px', color:'#374151' }
 
-const EMPTY_FORM = { name:'', name_en:'', address:'', address_en:'', phone:'', maps_url:'', is_active:true }
+const DAY_LABELS = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت']
+const defaultHours = () => DAY_LABELS.map((day, i) => ({ day, open: i !== 6, from: i === 5 ? '12:00' : '09:00', to: i === 5 ? '24:00' : '23:00' }))
+const toEditorHours = (oh) => (Array.isArray(oh) && oh.length === 7)
+  ? oh.map((h, i) => ({ day: DAY_LABELS[i], open: !!h.open, from: h.from || '09:00', to: h.to || '23:00' }))
+  : defaultHours()
+
+const EMPTY_FORM = { name:'', name_en:'', address:'', address_en:'', phone:'', maps_url:'', is_active:true, hours: defaultHours() }
 
 export default function Branches() {
   const navigate = useNavigate()
@@ -70,8 +76,13 @@ export default function Branches() {
       phone: branch.phone || '',
       maps_url: branch.maps_url || '',
       is_active: branch.is_active,
+      hours: toEditorHours(branch.opening_hours),
     })
     setModalOpen(true)
+  }
+
+  const updateHour = (i, field, val) => {
+    setForm(f => ({ ...f, hours: f.hours.map((h, idx) => idx === i ? { ...h, [field]: val } : h) }))
   }
 
   const saveBranch = async () => {
@@ -83,6 +94,7 @@ export default function Branches() {
           name: form.name, name_en: form.name_en || null,
           address: form.address, address_en: form.address_en || null,
           phone: form.phone, maps_url: form.maps_url, is_active: form.is_active,
+          opening_hours: form.hours,
         })
         toast.success('تم تحديث الفرع ✅')
       } else {
@@ -91,6 +103,7 @@ export default function Branches() {
           name: form.name, name_en: form.name_en || null,
           address: form.address, address_en: form.address_en || null,
           phone: form.phone, maps_url: form.maps_url, is_active: form.is_active,
+          opening_hours: form.hours,
           sort_order: branches.length,
         })
         // نسخ منيو الفرع الأساسي بالكامل — نسخة مستقلة قابلة للتعديل بحرية من الآن
@@ -249,6 +262,32 @@ export default function Branches() {
             <div style={{ marginBottom:'18px' }}>
               <label style={labelStyle}>رابط خرائط جوجل (اختياري)</label>
               <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} value={form.maps_url} onChange={e => setForm(f=>({...f,maps_url:e.target.value}))} placeholder="https://maps.google.com/..." />
+            </div>
+
+            <div style={{ marginBottom:'18px' }}>
+              <label style={labelStyle}>🕐 أوقات عمل الفرع</label>
+              <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+                {form.hours.map((h, i) => (
+                  <div key={h.day} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'8px 9px', borderRadius:'11px', border:'1.5px solid #E5E7EB', background: h.open ? 'white' : '#F8F9FB' }}>
+                    <label style={{ position:'relative', width:'34px', height:'19px', cursor:'pointer', flexShrink:0 }}>
+                      <input type="checkbox" checked={h.open} onChange={e => updateHour(i,'open',e.target.checked)} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
+                      <div style={{ position:'absolute', inset:0, background: h.open ? '#10B981' : '#E5E7EB', borderRadius:'19px', transition:'0.3s' }}>
+                        <div style={{ position:'absolute', width:'13px', height:'13px', background:'white', borderRadius:'50%', top:'3px', left: h.open ? '18px' : '3px', transition:'0.3s', boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                      </div>
+                    </label>
+                    <span style={{ fontSize:'12.5px', fontWeight:'700', width:'42px', flexShrink:0, color: h.open ? '#0F1117' : '#9CA3AF' }}>{h.day}</span>
+                    {h.open ? (
+                      <div style={{ display:'flex', alignItems:'center', gap:'4px', flex:1, justifyContent:'flex-end', direction:'ltr', minWidth:0 }}>
+                        <input type="time" value={h.from} onChange={e => updateHour(i,'from',e.target.value)} style={{ padding:'5px 4px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'11.5px', outline:'none', width:'78px', minWidth:0 }}/>
+                        <span style={{ color:'#9CA3AF', fontSize:'11px', flexShrink:0 }}>—</span>
+                        <input type="time" value={h.to} onChange={e => updateHour(i,'to',e.target.value)} style={{ padding:'5px 4px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'11.5px', outline:'none', width:'78px', minWidth:0 }}/>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize:'13px', color:'#9CA3AF', flex:1 }}>مغلق</span>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px', padding:'12px 14px', background:'#F8F9FB', borderRadius:'11px' }}>
