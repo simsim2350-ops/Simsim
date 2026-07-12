@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 
-// جلب بيانات المنيو: المطعم + الأقسام + الأصناف + الأكثر مبيعاً + عدد الطلبات النشطة (حي)
-export function useMenuData(slug) {
+// جلب بيانات المنيو: المطعم + الفرع (مستقل بمنيوه/ساعاته) + الأقسام + الأصناف + الأكثر مبيعاً + عدد الطلبات النشطة (حي)
+export function useMenuData(slug, branchId) {
   const [restaurant, setRestaurant] = useState(null)
+  const [branch, setBranch] = useState(null)
+  const [branchList, setBranchList] = useState([]) // كل الفروع النشطة (لعرض اسم الفرع/تبديله)
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
   const [bestSellers, setBestSellers] = useState([])
@@ -13,13 +15,13 @@ export function useMenuData(slug) {
   const [restaurantActiveOrdersCount, setActiveOrdersCount] = useState(0)
   const [rating, setRating] = useState(null) // { avg, count } — متوسط تقييم المطعم للعرض العام
   const [loyaltyEnabled, setLoyaltyEnabled] = useState(false) // هل برنامج الولاء مفعّل؟ (بلا حاجة لهوية الزبون — لعرض تشويقي عام)
-  const [banners, setBanners] = useState([]) // بانرات العروض النشطة ضمن نطاقها الزمني (تُعرض في شريط الترويج بهيدر المنيو)
-  const [coupons, setCoupons] = useState([]) // الكوبونات النشطة غير المنتهية (للعرض فقط — التحقق الفعلي عند الدفع منفصل)
+  const [banners, setBanners] = useState([]) // بانرات العروض النشطة (عامة + خاصة بهذا الفرع)
+  const [coupons, setCoupons] = useState([]) // الكوبونات النشطة (عامة + خاصة بهذا الفرع)
   const restaurantLoadChannelRef = useRef(null)
 
   useEffect(() => {
     fetchMenu()
-  }, [slug])
+  }, [slug, branchId])
 
   useEffect(() => {
     return () => {
@@ -40,6 +42,23 @@ export function useMenuData(slug) {
       if (error || !rest) { setNotFound(true); return }
       setRestaurant(rest)
 
+      // كل الفروع النشطة — لتحديد الفرع الحالي (من الرابط أو الأساسي افتراضياً) ولعرض قائمة التبديل
+      const { data: brs } = await supabase
+        .from('branches')
+        .select('*')
+        .eq('restaurant_id', rest.id)
+        .eq('is_active', true)
+        .order('sort_order')
+      const list = brs || []
+      setBranchList(list)
+
+      const resolvedBranch = (branchId && list.find(b => b.id === branchId))
+        || list.find(b => b.is_primary)
+        || list[0]
+        || null
+      if (!resolvedBranch) { setNotFound(true); return }
+      setBranch(resolvedBranch)
+
       // عدد الطلبات النشطة حالياً لحساب وقت تجهيز تقديري ديناميكي (عبر RPC آمن)
       const { data: activeCount } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id })
       setActiveOrdersCount(activeCount || 0)
@@ -54,27 +73,28 @@ export function useMenuData(slug) {
         }
       } catch { /* تجاهل — النجوم اختيارية */ }
 
-      // هل برنامج الولاء مفعّل؟ (لعرض تشويقي عام في هيدر المنيو، بلا حاجة لجوال الزبون)
+      // هل برنامج الولاء مفعّل؟ (برنامج واحد للمطعم كله — لعرض تشويقي عام في هيدر المنيو)
       try {
         const { data: loy } = await supabase.from('loyalty_programs').select('enabled').eq('restaurant_id', rest.id).maybeSingle()
         setLoyaltyEnabled(!!loy?.enabled)
       } catch { /* تجاهل — التشويق اختياري */ }
 
-      // بانرات العروض وكوبونات النشطة (تُعرض في شريط الترويج بهيدر المنيو)
+      // بانرات العروض وكوبونات النشطة — عامة (بلا فرع) + خاصة بهذا الفرع تحديداً
       try {
         const now = new Date().toISOString()
         const [{ data: bnrs }, { data: cpns }] = await Promise.all([
           supabase.from('banners').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order'),
           supabase.from('coupons').select('*').eq('restaurant_id', rest.id).eq('is_active', true),
         ])
-        setBanners((bnrs || []).filter(b => (!b.starts_at || b.starts_at <= now) && (!b.ends_at || b.ends_at >= now)))
-        setCoupons((cpns || []).filter(c => !c.expires_at || c.expires_at >= now))
+        const relevant = (row) => !row.branch_id || row.branch_id === resolvedBranch.id
+        setBanners((bnrs || []).filter(b => relevant(b) && (!b.starts_at || b.starts_at <= now) && (!b.ends_at || b.ends_at >= now)))
+        setCoupons((cpns || []).filter(c => relevant(c) && (!c.expires_at || c.expires_at >= now)))
       } catch { /* تجاهل — البانرات والكوبونات اختيارية */ }
 
-      // Fetch categories & products
+      // Fetch categories & products — كل فرع منيوه المستقل الخاص به
       const [{ data: cats }, { data: prods }] = await Promise.all([
-        supabase.from('categories').select('*').eq('restaurant_id', rest.id).eq('is_visible', true).order('sort_order'),
-        supabase.from('products').select('*').eq('restaurant_id', rest.id).eq('is_available', true).order('sort_order'),
+        supabase.from('categories').select('*').eq('branch_id', resolvedBranch.id).eq('is_visible', true).order('sort_order'),
+        supabase.from('products').select('*').eq('branch_id', resolvedBranch.id).eq('is_available', true).order('sort_order'),
       ])
 
       if (cats) { setCategories(cats); if (cats.length > 0) setActiveCategory(cats[0].id) }
@@ -115,7 +135,7 @@ export function useMenuData(slug) {
   }
 
   return {
-    restaurant,
+    restaurant, branch, branchList,
     categories, products, bestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
     banners, coupons,

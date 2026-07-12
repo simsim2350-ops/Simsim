@@ -8,6 +8,7 @@ import AppShell from '../components/AppShell'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { fetchRecommendationsForProduct, addRecommendation, removeRecommendation, updateRecommendationPriority, fetchCartWideList, addCartWideItem, removeCartWideItem, updateCartWidePriority, toggleCartWideActive } from '../lib/recommendationsApi'
+import { fetchBranches } from '../lib/branchesApi'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -68,6 +69,8 @@ export default function Menu() {
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [branches, setBranches] = useState([])
+  const [currentBranchId, setCurrentBranchId] = useState(null) // الفرع الذي يُحرَّر منيوه حالياً
 
   // Modals
   const [catModal, setCatModal] = useState(false)
@@ -130,9 +133,17 @@ export default function Menu() {
 
   useEffect(() => {
     if (!restaurant) return
-    fetchAll()
+    fetchBranches(restaurant.id).then(list => {
+      setBranches(list)
+      setCurrentBranchId(prev => prev || list.find(b => b.is_primary)?.id || list[0]?.id || null)
+    })
     loadCartWide()
   }, [restaurant])
+
+  useEffect(() => {
+    if (!currentBranchId) return
+    fetchAll()
+  }, [currentBranchId])
 
   // مزامنة التبويب عند التنقل من السايدبار (الأصناف/الأقسام)
   useEffect(() => {
@@ -144,8 +155,8 @@ export default function Menu() {
     setLoading(true)
     try {
       const [{ data: cats }, { data: prods }] = await Promise.all([
-        supabase.from('categories').select('*').eq('restaurant_id', restaurant.id).order('sort_order'),
-        supabase.from('products').select('*, categories(name)').eq('restaurant_id', restaurant.id).order('sort_order'),
+        supabase.from('categories').select('*').eq('branch_id', currentBranchId).order('sort_order'),
+        supabase.from('products').select('*, categories(name)').eq('branch_id', currentBranchId).order('sort_order'),
       ])
       if (cats) setCategories(cats)
       if (prods) setProducts(prods)
@@ -179,6 +190,7 @@ export default function Menu() {
       } else {
         const { error } = await supabase.from('categories').insert({
           restaurant_id: restaurant.id,
+          branch_id: currentBranchId,
           name: catForm.name,
           name_en: catForm.name_en || null,
           emoji: catForm.emoji,
@@ -454,6 +466,7 @@ export default function Menu() {
     try {
       const data = {
         restaurant_id: restaurant.id,
+        branch_id: currentBranchId,
         name: prodForm.name,
         name_en: prodForm.name_en || null,
         description: prodForm.description,
@@ -571,6 +584,15 @@ export default function Menu() {
             </div>
           ))}
         </div>
+
+        {/* منتقي الفرع — يظهر فقط لو فيه أكثر من فرع، كل فرع منيوه المستقل */}
+        {branches.length > 1 && (
+          <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', padding:'10px 16px', flexShrink:0 }}>
+            <select value={currentBranchId || ''} onChange={e => setCurrentBranchId(e.target.value)} style={{ padding:'8px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', fontFamily:'Tajawal,sans-serif', fontSize:'12.5px', fontWeight:'700', color:'#374151', outline:'none', cursor:'pointer', background:'white' }}>
+              {branches.map(b => <option key={b.id} value={b.id}>{b.is_primary ? '🏠' : '🏢'} {b.name}</option>)}
+            </select>
+          </div>
+        )}
 
         {/* Content */}
         <div style={{ flex:1, overflowY:'auto', padding:'16px' }}>

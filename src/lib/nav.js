@@ -18,6 +18,7 @@ export const NAV_GROUPS = [
     { key: 'marketing',  icon: '📣', label: 'العروض والكوبونات', path: '/marketing' },
   ] },
   { label: 'الإعداد', items: [
+    { key: 'branches', icon: '🏢', label: 'الفروع',    path: '/branches' },
     { key: 'tables',   icon: '🪑', label: 'الطاولات',  path: '/tables' },
     { key: 'qr',       icon: '📱', label: 'QR Code',   path: '/qr' },
     { key: 'staff',    icon: '🧑‍🍳', label: 'الموظفون', path: '/staff' },

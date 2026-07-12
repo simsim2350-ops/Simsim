@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import ErrBoundary from '../features/menu/ErrBoundary'
 import { computeOpenStatus, makeItemName, estimatedPrepTime } from '../features/menu/helpers'
@@ -27,28 +27,30 @@ import OrdersScreen from '../features/menu/OrdersScreen'
 
 function PublicMenuInner() {
   const { slug } = useParams()
+  const [searchParams] = useSearchParams()
+  const branchId = searchParams.get('branch')
 
   // ===== الحالة عبر الـ hooks (features/menu/hooks) =====
   const { isEn, toggleLang, t, tx } = useLang()
   const {
-    restaurant,
+    restaurant, branch,
     categories, products, bestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
     banners, coupons,
-  } = useMenuData(slug)
+  } = useMenuData(slug, branchId)
   const { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer } = useActiveOrders(slug, t)
   const { cart, setCart, cartOpen, setCartOpen, addToCart, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount } = useCart(slug, t)
-  const { couponInput, setCouponInput, appliedCoupon, applyCoupon, removeCoupon, applying: applyingCoupon, discountAmount } = useCoupon({ restaurant, cartTotal })
+  const { couponInput, setCouponInput, appliedCoupon, applyCoupon, removeCoupon, applying: applyingCoupon, discountAmount } = useCoupon({ restaurant, branch, cartTotal })
   const {
     tableNumber, setTableNumber, orderType, setOrderType,
     deliveryAddress, setDeliveryAddress, customerName, setCustomerName,
     customerPhone, setCustomerPhone, orderNote, setOrderNote, placeOrder, submitting,
-  } = useCheckout({ slug, restaurant, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, appliedCoupon, discountAmount, removeCoupon })
+  } = useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, appliedCoupon, discountAmount, removeCoupon })
   const loyalty = useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone })
   const { tables } = useTables(restaurant)
   const recommendationsMap = useRecommendationRules(restaurant)
   const cartWideIds = useCartWideIds(restaurant)
-  const { reviewedIds, reviewDraft, setDraft, submitReview, submittingReview } = useReviews({ slug, restaurant, t })
+  const { reviewedIds, reviewDraft, setDraft, submitReview, submittingReview } = useReviews({ slug, restaurant, branch, t })
 
   // حالة عرض محلية للصفحة فقط
   const [selectedProduct, setSelectedProduct] = useState(null)
@@ -101,9 +103,9 @@ function PublicMenuInner() {
     if (skipped > 0) setTimeout(() => toast(t('reorderSkipped'), { icon: '⚠️' }), 400)
   }
 
-  // حالة فتح المحل — تُستخدم لمنع الطلب وقت الإغلاق
-  const openStatus = restaurant
-    ? computeOpenStatus(restaurant.opening_hours)
+  // حالة فتح المحل — كل فرع ساعاته المستقلة، تُستخدم لمنع الطلب وقت الإغلاق
+  const openStatus = branch
+    ? computeOpenStatus(branch.opening_hours)
     : { open: true, unknown: true, nextText: '', todayText: '' }
 
   // محرك الاقتراحات الذكي: قواعد المطعم اليدوية ← نفس القسم ← الأكثر مبيعاً (ADR-13)
@@ -166,6 +168,7 @@ function PublicMenuInner() {
       {/* Restaurant Header */}
       <MenuHeader
         restaurant={restaurant}
+        branch={branch}
         brandColor={brandColor}
         descColor={descColor}
         openStatus={openStatus}

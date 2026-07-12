@@ -5,7 +5,7 @@ import { vatBreakdown } from '../../../lib/pricing'
 import { computeOpenStatus } from '../helpers'
 
 // بيانات نموذج الطلب + إنشاء الطلب في قاعدة البيانات (ADR-1: الأسعار شاملة الضريبة، تُفكّ للخلف)
-export function useCheckout({ slug, restaurant, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, appliedCoupon, discountAmount = 0, removeCoupon }) {
+export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, appliedCoupon, discountAmount = 0, removeCoupon }) {
   const [tableNumber, setTableNumber] = useState('')
   const [orderType, setOrderType] = useState('dine_in') // dine_in | takeaway | delivery
   const [deliveryAddress, setDeliveryAddress] = useState('')
@@ -21,8 +21,8 @@ export function useCheckout({ slug, restaurant, cart, cartTotal, setCart, setCar
   const placeOrder = async () => {
     if (submitting) return // حارس: لا نرسل الطلب مرتين
     if (cart.length === 0) { toast.error(t('tCartEmpty')); return }
-    // منع الطلب وقت الإغلاق حسب أوقات المطعم
-    const openStatus = computeOpenStatus(restaurant.opening_hours)
+    // منع الطلب وقت الإغلاق حسب أوقات الفرع (كل فرع ساعاته المستقلة)
+    const openStatus = computeOpenStatus(branch?.opening_hours)
     if (!openStatus.open) {
       toast.error(openStatus.nextText ? `${t('closedTitle')} — ${openStatus.nextText}` : t('tClosed'))
       return
@@ -53,6 +53,7 @@ export function useCheckout({ slug, restaurant, cart, cartTotal, setCart, setCar
     setSubmitting(true)
     const { data, error } = await supabase.from('orders').insert({
       restaurant_id: restaurant.id,
+      branch_id: branch?.id,
       table_number: orderType === 'dine_in' ? tableNumber : null,
       delivery_address: orderType === 'delivery' ? deliveryAddress.trim() : null,
       customer_name: customerName.trim() || null,
