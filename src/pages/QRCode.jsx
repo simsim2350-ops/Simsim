@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import QRCode from 'qrcode'
+import { fetchBranches } from '../lib/branchesApi'
 
 const QR_COLORS = ['#0F1117','#FF6B35','#10B981','#3B82F6','#8B5CF6','#EC4899','#F59E0B','#EF4444']
 
@@ -24,15 +25,22 @@ export default function QRCodePage() {
   const [qrColor, setQrColor] = useState('#0F1117')
   const [qrSize, setQrSize] = useState(200)
   const [cardStyle, setCardStyle] = useState('orange')
+  const [branches, setBranches] = useState([])
+  const [selectedBranch, setSelectedBranch] = useState('') // '' = الفرع الرئيسي
   const { isMobile } = useBreakpoint()
 
+  useEffect(() => {
+    if (!restaurant) return
+    fetchBranches(restaurant.id).then(setBranches).catch(() => {})
+  }, [restaurant])
+
   const menuURL = restaurant
-    ? `${window.location.origin}/menu/${restaurant.slug}`
+    ? `${window.location.origin}/menu/${restaurant.slug}${selectedBranch ? `?branch=${selectedBranch}` : ''}`
     : ''
 
   useEffect(() => {
     if (restaurant) generateQR()
-  }, [restaurant, qrColor, qrSize])
+  }, [restaurant, qrColor, qrSize, selectedBranch])
 
   const generateQR = async () => {
     const canvas = canvasRef.current
@@ -56,7 +64,7 @@ export default function QRCodePage() {
     const canvas = canvasRef.current
     if (!canvas) return
     const link = document.createElement('a')
-    link.download = `qr-${restaurant?.slug || 'menu'}.png`
+    link.download = `qr-${restaurant?.slug || 'menu'}${selectedBranch ? `-${selectedBranch}` : ''}.png`
     link.href = canvas.toDataURL('image/png')
     link.click()
     toast.success('تم تحميل QR Code ✅')
@@ -264,6 +272,19 @@ export default function QRCodePage() {
 
             {/* Right: Settings */}
             <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
+
+              {/* اختيار الفرع — كل فرع له رابط/QR مستقل */}
+              {branches.length > 1 && (
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🏢 الفرع</div>
+                  <div style={{ padding:'14px 16px' }}>
+                    <select value={selectedBranch} onChange={e => setSelectedBranch(e.target.value)} style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', fontWeight:'700', color:'#0F1117', background:'white', cursor:'pointer', outline:'none' }}>
+                      {branches.map(b => <option key={b.id} value={b.is_primary ? '' : b.id}>{b.is_primary ? '🏠' : '🏢'} {b.name}</option>)}
+                    </select>
+                    <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>لكل فرع رابط وQR مستقلان.</div>
+                  </div>
+                </div>
+              )}
 
               {/* Style */}
               <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>

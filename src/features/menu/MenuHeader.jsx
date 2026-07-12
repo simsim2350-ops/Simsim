@@ -12,7 +12,7 @@ const clamp01 = v => Math.min(1, Math.max(0, v))
 // هيرو مصوّر بكامل العرض + أزرار عائمة، ثم ورقة بيضاء بزوايا دائرية تحوي:
 // الهوية (شعار/اسم/فرع مع تغيير) + الوصف + الموقع + التواصل + بطاقة الإحصائيات + البحث
 export default function MenuHeader({
-  restaurant, brandColor, descColor, openStatus, activeOrdersCount,
+  restaurant, branch, brandColor, descColor, openStatus, activeOrdersCount,
   isEn, t, tx, toggleLang,
   hasOrders, liveOrdersCount, onShowOrders, onShowAllergens,
   onToggleSearch,
@@ -156,8 +156,8 @@ export default function MenuHeader({
 
         {/* الموقع + رابط الخريطة */}
         {(() => {
-          const addr = restaurant.address
-          const mapsUrl = restaurant.maps_url
+          const addr = branch?.address || restaurant.address
+          const mapsUrl = branch?.maps_url || restaurant.maps_url
           if (!addr && !mapsUrl) return null
           return (
             <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'1px 16px 0', flexWrap:'wrap' }}>

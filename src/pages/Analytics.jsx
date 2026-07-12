@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { orderBreakdown as breakdown } from '../lib/pricing'
+import { fetchBranches } from '../lib/branchesApi'
 
 const PERIOD_DAYS = { week: 7, month: 30, quarter: 90 }
 const STATUS_LABELS = { pending:'انتظار', preparing:'تحضير', ready:'جاهز', completed:'مكتمل', cancelled:'ملغي' }
@@ -14,12 +15,16 @@ const TYPE_COLORS = { dine_in:'#7C3AED', takeaway:'#F59E0B', delivery:'#0EA5E9' 
 
 export default function Analytics() {
   const navigate = useNavigate()
-  const { user, restaurant } = useAuthStore()
+  const { user, restaurant, isOwner, membership } = useAuthStore()
+  const branchLocked = !isOwner && membership?.branch_scope && membership.branch_scope !== 'all'
   const { isMobile, isDesktop } = useBreakpoint()
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('week')
+  const [branches, setBranches] = useState([])
+  const [branchFilter, setBranchFilter] = useState('all')
   const [raw, setRaw] = useState({ cur: [], prev: [] })
 
+  useEffect(() => { if (restaurant) fetchBranches(restaurant.id).then(setBranches).catch(() => {}) }, [restaurant])
   useEffect(() => { if (restaurant) fetchAnalytics() }, [restaurant, period])
 
   const fetchAnalytics = async () => {
@@ -31,7 +36,7 @@ export default function Analytics() {
       const prevFrom = new Date(from); prevFrom.setDate(from.getDate() - days)
       const [{ data: cur }, { data: prev }] = await Promise.all([
         supabase.from('orders').select('*').eq('restaurant_id', restaurant.id).gte('created_at', from.toISOString()).order('created_at', { ascending: true }),
-        supabase.from('orders').select('total,status,created_at,delivery_fee').eq('restaurant_id', restaurant.id).gte('created_at', prevFrom.toISOString()).lt('created_at', from.toISOString()),
+        supabase.from('orders').select('total,status,created_at,delivery_fee,branch_id').eq('restaurant_id', restaurant.id).gte('created_at', prevFrom.toISOString()).lt('created_at', from.toISOString()),
       ])
       setRaw({ cur: cur || [], prev: prev || [] })
     } finally { setLoading(false) }
@@ -40,8 +45,9 @@ export default function Analytics() {
   const go = (path, state) => navigate(path, state ? { state } : undefined)
 
   // ===== الحسابات =====
-  const orders = raw.cur
-  const prevOrders = raw.prev
+  const inBranch = (o) => branchFilter === 'all' ? true : o.branch_id === branchFilter
+  const orders = raw.cur.filter(inBranch)
+  const prevOrders = raw.prev.filter(inBranch)
   const completed = orders.filter(o => o.status === 'completed')
   const cancelled = orders.filter(o => o.status === 'cancelled')
 
@@ -78,6 +84,11 @@ export default function Analytics() {
   // الحالة والنوع
   const statusMap = {}; orders.forEach(o => { statusMap[o.status] = (statusMap[o.status] || 0) + 1 })
   const typeRev = {}; completed.forEach(o => { const t = o.type || 'dine_in'; typeRev[t] = (typeRev[t] || 0) + (Number(o.total) || 0) })
+
+  // حسب الفرع
+  const branchRev = {}
+  completed.forEach(o => { if (o.branch_id) branchRev[o.branch_id] = (branchRev[o.branch_id] || 0) + (Number(o.total) || 0) })
+  const branchName = (id) => branches.find(b => b.id === id)?.name || 'فرع محذوف'
 
   // المنتجات
   const productMap = {}
@@ -134,6 +145,12 @@ export default function Analytics() {
       active="analytics"
       title="📊 التحليلات"
       actions={<>
+        {branches.length > 0 && !branchLocked && (
+          <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} style={{ padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'700', color:'#374151', cursor:'pointer', background:'white' }}>
+            <option value="all">🏢 كل الفروع</option>
+            {branches.map(b => <option key={b.id} value={b.id}>{b.is_primary ? '🏠' : '🏢'} {b.name}</option>)}
+          </select>
+        )}
         {[{ key:'week', label:'7 أيام' }, { key:'month', label:'30 يوم' }, { key:'quarter', label:'90 يوم' }].map(p => (
           <button key={p.key} onClick={() => setPeriod(p.key)} style={{ padding:'6px 12px', borderRadius:'8px', border:`1.5px solid ${period===p.key?'#FF6B35':'#E5E7EB'}`, background: period===p.key?'#FFF0EB':'white', color: period===p.key?'#FF6B35':'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>{p.label}</button>
         ))}
@@ -234,6 +251,17 @@ export default function Analytics() {
                       </div>
                     )
                   })}
+                  {branches.length > 0 && branchFilter === 'all' && Object.keys(branchRev).length > 0 && (
+                    <div style={{ marginTop:'12px', paddingTop:'10px', borderTop:'1px dashed #E5E7EB' }}>
+                      <div style={{ fontSize:'12px', fontWeight:'800', color:'#374151', marginBottom:'8px' }}>🏢 حسب الفرع</div>
+                      {Object.entries(branchRev).sort((a,b)=>b[1]-a[1]).map(([id, v]) => (
+                        <div key={id} style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', padding:'4px 0' }}>
+                          <span style={{ color:'#6B7280' }}>{branchName(id)}</span>
+                          <span style={{ fontWeight:'800' }}>{Math.round(v)} ﷼</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </Card>
             </div>

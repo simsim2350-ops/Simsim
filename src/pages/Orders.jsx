@@ -7,6 +7,7 @@ import AppShell from '../components/AppShell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { vatBreakdown, orderBreakdown, itemsGross } from '../lib/pricing'
+import { fetchBranches } from '../lib/branchesApi'
 
 const STATUS = {
   pending:   { label:'انتظار',      bg:'#FEF3C7', color:'#92400E', next:'preparing', nextLabel:'✓ قبول وتحضير' },
@@ -48,6 +49,8 @@ export default function Orders() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('active')
+  const [branches, setBranches] = useState([])
+  const [branchFilter, setBranchFilter] = useState('all')
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [queue, setQueue] = useState([]) // طابور الطلبات الجديدة (بانر التنبيه)
   const [cancelTarget, setCancelTarget] = useState(null) // الطلب المُراد إلغاؤه (نافذة السبب)
@@ -95,6 +98,7 @@ export default function Orders() {
   useEffect(() => {
     if (!restaurant) return
     fetchOrders()
+    fetchBranches(restaurant.id).then(setBranches).catch(() => {})
     const unsub = subscribeOrders()
     return unsub
   }, [restaurant])
@@ -259,18 +263,21 @@ export default function Orders() {
   const isActive = (st) => ['pending','preparing','ready'].includes(st)
   const isLate = (o) => isActive(o.status) && minsSince(o.created_at) >= th.late
 
+  // فلترة بالفرع (الأعمدة تتكفّل بالحالة)
+  const byBranch = branchFilter === 'all' ? orders : orders.filter(o => o.branch_id === branchFilter)
+
   const colOrders = (key) => {
-    const list = orders.filter(o => o.status === key)
+    const list = byBranch.filter(o => o.status === key)
     if (key === 'completed') return list.sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 30)
     return list.sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
   }
 
-  const activeCount = orders.filter(o => isActive(o.status)).length
-  const lateCount = orders.filter(isLate).length
+  const activeCount = byBranch.filter(o => isActive(o.status)).length
+  const lateCount = byBranch.filter(isLate).length
 
   // جدول: يحترم تبويب الفلتر + الفرز
   const [sort, setSort] = useState({ key:'created_at', dir:'desc' })
-  const tableOrders = orders.filter(o => {
+  const tableOrders = byBranch.filter(o => {
     if (filter === 'active') return isActive(o.status)
     if (filter === 'completed') return o.status === 'completed'
     if (filter === 'cancelled') return o.status === 'cancelled'
@@ -422,14 +429,24 @@ export default function Orders() {
           )
         })()}
 
+        {/* Branch filter */}
+        {branches.length > 0 && (
+          <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', padding:'10px 16px', flexShrink:0 }}>
+            <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'700', color:'#374151', outline:'none', cursor:'pointer', background:'white' }}>
+              <option value="all">🏢 كل الفروع</option>
+              {branches.map(b => <option key={b.id} value={b.id}>{b.is_primary ? '🏠' : '🏢'} {b.name}</option>)}
+            </select>
+          </div>
+        )}
+
         {/* Stats row */}
         <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', padding:'12px 16px', display:'flex', gap:'10px', overflowX:'auto', flexShrink:0 }}>
           {[
-            { label:'كل الطلبات', val:orders.length, color:'#374151', bg:'#F3F4F6' },
-            { label:'⏳ انتظار', val:orders.filter(o=>o.status==='pending').length, color:'#92400E', bg:'#FEF3C7' },
-            { label:'👨‍🍳 تحضير', val:orders.filter(o=>o.status==='preparing').length, color:'#1E40AF', bg:'#DBEAFE' },
-            { label:'✅ جاهز', val:orders.filter(o=>o.status==='ready').length, color:'#065F46', bg:'#D1FAE5' },
-            { label:'🎉 مكتمل', val:orders.filter(o=>o.status==='completed').length, color:'#6B7280', bg:'#F3F4F6' },
+            { label:'كل الطلبات', val:byBranch.length, color:'#374151', bg:'#F3F4F6' },
+            { label:'⏳ انتظار', val:byBranch.filter(o=>o.status==='pending').length, color:'#92400E', bg:'#FEF3C7' },
+            { label:'👨‍🍳 تحضير', val:byBranch.filter(o=>o.status==='preparing').length, color:'#1E40AF', bg:'#DBEAFE' },
+            { label:'✅ جاهز', val:byBranch.filter(o=>o.status==='ready').length, color:'#065F46', bg:'#D1FAE5' },
+            { label:'🎉 مكتمل', val:byBranch.filter(o=>o.status==='completed').length, color:'#6B7280', bg:'#F3F4F6' },
           ].map(st => (
             <div key={st.label} style={{ flexShrink:0, padding:'8px 14px', borderRadius:'10px', background:st.bg, textAlign:'center', minWidth:'70px' }}>
               <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'20px', color:st.color }}>{st.val}</div>
@@ -443,7 +460,7 @@ export default function Orders() {
           <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', padding:'0 16px', flexShrink:0, overflowX:'auto' }}>
             {[
               { key:'active', label:`🔥 النشطة (${activeCount})` },
-              { key:'all', label:`📋 الكل (${orders.length})` },
+              { key:'all', label:`📋 الكل (${byBranch.length})` },
               { key:'completed', label:'✅ المكتملة' },
               { key:'cancelled', label:'🚫 الملغية' },
             ].map(t => (

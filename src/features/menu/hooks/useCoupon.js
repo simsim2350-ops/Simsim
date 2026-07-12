@@ -4,7 +4,7 @@ import { supabase } from '../../../lib/supabase'
 
 // تطبيق كوبون خصم حقيقي على السلة — يُتحقَّق منه مباشرة عند الدفع (وليس من القائمة المعروضة مسبقاً)
 // لضمان أحدث حالة (تفعيل/انتهاء) حتى لو تغيّرت بعد تحميل الصفحة.
-export function useCoupon({ restaurant, cartTotal }) {
+export function useCoupon({ restaurant, branch, cartTotal }) {
   const [couponInput, setCouponInput] = useState('')
   const [appliedCoupon, setAppliedCoupon] = useState(null)
   const [applying, setApplying] = useState(false)
@@ -32,6 +32,7 @@ export function useCoupon({ restaurant, cartTotal }) {
         .maybeSingle()
 
       if (!data) { toast.error('كود الكوبون غير صحيح'); return }
+      if (data.branch_id && data.branch_id !== branch?.id) { toast.error('هذا الكوبون غير متاح لهذا الفرع'); return }
       if (data.expires_at && new Date(data.expires_at) < new Date()) { toast.error('انتهت صلاحية هذا الكوبون'); return }
       if (data.min_order_amount > 0 && cartTotal < data.min_order_amount) {
         toast.error(`هذا الكوبون يتطلب طلباً بحد أدنى ${data.min_order_amount} ﷼`)

@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import ErrBoundary from '../features/menu/ErrBoundary'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
+import { fetchBranches } from '../lib/branchesApi'
 
 function Spinner() {
   return (
@@ -43,13 +44,16 @@ export default function Customers() {
 
 function CustomersInner() {
   const navigate = useNavigate()
-  const { restaurant } = useAuthStore()
+  const { restaurant, isOwner, membership } = useAuthStore()
+  const branchLocked = !isOwner && membership?.branch_scope && membership.branch_scope !== 'all'
   const [orders, setOrders] = useState([])
   const [loyaltyProgram, setLoyaltyProgram] = useState(null)
   const [redemptions, setRedemptions] = useState([])
+  const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
 
   const [search, setSearch] = useState('')
+  const [branchFilter, setBranchFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')   // all | active | inactive
   const [tierFilter, setTierFilter] = useState('all')       // all | vip | regular | new
   const [sortBy, setSortBy] = useState('recent')            // recent | spent | orders | stale | points | upgrade
@@ -71,17 +75,25 @@ function CustomersInner() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const [ordRes, progRes, redRes] = await Promise.all([
+      const [ordRes, progRes, redRes, br] = await Promise.all([
         supabase.from('orders').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending:false }),
         supabase.from('loyalty_programs').select('*').eq('restaurant_id', restaurant.id).maybeSingle(),
         supabase.from('loyalty_redemptions').select('customer_phone, points').eq('restaurant_id', restaurant.id),
+        fetchBranches(restaurant.id),
       ])
       if (ordRes.data) setOrders(ordRes.data)
       if (progRes.data) setLoyaltyProgram(progRes.data)
       if (redRes.data) setRedemptions(redRes.data)
+      setBranches(br || [])
     } finally {
       setLoading(false)
     }
+  }
+
+  // اسم الفرع من معرّفه
+  const branchName = (bid) => {
+    const b = branches.find(x => x.id === bid)
+    return b ? `${b.is_primary ? '🏠' : '🏢'} ${b.name}` : '🏢 فرع محذوف'
   }
 
   // تجميع الطلبات في عملاء حسب رقم الجوال.
@@ -95,7 +107,7 @@ function CustomersInner() {
         map[phone] = {
           phone,
           allOrders: [], statsOrders: [], completedSpent: 0,
-          productCounts: {},
+          branchCounts: {}, productCounts: {},
         }
       }
       const c = map[phone]
@@ -103,6 +115,7 @@ function CustomersInner() {
 
       if (o.status !== 'cancelled') {
         c.statsOrders.push(o)
+        if (o.branch_id) c.branchCounts[o.branch_id] = (c.branchCounts[o.branch_id] || 0) + 1
         const items = Array.isArray(o.items) ? o.items : []
         items.forEach(it => {
           if (!it?.name) return
@@ -124,6 +137,8 @@ function CustomersInner() {
       const avgOrderValue = orderCount > 0 ? totalSpent / orderCount : 0
       const lastOrderAt = statsSorted[0]?.created_at || byTime[byTime.length - 1]?.created_at
       const firstOrderAt = statsSorted[statsSorted.length - 1]?.created_at || byTime[0]?.created_at
+      const branchIds = new Set(Object.keys(c.branchCounts))
+      const mostOrderedBranchId = Object.entries(c.branchCounts).sort((a,b) => b[1]-a[1])[0]?.[0] || null
       const favoriteProducts = Object.entries(c.productCounts).sort((a,b) => b[1]-a[1]).slice(0,3).map(([n,q]) => ({ name:n, qty:q }))
 
       const daysSinceLast = lastOrderAt ? (Date.now() - new Date(lastOrderAt).getTime()) / DAY_MS : Infinity
@@ -137,7 +152,7 @@ function CustomersInner() {
       return {
         phone: c.phone, name, orders: byTime.slice().reverse(), // للعرض: الأحدث أولاً
         orderCount, totalSpent, avgOrderValue, lastOrderAt, firstOrderAt,
-        favoriteProducts,
+        branchIds, mostOrderedBranchId, favoriteProducts,
         daysSinceLast, isNewCustomer, isActive, recentOrders30,
         tier, loyaltyEarned: earned,
       }
@@ -171,8 +186,22 @@ function CustomersInner() {
     return null
   }
 
+  // أعداد العملاء لكل فرع (لمنتقي الفرع) — من كامل قائمة العملاء بلا تأثر بالفلاتر الحالية
+  const branchCounts = useMemo(() => {
+    const counts = {}
+    customersFull.forEach(c => {
+      c.branchIds.forEach(bid => {
+        if (!counts[bid]) counts[bid] = { total:0, active:0 }
+        counts[bid].total += 1
+        if (c.isActive) counts[bid].active += 1
+      })
+    })
+    return counts
+  }, [customersFull])
+
   const filtered = useMemo(() => {
     let list = customersFull
+    if (branchFilter !== 'all') list = list.filter(c => c.branchIds.has(branchFilter))
     if (statusFilter === 'active') list = list.filter(c => c.isActive)
     else if (statusFilter === 'inactive') list = list.filter(c => !c.isActive)
     if (tierFilter !== 'all') list = list.filter(c => c.tier.key === tierFilter)
@@ -198,7 +227,7 @@ function CustomersInner() {
     }
     else sorted.sort((a,b) => new Date(b.lastOrderAt) - new Date(a.lastOrderAt))
     return sorted
-  }, [customersFull, search, statusFilter, tierFilter, minSpent, sortBy])
+  }, [customersFull, search, branchFilter, statusFilter, tierFilter, minSpent, sortBy])
 
   // إحصائيات Dashboard — 6 أساسية + 4 إضافية قابلة للطي
   const stats = useMemo(() => {
@@ -329,6 +358,14 @@ function CustomersInner() {
 
           {/* شريط الفلاتر */}
           <div style={{ display:'flex', gap:'8px', marginBottom:'14px', flexWrap:'wrap' }}>
+            {branches.length > 0 && !branchLocked && (
+              <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} style={selectStyle}>
+                <option value="all">🏢 كل الفروع ({stats.total})</option>
+                {branches.map(b => (
+                  <option key={b.id} value={b.id}>{b.is_primary ? '🏠' : '🏢'} {b.name} {branchCounts[b.id] ? `(${branchCounts[b.id].total} · ${branchCounts[b.id].active} نشط)` : '(0)'}</option>
+                ))}
+              </select>
+            )}
             <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={selectStyle}>
               <option value="all">الحالة: الكل</option>
               <option value="active">نشط</option>
@@ -383,6 +420,7 @@ function CustomersInner() {
                         </div>
                         <div style={{ fontSize:'11.5px', color:'#9CA3AF', display:'flex', gap:'6px', flexWrap:'wrap' }}>
                           <span style={{ direction:'ltr' }}>{c.phone}</span>
+                          {c.mostOrderedBranchId && <span>· {branchName(c.mostOrderedBranchId)}</span>}
                         </div>
                       </div>
                       <div style={{ textAlign:'left', flexShrink:0 }}>
@@ -493,6 +531,12 @@ function CustomersInner() {
                           </div>
                         ))}
                       </div>
+                      {c.mostOrderedBranchId && (
+                        <div>
+                          <div style={{ fontSize:'12px', fontWeight:'700', color:'#9CA3AF', marginBottom:'8px' }}>أكثر فرع يطلب منه</div>
+                          <div style={{ fontSize:'13.5px', fontWeight:'700' }}>{branchName(c.mostOrderedBranchId)}</div>
+                        </div>
+                      )}
                       {c.favoriteProducts.length > 0 && (
                         <div>
                           <div style={{ fontSize:'12px', fontWeight:'700', color:'#9CA3AF', marginBottom:'8px' }}>المنتجات المفضّلة</div>
@@ -518,6 +562,7 @@ function CustomersInner() {
                             <span style={{ fontSize:'11px', color:'#9CA3AF', marginRight:'8px' }}>
                               {new Date(o.created_at).toLocaleDateString('ar', { day:'numeric', month:'short' })}
                             </span>
+                            {o.branch_id && <span style={{ fontSize:'10px', color:'#9CA3AF', marginRight:'6px' }}>· {branchName(o.branch_id)}</span>}
                             {o.status === 'cancelled' && <span style={{ fontSize:'10px', color:'#EF4444', fontWeight:'700', marginRight:'6px' }}>ملغى</span>}
                           </div>
                           <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color: o.status === 'cancelled' ? '#9CA3AF' : '#FF6B35' }}>{Number(o.total).toFixed(0)} ﷼</span>
