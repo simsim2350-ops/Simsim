@@ -59,8 +59,8 @@ export function useMenuData(slug, branchId) {
       if (!resolvedBranch) { setNotFound(true); return }
       setBranch(resolvedBranch)
 
-      // عدد الطلبات النشطة حالياً لحساب وقت تجهيز تقديري ديناميكي (عبر RPC آمن)
-      const { data: activeCount } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id })
+      // عدد الطلبات النشطة حالياً لحساب وقت تجهيز تقديري ديناميكي — لهذا الفرع فقط (كل فرع مطبخه مستقل)
+      const { data: activeCount } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id, p_branch_id: resolvedBranch.id })
       setActiveOrdersCount(activeCount || 0)
 
       // متوسط تقييم المطعم (RPC آمن — sql/get_restaurant_rating.sql)
@@ -125,7 +125,7 @@ export function useMenuData(slug, branchId) {
         .on('postgres_changes',
           { event: '*', schema: 'public', table: 'orders', filter: `restaurant_id=eq.${rest.id}` },
           async () => {
-            const { data: c } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id })
+            const { data: c } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id, p_branch_id: resolvedBranch.id })
             setActiveOrdersCount(c || 0)
           }
         ).subscribe()
