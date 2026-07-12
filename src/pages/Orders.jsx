@@ -63,6 +63,10 @@ export default function Orders() {
   const [view, setView] = useState(() => localStorage.getItem('orders_view') || 'kanban')
   useEffect(() => { localStorage.setItem('orders_view', view) }, [view])
 
+  // وضع العرض حسب الدور (يُحفظ) — لا يغيّر الصلاحيات، فقط كثافة المعلومات والأعمدة الظاهرة على نفس الحساب
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('orders_view_mode') || 'cashier') // cashier | kitchen | delivery
+  useEffect(() => { localStorage.setItem('orders_view_mode', viewMode) }, [viewMode])
+
   // قفل تمرير الصفحة خلف نافذة تفاصيل الطلب أو نافذة سبب الإلغاء طول ما إحداهما مفتوحة
   // (عدّاد مشترك يدعم الحالتين معاً — نافذة الإلغاء تُفتح فوق نافذة التفاصيل)
   useBodyScrollLock(!!selectedOrder)
@@ -270,10 +274,17 @@ export default function Orders() {
   // فلترة بالفرع (الأعمدة تتكفّل بالحالة)
   const byBranch = branchFilter === 'all' ? orders : orders.filter(o => o.branch_id === branchFilter)
 
+  // ⭐ VIP: عميل تكرر طلبه 3 مرات فأكثر ضمن آخر 100 طلب محمّلة — مؤشر تقريبي سريع بلا استعلام إضافي لقاعدة البيانات
+  const VIP_THRESHOLD = 3
+  const customerOrderCounts = {}
+  orders.forEach(o => { if (o.customer_phone) customerOrderCounts[o.customer_phone] = (customerOrderCounts[o.customer_phone] || 0) + 1 })
+  const isVIP = (o) => !!o.customer_phone && customerOrderCounts[o.customer_phone] >= VIP_THRESHOLD
+
   // شريط الأولوية — عدادات عابرة للحالة، تُحسب على مستوى الفرع المختار بمعزل عن بقية الفلاتر
   const lateCount = byBranch.filter(isLate).length
   const warnCount = byBranch.filter(isWarn).length
   const couponCount = byBranch.filter(o => isActive(o.status) && o.coupon_code).length
+  const vipCount = byBranch.filter(o => isActive(o.status) && isVIP(o)).length
 
   const toggleType = (t) => setTypeFilter(prev => { const n = new Set(prev); n.has(t) ? n.delete(t) : n.add(t); return n })
   const togglePriority = (p) => setPriorityFilter(prev => prev === p ? null : p)
@@ -286,20 +297,27 @@ export default function Orders() {
       || (o.customer_name || '').toLowerCase().includes(q)
       || (o.customer_phone || '').includes(q)
   }
-  const matchesType = (o) => typeFilter.size === 0 || typeFilter.has(o.type || 'dine_in')
+  const matchesType = (o) => {
+    // وضع التوصيل يقصر العرض على طلبات التوصيل فقط، بغضّ النظر عن اختيار شرائح النوع
+    if (viewMode === 'delivery') return (o.type || 'dine_in') === 'delivery'
+    return typeFilter.size === 0 || typeFilter.has(o.type || 'dine_in')
+  }
   const matchesPriority = (o) => {
     if (!priorityFilter) return true
     if (priorityFilter === 'late') return isLate(o)
     if (priorityFilter === 'warn') return isWarn(o)
     if (priorityFilter === 'coupon') return !!o.coupon_code
+    if (priorityFilter === 'vip') return isVIP(o)
     if (priorityFilter === 'attention') return isLate(o) || isWarn(o)
     return true
   }
   const filtered = byBranch.filter(o => matchesSearch(o) && matchesType(o) && matchesPriority(o))
 
-  // أعمدة الكانبان الظاهرة تتبع تبويب الفلتر (نفس تبويبات الجدول، موحّدة بين العرضين)
+  // أعمدة الكانبان الظاهرة: وضع العرض (مطبخ/توصيل) يفرض أعمدة ثابتة تناسب المهمة، وإلا تتبع تبويب الفلتر كالمعتاد
   const CANCELLED_COL = { key:'cancelled', label:'ملغي', emoji:'🚫', accent:'#EF4444' }
-  const visibleCols = filter === 'active' ? COLS.filter(c => c.key !== 'completed')
+  const visibleCols = viewMode === 'kitchen' ? COLS.filter(c => ['pending','preparing'].includes(c.key))
+    : viewMode === 'delivery' ? COLS.filter(c => ['preparing','ready'].includes(c.key))
+    : filter === 'active' ? COLS.filter(c => c.key !== 'completed')
     : filter === 'completed' ? COLS.filter(c => c.key === 'completed')
     : filter === 'cancelled' ? [CANCELLED_COL]
     : [...COLS, CANCELLED_COL]
@@ -343,6 +361,7 @@ export default function Orders() {
     const tc = typeChip(order.type)
     const touch = useRef({ x:0, y:0, sw:false })
     const canAdvance = !!STATUS[order.status]?.next
+    const kitchenMode = viewMode === 'kitchen'
     return (
       <div
         onTouchStart={(e) => { const t = e.touches[0]; touch.current = { x:t.clientX, y:t.clientY, sw:false } }}
@@ -367,6 +386,7 @@ export default function Orders() {
           <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px' }}>{order.order_number}</span>
             {fresh && <span style={{ fontSize:'9px', fontWeight:'800', color:'#FF6B35', background:'rgba(255,107,53,0.12)', padding:'1px 6px', borderRadius:'100px', animation:'blink 1.5s infinite' }}>جديد</span>}
+            {isVIP(order) && <span title="عميل VIP" style={{ fontSize:'11px' }}>⭐</span>}
             {order.coupon_code && <span title="يحتوي كوبون" style={{ fontSize:'11px' }}>🎁</span>}
             {order.notes && <span title="ملاحظة من الزبون" style={{ fontSize:'11px' }}>📝</span>}
           </div>
@@ -376,17 +396,21 @@ export default function Orders() {
         </div>
 
         <div style={{ fontSize:'12px', color:'#6B7280', display:'flex', gap:'6px', alignItems:'center', flexWrap:'wrap', marginBottom:'8px' }}>
-          {order.customer_name && <span style={{ fontWeight:'700', color:'#374151' }}>{order.customer_name}</span>}
+          {!kitchenMode && order.customer_name && <span style={{ fontWeight:'700', color:'#374151' }}>{order.customer_name}</span>}
           <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize:'10px', fontWeight:'800', color:tc.c, background:tc.bg, padding:'2px 7px', borderRadius:'100px' }}>{tc.emoji} {tc.label}</span>
           {order.type === 'dine_in' && order.table_number && <span>طاولة {order.table_number}</span>}
         </div>
 
+        {viewMode === 'delivery' && order.delivery_address && (
+          <div style={{ fontSize:'12px', color:'#0369A1', background:'#E0F2FE', borderRadius:'8px', padding:'5px 8px', marginBottom:'8px' }}>📍 {order.delivery_address}</div>
+        )}
+
         {order.notes && <div style={{ fontSize:'11px', color:'#92400E', background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:'8px', padding:'5px 8px', marginBottom:'8px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>📝 {order.notes}</div>}
 
-        {/* ملخص الأصناف */}
-        <div style={{ display:'flex', flexDirection:'column', gap:'2px', marginBottom:'8px' }}>
+        {/* ملخص الأصناف — خط أكبر في وضع المطبخ لسهولة القراءة من مسافة */}
+        <div style={{ display:'flex', flexDirection:'column', gap: kitchenMode ? '4px' : '2px', marginBottom:'8px' }}>
           {items.slice(0, 3).map((it, i) => (
-            <div key={i} style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#374151', opacity: it.unavailable ? 0.45 : 1 }}>
+            <div key={i} style={{ display:'flex', justifyContent:'space-between', fontSize: kitchenMode ? '14px' : '12px', fontWeight: kitchenMode ? '700' : '400', color:'#374151', opacity: it.unavailable ? 0.45 : 1 }}>
               <span style={{ textDecoration: it.unavailable ? 'line-through' : 'none' }}>{it.emoji || '🍽️'} {it.name}</span>
               <span style={{ color:'#9CA3AF', fontWeight:'700' }}>×{it.qty}</span>
             </div>
@@ -395,7 +419,7 @@ export default function Orders() {
         </div>
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px' }}>
-          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6B35' }}>{Number(order.total || 0).toFixed(0)} ﷼</span>
+          {!kitchenMode && <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6B35' }}>{Number(order.total || 0).toFixed(0)} ﷼</span>}
           {STATUS[order.status]?.next && (
             <button
               onClick={(e) => { e.stopPropagation(); advanceOrder(order) }}
@@ -421,6 +445,11 @@ export default function Orders() {
         <div style={{ display:'flex', alignItems:'center', gap:'5px', fontSize:'12px', fontWeight:'700', color:'#10B981' }}>
           <span style={{ width:'7px', height:'7px', borderRadius:'50%', background:'#10B981', display:'inline-block', animation:'blink 2s infinite' }}/>
           مباشر
+        </div>
+        <div style={{ display:'flex', background:'#F3F4F6', borderRadius:'10px', padding:'3px' }}>
+          {[['cashier','🧾 كاشير'], ['kitchen','👨‍🍳 مطبخ'], ['delivery','🚚 توصيل']].map(([k, l]) => (
+            <button key={k} onClick={() => setViewMode(k)} style={{ padding:'6px 11px', borderRadius:'8px', border:'none', cursor:'pointer', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'11px', background: viewMode===k ? 'white' : 'transparent', color: viewMode===k ? '#FF6B35' : '#9CA3AF', boxShadow: viewMode===k ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', whiteSpace:'nowrap' }}>{l}</button>
+          ))}
         </div>
         <div style={{ display:'flex', background:'#F3F4F6', borderRadius:'10px', padding:'3px' }}>
           {[['kanban','▦ كانبان'], ['table','☰ جدول']].map(([k, l]) => (
@@ -468,7 +497,7 @@ export default function Orders() {
         })()}
 
         {/* شريط الأولوية — يظهر فقط عند وجود ما يستحق الانتباه */}
-        {(lateCount > 0 || warnCount > 0 || couponCount > 0) && (
+        {(lateCount > 0 || warnCount > 0 || couponCount > 0 || vipCount > 0) && (
           <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', padding:'10px 16px', display:'flex', gap:'8px', flexWrap:'wrap', flexShrink:0 }}>
             {lateCount > 0 && (
               <button onClick={() => togglePriority('late')} style={{ padding:'6px 12px', borderRadius:'100px', border:`1.5px solid ${priorityFilter==='late' ? '#DC2626' : '#FEE2E2'}`, background: priorityFilter==='late' ? '#FEE2E2' : '#FEF2F2', color:'#DC2626', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer' }}>🔥 {lateCount} طلبات متأخرة</button>
@@ -478,6 +507,9 @@ export default function Orders() {
             )}
             {couponCount > 0 && (
               <button onClick={() => togglePriority('coupon')} style={{ padding:'6px 12px', borderRadius:'100px', border:`1.5px solid ${priorityFilter==='coupon' ? '#059669' : '#D1FAE5'}`, background: priorityFilter==='coupon' ? '#D1FAE5' : '#ECFDF5', color:'#059669', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer' }}>🎁 {couponCount} فيها كوبون</button>
+            )}
+            {vipCount > 0 && (
+              <button onClick={() => togglePriority('vip')} style={{ padding:'6px 12px', borderRadius:'100px', border:`1.5px solid ${priorityFilter==='vip' ? '#B08A2E' : '#FDE68A'}`, background: priorityFilter==='vip' ? '#FEF3C7' : '#FFFBEB', color:'#B08A2E', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer' }}>⭐ {vipCount} عملاء VIP</button>
             )}
           </div>
         )}
@@ -505,17 +537,19 @@ export default function Orders() {
           <button onClick={() => togglePriority('attention')} style={{ padding:'6px 11px', borderRadius:'9px', border:`1.5px solid ${priorityFilter==='attention' ? '#FF6B35' : '#E5E7EB'}`, background: priorityFilter==='attention' ? '#FFF0EB' : 'white', color: priorityFilter==='attention' ? '#FF6B35' : '#6B7280', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer', whiteSpace:'nowrap' }}>⚡ يحتاج تدخل</button>
         </div>
 
-        {/* Filter tabs — تتحكم بأعمدة الكانبان الظاهرة وبفلترة الجدول معاً، دائمة الظهور في العرضين */}
-        <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', padding:'0 16px', flexShrink:0, overflowX:'auto' }}>
-          {[
-            { key:'active', label:`🔥 النشطة (${activeCount})` },
-            { key:'all', label:`📋 الكل (${byBranch.length})` },
-            { key:'completed', label:'✅ المكتملة' },
-            { key:'cancelled', label:'🚫 الملغية' },
-          ].map(t => (
-            <div key={t.key} onClick={() => setFilter(t.key)} style={{ padding:'12px 14px', fontSize:'13px', fontWeight:'700', color: filter === t.key ? '#FF6B35' : '#6B7280', borderBottom: filter === t.key ? '2.5px solid #FF6B35' : '2.5px solid transparent', cursor:'pointer', whiteSpace:'nowrap' }}>{t.label}</div>
-          ))}
-        </div>
+        {/* Filter tabs — تتحكم بأعمدة الكانبان الظاهرة وبفلترة الجدول معاً؛ تختفي في وضعي مطبخ/توصيل لأن أعمدتهما ثابتة حسب المهمة */}
+        {viewMode === 'cashier' && (
+          <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', padding:'0 16px', flexShrink:0, overflowX:'auto' }}>
+            {[
+              { key:'active', label:`🔥 النشطة (${activeCount})` },
+              { key:'all', label:`📋 الكل (${byBranch.length})` },
+              { key:'completed', label:'✅ المكتملة' },
+              { key:'cancelled', label:'🚫 الملغية' },
+            ].map(t => (
+              <div key={t.key} onClick={() => setFilter(t.key)} style={{ padding:'12px 14px', fontSize:'13px', fontWeight:'700', color: filter === t.key ? '#FF6B35' : '#6B7280', borderBottom: filter === t.key ? '2.5px solid #FF6B35' : '2.5px solid transparent', cursor:'pointer', whiteSpace:'nowrap' }}>{t.label}</div>
+            ))}
+          </div>
+        )}
 
         {/* ===== المحتوى ===== */}
         {view === 'kanban' ? (
