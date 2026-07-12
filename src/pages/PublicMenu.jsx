@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import ErrBoundary from '../features/menu/ErrBoundary'
-import { computeOpenStatus, makeItemName, estimatedPrepTime } from '../features/menu/helpers'
+import { computeBranchOpenStatus, effectiveDeliverySettings, makeItemName, estimatedPrepTime } from '../features/menu/helpers'
 import { openWhatsAppAboutOrder } from '../features/menu/whatsapp'
 import { useLang } from '../features/menu/hooks/useLang'
 import { useMenuData } from '../features/menu/hooks/useMenuData'
@@ -103,10 +103,14 @@ function PublicMenuInner() {
     if (skipped > 0) setTimeout(() => toast(t('reorderSkipped'), { icon: '⚠️' }), 400)
   }
 
-  // حالة فتح المحل — كل فرع ساعاته المستقلة، تُستخدم لمنع الطلب وقت الإغلاق
+  // حالة فتح المحل — كل فرع ساعاته المستقلة والإغلاق المؤقت الخاص به، تُستخدم لمنع الطلب وقت الإغلاق
   const openStatus = branch
-    ? computeOpenStatus(branch.opening_hours)
+    ? computeBranchOpenStatus(branch)
     : { open: true, unknown: true, nextText: '', todayText: '' }
+
+  // إعدادات التوصيل الفعلية: تخصيص الفرع إن وُجد، وإلا وراثة إعداد المطعم العام
+  const delivery = effectiveDeliverySettings(branch, restaurant)
+  const takeawayEnabled = branch?.takeaway_enabled ?? true
 
   // محرك الاقتراحات الذكي: قواعد المطعم اليدوية ← نفس القسم ← الأكثر مبيعاً (ADR-13)
   const cartSuggestions = useSmartSuggestions({ cart, products, restaurant, cartWideIds })
@@ -172,6 +176,8 @@ function PublicMenuInner() {
         brandColor={brandColor}
         descColor={descColor}
         openStatus={openStatus}
+        deliveryEnabled={delivery.enabled}
+        deliveryFee={delivery.fee}
         activeOrdersCount={restaurantActiveOrdersCount}
         isEn={isEn}
         t={t}
@@ -267,6 +273,9 @@ function PublicMenuInner() {
           setOrderNote={setOrderNote}
           tables={tables}
           openStatus={openStatus}
+          deliveryEnabled={delivery.enabled}
+          deliveryFee={delivery.fee}
+          takeawayEnabled={takeawayEnabled}
           placeOrder={placeOrder}
           submitting={submitting}
           removeFromCart={removeFromCart}

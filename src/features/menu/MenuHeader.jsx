@@ -12,7 +12,7 @@ const clamp01 = v => Math.min(1, Math.max(0, v))
 // هيرو مصوّر بكامل العرض + أزرار عائمة، ثم ورقة بيضاء بزوايا دائرية تحوي:
 // الهوية (شعار/اسم/فرع مع تغيير) + الوصف + الموقع + التواصل + بطاقة الإحصائيات + البحث
 export default function MenuHeader({
-  restaurant, branch, brandColor, descColor, openStatus, activeOrdersCount,
+  restaurant, branch, brandColor, descColor, openStatus, deliveryEnabled, deliveryFee, activeOrdersCount,
   isEn, t, tx, toggleLang,
   hasOrders, liveOrdersCount, onShowOrders, onShowAllergens,
   onToggleSearch,
@@ -65,8 +65,8 @@ export default function MenuHeader({
       color: '#0F1117',
       sub: isEn ? 'Prep time' : 'وقت التجهيز',
     }] : []),
-    ...(restaurant?.delivery_enabled ? [{
-      value: Number(restaurant.delivery_fee) > 0 ? `${Number(restaurant.delivery_fee).toFixed(0)} ﷼` : (isEn ? 'Free' : 'مجاني'),
+    ...(deliveryEnabled ? [{
+      value: Number(deliveryFee) > 0 ? `${Number(deliveryFee).toFixed(0)} ﷼` : (isEn ? 'Free' : 'مجاني'),
       color: '#0F1117',
       sub: isEn ? 'Delivery' : 'رسوم التوصيل',
     }] : []),
