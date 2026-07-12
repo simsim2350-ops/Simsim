@@ -51,6 +51,9 @@ export default function Orders() {
   const [filter, setFilter] = useState('active')
   const [branches, setBranches] = useState([])
   const [branchFilter, setBranchFilter] = useState('all')
+  const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState(() => new Set())
+  const [priorityFilter, setPriorityFilter] = useState(null) // null | 'late' | 'warn' | 'coupon' | 'attention'
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [queue, setQueue] = useState([]) // طابور الطلبات الجديدة (بانر التنبيه)
   const [cancelTarget, setCancelTarget] = useState(null) // الطلب المُراد إلغاؤه (نافذة السبب)
@@ -262,22 +265,56 @@ export default function Orders() {
     : m >= th.warn ? { c:'#B45309', bg:'#FEF3C7' } : { c:'#059669', bg:'#D1FAE5' }
   const isActive = (st) => ['pending','preparing','ready'].includes(st)
   const isLate = (o) => isActive(o.status) && minsSince(o.created_at) >= th.late
+  const isWarn = (o) => isActive(o.status) && minsSince(o.created_at) >= th.warn && minsSince(o.created_at) < th.late
 
   // فلترة بالفرع (الأعمدة تتكفّل بالحالة)
   const byBranch = branchFilter === 'all' ? orders : orders.filter(o => o.branch_id === branchFilter)
 
+  // شريط الأولوية — عدادات عابرة للحالة، تُحسب على مستوى الفرع المختار بمعزل عن بقية الفلاتر
+  const lateCount = byBranch.filter(isLate).length
+  const warnCount = byBranch.filter(isWarn).length
+  const couponCount = byBranch.filter(o => isActive(o.status) && o.coupon_code).length
+
+  const toggleType = (t) => setTypeFilter(prev => { const n = new Set(prev); n.has(t) ? n.delete(t) : n.add(t); return n })
+  const togglePriority = (p) => setPriorityFilter(prev => prev === p ? null : p)
+
+  // شريط الفلاتر الموحّد — بحث + نوع الطلب + الأولوية، فوق فلترة الفرع
+  const matchesSearch = (o) => {
+    if (!search.trim()) return true
+    const q = search.trim().toLowerCase()
+    return (o.order_number || '').toLowerCase().includes(q)
+      || (o.customer_name || '').toLowerCase().includes(q)
+      || (o.customer_phone || '').includes(q)
+  }
+  const matchesType = (o) => typeFilter.size === 0 || typeFilter.has(o.type || 'dine_in')
+  const matchesPriority = (o) => {
+    if (!priorityFilter) return true
+    if (priorityFilter === 'late') return isLate(o)
+    if (priorityFilter === 'warn') return isWarn(o)
+    if (priorityFilter === 'coupon') return !!o.coupon_code
+    if (priorityFilter === 'attention') return isLate(o) || isWarn(o)
+    return true
+  }
+  const filtered = byBranch.filter(o => matchesSearch(o) && matchesType(o) && matchesPriority(o))
+
+  // أعمدة الكانبان الظاهرة تتبع تبويب الفلتر (نفس تبويبات الجدول، موحّدة بين العرضين)
+  const CANCELLED_COL = { key:'cancelled', label:'ملغي', emoji:'🚫', accent:'#EF4444' }
+  const visibleCols = filter === 'active' ? COLS.filter(c => c.key !== 'completed')
+    : filter === 'completed' ? COLS.filter(c => c.key === 'completed')
+    : filter === 'cancelled' ? [CANCELLED_COL]
+    : [...COLS, CANCELLED_COL]
+
   const colOrders = (key) => {
-    const list = byBranch.filter(o => o.status === key)
-    if (key === 'completed') return list.sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 30)
+    const list = filtered.filter(o => o.status === key)
+    if (key === 'completed' || key === 'cancelled') return list.sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 30)
     return list.sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
   }
 
   const activeCount = byBranch.filter(o => isActive(o.status)).length
-  const lateCount = byBranch.filter(isLate).length
 
   // جدول: يحترم تبويب الفلتر + الفرز
   const [sort, setSort] = useState({ key:'created_at', dir:'desc' })
-  const tableOrders = byBranch.filter(o => {
+  const tableOrders = filtered.filter(o => {
     if (filter === 'active') return isActive(o.status)
     if (filter === 'completed') return o.status === 'completed'
     if (filter === 'cancelled') return o.status === 'cancelled'
@@ -330,6 +367,7 @@ export default function Orders() {
           <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px' }}>{order.order_number}</span>
             {fresh && <span style={{ fontSize:'9px', fontWeight:'800', color:'#FF6B35', background:'rgba(255,107,53,0.12)', padding:'1px 6px', borderRadius:'100px', animation:'blink 1.5s infinite' }}>جديد</span>}
+            {order.coupon_code && <span title="يحتوي كوبون" style={{ fontSize:'11px' }}>🎁</span>}
             {order.notes && <span title="ملاحظة من الزبون" style={{ fontSize:'11px' }}>📝</span>}
           </div>
           {isActive(order.status) && (
@@ -429,50 +467,60 @@ export default function Orders() {
           )
         })()}
 
-        {/* Branch filter */}
-        {branches.length > 0 && (
-          <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', padding:'10px 16px', flexShrink:0 }}>
+        {/* شريط الأولوية — يظهر فقط عند وجود ما يستحق الانتباه */}
+        {(lateCount > 0 || warnCount > 0 || couponCount > 0) && (
+          <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', padding:'10px 16px', display:'flex', gap:'8px', flexWrap:'wrap', flexShrink:0 }}>
+            {lateCount > 0 && (
+              <button onClick={() => togglePriority('late')} style={{ padding:'6px 12px', borderRadius:'100px', border:`1.5px solid ${priorityFilter==='late' ? '#DC2626' : '#FEE2E2'}`, background: priorityFilter==='late' ? '#FEE2E2' : '#FEF2F2', color:'#DC2626', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer' }}>🔥 {lateCount} طلبات متأخرة</button>
+            )}
+            {warnCount > 0 && (
+              <button onClick={() => togglePriority('warn')} style={{ padding:'6px 12px', borderRadius:'100px', border:`1.5px solid ${priorityFilter==='warn' ? '#B45309' : '#FDE68A'}`, background: priorityFilter==='warn' ? '#FEF3C7' : '#FFFBEB', color:'#B45309', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer' }}>⚠️ {warnCount} معرّضة للتأخير</button>
+            )}
+            {couponCount > 0 && (
+              <button onClick={() => togglePriority('coupon')} style={{ padding:'6px 12px', borderRadius:'100px', border:`1.5px solid ${priorityFilter==='coupon' ? '#059669' : '#D1FAE5'}`, background: priorityFilter==='coupon' ? '#D1FAE5' : '#ECFDF5', color:'#059669', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer' }}>🎁 {couponCount} فيها كوبون</button>
+            )}
+          </div>
+        )}
+
+        {/* شريط الفلاتر الموحّد — بحث + فرع + نوع الطلب + فلتر جاهز */}
+        <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', padding:'10px 16px', display:'flex', gap:'8px', flexWrap:'wrap', alignItems:'center', flexShrink:0 }}>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="🔍 بحث برقم الطلب/العميل/الجوال"
+            style={{ flex:'1 1 200px', minWidth:'160px', padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', fontFamily:'Tajawal,sans-serif', fontSize:'12px', outline:'none' }}
+          />
+          {branches.length > 0 && (
             <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'700', color:'#374151', outline:'none', cursor:'pointer', background:'white' }}>
               <option value="all">🏢 كل الفروع</option>
               {branches.map(b => <option key={b.id} value={b.id}>{b.is_primary ? '🏠' : '🏢'} {b.name}</option>)}
             </select>
-          </div>
-        )}
-
-        {/* Stats row */}
-        <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', padding:'12px 16px', display:'flex', gap:'10px', overflowX:'auto', flexShrink:0 }}>
-          {[
-            { label:'كل الطلبات', val:byBranch.length, color:'#374151', bg:'#F3F4F6' },
-            { label:'⏳ انتظار', val:byBranch.filter(o=>o.status==='pending').length, color:'#92400E', bg:'#FEF3C7' },
-            { label:'👨‍🍳 تحضير', val:byBranch.filter(o=>o.status==='preparing').length, color:'#1E40AF', bg:'#DBEAFE' },
-            { label:'✅ جاهز', val:byBranch.filter(o=>o.status==='ready').length, color:'#065F46', bg:'#D1FAE5' },
-            { label:'🎉 مكتمل', val:byBranch.filter(o=>o.status==='completed').length, color:'#6B7280', bg:'#F3F4F6' },
-          ].map(st => (
-            <div key={st.label} style={{ flexShrink:0, padding:'8px 14px', borderRadius:'10px', background:st.bg, textAlign:'center', minWidth:'70px' }}>
-              <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'20px', color:st.color }}>{st.val}</div>
-              <div style={{ fontSize:'10px', color:st.color, fontWeight:'600', whiteSpace:'nowrap' }}>{st.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Filter tabs — للجدول فقط */}
-        {view === 'table' && (
-          <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', padding:'0 16px', flexShrink:0, overflowX:'auto' }}>
-            {[
-              { key:'active', label:`🔥 النشطة (${activeCount})` },
-              { key:'all', label:`📋 الكل (${byBranch.length})` },
-              { key:'completed', label:'✅ المكتملة' },
-              { key:'cancelled', label:'🚫 الملغية' },
-            ].map(t => (
-              <div key={t.key} onClick={() => setFilter(t.key)} style={{ padding:'12px 14px', fontSize:'13px', fontWeight:'700', color: filter === t.key ? '#FF6B35' : '#6B7280', borderBottom: filter === t.key ? '2.5px solid #FF6B35' : '2.5px solid transparent', cursor:'pointer', whiteSpace:'nowrap' }}>{t.label}</div>
+          )}
+          <div style={{ display:'flex', gap:'5px' }}>
+            {[['dine_in','🪑 محلي'], ['takeaway','🥡 سفري'], ['delivery','🛵 توصيل']].map(([k,l]) => (
+              <button key={k} onClick={() => toggleType(k)} style={{ padding:'6px 11px', borderRadius:'9px', border:`1.5px solid ${typeFilter.has(k) ? '#FF6B35' : '#E5E7EB'}`, background: typeFilter.has(k) ? '#FFF0EB' : 'white', color: typeFilter.has(k) ? '#FF6B35' : '#6B7280', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer', whiteSpace:'nowrap' }}>{l}</button>
             ))}
           </div>
-        )}
+          <button onClick={() => togglePriority('attention')} style={{ padding:'6px 11px', borderRadius:'9px', border:`1.5px solid ${priorityFilter==='attention' ? '#FF6B35' : '#E5E7EB'}`, background: priorityFilter==='attention' ? '#FFF0EB' : 'white', color: priorityFilter==='attention' ? '#FF6B35' : '#6B7280', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer', whiteSpace:'nowrap' }}>⚡ يحتاج تدخل</button>
+        </div>
+
+        {/* Filter tabs — تتحكم بأعمدة الكانبان الظاهرة وبفلترة الجدول معاً، دائمة الظهور في العرضين */}
+        <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', padding:'0 16px', flexShrink:0, overflowX:'auto' }}>
+          {[
+            { key:'active', label:`🔥 النشطة (${activeCount})` },
+            { key:'all', label:`📋 الكل (${byBranch.length})` },
+            { key:'completed', label:'✅ المكتملة' },
+            { key:'cancelled', label:'🚫 الملغية' },
+          ].map(t => (
+            <div key={t.key} onClick={() => setFilter(t.key)} style={{ padding:'12px 14px', fontSize:'13px', fontWeight:'700', color: filter === t.key ? '#FF6B35' : '#6B7280', borderBottom: filter === t.key ? '2.5px solid #FF6B35' : '2.5px solid transparent', cursor:'pointer', whiteSpace:'nowrap' }}>{t.label}</div>
+          ))}
+        </div>
 
         {/* ===== المحتوى ===== */}
         {view === 'kanban' ? (
           <div style={{ flex:1, overflowX:'auto', overflowY:'hidden', padding:'14px', display:'flex', gap:'12px', background:'#F8F9FB' }}>
-            {COLS.map(col => {
+            {visibleCols.map(col => {
               const list = colOrders(col.key)
               const total = list.reduce((s, o) => s + (Number(o.total) || 0), 0)
               const isCol = collapsed.has(col.key)
