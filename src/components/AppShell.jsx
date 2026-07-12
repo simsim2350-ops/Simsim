@@ -22,7 +22,7 @@ export default function AppShell({ active, title, actions, badges = {}, children
   const { isDesktop } = useBreakpoint()
 
   // فلترة روابط التنقل حسب صلاحيات المستخدم (الموظف يرى صفحاته المسموحة فقط)
-  const perms = { isOwner, allowedPages: membership?.allowed_pages, branchScope: membership?.branch_scope }
+  const perms = { isOwner, allowedPages: membership?.allowed_pages }
   // فلترة عناصر كل مجموعة حسب الصلاحيات، ثم إسقاط المجموعات التي فرغت (لا يظهر عنوان مجموعة بلا عناصر)
   const visibleGroups = NAV_GROUPS
     .map(g => ({ ...g, items: g.items.filter(item => canAccess(navPage(item.key), perms)) }))

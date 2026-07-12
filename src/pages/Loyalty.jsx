@@ -34,9 +34,7 @@ export default function Loyalty() {
   // بيانات
   const [orders, setOrders] = useState([])          // الطلبات المكتملة
   const [redemptions, setRedemptions] = useState([]) // سجل الاستبدالات
-  const [branches, setBranches] = useState([])
   const [reviews, setReviews] = useState([])
-  const [reviewBranch, setReviewBranch] = useState('all')
   const [confirmRedeem, setConfirmRedeem] = useState(null)
 
   useEffect(() => {
@@ -46,11 +44,10 @@ export default function Loyalty() {
 
   const fetchAll = async () => {
     try {
-      const [progRes, ordRes, redRes, brRes, revRes] = await Promise.all([
+      const [progRes, ordRes, redRes, revRes] = await Promise.all([
         supabase.from('loyalty_programs').select('*').eq('restaurant_id', restaurant.id).maybeSingle(),
-        supabase.from('orders').select('customer_phone, customer_name, total, branch_id, status').eq('restaurant_id', restaurant.id).eq('status', 'completed'),
+        supabase.from('orders').select('customer_phone, customer_name, total, status').eq('restaurant_id', restaurant.id).eq('status', 'completed'),
         supabase.from('loyalty_redemptions').select('*').eq('restaurant_id', restaurant.id),
-        supabase.from('branches').select('id, name').eq('restaurant_id', restaurant.id).order('sort_order'),
         supabase.from('reviews').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending:false }).limit(50),
       ])
       if (progRes.data) {
@@ -61,7 +58,6 @@ export default function Loyalty() {
       }
       setOrders(ordRes.data || [])
       setRedemptions(redRes.data || [])
-      setBranches(brRes.data || [])
       setReviews(revRes.data || [])
     } finally {
       setLoading(false)
@@ -131,17 +127,7 @@ export default function Loyalty() {
     }
   }
 
-  const branchName = (bid) => {
-    if (!bid) return '🏠 الرئيسي'
-    const b = branches.find(x => x.id === bid)
-    return b ? `🏢 ${b.name}` : '🏢 —'
-  }
-
-  const filteredReviews = useMemo(() => {
-    if (reviewBranch === 'all') return reviews
-    if (reviewBranch === '__main__') return reviews.filter(r => !r.branch_id)
-    return reviews.filter(r => r.branch_id === reviewBranch)
-  }, [reviews, reviewBranch])
+  const filteredReviews = reviews
 
   const avgRating = reviews.length > 0
     ? (reviews.reduce((s,r) => s + (r.rating||0), 0) / reviews.length).toFixed(1)
@@ -281,15 +267,6 @@ export default function Loyalty() {
                 </div>
               </div>
 
-              {/* فلتر الفرع */}
-              {branches.length > 0 && (
-                <select value={reviewBranch} onChange={e => setReviewBranch(e.target.value)} style={{ ...inputStyle, width:'auto', marginBottom:'14px', cursor:'pointer', background:'white' }}>
-                  <option value="all">🏢 كل الفروع</option>
-                  <option value="__main__">🏠 الفرع الرئيسي</option>
-                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              )}
-
               <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
                 {filteredReviews.length === 0 ? (
                   <div style={{ padding:'40px 16px', textAlign:'center', color:'#9CA3AF' }}>
@@ -303,7 +280,6 @@ export default function Loyalty() {
                         <div style={{ display:'flex', alignItems:'center', gap:'8px', minWidth:0, flexWrap:'wrap' }}>
                           <span style={{ fontSize:'14px', fontWeight:'800', color:'#F59E0B', whiteSpace:'nowrap' }}>{'⭐'.repeat(r.rating || 0)}</span>
                           <span style={{ fontSize:'13px', fontWeight:'700', color:'#374151' }}>{r.customer_name || 'عميل'}</span>
-                          <span style={{ fontSize:'10px', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 7px', borderRadius:'100px' }}>{branchName(r.branch_id)}</span>
                         </div>
                         <span style={{ fontSize:'11px', color:'#9CA3AF', flexShrink:0 }}>{new Date(r.created_at).toLocaleDateString('ar', { day:'numeric', month:'short' })}</span>
                       </div>

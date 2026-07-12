@@ -12,28 +12,20 @@ const clamp01 = v => Math.min(1, Math.max(0, v))
 // هيرو مصوّر بكامل العرض + أزرار عائمة، ثم ورقة بيضاء بزوايا دائرية تحوي:
 // الهوية (شعار/اسم/فرع مع تغيير) + الوصف + الموقع + التواصل + بطاقة الإحصائيات + البحث
 export default function MenuHeader({
-  restaurant, branch, brandColor, descColor, openStatus, activeOrdersCount,
+  restaurant, brandColor, descColor, openStatus, activeOrdersCount,
   isEn, t, tx, toggleLang,
   hasOrders, liveOrdersCount, onShowOrders, onShowAllergens,
   onToggleSearch,
-  hasBranches, onChangeBranch,
   rating, loyalty,
   banners = [], coupons = [],
 }) {
-  // شريط ترويجي مضغوط (خانة واحدة فقط) — أهم بانر/كوبون منطبق على الفرع الحالي.
-  // القرار المعماري (الخيار 3): البانرات/الكوبونات المخصَّصة لفرع بعينه (branch_id) تظهر
-  // حصرياً هنا (حيث سياق الفرع محسوم فعلياً)، بأولوية أعلى من العروض العامة؛ يمكن إغلاقه لهذه الجلسة.
+  // شريط ترويجي مضغوط (خانة واحدة فقط) — أهم بانر/كوبون نشط
   const [promoDismissed, setPromoDismissed] = useState(false)
-  const activePromo = (() => {
-    const relevant = (items) => items
-      .filter(x => !x.branch_id || x.branch_id === branch?.id)
-      .sort((a, b) => (b.branch_id ? 1 : 0) - (a.branch_id ? 1 : 0))
-    const relevantBanners = relevant(banners)
-    if (relevantBanners.length > 0) return { type: 'banner', data: relevantBanners[0] }
-    const relevantCoupons = relevant(coupons)
-    if (relevantCoupons.length > 0) return { type: 'coupon', data: relevantCoupons[0] }
-    return null
-  })()
+  const activePromo = banners.length > 0
+    ? { type: 'banner', data: banners[0] }
+    : coupons.length > 0
+      ? { type: 'coupon', data: coupons[0] }
+      : null
 
   // Sticky Morph (مبدأ 6): صفّ الهوية (شعار+اسم+تقييم+حالة) عنصر sticky واحد يبقى مرئياً 100% دائماً
   //   بلا opacity/transform عليه إطلاقاً — لا يمكن أن يختفي. بقية المحتوى (وصف/تواصل/إحصائيات/ولاء)
@@ -157,18 +149,6 @@ export default function MenuHeader({
         </div>
 
         {/* ===== المحتوى الثانوي — تدفّق طبيعي، ينزلق للأعلى خلف صفّ الهوية ويختفي بالتمرير ===== */}
-        {/* صفّ الفرع مع زر التغيير */}
-        <div style={{ display:'flex', alignItems:'center', gap:'7px', padding:'0 16px', flexWrap:'wrap' }}>
-          {branch
-            ? <span style={{ fontSize:'11.5px', fontWeight:'700', color:'#6B7280' }}>🏢 {isEn && branch.name_en ? branch.name_en : branch.name}</span>
-            : (hasBranches && <span style={{ fontSize:'11.5px', fontWeight:'700', color:'#6B7280' }}>🏠 {isEn ? 'Main branch' : 'الفرع الرئيسي'}</span>)}
-          {hasBranches && (
-            <button onClick={onChangeBranch} style={{ border:'none', cursor:'pointer', fontSize:'10.5px', fontWeight:'800', color:brandColor, background:`${brandColor}14`, borderRadius:'100px', padding:'3px 10px', fontFamily:'Cairo,sans-serif' }}>
-              {isEn ? 'Change ‹' : 'تغيير ‹'}
-            </button>
-          )}
-        </div>
-
         {/* وصف المطعم — يكتبه صاحب المطعم من الإعدادات (يدعم الترجمة)، ويُقص عند 105 أحرف */}
         {(restaurant.show_description ?? true) && desc && (
           <p style={{ fontSize:'12.5px', color:descColor, lineHeight:'1.45', margin:'4px 16px 0' }}>{desc}</p>
@@ -176,8 +156,8 @@ export default function MenuHeader({
 
         {/* الموقع + رابط الخريطة */}
         {(() => {
-          const addr = branch?.address || restaurant.address
-          const mapsUrl = branch?.maps_url || restaurant.maps_url
+          const addr = restaurant.address
+          const mapsUrl = restaurant.maps_url
           if (!addr && !mapsUrl) return null
           return (
             <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'1px 16px 0', flexWrap:'wrap' }}>

@@ -72,8 +72,6 @@ export default function Settings() {
     { day:'الجمعة',  open:true,  from:'12:00', to:'24:00' },
     { day:'السبت',   open:false, from:'09:00', to:'23:00' },
   ])
-  const [branches, setBranches] = useState([])
-  const [hoursTarget, setHoursTarget] = useState('__main__') // '__main__' أو معرّف فرع
 
   useEffect(() => {
     if (restaurant) {
@@ -257,35 +255,20 @@ export default function Settings() {
     ? oh.map((h, i) => ({ day: DAY_LABELS[i], open: !!h.open, from: h.from || '09:00', to: h.to || '23:00' }))
     : defaultHours()
 
-  // تحميل أوقات الهدف المختار (الرئيسي أو فرع)
+  // تحميل أوقات العمل
   useEffect(() => {
-    if (hoursTarget === '__main__') setHours(toEditorHours(restaurant?.opening_hours))
-    else setHours(toEditorHours(branches.find(b => b.id === hoursTarget)?.opening_hours))
+    setHours(toEditorHours(restaurant?.opening_hours))
     // eslint-disable-next-line
-  }, [hoursTarget, restaurant, branches])
-
-  // جلب الفروع
-  useEffect(() => {
-    if (!restaurant) return
-    supabase.from('branches').select('*').eq('restaurant_id', restaurant.id).order('sort_order')
-      .then(({ data }) => setBranches(data || []))
   }, [restaurant])
 
-  // حفظ أوقات العمل للهدف المختار
+  // حفظ أوقات العمل
   const saveHours = async () => {
     setLoading(true)
     try {
-      if (hoursTarget === '__main__') {
-        const { error } = await supabase.from('restaurants').update({ opening_hours: hours }).eq('id', restaurant.id)
-        if (error) throw error
-        await fetchRestaurant(user.id)
-      } else {
-        const { error } = await supabase.from('branches').update({ opening_hours: hours }).eq('id', hoursTarget)
-        if (error) throw error
-        setBranches(prev => prev.map(b => b.id === hoursTarget ? { ...b, opening_hours: hours } : b))
-      }
-      const name = hoursTarget === '__main__' ? 'الفرع الرئيسي' : (branches.find(b => b.id === hoursTarget)?.name || 'الفرع')
-      toast.success(`تم حفظ أوقات ${name} ✅`)
+      const { error } = await supabase.from('restaurants').update({ opening_hours: hours }).eq('id', restaurant.id)
+      if (error) throw error
+      await fetchRestaurant(user.id)
+      toast.success('تم حفظ أوقات العمل ✅')
     } catch (err) {
       toast.error(err.message || 'تعذّر حفظ أوقات العمل')
     } finally {
@@ -743,16 +726,6 @@ export default function Settings() {
                 {activeTab === 'operations' && (
                 <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
                   <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🕐 أوقات العمل</div>
-                {branches.length > 0 && (
-                  <div style={{ padding:'10px 12px 0' }}>
-                    <label style={{ display:'block', fontSize:'12px', fontWeight:'700', color:'#6B7280', marginBottom:'6px' }}>اختر الفرع لضبط أوقاته:</label>
-                    <select value={hoursTarget} onChange={e => setHoursTarget(e.target.value)} style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', fontWeight:'700', color:'#0F1117', background:'white', cursor:'pointer', outline:'none' }}>
-                      <option value="__main__">🏠 الفرع الرئيسي (المطعم كله)</option>
-                      {branches.map(b => <option key={b.id} value={b.id}>🏢 {b.name}</option>)}
-                    </select>
-                    <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>لكل فرع أوقاته المستقلة. الفرع الرئيسي يُطبّق عند عدم تحديد أوقات للفرع.</div>
-                  </div>
-                )}
                 <div style={{ padding:'10px 12px', display:'flex', flexDirection:'column', gap:'6px' }}>
                   {hours.map((h, i) => (
                     <div key={h.day} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'8px 9px', borderRadius:'11px', border:'1.5px solid #E5E7EB', background: h.open ? 'white' : '#F8F9FB' }}>

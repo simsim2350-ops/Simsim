@@ -6,16 +6,12 @@
 // صفحات حصرية لصاحب المطعم فقط — لا تُمنح لأي موظف إطلاقاً
 export const OWNER_ONLY = ['dashboard', 'settings', 'staff', 'marketing']
 
-// صفحات مشتركة على مستوى المطعم كله (منيو/فروع/ولاء+تقييمات/QR).
-// تتطلب صلاحية "كل الفروع" — يُمنع منها الموظف المقيّد بفرع محدّد.
-export const SHARED_PAGES = ['menu', 'branches', 'tables', 'loyalty', 'qr']
-
 // ترتيب الصفحات القابلة للتخصيص (لتحديد أول صفحة يُوجَّه إليها الموظف)
-export const PAGE_ORDER = ['orders', 'menu', 'branches', 'tables', 'customers', 'analytics', 'loyalty', 'qr']
+export const PAGE_ORDER = ['orders', 'menu', 'tables', 'customers', 'analytics', 'loyalty', 'qr']
 
 // مسار كل صفحة
 export const PAGE_PATH = {
-  orders: '/orders', menu: '/menu', branches: '/branches', tables: '/tables',
+  orders: '/orders', menu: '/menu', tables: '/tables',
   customers: '/customers', analytics: '/analytics', loyalty: '/loyalty', qr: '/qr',
 }
 
@@ -25,17 +21,13 @@ export function navPage(key) {
 }
 
 // هل يملك المستخدم صلاحية صفحة معيّنة؟
-// perms = { isOwner, allowedPages, branchScope }
+// perms = { isOwner, allowedPages }
 export function canAccess(pageKey, perms) {
-  const { isOwner, allowedPages, branchScope } = perms || {}
+  const { isOwner, allowedPages } = perms || {}
   if (isOwner) return true
   if (OWNER_ONLY.includes(pageKey)) return false
   const pages = Array.isArray(allowedPages) ? allowedPages : []
-  const hasPage = pages.includes('all') || pages.includes(pageKey)
-  if (!hasPage) return false
-  // الصفحات المشتركة تتطلب صلاحية "كل الفروع" (يُمنع منها موظف الفرع المحدّد)
-  if (SHARED_PAGES.includes(pageKey) && branchScope && branchScope !== 'all') return false
-  return true
+  return pages.includes('all') || pages.includes(pageKey)
 }
 
 // أول مسار مسموح للمستخدم (لتوجيهه بعد الدخول أو عند منعه من صفحة)

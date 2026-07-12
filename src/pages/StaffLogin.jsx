@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore'
 
 // خريطة الصفحة → المسار (لتوجيه الموظف لأول صفحة مسموحة)
 const PAGE_PATH = {
-  orders: '/orders', menu: '/menu', branches: '/branches',
+  orders: '/orders', menu: '/menu',
   customers: '/customers', analytics: '/analytics', loyalty: '/loyalty', qr: '/qr',
 }
 
