@@ -62,17 +62,6 @@ export default function Settings() {
     current: '', newPass: '', confirm: '',
   })
 
-  // Working hours
-  const [hours, setHours] = useState([
-    { day:'الأحد',    open:true,  from:'09:00', to:'23:00' },
-    { day:'الاثنين',  open:true,  from:'09:00', to:'23:00' },
-    { day:'الثلاثاء', open:true,  from:'09:00', to:'23:00' },
-    { day:'الأربعاء', open:true,  from:'09:00', to:'23:00' },
-    { day:'الخميس',  open:true,  from:'09:00', to:'23:00' },
-    { day:'الجمعة',  open:true,  from:'12:00', to:'24:00' },
-    { day:'السبت',   open:false, from:'09:00', to:'23:00' },
-  ])
-
   useEffect(() => {
     if (restaurant) {
       setRestForm({
@@ -242,38 +231,6 @@ export default function Settings() {
     if (error) { toast.error(error.message); return }
     await fetchRestaurant(user.id)
     toast.success(restaurant.is_active ? 'تم إيقاف المطعم مؤقتاً' : 'تم تفعيل المطعم ✅')
-  }
-
-  const updateHour = (i, field, val) => {
-    setHours(prev => prev.map((h, idx) => idx === i ? { ...h, [field]: val } : h))
-  }
-
-  // ===== أوقات العمل حسب الفرع =====
-  const DAY_LABELS = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت']
-  const defaultHours = () => DAY_LABELS.map((day, i) => ({ day, open: i !== 6, from: i === 5 ? '12:00' : '09:00', to: i === 5 ? '24:00' : '23:00' }))
-  const toEditorHours = (oh) => (Array.isArray(oh) && oh.length === 7)
-    ? oh.map((h, i) => ({ day: DAY_LABELS[i], open: !!h.open, from: h.from || '09:00', to: h.to || '23:00' }))
-    : defaultHours()
-
-  // تحميل أوقات العمل
-  useEffect(() => {
-    setHours(toEditorHours(restaurant?.opening_hours))
-    // eslint-disable-next-line
-  }, [restaurant])
-
-  // حفظ أوقات العمل
-  const saveHours = async () => {
-    setLoading(true)
-    try {
-      const { error } = await supabase.from('restaurants').update({ opening_hours: hours }).eq('id', restaurant.id)
-      if (error) throw error
-      await fetchRestaurant(user.id)
-      toast.success('تم حفظ أوقات العمل ✅')
-    } catch (err) {
-      toast.error(err.message || 'تعذّر حفظ أوقات العمل')
-    } finally {
-      setLoading(false)
-    }
   }
 
   const inputStyle = { width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'#F8F9FB', outline:'none', textAlign:'right', direction:'rtl', boxSizing:'border-box' }
@@ -722,40 +679,13 @@ export default function Settings() {
                   {loading ? 'جارٍ الحفظ...' : '💾 حفظ إعدادات المطعم'}
                 </button>
 
-                {/* أوقات العمل — تبويب التشغيل (محرّر مستقل بزرّه الخاص) */}
+                {/* أوقات العمل — انتقلت لصفحة "الفروع" (كل فرع ساعاته المستقلة الآن) */}
                 {activeTab === 'operations' && (
                 <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
                   <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🕐 أوقات العمل</div>
-                <div style={{ padding:'10px 12px', display:'flex', flexDirection:'column', gap:'6px' }}>
-                  {hours.map((h, i) => (
-                    <div key={h.day} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'8px 9px', borderRadius:'11px', border:'1.5px solid #E5E7EB', background: h.open ? 'white' : '#F8F9FB' }}>
-                      {/* Toggle */}
-                      <label style={{ position:'relative', width:'34px', height:'19px', cursor:'pointer', flexShrink:0 }}>
-                        <input type="checkbox" checked={h.open} onChange={e => updateHour(i,'open',e.target.checked)} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
-                        <div style={{ position:'absolute', inset:0, background: h.open ? '#10B981' : '#E5E7EB', borderRadius:'19px', transition:'0.3s' }}>
-                          <div style={{ position:'absolute', width:'13px', height:'13px', background:'white', borderRadius:'50%', top:'3px', left: h.open ? '18px' : '3px', transition:'0.3s', boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
-                        </div>
-                      </label>
-
-                      <span style={{ fontSize:'12.5px', fontWeight:'700', width:'42px', flexShrink:0, color: h.open ? '#0F1117' : '#9CA3AF' }}>{h.day}</span>
-
-                      {h.open ? (
-                        <div style={{ display:'flex', alignItems:'center', gap:'4px', flex:1, justifyContent:'flex-end', direction:'ltr', minWidth:0 }}>
-                          <input type="time" value={h.from} onChange={e => updateHour(i,'from',e.target.value)} style={{ padding:'5px 4px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'11.5px', outline:'none', width:'78px', minWidth:0 }}/>
-                          <span style={{ color:'#9CA3AF', fontSize:'11px', flexShrink:0 }}>—</span>
-                          <input type="time" value={h.to} onChange={e => updateHour(i,'to',e.target.value)} style={{ padding:'5px 4px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'11.5px', outline:'none', width:'78px', minWidth:0 }}/>
-                        </div>
-                      ) : (
-                        <span style={{ fontSize:'13px', color:'#9CA3AF', flex:1 }}>مغلق</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div style={{ padding:'0 12px 14px' }}>
-                  <button onClick={saveHours} disabled={loading} style={{ width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity: loading ? 0.8 : 1 }}>
-                    {loading ? 'جارٍ الحفظ...' : '💾 حفظ أوقات العمل'}
-                  </button>
-                </div>
+                  <div style={{ padding:'16px 18px', fontSize:'13px', color:'#6B7280', lineHeight:'1.7' }}>
+                    كل فرع له أوقات عمل مستقلة الآن — تُدار من صفحة <a href="/branches" style={{ color:'#FF6B35', fontWeight:'700' }}>🏢 الفروع</a> (اضغط على أي فرع لضبط أيامه وساعاته).
+                  </div>
                 </div>
                 )}
 
