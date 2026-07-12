@@ -4,8 +4,7 @@ import { supabase } from '../../../lib/supabase'
 // جلب بيانات المنيو: المطعم + الفرع/الفروع + الأقسام + الأصناف + الأكثر مبيعاً + عدد الطلبات النشطة (حي)
 export function useMenuData(slug, branchId) {
   const [branch, setBranch] = useState(null)
-  const [branchList, setBranchList] = useState([])   // كل الفروع النشطة (لصفحة اختيار الفرع)
-  const [branchPicked, setBranchPicked] = useState(false) // هل حسم الزبون اختيار الفرع؟
+  const [branchList, setBranchList] = useState([])   // كل الفروع النشطة (لعرض اسم الفرع/ربط الطلب به)
   const [restaurant, setRestaurant] = useState(null)
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
@@ -16,7 +15,7 @@ export function useMenuData(slug, branchId) {
   const [restaurantActiveOrdersCount, setActiveOrdersCount] = useState(0)
   const [rating, setRating] = useState(null) // { avg, count } — متوسط تقييم المطعم للعرض العام
   const [loyaltyEnabled, setLoyaltyEnabled] = useState(false) // هل برنامج الولاء مفعّل؟ (بلا حاجة لهوية الزبون — لعرض تشويقي عام)
-  const [banners, setBanners] = useState([]) // بانرات العروض النشطة ضمن نطاقها الزمني (لصفحة اختيار الفرع)
+  const [banners, setBanners] = useState([]) // بانرات العروض النشطة ضمن نطاقها الزمني (تُعرض في شريط الترويج بهيدر المنيو)
   const [coupons, setCoupons] = useState([]) // الكوبونات النشطة غير المنتهية (للعرض فقط — التحقق الفعلي عند الدفع منفصل)
   const restaurantLoadChannelRef = useRef(null)
 
@@ -43,8 +42,8 @@ export function useMenuData(slug, branchId) {
       if (error || !rest) { setNotFound(true); return }
       setRestaurant(rest)
 
-      // نجلب كل الفروع النشطة دائماً (بغضّ النظر عن وجود فرع محدد بالرابط) — تلزم لعرض
-      // زر "تغيير" في الهيدر وصفحة "اختر فرعك" مهما كان الفرع الذي دخل منه العميل
+      // نجلب كل الفروع النشطة دائماً (بغضّ النظر عن وجود فرع محدد بالرابط) — تلزم لتحديد
+      // الفرع المطابق لمعرّف الرابط (؟branch=) وربط الطلب به
       const { data: brs } = await supabase
         .from('branches')
         .select('*')
@@ -58,11 +57,8 @@ export function useMenuData(slug, branchId) {
         // الرابط يحتوي معرّف فرع: نحدّده من القائمة المجلوبة أعلاه لعرض اسمه وربط الطلب به
         const br = list.find(b => b.id === branchId)
         if (br) setBranch(br)
-        setBranchPicked(true) // الفرع محدد مسبقاً من الرابط، لا حاجة لصفحة الاختيار
-      } else {
-        // لا يوجد فرع في الرابط: نعرض صفحة الاختيار فقط لو فيه فرع نشط واحد على الأقل، وإلا نكمل مباشرة (الفرع الرئيسي)
-        if (list.length === 0) setBranchPicked(true)
       }
+      // لا يوجد فرع في الرابط: الفرع يبقى null (الفرع الرئيسي) — المنيو يظهر مباشرة بلا أي بوابة اختيار
 
       // عدد الطلبات النشطة حالياً لحساب وقت تجهيز تقديري ديناميكي (عبر RPC آمن)
       const { data: activeCount } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id })
@@ -139,7 +135,7 @@ export function useMenuData(slug, branchId) {
   }
 
   return {
-    restaurant, branch, setBranch, branchList, branchPicked, setBranchPicked,
+    restaurant, branch, setBranch, branchList,
     categories, products, bestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
     banners, coupons,
