@@ -91,6 +91,10 @@ export default function Orders() {
   const mutedRef = useRef(muted)
   useEffect(() => { mutedRef.current = muted }, [muted])
 
+  // نسخة حيّة من الطلبات لاستخدامها داخل رد نداء الاشتراك اللحظي (يتجنّب القيم القديمة المحصورة closure)
+  const ordersRef = useRef([])
+  useEffect(() => { ordersRef.current = orders }, [orders])
+
   // ساعة حيّة: تحدّث كل 20 ثانية لإعادة حساب الوقت المنقضي
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
@@ -158,6 +162,25 @@ export default function Orders() {
     } catch (err) { console.error('Sound play failed:', err) }
   }
 
+  // نغمة واحدة مختلفة عن صوت الطلب الجديد (نغمتين تصاعديتين) — يميّزها الكاشير بالسمع بلا نظر للشاشة
+  const playReadySound = () => {
+    if (mutedRef.current) return
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext
+      const ctx = audioCtxRef.current || new AudioCtx()
+      audioCtxRef.current = ctx
+      if (ctx.state === 'suspended') ctx.resume()
+      const osc = ctx.createOscillator(); const gain = ctx.createGain()
+      osc.type = 'sine'; osc.frequency.value = 1046
+      const t = ctx.currentTime
+      gain.gain.setValueAtTime(0.0001, t)
+      gain.gain.exponentialRampToValueAtTime(0.3, t + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.25)
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.start(t); osc.stop(t + 0.25)
+    } catch (err) { console.error('Sound play failed:', err) }
+  }
+
   const subscribeOrders = () => {
     if (!restaurant) return () => {}
     const ch = supabase.channel('orders-realtime')
@@ -170,6 +193,13 @@ export default function Orders() {
             playNewOrderSound()
             if (!mutedRef.current && navigator.vibrate) navigator.vibrate([120, 60, 120])
           } else if (payload.eventType === 'UPDATE') {
+            // تنبيه الكاشير عند تجهيز الطلب (تحضير → جاهز) — بصوت مختلف عن صوت الطلب الجديد
+            const prevOrder = ordersRef.current.find(o => o.id === payload.new.id)
+            if (prevOrder && prevOrder.status !== 'ready' && payload.new.status === 'ready') {
+              playReadySound()
+              if (!mutedRef.current && navigator.vibrate) navigator.vibrate([80])
+              toast.success(`✅ الطلب ${payload.new.order_number} جاهز`)
+            }
             setOrders(prev => prev.map(o => o.id === payload.new.id ? payload.new : o))
             setSelectedOrder(prev => prev?.id === payload.new.id ? payload.new : prev)
             // لو خرج الطلب من حالة الانتظار، يُزال من طابور التنبيه
