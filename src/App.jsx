@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from './store/authStore'
 import { canAccess, firstAllowedPath } from './lib/permissions'
+import RootErrorBoundary from './components/RootErrorBoundary'
 
 // تحميل كسول لكل الصفحات: زبون المنيو لا يحمّل كود اللوحة، والعكس صحيح
 const Login          = lazy(() => import('./pages/Login'))
@@ -73,6 +74,7 @@ export default function App() {
   useEffect(() => { initialize() }, [])
 
   return (
+    <RootErrorBoundary>
     <BrowserRouter>
       <Toaster position="bottom-center" toastOptions={{
         style: { fontFamily:'Tajawal,sans-serif', direction:'rtl', borderRadius:'12px', background:'#0F1117', color:'white', fontSize:'14px', fontWeight:'600' },
@@ -105,5 +107,6 @@ export default function App() {
       </Routes>
       </Suspense>
     </BrowserRouter>
+    </RootErrorBoundary>
   )
 }
