@@ -36,7 +36,8 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const { user, restaurant } = useAuthStore()
   const { isMobile, isDesktop } = useBreakpoint()
-  const [allOrders, setAllOrders] = useState([])
+  const [recentOrders, setRecentOrders] = useState([])   // طلبات اليوم+الأمس (تشغيلي، لحظي)
+  const [summary, setSummary] = useState(null)           // الجزء التحليلي (رسم/أصناف/عملاء الفترة)
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('week')
@@ -50,22 +51,33 @@ export default function Dashboard() {
   useEffect(() => {
     if (!restaurant) { setLoading(false); return }
     fetchReviews()
+    fetchRecent()
     const unsub = subscribeOrders()
     const unsubR = subscribeReviews()
     return () => { unsub(); unsubR() }
   }, [restaurant])
 
-  useEffect(() => { if (restaurant) fetchOrders() }, [restaurant, period])
+  useEffect(() => { if (restaurant) fetchSummary() }, [restaurant, period])
 
-  const fetchOrders = async () => {
+  // تشغيلي: طلبات اليوم+الأمس فقط (بدل سقف 2000 على النافذة كلها) — لحظي عبر الاشتراك
+  const fetchRecent = async () => {
     setLoading(true)
     try {
-      const from = new Date(); from.setDate(from.getDate() - (PERIOD_DAYS[period] || 7))
+      const from = new Date(); from.setDate(from.getDate() - 1); from.setHours(0,0,0,0)
       const { data } = await supabase.from('orders').select('*')
         .eq('restaurant_id', restaurant.id).gte('created_at', from.toISOString())
-        .order('created_at', { ascending: false }).limit(2000)
-      if (data) setAllOrders(data)
+        .order('created_at', { ascending: false }).limit(1000)
+      if (data) setRecentOrders(data)
     } finally { setLoading(false) }
+  }
+
+  // تحليلي: تجميع خادمي للفترة (رسم/أصناف/عملاء) — يتحدّث عند التحميل وتغيير الفترة
+  const fetchSummary = async () => {
+    const from = new Date(); from.setDate(from.getDate() - (PERIOD_DAYS[period] || 7))
+    const { data } = await supabase.rpc('get_dashboard_summary', {
+      p_restaurant_id: restaurant.id, p_from: from.toISOString(), p_to: new Date().toISOString(),
+    })
+    setSummary(data || null)
   }
 
   const fetchReviews = async () => {
@@ -78,8 +90,8 @@ export default function Dashboard() {
     if (!restaurant) return () => {}
     const ch = supabase.channel('orders-dash')
       .on('postgres_changes', { event:'*', schema:'public', table:'orders', filter:`restaurant_id=eq.${restaurant.id}` }, (p) => {
-        if (p.eventType === 'INSERT') { setAllOrders(prev => [p.new, ...prev]); toast.success(`🔔 طلب جديد! ${p.new.order_number}`) }
-        else if (p.eventType === 'UPDATE') setAllOrders(prev => prev.map(o => o.id === p.new.id ? p.new : o))
+        if (p.eventType === 'INSERT') { setRecentOrders(prev => [p.new, ...prev]); toast.success(`🔔 طلب جديد! ${p.new.order_number}`) }
+        else if (p.eventType === 'UPDATE') setRecentOrders(prev => prev.map(o => o.id === p.new.id ? p.new : o))
       }).subscribe()
     return () => supabase.removeChannel(ch)
   }
@@ -101,14 +113,14 @@ export default function Dashboard() {
   }
 
   // ===== الحسابات =====
-  const todayOrders = allOrders.filter(o => isToday(o.created_at))
-  const yesterdayOrders = allOrders.filter(o => isYesterday(o.created_at))
+  const todayOrders = recentOrders.filter(o => isToday(o.created_at))
+  const yesterdayOrders = recentOrders.filter(o => isYesterday(o.created_at))
   const sales = (list) => list.filter(o => o.status !== 'cancelled').reduce((s, o) => s + (Number(o.total) || 0), 0)
   const revToday = sales(todayOrders), revYest = sales(yesterdayOrders)
   const completedToday = todayOrders.filter(o => o.status === 'completed')
   const avgOrder = completedToday.length ? revToday / completedToday.length : 0
   const custToday = new Set(todayOrders.map(o => o.customer_phone).filter(Boolean)).size
-  const custWindow = new Set(allOrders.map(o => o.customer_phone).filter(Boolean)).size
+  const custWindow = Number(summary?.unique_customers) || 0
   const avgRating = reviews.length ? (reviews.reduce((s,r) => s+(r.rating||0),0)/reviews.length).toFixed(1) : '—'
   const growth = (c, p) => p > 0 ? Math.round(((c-p)/p)*100) : (c > 0 ? 100 : 0)
   const ordTrend = growth(todayOrders.length, yesterdayOrders.length)
@@ -119,25 +131,26 @@ export default function Dashboard() {
     const W = 700, top = 20, bot = 160, padR = 50, padL = 50
     const buckets = []
     const nowD = new Date()
+    const daily = (summary?.chart_daily) || []
     if (period === 'year') {
       for (let i = 11; i >= 0; i--) {
         const d = new Date(nowD.getFullYear(), nowD.getMonth() - i, 1)
         buckets.push({ label: d.toLocaleDateString('ar', { month:'short' }), y:d.getFullYear(), m:d.getMonth(), value:0 })
       }
-      allOrders.forEach(o => { if (o.status==='cancelled') return; const d=new Date(o.created_at); const b=buckets.find(x=>x.y===d.getFullYear()&&x.m===d.getMonth()); if(b) b.value+=Number(o.total)||0 })
+      daily.forEach(({ d, value }) => { const dt=new Date(d+'T00:00:00'); const b=buckets.find(x=>x.y===dt.getFullYear()&&x.m===dt.getMonth()); if(b) b.value+=Number(value)||0 })
     } else {
       const days = period === 'month' ? 30 : 7
       for (let i = days-1; i >= 0; i--) {
         const d = new Date(nowD); d.setDate(nowD.getDate()-i); d.setHours(0,0,0,0)
         buckets.push({ label: i===0 ? 'اليوم' : d.toLocaleDateString('ar', { weekday:'short' }), key:d.toDateString(), value:0 })
       }
-      allOrders.forEach(o => { if (o.status==='cancelled') return; const b=buckets.find(x=>x.key===new Date(o.created_at).toDateString()); if(b) b.value+=Number(o.total)||0 })
+      daily.forEach(({ d, value }) => { const dt=new Date(d+'T00:00:00'); const b=buckets.find(x=>x.key===dt.toDateString()); if(b) b.value+=Number(value)||0 })
     }
     const maxV = Math.max(...buckets.map(b=>b.value), 1)
     const n = buckets.length
     const pts = buckets.map((b,i) => ({ x: n===1?W/2 : padR + i*((W-padR-padL)/(n-1)), y: bot - (b.value/maxV)*(bot-top), ...b }))
     return { pts, maxV, line: smoothPath(pts), area: smoothPath(pts) + ` L${pts[pts.length-1].x},${bot} L${pts[0].x},${bot} Z` }
-  }, [allOrders, period])
+  }, [summary, period])
 
   // جدول الطلبات (اليوم) + فلتر
   const tableOrders = todayOrders.filter(o => orderFilter === 'all' ? true : o.status === orderFilter).slice(0, 20)
@@ -148,13 +161,8 @@ export default function Dashboard() {
 
   // أكثر الأصناف
   const topProducts = useMemo(() => {
-    const m = {}
-    allOrders.forEach(o => (Array.isArray(o.items)?o.items:[]).forEach(it => {
-      if (!m[it.name]) m[it.name] = { name:it.name, emoji:it.emoji||'🍽️', count:0 }
-      m[it.name].count += it.qty || 1
-    }))
-    return Object.values(m).sort((a,b)=>b.count-a.count).slice(0,5)
-  }, [allOrders])
+    return ((summary?.products) || []).slice(0,5).map(p => ({ name:p.name, emoji:p.emoji || '🍽️', count:Number(p.count)||0 }))
+  }, [summary])
 
   const timeAgo = (iso) => {
     const mins = Math.max(0, Math.floor((now - new Date(iso).getTime())/60000))
