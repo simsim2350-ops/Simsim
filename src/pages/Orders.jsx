@@ -242,8 +242,20 @@ export default function Orders() {
     const nextStatus = STATUS[order.status]?.next
     if (!nextStatus) return
     const prev = order.status
-    const { error } = await supabase.from('orders').update({ status: nextStatus }).eq('id', order.id)
+    // حماية تزامن: لا يُنفَّذ إلا لو الطلب لسه بنفس الحالة المعروضة فعلياً بقاعدة البيانات —
+    // يمنع قبول طلب ألغاه الزبون للتو (سباق زمني بين إلغاء الزبون وقبول المطعم)
+    const { data, error } = await supabase.from('orders')
+      .update({ status: nextStatus })
+      .eq('id', order.id)
+      .eq('status', prev)
+      .select()
     if (error) { toast.error(error.message); return }
+    if (!data || data.length === 0) {
+      const { data: fresh } = await supabase.from('orders').select('*').eq('id', order.id).single()
+      if (fresh) setOrders(list => list.map(o => o.id === order.id ? fresh : o))
+      toast.error(fresh?.status === 'cancelled' ? '🚫 هذا الطلب أُلغي من الزبون قبل قبوله' : '⚠️ حالة الطلب تغيّرت، تحقّق من الشاشة')
+      return
+    }
     const msgs = { preparing:'👨‍🍳 بدأ التحضير', ready:'✅ الطلب جاهز!', completed:'🎉 تم التسليم' }
     showUndo(order.id, prev, msgs[nextStatus] || '✅')
   }
@@ -259,7 +271,12 @@ export default function Orders() {
 
   const acceptFromBanner = async (order) => {
     dismissFromQueue(order.id)
-    await supabase.from('orders').update({ status: 'preparing' }).eq('id', order.id)
+    // نفس حماية advanceOrder: لا يُنفَّذ إلا لو الطلب لسه "انتظار" فعلياً (لم يُلغَ الزبون له للتو)
+    const { data } = await supabase.from('orders').update({ status: 'preparing' }).eq('id', order.id).eq('status', 'pending').select()
+    if (!data || data.length === 0) {
+      toast.error(`🚫 الطلب ${order.order_number} أُلغي من الزبون قبل قبوله`)
+      return
+    }
     toast.success(`👨‍🍳 تم قبول ${order.order_number}`)
   }
 
