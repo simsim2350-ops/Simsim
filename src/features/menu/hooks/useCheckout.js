@@ -51,24 +51,26 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
     const total = discountedSubtotal + deliveryFee
 
     setSubmitting(true)
-    const { data, error } = await supabase.from('orders').insert({
-      restaurant_id: restaurant.id,
-      branch_id: branch?.id,
-      table_number: orderType === 'dine_in' ? tableNumber : null,
-      delivery_address: orderType === 'delivery' ? deliveryAddress.trim() : null,
-      customer_name: customerName.trim() || null,
-      customer_phone: cleanPhone,
-      type: orderType,
-      status: 'pending',
-      items,
-      subtotal: net,
-      tax,
-      delivery_fee: deliveryFee,
-      total,
-      notes: orderNote.trim(),
-      coupon_code: appliedCoupon?.code || null,
-      discount_amount: discountAmount,
-    }).select().single()
+    // عبر RPC آمنة لا عبر إدخال مباشر + .select() — الأخير يحتاج قراءة الصف بعد إدخاله (RETURNING)،
+    // وهذا يصطدم بسياسة SELECT المغلقة عمداً أمام الزبون العابر (ADR-9). الدالة تتجاوز ذلك من الداخل
+    // بأمان وترجع فقط رقم الطلب ومعرّفه، بلا أي كشف لبيانات عملاء آخرين.
+    const { data, error } = await supabase.rpc('create_order', {
+      p_restaurant_id: restaurant.id,
+      p_branch_id: branch?.id,
+      p_table_number: orderType === 'dine_in' ? tableNumber : null,
+      p_delivery_address: orderType === 'delivery' ? deliveryAddress.trim() : null,
+      p_customer_name: customerName.trim() || null,
+      p_customer_phone: cleanPhone,
+      p_type: orderType,
+      p_items: items,
+      p_subtotal: net,
+      p_tax: tax,
+      p_delivery_fee: deliveryFee,
+      p_total: total,
+      p_notes: orderNote.trim(),
+      p_coupon_code: appliedCoupon?.code || null,
+      p_discount_amount: discountAmount,
+    }).single()
 
     if (error) {
       console.error('Order error:', error)
