@@ -46,7 +46,8 @@ function CustomersInner() {
   const navigate = useNavigate()
   const { restaurant, isOwner, membership } = useAuthStore()
   const branchLocked = !isOwner && membership?.branch_scope && membership.branch_scope !== 'all'
-  const [orders, setOrders] = useState([])
+  const [summaryRows, setSummaryRows] = useState([])   // صفوف مُجمَّعة خادمياً (صف لكل عميل) — get_customers_summary
+  const [insightsData, setInsightsData] = useState(null) // رؤى عامة للمطعم — get_customers_insights
   const [loyaltyProgram, setLoyaltyProgram] = useState(null)
   const [redemptions, setRedemptions] = useState([])
   const [branches, setBranches] = useState([])
@@ -63,6 +64,8 @@ function CustomersInner() {
 
   const [detailCustomer, setDetailCustomer] = useState(null)
   const [detailTab, setDetailTab] = useState('overview')
+  // تفاصيل العميل (سجل الطلبات + المنتجات المفضّلة) تُحمَّل كسولاً عند فتح عميل واحد فقط
+  const [detailData, setDetailData] = useState({ loading:false, orders:[], favoriteProducts:[] })
   // قفل تمرير الصفحة خلف أي نافذة منزلقة مفتوحة (فلاتر أكثر / لوحة تفاصيل العميل)
   useBodyScrollLock(moreFiltersOpen)
   useBodyScrollLock(!!detailCustomer)
@@ -75,13 +78,16 @@ function CustomersInner() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const [ordRes, progRes, redRes, br] = await Promise.all([
-        supabase.from('orders').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending:false }),
+      // التجميع يتم في قاعدة البيانات (صف لكل عميل) بدل تنزيل كل الطلبات الخام للمتصفح — أساس قابلية التوسع
+      const [sumRes, insRes, progRes, redRes, br] = await Promise.all([
+        supabase.rpc('get_customers_summary', { p_restaurant_id: restaurant.id }),
+        supabase.rpc('get_customers_insights', { p_restaurant_id: restaurant.id }),
         supabase.from('loyalty_programs').select('*').eq('restaurant_id', restaurant.id).maybeSingle(),
         supabase.from('loyalty_redemptions').select('customer_phone, points').eq('restaurant_id', restaurant.id),
         fetchBranches(restaurant.id),
       ])
-      if (ordRes.data) setOrders(ordRes.data)
+      if (sumRes.data) setSummaryRows(sumRes.data)
+      if (insRes.data) setInsightsData(Array.isArray(insRes.data) ? insRes.data[0] : insRes.data)
       if (progRes.data) setLoyaltyProgram(progRes.data)
       if (redRes.data) setRedemptions(redRes.data)
       setBranches(br || [])
@@ -90,74 +96,63 @@ function CustomersInner() {
     }
   }
 
+  // تحميل كسول لتفاصيل عميل واحد عند فتح لوحته: سجل طلباته + منتجاته المفضّلة (استعلام صغير مفلتر بجواله، يخضع لـ RLS)
+  useEffect(() => {
+    if (!detailCustomer || !restaurant) { setDetailData({ loading:false, orders:[], favoriteProducts:[] }); return }
+    let cancelled = false
+    setDetailData({ loading:true, orders:[], favoriteProducts:[] })
+    ;(async () => {
+      const { data } = await supabase.from('orders').select('*')
+        .eq('restaurant_id', restaurant.id).eq('customer_phone', detailCustomer.phone)
+        .order('created_at', { ascending:false })
+      if (cancelled) return
+      const list = data || []
+      // المنتجات المفضّلة: من الطلبات غير الملغاة فقط (نفس منطق الحساب السابق)
+      const productCounts = {}
+      list.forEach(o => {
+        if (o.status === 'cancelled') return
+        const items = Array.isArray(o.items) ? o.items : []
+        items.forEach(it => { if (it?.name) productCounts[it.name] = (productCounts[it.name] || 0) + (Number(it.qty) || 1) })
+      })
+      const favoriteProducts = Object.entries(productCounts).sort((a,b) => b[1]-a[1]).slice(0,3).map(([n,q]) => ({ name:n, qty:q }))
+      setDetailData({ loading:false, orders:list, favoriteProducts })
+    })()
+    return () => { cancelled = true }
+  }, [detailCustomer, restaurant])
+
   // اسم الفرع من معرّفه
   const branchName = (bid) => {
     const b = branches.find(x => x.id === bid)
     return b ? `${b.is_primary ? '🏠' : '🏢'} ${b.name}` : '🏢 فرع محذوف'
   }
 
-  // تجميع الطلبات في عملاء حسب رقم الجوال.
-  // الإحصائيات (الإنفاق/العدد/المتوسط) تُحتسب من الطلبات غير الملغاة فقط — الملغاة تبقى ظاهرة في سجل الطلبات لكنها لا تُحتسب مالياً.
+  // بناء عملاء من صفوف التجميع الخادمي (صف لكل عميل). المشتقّات الزمنية/المستوى تبقى محسوبة هنا كما كانت.
+  // «المنتجات المفضّلة» و«سجل الطلبات» لم تعد تُحمَّل هنا — تُجلب كسولاً عند فتح لوحة العميل (detailData).
   const customers = useMemo(() => {
-    const map = {}
-    orders.forEach(o => {
-      const phone = (o.customer_phone || '').trim()
-      if (!phone) return
-      if (!map[phone]) {
-        map[phone] = {
-          phone,
-          allOrders: [], statsOrders: [], completedSpent: 0,
-          branchCounts: {}, productCounts: {},
-        }
-      }
-      const c = map[phone]
-      c.allOrders.push(o)
-
-      if (o.status !== 'cancelled') {
-        c.statsOrders.push(o)
-        if (o.branch_id) c.branchCounts[o.branch_id] = (c.branchCounts[o.branch_id] || 0) + 1
-        const items = Array.isArray(o.items) ? o.items : []
-        items.forEach(it => {
-          if (!it?.name) return
-          c.productCounts[it.name] = (c.productCounts[it.name] || 0) + (Number(it.qty) || 1)
-        })
-      }
-      if (o.status === 'completed') c.completedSpent += Number(o.total) || 0
-    })
-
-    return Object.values(map).map(c => {
-      // أحدث اسم فعلي (بترتيب زمني تصاعدي) — يبقى آخر اسم أدخله العميل في أي طلب
-      const byTime = [...c.allOrders].sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
-      let name = null
-      byTime.forEach(o => { if (o.customer_name) name = o.customer_name })
-
-      const statsSorted = [...c.statsOrders].sort((a,b) => new Date(b.created_at) - new Date(a.created_at))
-      const orderCount = statsSorted.length
-      const totalSpent = statsSorted.reduce((s,o) => s + (Number(o.total) || 0), 0)
-      const avgOrderValue = orderCount > 0 ? totalSpent / orderCount : 0
-      const lastOrderAt = statsSorted[0]?.created_at || byTime[byTime.length - 1]?.created_at
-      const firstOrderAt = statsSorted[statsSorted.length - 1]?.created_at || byTime[0]?.created_at
-      const branchIds = new Set(Object.keys(c.branchCounts))
-      const mostOrderedBranchId = Object.entries(c.branchCounts).sort((a,b) => b[1]-a[1])[0]?.[0] || null
-      const favoriteProducts = Object.entries(c.productCounts).sort((a,b) => b[1]-a[1]).slice(0,3).map(([n,q]) => ({ name:n, qty:q }))
-
+    return summaryRows.map(r => {
+      const orderCount = Number(r.order_count) || 0
+      const totalSpent = Number(r.total_spent) || 0
+      const completedSpent = Number(r.completed_spent) || 0
+      const lastOrderAt = r.last_order_at || null
+      const firstOrderAt = r.first_order_at || null
+      const branchIds = new Set(Object.keys(r.branch_counts || {}))
       const daysSinceLast = lastOrderAt ? (Date.now() - new Date(lastOrderAt).getTime()) / DAY_MS : Infinity
       const isNewCustomer = firstOrderAt ? (Date.now() - new Date(firstOrderAt).getTime()) / DAY_MS <= NEW_DAYS : false
       const isActive = daysSinceLast <= ACTIVE_DAYS
-      const recentOrders30 = statsSorted.filter(o => (Date.now() - new Date(o.created_at).getTime())/DAY_MS <= 30).length
-
+      const recentOrders30 = Number(r.recent_orders_30) || 0
       const tier = getTierBadge(orderCount)
-      const earned = loyaltyProgram?.enabled ? Math.floor(c.completedSpent * (Number(loyaltyProgram.earn_rate) || 0)) : 0
+      const earned = loyaltyProgram?.enabled ? Math.floor(completedSpent * (Number(loyaltyProgram.earn_rate) || 0)) : 0
 
       return {
-        phone: c.phone, name, orders: byTime.slice().reverse(), // للعرض: الأحدث أولاً
-        orderCount, totalSpent, avgOrderValue, lastOrderAt, firstOrderAt,
-        branchIds, mostOrderedBranchId, favoriteProducts,
+        phone: r.phone, name: r.name || null,
+        orderCount, totalSpent, avgOrderValue: orderCount > 0 ? totalSpent / orderCount : 0,
+        lastOrderAt, firstOrderAt,
+        branchIds, mostOrderedBranchId: r.most_ordered_branch_id || null,
         daysSinceLast, isNewCustomer, isActive, recentOrders30,
         tier, loyaltyEarned: earned,
       }
     })
-  }, [orders, loyaltyProgram])
+  }, [summaryRows, loyaltyProgram])
 
   // رصيد نقاط الولاء لكل عميل (مُحسوب حيّاً — بلا ledger، مطابق لصفحة الولاء)
   const redemptionsByPhone = useMemo(() => {
@@ -253,33 +248,21 @@ function CustomersInner() {
     const nearUpgrade = customersFull.filter(c => c.tier.key === 'regular' && c.orderCount >= VIP_ORDERS - 2).length
     if (nearUpgrade > 0) list.push({ id:'upgrade', icon:'💎', text:`${nearUpgrade} ${nearUpgrade===1?'عميل قريب':'عملاء قريبون'} من الترقية إلى VIP` })
 
-    // مقارنة متوسط قيمة الطلب هذا الشهر بالشهر الماضي
-    const now = new Date()
-    const thisMonthOrders = orders.filter(o => o.status !== 'cancelled' && new Date(o.created_at).getMonth() === now.getMonth() && new Date(o.created_at).getFullYear() === now.getFullYear())
-    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const lastMonthOrders = orders.filter(o => o.status !== 'cancelled' && new Date(o.created_at).getMonth() === lastMonthDate.getMonth() && new Date(o.created_at).getFullYear() === lastMonthDate.getFullYear())
-    if (thisMonthOrders.length > 0 && lastMonthOrders.length > 0) {
-      const avgThis = thisMonthOrders.reduce((s,o) => s + (Number(o.total)||0), 0) / thisMonthOrders.length
-      const avgLast = lastMonthOrders.reduce((s,o) => s + (Number(o.total)||0), 0) / lastMonthOrders.length
-      if (avgLast > 0) {
-        const deltaPct = ((avgThis - avgLast) / avgLast) * 100
-        if (Math.abs(deltaPct) >= 3) {
-          list.push({ id:'avgtrend', icon: deltaPct > 0 ? '📈' : '📉', text:`متوسط قيمة الطلب ${deltaPct > 0 ? 'ارتفع' : 'انخفض'} ${Math.abs(deltaPct).toFixed(0)}٪ عن الشهر الماضي` })
-        }
+    // مقارنة متوسط قيمة الطلب هذا الشهر بالشهر الماضي — محسوبة خادمياً (get_customers_insights)
+    const avgThis = insightsData?.this_month_avg == null ? null : Number(insightsData.this_month_avg)
+    const avgLast = insightsData?.last_month_avg == null ? null : Number(insightsData.last_month_avg)
+    if (avgThis != null && !isNaN(avgThis) && avgLast != null && !isNaN(avgLast) && avgLast > 0) {
+      const deltaPct = ((avgThis - avgLast) / avgLast) * 100
+      if (Math.abs(deltaPct) >= 3) {
+        list.push({ id:'avgtrend', icon: deltaPct > 0 ? '📈' : '📉', text:`متوسط قيمة الطلب ${deltaPct > 0 ? 'ارتفع' : 'انخفض'} ${Math.abs(deltaPct).toFixed(0)}٪ عن الشهر الماضي` })
       }
     }
 
-    // الأكثر طلباً بين كل العملاء
-    const productCounts = {}
-    orders.filter(o => o.status !== 'cancelled').forEach(o => {
-      const items = Array.isArray(o.items) ? o.items : []
-      items.forEach(it => { if (it?.name) productCounts[it.name] = (productCounts[it.name] || 0) + (Number(it.qty)||1) })
-    })
-    const topProduct = Object.entries(productCounts).sort((a,b) => b[1]-a[1])[0]
-    if (topProduct) list.push({ id:'topproduct', icon:'⭐', text:`الأكثر طلباً بين عملائك: ${topProduct[0]}` })
+    // الأكثر طلباً بين كل العملاء — محسوب خادمياً (get_customers_insights)
+    if (insightsData?.top_product) list.push({ id:'topproduct', icon:'⭐', text:`الأكثر طلباً بين عملائك: ${insightsData.top_product}` })
 
     return list
-  }, [customersFull, orders])
+  }, [customersFull, insightsData])
 
   const secondaryStatCards = [
     { icon:'🆕', val:stats.newCount, label:'عملاء جدد', color:'#1E40AF', bg:'rgba(30,64,175,0.1)' },
@@ -478,7 +461,7 @@ function CustomersInner() {
           const digits = phoneDigits(c.phone)
           const tabs = [
             { key:'overview', label:'نظرة عامة' },
-            { key:'orders', label:`الطلبات (${c.orders.length})` },
+            { key:'orders', label:`الطلبات${detailData.loading ? '' : ` (${detailData.orders.length})`}` },
             ...(loyaltyProgram?.enabled ? [{ key:'loyalty', label:'الولاء والمكافآت' }] : []),
           ]
           return (
@@ -537,11 +520,11 @@ function CustomersInner() {
                           <div style={{ fontSize:'13.5px', fontWeight:'700' }}>{branchName(c.mostOrderedBranchId)}</div>
                         </div>
                       )}
-                      {c.favoriteProducts.length > 0 && (
+                      {detailData.favoriteProducts.length > 0 && (
                         <div>
                           <div style={{ fontSize:'12px', fontWeight:'700', color:'#9CA3AF', marginBottom:'8px' }}>المنتجات المفضّلة</div>
                           <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
-                            {c.favoriteProducts.map(p => (
+                            {detailData.favoriteProducts.map(p => (
                               <div key={p.name} style={{ display:'flex', justifyContent:'space-between', padding:'8px 10px', background:'#F8F9FB', borderRadius:'8px' }}>
                                 <span style={{ fontSize:'13px', fontWeight:'600' }}>{p.name}</span>
                                 <span style={{ fontSize:'12px', color:'#9CA3AF' }}>×{p.qty}</span>
@@ -555,7 +538,9 @@ function CustomersInner() {
 
                   {detailTab === 'orders' && (
                     <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
-                      {c.orders.map(o => (
+                      {detailData.loading && <div style={{ textAlign:'center', padding:'20px', color:'#9CA3AF', fontSize:'13px' }}>جارٍ تحميل الطلبات...</div>}
+                      {!detailData.loading && detailData.orders.length === 0 && <div style={{ textAlign:'center', padding:'20px', color:'#9CA3AF', fontSize:'13px' }}>لا توجد طلبات</div>}
+                      {detailData.orders.map(o => (
                         <div key={o.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', background:'#F8F9FB', borderRadius:'10px', border: o.status === 'cancelled' ? '1px dashed #FCA5A5' : '1px solid #F0F0F0' }}>
                           <div>
                             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px' }}>{o.order_number}</span>
