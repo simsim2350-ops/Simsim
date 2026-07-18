@@ -119,16 +119,18 @@ export function useMenuData(slug, branchId) {
         setBestSellers(ranked)
       }
 
-      // تحديث عدد الطلبات النشطة لحظياً مع كل طلب جديد أو تغيّر حالة
+      // تحديث عدد الطلبات النشطة لحظياً مع كل طلب جديد أو تغيّر حالة — عبر Realtime Broadcast
+      // (الاشتراك المباشر بالجدول postgres_changes لا يعمل للزبون العابر أصلاً، يحتاج صلاحية قراءة
+      // مغلقة عمداً — ADR-9؛ نفس حل تتبّع حالة الطلب، بمعزل عن أي بيانات — restaurant_id ليس سرياً)
+      const refreshActiveOrdersCount = async () => {
+        const { data: c } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id, p_branch_id: resolvedBranch.id })
+        setActiveOrdersCount(c || 0)
+      }
       if (restaurantLoadChannelRef.current) supabase.removeChannel(restaurantLoadChannelRef.current)
-      restaurantLoadChannelRef.current = supabase.channel(`restaurant-load-${rest.id}`)
-        .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'orders', filter: `restaurant_id=eq.${rest.id}` },
-          async () => {
-            const { data: c } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id, p_branch_id: resolvedBranch.id })
-            setActiveOrdersCount(c || 0)
-          }
-        ).subscribe()
+      restaurantLoadChannelRef.current = supabase.channel(`restaurant-orders:${rest.id}`, { config: { private: true } })
+        .on('broadcast', { event: 'INSERT' }, refreshActiveOrdersCount)
+        .on('broadcast', { event: 'UPDATE' }, refreshActiveOrdersCount)
+        .subscribe()
     } finally {
       setLoading(false)
     }
