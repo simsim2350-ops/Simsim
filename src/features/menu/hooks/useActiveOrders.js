@@ -49,30 +49,31 @@ export function useActiveOrders(slug, t) {
     activeOrdersRef.current = activeOrders
     activeOrders.forEach(order => {
       if (orderChannelsRef.current[order.id]) return // مشترك بالفعل
-      const ch = supabase.channel(`order-status-${order.id}`)
-        .on('postgres_changes',
-          { event:'UPDATE', schema:'public', table:'orders', filter:`id=eq.${order.id}` },
-          (p) => {
-            const newItems = Array.isArray(p.new.items) ? p.new.items : []
-            const newStatus = p.new.status
-            const newCancelledBy = p.new.cancelled_by
-            setActiveOrders(prev => prev.map(o => {
-              if (o.id !== order.id) return o
-              if (newStatus === 'cancelled' && o.status !== 'cancelled') {
-                toast.error(`🚫 ${t('cancelledByShop')} (${o.orderNumber})`, { duration: 8000 })
-              } else {
-                // إشعار عند تعليم صنف جديد كغير متوفر (طلب لسه نشط)
-                newItems.forEach((ni, idx) => {
-                  const wasUnavailable = o.items[idx]?.unavailable
-                  if (ni.unavailable && !wasUnavailable) {
-                    toast.error(`⚠️ ${ni.name} ${t('itemUnavail')} (${o.orderNumber})`, { duration: 6000 })
-                  }
-                })
-              }
-              return { ...o, status: newStatus, cancelledBy: newCancelledBy, items: newItems, total: Number(p.new.total) || 0 }
-            }))
-          }
-        ).subscribe()
+      // Realtime Broadcast — بديل عن الاشتراك المباشر بالجدول (لا يعمل للزبون العابر أصلاً لأنه
+      // يحتاج صلاحية قراءة مغلقة عمداً). القناة خاصة بهذا الطلب تحديداً (معرفة الـ UUID = صلاحية المتابعة)
+      const ch = supabase.channel(`order-status:${order.id}`, { config: { private: true } })
+        .on('broadcast', { event: 'UPDATE' }, (payload) => {
+          const newRow = payload.payload?.record
+          if (!newRow) return
+          const newItems = Array.isArray(newRow.items) ? newRow.items : []
+          const newStatus = newRow.status
+          const newCancelledBy = newRow.cancelled_by
+          setActiveOrders(prev => prev.map(o => {
+            if (o.id !== order.id) return o
+            if (newStatus === 'cancelled' && o.status !== 'cancelled') {
+              toast.error(`🚫 ${t('cancelledByShop')} (${o.orderNumber})`, { duration: 8000 })
+            } else {
+              // إشعار عند تعليم صنف جديد كغير متوفر (طلب لسه نشط)
+              newItems.forEach((ni, idx) => {
+                const wasUnavailable = o.items[idx]?.unavailable
+                if (ni.unavailable && !wasUnavailable) {
+                  toast.error(`⚠️ ${ni.name} ${t('itemUnavail')} (${o.orderNumber})`, { duration: 6000 })
+                }
+              })
+            }
+            return { ...o, status: newStatus, cancelledBy: newCancelledBy, items: newItems, total: Number(newRow.total) || 0 }
+          }))
+        }).subscribe()
       orderChannelsRef.current[order.id] = ch
     })
   }, [activeOrders, slug])
