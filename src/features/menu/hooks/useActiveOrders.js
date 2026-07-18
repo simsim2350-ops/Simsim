@@ -120,7 +120,7 @@ export function useActiveOrders(slug, t) {
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('focus', reconcileActiveOrders)
     const kickoff = setTimeout(reconcileActiveOrders, 1500) // مزامنة أولية سريعة بعد التحميل
-    const interval = setInterval(reconcileActiveOrders, 20000)
+    const interval = setInterval(reconcileActiveOrders, 5000) // سقف أقصى مضمون للتأخير حتى لو تأخر البث اللحظي
     return () => {
       document.removeEventListener('visibilitychange', onVisible)
       window.removeEventListener('focus', reconcileActiveOrders)
