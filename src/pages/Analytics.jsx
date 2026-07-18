@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
-import { orderBreakdown as breakdown } from '../lib/pricing'
+import { vatBreakdown } from '../lib/pricing'
 import { fetchBranches } from '../lib/branchesApi'
 
 const PERIOD_DAYS = { week: 7, month: 30, quarter: 90 }
@@ -22,10 +22,10 @@ export default function Analytics() {
   const [period, setPeriod] = useState('week')
   const [branches, setBranches] = useState([])
   const [branchFilter, setBranchFilter] = useState('all')
-  const [raw, setRaw] = useState({ cur: [], prev: [] })
+  const [data, setData] = useState(null)   // ناتج التجميع الخادمي get_analytics_summary
 
   useEffect(() => { if (restaurant) fetchBranches(restaurant.id).then(setBranches).catch(() => {}) }, [restaurant])
-  useEffect(() => { if (restaurant) fetchAnalytics() }, [restaurant, period])
+  useEffect(() => { if (restaurant) fetchAnalytics() }, [restaurant, period, branchFilter])
 
   const fetchAnalytics = async () => {
     setLoading(true)
@@ -34,79 +34,64 @@ export default function Analytics() {
       const now = new Date()
       const from = new Date(now); from.setDate(now.getDate() - days)
       const prevFrom = new Date(from); prevFrom.setDate(from.getDate() - days)
-      const [{ data: cur }, { data: prev }] = await Promise.all([
-        supabase.from('orders').select('*').eq('restaurant_id', restaurant.id).gte('created_at', from.toISOString()).order('created_at', { ascending: true }),
-        supabase.from('orders').select('total,status,created_at,delivery_fee,branch_id').eq('restaurant_id', restaurant.id).gte('created_at', prevFrom.toISOString()).lt('created_at', from.toISOString()),
-      ])
-      setRaw({ cur: cur || [], prev: prev || [] })
+      // التجميع في قاعدة البيانات (استدعاء واحد) بدل تنزيل كل طلبات الفترة للمتصفح.
+      // فلتر الفرع أصبح معامل خادمي (إعادة جلب) — لا ننزّل بيانات كل الفروع لنفلترها محلياً.
+      const { data: j } = await supabase.rpc('get_analytics_summary', {
+        p_restaurant_id: restaurant.id,
+        p_from: from.toISOString(),
+        p_to: now.toISOString(),
+        p_prev_from: prevFrom.toISOString(),
+        p_prev_to: from.toISOString(),
+        p_branch_id: branchFilter === 'all' ? null : branchFilter,
+      })
+      setData(j || null)
     } finally { setLoading(false) }
   }
 
   const go = (path, state) => navigate(path, state ? { state } : undefined)
 
-  // ===== الحسابات =====
-  const inBranch = (o) => branchFilter === 'all' ? true : o.branch_id === branchFilter
-  const orders = raw.cur.filter(inBranch)
-  const prevOrders = raw.prev.filter(inBranch)
-  const completed = orders.filter(o => o.status === 'completed')
-  const cancelled = orders.filter(o => o.status === 'cancelled')
+  // ===== الحسابات (من التجميع الخادمي get_analytics_summary) =====
+  const d = data || {}
+  const num = (v) => Number(v) || 0
 
-  const revenue = completed.reduce((s, o) => s + (Number(o.total) || 0), 0)
-  const netSales = completed.reduce((s, o) => s + breakdown(o).net, 0)
-  const taxCollected = completed.reduce((s, o) => s + breakdown(o).tax, 0)
-  const prevRevenue = prevOrders.filter(o => o.status === 'completed').reduce((s, o) => s + (Number(o.total) || 0), 0)
-  const totalOrders = orders.length
-  const prevTotalOrders = prevOrders.length
-  const avgOrder = completed.length > 0 ? revenue / completed.length : 0
-  const completionRate = totalOrders > 0 ? Math.round((completed.length / totalOrders) * 100) : 0
-  const cancelRate = totalOrders > 0 ? Math.round((cancelled.length / totalOrders) * 100) : 0
-  const uniqueCustomers = new Set(orders.map(o => o.customer_phone).filter(Boolean)).size
+  const revenue = num(d.revenue)
+  // الضريبة تُفكّ عبر lib/pricing.js (ADR-1) من مجموع الأساس المحصّل خادمياً — يطابق جمع التفكيك لكل طلب
+  const { net: netSales, tax: taxCollected } = vatBreakdown(num(d.completed_gross_sum))
+  const prevRevenue = num(d.prev_revenue)
+  const totalOrders = num(d.total_orders)
+  const prevTotalOrders = num(d.prev_total_orders)
+  const completedCount = num(d.completed_count)
+  const cancelledCount = num(d.cancelled_count)
+  const avgOrder = completedCount > 0 ? revenue / completedCount : 0
+  const completionRate = totalOrders > 0 ? Math.round((completedCount / totalOrders) * 100) : 0
+  const cancelRate = totalOrders > 0 ? Math.round((cancelledCount / totalOrders) * 100) : 0
+  const uniqueCustomers = num(d.unique_customers)
 
   const growth = (cur, prev) => prev > 0 ? Math.round(((cur - prev) / prev) * 100) : (cur > 0 ? 100 : 0)
   const revGrowth = growth(revenue, prevRevenue)
   const ordGrowth = growth(totalOrders, prevTotalOrders)
 
-  // متوسط وقت التحضير
-  const prepList = completed.filter(o => o.updated_at).map(o => Math.max((new Date(o.updated_at) - new Date(o.created_at)) / 60000, 0))
-  const avgPrep = prepList.length ? Math.round(prepList.reduce((a, b) => a + b, 0) / prepList.length) : null
+  const avgPrep = d.avg_prep_minutes == null ? null : Math.round(num(d.avg_prep_minutes))
 
-  // مبيعات يومية
-  const dailyMap = {}
-  orders.forEach(o => {
-    const day = new Date(o.created_at).toLocaleDateString('ar', { weekday:'short', day:'numeric' })
-    if (!dailyMap[day]) dailyMap[day] = { revenue:0, orders:0 }
-    dailyMap[day].orders++
-    if (o.status === 'completed') dailyMap[day].revenue += (Number(o.total) || 0)
-  })
-  const dailyRevenue = Object.entries(dailyMap).map(([day, d]) => ({ day, ...d }))
-  const maxRevenue = Math.max(...dailyRevenue.map(d => d.revenue), 1)
+  // مبيعات يومية (التاريخ مُجمَّع بتوقيت الرياض في الخادم، والتسمية تُنسَّق هنا)
+  const dailyRevenue = (d.daily || []).map(x => ({
+    day: new Date(x.d + 'T00:00:00').toLocaleDateString('ar', { weekday:'short', day:'numeric' }),
+    revenue: num(x.revenue), orders: num(x.orders),
+  }))
+  const maxRevenue = Math.max(...dailyRevenue.map(x => x.revenue), 1)
 
-  // الحالة والنوع
-  const statusMap = {}; orders.forEach(o => { statusMap[o.status] = (statusMap[o.status] || 0) + 1 })
-  const typeRev = {}; completed.forEach(o => { const t = o.type || 'dine_in'; typeRev[t] = (typeRev[t] || 0) + (Number(o.total) || 0) })
-
-  // حسب الفرع
-  const branchRev = {}
-  completed.forEach(o => { if (o.branch_id) branchRev[o.branch_id] = (branchRev[o.branch_id] || 0) + (Number(o.total) || 0) })
+  const statusMap = d.status_counts || {}
+  const typeRev = d.type_revenue || {}
+  const branchRev = d.branch_revenue || {}
   const branchName = (id) => branches.find(b => b.id === id)?.name || 'فرع محذوف'
 
-  // المنتجات
-  const productMap = {}
-  orders.forEach(o => (Array.isArray(o.items) ? o.items : []).forEach(it => {
-    if (!productMap[it.name]) productMap[it.name] = { name:it.name, emoji:it.emoji||'🍽️', count:0, revenue:0 }
-    productMap[it.name].count += it.qty || 1
-    productMap[it.name].revenue += (it.price || 0) * (it.qty || 1)
-  }))
-  const productsArr = Object.values(productMap)
+  const productsArr = (d.products || []).map(p => ({ name:p.name, emoji:p.emoji || '🍽️', count:num(p.count), revenue:num(p.revenue) }))
   const topProducts = [...productsArr].sort((a, b) => b.count - a.count).slice(0, 6)
   const bottomProducts = [...productsArr].sort((a, b) => a.count - b.count).slice(0, 3)
 
-  // أسباب الإلغاء
-  const reasonMap = {}; cancelled.forEach(o => { const r = o.cancel_reason || 'غير محدد'; reasonMap[r] = (reasonMap[r] || 0) + 1 })
-  const reasons = Object.entries(reasonMap).sort((a, b) => b[1] - a[1])
+  const reasons = (d.cancel_reasons || []).map(x => [x.reason, num(x.count)])
 
-  // ساعة الذروة
-  const hourMap = {}; completed.forEach(o => { const h = new Date(o.created_at).getHours(); hourMap[h] = (hourMap[h] || 0) + 1 })
+  const hourMap = d.hours || {}
   const peakHour = Object.entries(hourMap).sort((a, b) => b[1] - a[1])[0]
   const peakHourLabel = peakHour ? `${peakHour[0]}:00 - ${(+peakHour[0]+1)}:00` : '—'
 
@@ -291,7 +276,7 @@ export default function Analytics() {
                 <CardHead>🚫 الإلغاء ({cancelRate}%)</CardHead>
                 <div style={{ padding:'12px' }}>
                   {reasons.length === 0 ? <Empty text="لا توجد طلبات ملغاة 🎉" /> : reasons.map(([r, c]) => {
-                    const pct = Math.round((c / cancelled.length) * 100)
+                    const pct = Math.round((c / cancelledCount) * 100)
                     return (
                       <div key={r} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'8px 0', borderBottom:'1px solid #F3F4F6' }}>
                         <span style={{ fontSize:'13px', fontWeight:'600', flex:1 }}>{r}</span>
