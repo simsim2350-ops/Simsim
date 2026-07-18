@@ -33,8 +33,8 @@ after update on public.orders
 for each row execute function public.broadcast_order_status();
 
 -- 2) تفويض الاستماع: أي طرف (زبون عابر) يقدر يشترك بقناة "order-status:<uuid>" — الأمان في عشوائية الـ UUID نفسه
-alter table realtime.messages enable row level security;
-
+-- ملاحظة: RLS مفعّل مسبقاً افتراضياً على realtime.messages من إعداد Supabase نفسه (الجدول مصمَّم لهذا
+-- الاستخدام تحديداً) — لا تحتاج (ولا تقدر، لأنك لست مالك الجدول) تُفعّله يدوياً؛ إنشاء السياسة وحده يكفي.
 drop policy if exists "order status broadcast read" on realtime.messages;
 create policy "order status broadcast read"
 on realtime.messages
