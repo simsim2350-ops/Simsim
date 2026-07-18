@@ -158,7 +158,11 @@ export default function Orders() {
         osc.start(startTime); osc.stop(startTime + duration)
       }
       const t = ctx.currentTime
-      playTone(880, t, 0.15); playTone(1175, t + 0.16, 0.2)
+      // النغمة التصاعدية مكررة 3 مرات (~1.5 ثانية) حتى تُسمع وسط ضجيج المطعم
+      for (let i = 0; i < 3; i++) {
+        const s = t + i * 0.5
+        playTone(880, s, 0.15); playTone(1175, s + 0.16, 0.2)
+      }
     } catch (err) { console.error('Sound play failed:', err) }
   }
 
@@ -180,7 +184,11 @@ export default function Orders() {
         osc.start(startTime); osc.stop(startTime + duration)
       }
       const t = ctx.currentTime
-      playTone(1046, t, 0.14); playTone(1046, t + 0.2, 0.14)
+      // الصفّارتان مكررتان 3 مرات (~1.4 ثانية) — يبقى الإيقاع مميزاً عن نغمة الطلب الجديد التصاعدية
+      for (let i = 0; i < 3; i++) {
+        const s = t + i * 0.5
+        playTone(1046, s, 0.14); playTone(1046, s + 0.2, 0.14)
+      }
     } catch (err) { console.error('Sound play failed:', err) }
   }
 
