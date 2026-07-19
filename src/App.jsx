@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from './store/authStore'
 import { canAccess, firstAllowedPath } from './lib/permissions'
 import RootErrorBoundary from './components/RootErrorBoundary'
+import RequirePlatformAdmin from './admin/RequirePlatformAdmin'
 
 // تحميل كسول لكل الصفحات: زبون المنيو لا يحمّل كود اللوحة، والعكس صحيح
 const Login          = lazy(() => import('./pages/Login'))
@@ -25,6 +26,9 @@ const Loyalty        = lazy(() => import('./pages/Loyalty'))
 const Marketing      = lazy(() => import('./pages/Marketing'))
 const Staff          = lazy(() => import('./pages/Staff'))
 const StaffLogin     = lazy(() => import('./pages/StaffLogin'))
+// وحدة Super Admin معزولة (تحميل كسول: لا تُحمَّل لأي صاحب مطعم أو زبون)
+const AdminOverview    = lazy(() => import('./admin/features/dashboard/Overview'))
+const AdminRestaurants = lazy(() => import('./admin/features/restaurants/RestaurantsList'))
 
 // نفس شاشة التحميل المعتمدة في ProtectedRoute — تُعرض أثناء جلب chunk الصفحة
 function PageLoader() {
@@ -103,6 +107,8 @@ export default function App() {
         <Route path="/loyalty"         element={<ProtectedRoute><RequirePage page="loyalty"><Loyalty /></RequirePage></ProtectedRoute>} />
         <Route path="/marketing"       element={<ProtectedRoute><RequirePage page="marketing"><Marketing /></RequirePage></ProtectedRoute>} />
         <Route path="/staff"           element={<ProtectedRoute><RequirePage page="staff"><Staff /></RequirePage></ProtectedRoute>} />
+        <Route path="/admin"           element={<RequirePlatformAdmin><AdminOverview /></RequirePlatformAdmin>} />
+        <Route path="/admin/restaurants" element={<RequirePlatformAdmin><AdminRestaurants /></RequirePlatformAdmin>} />
         <Route path="*"                element={<Navigate to="/login" replace />} />
       </Routes>
       </Suspense>
