@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import AdminShell from '../../AdminShell'
 import { listRestaurants } from './restaurantsApi'
 
@@ -7,6 +8,7 @@ const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', AC
 // وحدة «المطاعم» — قائمة للقراءة فقط (Walking Skeleton كامل: حارس → قشرة → خدمة → RPC → DB).
 // الإدارة (تعليق/تفعيل/تغيير خطة/تعمّق) تأتي في M3 (إدارة المطاعم).
 export default function RestaurantsList() {
+  const navigate = useNavigate()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -55,7 +57,7 @@ export default function RestaurantsList() {
         ) : (
           <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
             {filtered.map(r => (
-              <div key={r.id} style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:'14px', padding:'14px 16px', display:'flex', alignItems:'center', gap:'14px', flexWrap:'wrap' }}>
+              <div key={r.id} onClick={() => navigate(`/admin/restaurants/${r.id}`)} style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:'14px', padding:'14px 16px', display:'flex', alignItems:'center', gap:'14px', flexWrap:'wrap', cursor:'pointer' }}>
                 <div style={{ width:'42px', height:'42px', borderRadius:'11px', background:'rgba(124,58,237,0.15)', border:`1px solid ${ACCENT}55`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', flexShrink:0 }}>🏪</div>
                 <div style={{ flex:1, minWidth:'160px' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap', marginBottom:'3px' }}>

@@ -29,6 +29,7 @@ const StaffLogin     = lazy(() => import('./pages/StaffLogin'))
 // وحدة Super Admin معزولة (تحميل كسول: لا تُحمَّل لأي صاحب مطعم أو زبون)
 const AdminOverview    = lazy(() => import('./admin/features/dashboard/Overview'))
 const AdminRestaurants = lazy(() => import('./admin/features/restaurants/RestaurantsList'))
+const AdminRestaurantDetail = lazy(() => import('./admin/features/restaurants/RestaurantDetail'))
 
 // نفس شاشة التحميل المعتمدة في ProtectedRoute — تُعرض أثناء جلب chunk الصفحة
 function PageLoader() {
@@ -109,6 +110,7 @@ export default function App() {
         <Route path="/staff"           element={<ProtectedRoute><RequirePage page="staff"><Staff /></RequirePage></ProtectedRoute>} />
         <Route path="/admin"           element={<RequirePlatformAdmin><AdminOverview /></RequirePlatformAdmin>} />
         <Route path="/admin/restaurants" element={<RequirePlatformAdmin><AdminRestaurants /></RequirePlatformAdmin>} />
+        <Route path="/admin/restaurants/:id" element={<RequirePlatformAdmin><AdminRestaurantDetail /></RequirePlatformAdmin>} />
         <Route path="*"                element={<Navigate to="/login" replace />} />
       </Routes>
       </Suspense>
