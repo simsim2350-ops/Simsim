@@ -2,7 +2,7 @@
 // ready=false: القسم مخطّط لكنه قيد البناء (يظهر معطّلاً بشارة «قريباً») — لا مسار له بعد.
 export const ADMIN_NAV = [
   { key: 'overview',    label: 'نظرة عامة',    icon: '📊', path: '/admin',             ready: true  },
-  { key: 'restaurants', label: 'المطاعم',      icon: '🏪', path: '/admin/restaurants', ready: false },
+  { key: 'restaurants', label: 'المطاعم',      icon: '🏪', path: '/admin/restaurants', ready: true  },
   { key: 'billing',     label: 'الفوترة',      icon: '💳', path: '/admin/billing',     ready: false },
   { key: 'flags',       label: 'المزايا',      icon: '🚩', path: '/admin/flags',       ready: false },
   { key: 'audit',       label: 'سجلّ التدقيق', icon: '📜', path: '/admin/audit',       ready: false },
