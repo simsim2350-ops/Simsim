@@ -7,6 +7,8 @@ export const useAuthStore = create((set, get) => ({
   restaurant: null,
   membership: null,   // سجل عضوية الموظف (null لصاحب المطعم)
   isOwner: false,     // هل المستخدم الحالي صاحب المطعم؟
+  isPlatformAdmin: false, // هل هو مشرف منصّة؟ (طبقة منفصلة تماماً عن المطعم)
+  platformRole: null,     // دور المشرف (super_admin / read_only)
   loading: true,
 
   initialize: async () => {
@@ -21,7 +23,7 @@ export const useAuthStore = create((set, get) => ({
 
       if (session?.user) {
         set({ user: session.user, session })
-        await get().fetchRestaurant(session.user.id)
+        await Promise.all([ get().fetchRestaurant(session.user.id), get().fetchPlatformStatus() ])
       }
     } catch (err) {
       console.error('Init error:', err)
@@ -32,9 +34,9 @@ export const useAuthStore = create((set, get) => ({
     supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         set({ user: session.user, session })
-        await get().fetchRestaurant(session.user.id)
+        await Promise.all([ get().fetchRestaurant(session.user.id), get().fetchPlatformStatus() ])
       } else {
-        set({ user: null, session: null, restaurant: null, membership: null, isOwner: false })
+        set({ user: null, session: null, restaurant: null, membership: null, isOwner: false, isPlatformAdmin: false, platformRole: null })
       }
     })
   },
@@ -71,6 +73,21 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  // حالة مشرف المنصّة (طبقة منفصلة عن المطعم) — عبر دوال RPC مبوّبة بـ is_platform_admin()
+  fetchPlatformStatus: async () => {
+    try {
+      const { data: isAdmin } = await supabase.rpc('is_platform_admin')
+      if (isAdmin) {
+        const { data: role } = await supabase.rpc('platform_admin_role')
+        set({ isPlatformAdmin: true, platformRole: role || null })
+      } else {
+        set({ isPlatformAdmin: false, platformRole: null })
+      }
+    } catch {
+      set({ isPlatformAdmin: false, platformRole: null })
+    }
+  },
+
   signUp: async (email, password, fullName) => {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -92,7 +109,7 @@ export const useAuthStore = create((set, get) => ({
 
   signOut: async () => {
     await supabase.auth.signOut()
-    set({ user: null, session: null, restaurant: null, membership: null, isOwner: false })
+    set({ user: null, session: null, restaurant: null, membership: null, isOwner: false, isPlatformAdmin: false, platformRole: null })
   },
 
   resetPassword: async (email) => {
