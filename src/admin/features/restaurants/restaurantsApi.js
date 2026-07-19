@@ -14,3 +14,15 @@ export async function getRestaurant(id) {
   if (error) throw error
   return data
 }
+
+// إجراءات كتابة (super_admin فقط، تُسجّل Audit ذرّياً في الخادم).
+export async function setRestaurantActive(id, active) {
+  const { data, error } = await supabase.rpc('admin_set_restaurant_active', { p_restaurant_id: id, p_active: active })
+  if (error) throw error
+  return data
+}
+export async function setRestaurantPlan(id, plan) {
+  const { data, error } = await supabase.rpc('admin_set_restaurant_plan', { p_restaurant_id: id, p_plan: plan })
+  if (error) throw error
+  return data
+}
