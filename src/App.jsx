@@ -6,29 +6,52 @@ import { canAccess, firstAllowedPath } from './lib/permissions'
 import RootErrorBoundary from './components/RootErrorBoundary'
 import RequirePlatformAdmin from './admin/RequirePlatformAdmin'
 
+// تحميل كسول مع إعادة محاولة: إن فشل تحميل chunk (غالباً بعد نشر جديد ببصمات مختلفة)،
+// نعيد تحميل الصفحة مرة واحدة تلقائياً لجلب أحدث نسخة بدل شاشة بيضاء، ثم نمسح العلم عند أول نجاح
+// (فلا حلقة إعادة تحميل لا نهائية لو كان الـchunk معطوباً فعلاً — يظهر عندها خطأ المصيدة).
+const CHUNK_RELOAD_KEY = 'chunk_reload_attempted'
+function lazyWithRetry(importer) {
+  return lazy(async () => {
+    try {
+      const mod = await importer()
+      sessionStorage.removeItem(CHUNK_RELOAD_KEY)
+      return mod
+    } catch (err) {
+      if (!sessionStorage.getItem(CHUNK_RELOAD_KEY)) {
+        sessionStorage.setItem(CHUNK_RELOAD_KEY, '1')
+        window.location.reload()
+        return new Promise(() => {}) // لن تُحلّ — الصفحة قيد إعادة التحميل
+      }
+      throw err
+    }
+  })
+}
+
 // تحميل كسول لكل الصفحات: زبون المنيو لا يحمّل كود اللوحة، والعكس صحيح
-const Login          = lazy(() => import('./pages/Login'))
-const Register       = lazy(() => import('./pages/Register'))
-const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
-const ResetPassword  = lazy(() => import('./pages/ResetPassword'))
-const Onboarding     = lazy(() => import('./pages/Onboarding'))
-const Customers      = lazy(() => import('./pages/Customers'))
-const Branches       = lazy(() => import('./pages/Branches'))
-const Tables         = lazy(() => import('./pages/Tables'))
-const Dashboard      = lazy(() => import('./pages/Dashboard'))
-const Menu           = lazy(() => import('./pages/Menu'))
-const Orders         = lazy(() => import('./pages/Orders'))
-const PublicMenu     = lazy(() => import('./pages/PublicMenu'))
-const QRCodePage     = lazy(() => import('./pages/QRCode'))
-const Settings       = lazy(() => import('./pages/Settings'))
-const Analytics      = lazy(() => import('./pages/Analytics'))
-const Loyalty        = lazy(() => import('./pages/Loyalty'))
-const Marketing      = lazy(() => import('./pages/Marketing'))
-const Staff          = lazy(() => import('./pages/Staff'))
-const StaffLogin     = lazy(() => import('./pages/StaffLogin'))
+const Login          = lazyWithRetry(() => import('./pages/Login'))
+const Register       = lazyWithRetry(() => import('./pages/Register'))
+const ForgotPassword = lazyWithRetry(() => import('./pages/ForgotPassword'))
+const ResetPassword  = lazyWithRetry(() => import('./pages/ResetPassword'))
+const Onboarding     = lazyWithRetry(() => import('./pages/Onboarding'))
+const Customers      = lazyWithRetry(() => import('./pages/Customers'))
+const Branches       = lazyWithRetry(() => import('./pages/Branches'))
+const Tables         = lazyWithRetry(() => import('./pages/Tables'))
+const Dashboard      = lazyWithRetry(() => import('./pages/Dashboard'))
+const Menu           = lazyWithRetry(() => import('./pages/Menu'))
+const Orders         = lazyWithRetry(() => import('./pages/Orders'))
+const PublicMenu     = lazyWithRetry(() => import('./pages/PublicMenu'))
+const QRCodePage     = lazyWithRetry(() => import('./pages/QRCode'))
+const Settings       = lazyWithRetry(() => import('./pages/Settings'))
+const Analytics      = lazyWithRetry(() => import('./pages/Analytics'))
+const Loyalty        = lazyWithRetry(() => import('./pages/Loyalty'))
+const Marketing      = lazyWithRetry(() => import('./pages/Marketing'))
+const Staff          = lazyWithRetry(() => import('./pages/Staff'))
+const StaffLogin     = lazyWithRetry(() => import('./pages/StaffLogin'))
 // وحدة Super Admin معزولة (تحميل كسول: لا تُحمَّل لأي صاحب مطعم أو زبون)
-const AdminOverview    = lazy(() => import('./admin/features/dashboard/Overview'))
-const AdminRestaurants = lazy(() => import('./admin/features/restaurants/RestaurantsList'))
+const AdminOverview    = lazyWithRetry(() => import('./admin/features/dashboard/Overview'))
+const AdminRestaurants = lazyWithRetry(() => import('./admin/features/restaurants/RestaurantsList'))
+const AdminRestaurantDetail = lazyWithRetry(() => import('./admin/features/restaurants/RestaurantDetail'))
+const AdminAudit = lazyWithRetry(() => import('./admin/features/audit/AuditLog'))
 
 // نفس شاشة التحميل المعتمدة في ProtectedRoute — تُعرض أثناء جلب chunk الصفحة
 function PageLoader() {
@@ -109,6 +132,8 @@ export default function App() {
         <Route path="/staff"           element={<ProtectedRoute><RequirePage page="staff"><Staff /></RequirePage></ProtectedRoute>} />
         <Route path="/admin"           element={<RequirePlatformAdmin><AdminOverview /></RequirePlatformAdmin>} />
         <Route path="/admin/restaurants" element={<RequirePlatformAdmin><AdminRestaurants /></RequirePlatformAdmin>} />
+        <Route path="/admin/restaurants/:id" element={<RequirePlatformAdmin><AdminRestaurantDetail /></RequirePlatformAdmin>} />
+        <Route path="/admin/audit"       element={<RequirePlatformAdmin><AdminAudit /></RequirePlatformAdmin>} />
         <Route path="*"                element={<Navigate to="/login" replace />} />
       </Routes>
       </Suspense>

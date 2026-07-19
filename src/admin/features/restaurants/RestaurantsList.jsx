@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import AdminShell from '../../AdminShell'
 import { listRestaurants } from './restaurantsApi'
 
@@ -7,6 +8,7 @@ const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', AC
 // وحدة «المطاعم» — قائمة للقراءة فقط (Walking Skeleton كامل: حارس → قشرة → خدمة → RPC → DB).
 // الإدارة (تعليق/تفعيل/تغيير خطة/تعمّق) تأتي في M3 (إدارة المطاعم).
 export default function RestaurantsList() {
+  const navigate = useNavigate()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -55,14 +57,14 @@ export default function RestaurantsList() {
         ) : (
           <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
             {filtered.map(r => (
-              <div key={r.id} style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:'14px', padding:'14px 16px', display:'flex', alignItems:'center', gap:'14px', flexWrap:'wrap' }}>
+              <div key={r.id} onClick={() => navigate(`/admin/restaurants/${r.id}`)} style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:'14px', padding:'14px 16px', display:'flex', alignItems:'center', gap:'14px', flexWrap:'wrap', cursor:'pointer' }}>
                 <div style={{ width:'42px', height:'42px', borderRadius:'11px', background:'rgba(124,58,237,0.15)', border:`1px solid ${ACCENT}55`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', flexShrink:0 }}>🏪</div>
                 <div style={{ flex:1, minWidth:'160px' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap', marginBottom:'3px' }}>
                     <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', color:'white' }}>{r.name}</span>
-                    <span style={{ fontSize:'10px', fontWeight:'800', color: r.is_active ? '#6EE7B7' : '#FCA5A5', background: r.is_active ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', borderRadius:'100px', padding:'2px 9px' }}>
-                      {r.is_active ? 'نشط' : 'معلّق'}
-                    </span>
+                    {r.platform_suspended
+                      ? <span style={{ fontSize:'10px', fontWeight:'800', color:'#FCA5A5', background:'rgba(239,68,68,0.18)', border:'1px solid #B91C1C', borderRadius:'100px', padding:'2px 9px' }}>🚫 معلّق من المنصّة</span>
+                      : <span style={{ fontSize:'10px', fontWeight:'800', color: r.is_active ? '#6EE7B7' : '#9CA3AF', background: r.is_active ? 'rgba(16,185,129,0.12)' : 'rgba(156,163,175,0.12)', borderRadius:'100px', padding:'2px 9px' }}>{r.is_active ? 'نشط' : 'مغلق مؤقتاً'}</span>}
                     <span style={{ fontSize:'10px', fontWeight:'800', color:'#C4B5FD', background:'rgba(124,58,237,0.12)', borderRadius:'100px', padding:'2px 9px' }}>{r.subscription_plan || '—'}</span>
                   </div>
                   <div style={{ fontSize:'11.5px', color:MUTED, display:'flex', gap:'8px', flexWrap:'wrap' }}>

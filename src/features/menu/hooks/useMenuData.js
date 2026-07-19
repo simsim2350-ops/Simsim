@@ -40,6 +40,8 @@ export function useMenuData(slug, branchId) {
         .single()
 
       if (error || !rest) { setNotFound(true); return }
+      // مطعم معلَّق من المنصّة: لا يُفتح منيوه إطلاقاً (يُعامَل كغير متاح، كإيقاف المالك)
+      if (rest.platform_suspended) { setNotFound(true); return }
       setRestaurant(rest)
 
       // كل الفروع النشطة — لتحديد الفرع الحالي (من الرابط أو الأساسي افتراضياً) ولعرض قائمة التبديل

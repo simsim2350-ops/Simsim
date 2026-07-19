@@ -7,3 +7,23 @@ export async function listRestaurants() {
   if (error) throw error
   return data || []
 }
+
+// تفاصيل مطعم واحد (قراءة): مقاييس + إعدادات + فروع + ملخّصات — بلا بيانات عملاء فردية (قرار الخصوصية أ).
+export async function getRestaurant(id) {
+  const { data, error } = await supabase.rpc('admin_get_restaurant', { p_restaurant_id: id })
+  if (error) throw error
+  return data
+}
+
+// إجراءات كتابة (super_admin فقط، تُسجّل Audit ذرّياً في الخادم).
+// تعليق المنصّة: علم منفصل عن is_active الخاص بالمالك — لا يقدر المالك تغييره، ويمنع استقبال الطلبات خادمياً.
+export async function setPlatformSuspended(id, suspended) {
+  const { data, error } = await supabase.rpc('admin_set_platform_suspended', { p_restaurant_id: id, p_suspended: suspended })
+  if (error) throw error
+  return data
+}
+export async function setRestaurantPlan(id, plan) {
+  const { data, error } = await supabase.rpc('admin_set_restaurant_plan', { p_restaurant_id: id, p_plan: plan })
+  if (error) throw error
+  return data
+}

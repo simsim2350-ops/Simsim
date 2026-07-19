@@ -33,6 +33,10 @@ security definer
 set search_path = public
 as $function$
 begin
+  -- فرض تعليق المنصّة: لا يُقبل طلب لمطعم معلَّق من الإدارة (تأهيل r.id لتفادي تعارضه مع عمود الإخراج id)
+  if exists (select 1 from restaurants r where r.id = p_restaurant_id and r.platform_suspended) then
+    raise exception 'restaurant is suspended by platform';
+  end if;
   return query
   insert into public.orders (
     restaurant_id, branch_id, table_number, delivery_address, customer_name, customer_phone,
