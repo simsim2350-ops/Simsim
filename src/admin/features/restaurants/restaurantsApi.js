@@ -16,8 +16,9 @@ export async function getRestaurant(id) {
 }
 
 // إجراءات كتابة (super_admin فقط، تُسجّل Audit ذرّياً في الخادم).
-export async function setRestaurantActive(id, active) {
-  const { data, error } = await supabase.rpc('admin_set_restaurant_active', { p_restaurant_id: id, p_active: active })
+// تعليق المنصّة: علم منفصل عن is_active الخاص بالمالك — لا يقدر المالك تغييره، ويمنع استقبال الطلبات خادمياً.
+export async function setPlatformSuspended(id, suspended) {
+  const { data, error } = await supabase.rpc('admin_set_platform_suspended', { p_restaurant_id: id, p_suspended: suspended })
   if (error) throw error
   return data
 }

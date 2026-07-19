@@ -62,9 +62,9 @@ export default function RestaurantsList() {
                 <div style={{ flex:1, minWidth:'160px' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap', marginBottom:'3px' }}>
                     <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', color:'white' }}>{r.name}</span>
-                    <span style={{ fontSize:'10px', fontWeight:'800', color: r.is_active ? '#6EE7B7' : '#FCA5A5', background: r.is_active ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)', borderRadius:'100px', padding:'2px 9px' }}>
-                      {r.is_active ? 'نشط' : 'معلّق'}
-                    </span>
+                    {r.platform_suspended
+                      ? <span style={{ fontSize:'10px', fontWeight:'800', color:'#FCA5A5', background:'rgba(239,68,68,0.18)', border:'1px solid #B91C1C', borderRadius:'100px', padding:'2px 9px' }}>🚫 معلّق من المنصّة</span>
+                      : <span style={{ fontSize:'10px', fontWeight:'800', color: r.is_active ? '#6EE7B7' : '#9CA3AF', background: r.is_active ? 'rgba(16,185,129,0.12)' : 'rgba(156,163,175,0.12)', borderRadius:'100px', padding:'2px 9px' }}>{r.is_active ? 'نشط' : 'مغلق مؤقتاً'}</span>}
                     <span style={{ fontSize:'10px', fontWeight:'800', color:'#C4B5FD', background:'rgba(124,58,237,0.12)', borderRadius:'100px', padding:'2px 9px' }}>{r.subscription_plan || '—'}</span>
                   </div>
                   <div style={{ fontSize:'11.5px', color:MUTED, display:'flex', gap:'8px', flexWrap:'wrap' }}>

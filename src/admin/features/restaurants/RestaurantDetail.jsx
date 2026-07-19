@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
 import { useAuthStore } from '../../../store/authStore'
-import { getRestaurant, setRestaurantActive, setRestaurantPlan } from './restaurantsApi'
+import { getRestaurant, setPlatformSuspended, setRestaurantPlan } from './restaurantsApi'
 
 const PLAN_OPTIONS = ['starter', 'pro', 'business']
 
@@ -41,10 +41,12 @@ export default function RestaurantDetail() {
     catch (e) { toast.error(e?.message || 'فشل الإجراء') }
     finally { setBusy(false); setConfirm(null) }
   }
-  const askToggleActive = () => setConfirm({
-    title: d.is_active ? 'تعليق المطعم' : 'تفعيل المطعم',
-    msg: d.is_active ? 'سيتوقّف المطعم عن استقبال الطلبات فوراً.' : 'سيعود المطعم للعمل.',
-    action: async () => { const nv = await setRestaurantActive(d.id, !d.is_active); setD(x => ({ ...x, is_active: nv })) },
+  const askToggleSuspend = () => setConfirm({
+    title: d.platform_suspended ? 'رفع تعليق المنصّة' : 'تعليق من المنصّة',
+    msg: d.platform_suspended
+      ? 'سيعود المطعم لاستقبال الطلبات (يبقى إيقاف المالك المؤقت مستقلاً).'
+      : 'سيتوقّف المطعم عن استقبال الطلبات فوراً، ولا يستطيع صاحب المطعم رفع هذا التعليق.',
+    action: async () => { const nv = await setPlatformSuspended(d.id, !d.platform_suspended); setD(x => ({ ...x, platform_suspended: nv })) },
   })
   const askApplyPlan = () => setConfirm({
     title: 'تغيير الخطة',
@@ -81,7 +83,8 @@ export default function RestaurantDetail() {
               <div style={{ flex:1, minWidth:'180px' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap', marginBottom:'4px' }}>
                   <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', color:'white' }}>{d.name}</span>
-                  <span style={{ fontSize:'10px', fontWeight:'800', color: d.is_active ? '#6EE7B7' : '#FCA5A5', background: d.is_active ? 'rgba(16,185,129,0.12)':'rgba(239,68,68,0.12)', borderRadius:'100px', padding:'2px 9px' }}>{d.is_active ? 'نشط' : 'معلّق'}</span>
+                  <span style={{ fontSize:'10px', fontWeight:'800', color: d.is_active ? '#6EE7B7' : '#FCA5A5', background: d.is_active ? 'rgba(16,185,129,0.12)':'rgba(239,68,68,0.12)', borderRadius:'100px', padding:'2px 9px' }}>{d.is_active ? 'مفتوح (المالك)' : 'مغلق (المالك)'}</span>
+                  {d.platform_suspended && <span style={{ fontSize:'10px', fontWeight:'800', color:'#FCA5A5', background:'rgba(239,68,68,0.18)', border:'1px solid #B91C1C', borderRadius:'100px', padding:'2px 9px' }}>🚫 معلّق من المنصّة</span>}
                   <span style={{ fontSize:'10px', fontWeight:'800', color:'#C4B5FD', background:'rgba(124,58,237,0.12)', borderRadius:'100px', padding:'2px 9px' }}>{d.subscription_plan || '—'}</span>
                 </div>
                 <div style={{ fontSize:'12px', color:MUTED, display:'flex', gap:'10px', flexWrap:'wrap' }}>
@@ -113,8 +116,8 @@ export default function RestaurantDetail() {
               <div style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:'14px', padding:'16px', marginBottom:'12px' }}>
                 <div style={{ fontSize:'13px', fontWeight:'800', color:'white', fontFamily:'Cairo,sans-serif', marginBottom:'12px' }}>⚙️ إجراءات الإدارة</div>
                 <div style={{ display:'flex', gap:'12px', flexWrap:'wrap', alignItems:'center' }}>
-                  <button onClick={askToggleActive} disabled={busy} style={{ padding:'10px 16px', borderRadius:'11px', border:'none', cursor:'pointer', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12.5px', color:'white', background: d.is_active ? '#B91C1C' : '#059669' }}>
-                    {d.is_active ? '⏸ تعليق المطعم' : '▶ تفعيل المطعم'}
+                  <button onClick={askToggleSuspend} disabled={busy} style={{ padding:'10px 16px', borderRadius:'11px', border:'none', cursor:'pointer', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12.5px', color:'white', background: d.platform_suspended ? '#059669' : '#B91C1C' }}>
+                    {d.platform_suspended ? '▶ رفع تعليق المنصّة' : '⛔ تعليق من المنصّة'}
                   </button>
                   <span style={{ width:'1px', height:'26px', background:BORDER }}/>
                   <select value={planSel} onChange={e => setPlanSel(e.target.value)} style={{ background:'#0B0D12', border:`1px solid ${BORDER}`, color:'white', borderRadius:'10px', padding:'9px 12px', fontFamily:'Tajawal,sans-serif', fontSize:'13px' }}>
