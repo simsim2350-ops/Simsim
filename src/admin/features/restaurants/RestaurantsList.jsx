@@ -1,35 +1,49 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminShell from '../../AdminShell'
 import { listRestaurants } from './restaurantsApi'
 
 const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED'
+const PAGE_SIZE = 25
 
 // وحدة «المطاعم» — قائمة للقراءة فقط (Walking Skeleton كامل: حارس → قشرة → خدمة → RPC → DB).
+// بحث/ترقيم خادمي (قابلية التوسّع لآلاف المطاعم): كل بحث يُعيد من الصفحة 0، و«تحميل المزيد» يُلحق.
 // الإدارة (تعليق/تفعيل/تغيير خطة/تعمّق) تأتي في M3 (إدارة المطاعم).
 export default function RestaurantsList() {
   const navigate = useNavigate()
   const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(true)       // أول تحميل / تغيير بحث
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState(null)
   const [q, setQ] = useState('')
+  const reqRef = useRef(0)                            // رمز طلب — يتجاهل ردود الطلبات القديمة
 
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      try { const data = await listRestaurants(); if (!cancelled) setRows(data) }
-      catch (e) { if (!cancelled) setError(e?.message || 'تعذّر التحميل') }
-      finally { if (!cancelled) setLoading(false) }
-    })()
-    return () => { cancelled = true }
+  const fetchPage = useCallback(async (search, offset) => {
+    const first = offset === 0
+    const token = ++reqRef.current
+    if (first) setLoading(true); else setLoadingMore(true)
+    setError(null)
+    try {
+      const { rows: page, total: t } = await listRestaurants({ search, limit: PAGE_SIZE, offset })
+      if (token !== reqRef.current) return           // رد قديم — تجاهله
+      setTotal(t)
+      setRows(prev => first ? page : [...prev, ...page])
+    } catch (e) {
+      if (token !== reqRef.current) return
+      setError(e?.message || 'تعذّر التحميل')
+    } finally {
+      if (token === reqRef.current) { if (first) setLoading(false); else setLoadingMore(false) }
+    }
   }, [])
 
-  const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase()
-    if (!s) return rows
-    return rows.filter(r => [r.name, r.slug, r.owner_email].filter(Boolean).join(' ').toLowerCase().includes(s))
-  }, [rows, q])
+  // بحث خادمي مع debounce (300ms) — يُعيد دائماً من الصفحة 0
+  useEffect(() => {
+    const id = setTimeout(() => fetchPage(q, 0), 300)
+    return () => clearTimeout(id)
+  }, [q, fetchPage])
 
+  const canLoadMore = rows.length < total
   const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('ar', { day:'numeric', month:'short', year:'numeric' }) : '—'
 
   return (
@@ -38,7 +52,7 @@ export default function RestaurantsList() {
 
         <div style={{ display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap', marginBottom:'16px' }}>
           <div style={{ fontSize:'13px', color:MUTED, fontWeight:'700' }}>
-            {loading ? 'جارٍ التحميل…' : `${filtered.length} من ${rows.length} مطعم`}
+            {loading ? 'جارٍ التحميل…' : `${rows.length} من ${total} مطعم`}
           </div>
           <div style={{ flex:1 }}/>
           <input value={q} onChange={e => setQ(e.target.value)} placeholder="بحث بالاسم / الرابط / البريد…"
@@ -52,11 +66,11 @@ export default function RestaurantsList() {
           </div>
         ) : loading ? (
           <div style={{ color:MUTED, textAlign:'center', padding:'48px', fontSize:'13px' }}>جارٍ التحميل…</div>
-        ) : filtered.length === 0 ? (
+        ) : rows.length === 0 ? (
           <div style={{ color:MUTED, textAlign:'center', padding:'48px', fontSize:'13px' }}>لا توجد نتائج</div>
         ) : (
           <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
-            {filtered.map(r => (
+            {rows.map(r => (
               <div key={r.id} onClick={() => navigate(`/admin/restaurants/${r.id}`)} style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:'14px', padding:'14px 16px', display:'flex', alignItems:'center', gap:'14px', flexWrap:'wrap', cursor:'pointer' }}>
                 <div style={{ width:'42px', height:'42px', borderRadius:'11px', background:'rgba(124,58,237,0.15)', border:`1px solid ${ACCENT}55`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', flexShrink:0 }}>🏪</div>
                 <div style={{ flex:1, minWidth:'160px' }}>
@@ -85,6 +99,14 @@ export default function RestaurantsList() {
                 </div>
               </div>
             ))}
+            {canLoadMore && (
+              <button onClick={() => fetchPage(q, rows.length)} disabled={loadingMore}
+                style={{ background:CARD, border:`1px solid ${ACCENT}55`, borderRadius:'12px', padding:'12px',
+                         color:'#C4B5FD', fontFamily:'Tajawal,sans-serif', fontSize:'13px', fontWeight:'800',
+                         cursor: loadingMore ? 'default' : 'pointer', opacity: loadingMore ? 0.6 : 1, marginTop:'2px' }}>
+                {loadingMore ? 'جارٍ التحميل…' : `تحميل المزيد (${total - rows.length})`}
+              </button>
+            )}
           </div>
         )}
       </div>
