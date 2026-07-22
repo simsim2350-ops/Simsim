@@ -24,8 +24,9 @@ export const NAV_GROUPS = [
     { key: 'staff',    icon: '🧑‍🍳', label: 'الموظفون', path: '/staff' },
   ] },
   { label: 'تحليل وضبط', items: [
-    { key: 'analytics', icon: '📈', label: 'التحليلات', path: '/analytics' },
-    { key: 'settings',  icon: '⚙️', label: 'الإعدادات', path: '/settings' },
+    { key: 'analytics', icon: '📈', label: 'التحليلات',        path: '/analytics' },
+    { key: 'billing',   icon: '💳', label: 'الاشتراك والفوترة', path: '/billing' },
+    { key: 'settings',  icon: '⚙️', label: 'الإعدادات',        path: '/settings' },
   ] },
 ]
 

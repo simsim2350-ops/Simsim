@@ -43,6 +43,7 @@ const PublicMenu     = lazyWithRetry(() => import('./pages/PublicMenu'))
 const QRCodePage     = lazyWithRetry(() => import('./pages/QRCode'))
 const Settings       = lazyWithRetry(() => import('./pages/Settings'))
 const Analytics      = lazyWithRetry(() => import('./pages/Analytics'))
+const Billing        = lazyWithRetry(() => import('./pages/Billing'))
 const Loyalty        = lazyWithRetry(() => import('./pages/Loyalty'))
 const Marketing      = lazyWithRetry(() => import('./pages/Marketing'))
 const Staff          = lazyWithRetry(() => import('./pages/Staff'))
@@ -128,6 +129,7 @@ export default function App() {
         <Route path="/qr"              element={<ProtectedRoute><RequirePage page="qr"><QRCodePage /></RequirePage></ProtectedRoute>} />
         <Route path="/settings"        element={<ProtectedRoute><RequirePage page="settings"><Settings /></RequirePage></ProtectedRoute>} />
         <Route path="/analytics"       element={<ProtectedRoute><RequirePage page="analytics"><Analytics /></RequirePage></ProtectedRoute>} />
+        <Route path="/billing"         element={<ProtectedRoute><RequirePage page="billing"><Billing /></RequirePage></ProtectedRoute>} />
         <Route path="/loyalty"         element={<ProtectedRoute><RequirePage page="loyalty"><Loyalty /></RequirePage></ProtectedRoute>} />
         <Route path="/marketing"       element={<ProtectedRoute><RequirePage page="marketing"><Marketing /></RequirePage></ProtectedRoute>} />
         <Route path="/staff"           element={<ProtectedRoute><RequirePage page="staff"><Staff /></RequirePage></ProtectedRoute>} />
