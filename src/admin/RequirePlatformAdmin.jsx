@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore'
 export default function RequirePlatformAdmin({ children }) {
   const { user, loading, isPlatformAdmin } = useAuthStore()
   if (loading) return null
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <Navigate to="/admin/login" replace />
   if (!isPlatformAdmin) return <Navigate to="/dashboard" replace />
   return children
 }
