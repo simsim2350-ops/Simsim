@@ -18,7 +18,7 @@ import { canAccess, navPage } from '../lib/permissions'
  */
 export default function AppShell({ active, title, actions, badges = {}, children }) {
   const navigate = useNavigate()
-  const { user, restaurant, signOut, isOwner, membership } = useAuthStore()
+  const { user, restaurant, signOut, isOwner, membership, isPlatformAdmin } = useAuthStore()
   const { isDesktop } = useBreakpoint()
 
   // فلترة روابط التنقل حسب صلاحيات المستخدم (الموظف يرى صفحاته المسموحة فقط)
@@ -93,6 +93,9 @@ export default function AppShell({ active, title, actions, badges = {}, children
                 <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.35)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user?.email}</div>
               </div>
             </div>
+            {isPlatformAdmin && (
+              <button onClick={() => { navigate('/admin'); setSidebarOpen(false) }} style={{ width:'100%', padding:'9px', borderRadius:'9px', border:'1px solid rgba(124,58,237,0.4)', background:'rgba(124,58,237,0.12)', color:'#C4B5FD', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', marginBottom:'8px' }}>🛡️ لوحة المنصّة</button>
+            )}
             <button onClick={handleSignOut} style={{ width:'100%', padding:'9px', borderRadius:'9px', border:'1px solid rgba(239,68,68,0.3)', background:'rgba(239,68,68,0.08)', color:'#FC8181', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>تسجيل الخروج 🚪</button>
           </div>
         </aside>
