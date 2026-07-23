@@ -53,9 +53,6 @@ export default function AdminShell({ active, title, children }) {
       </div>
       <div style={{ flex:1, overflowY:'auto' }}><NavList /></div>
       <div style={{ padding:'10px', borderTop:`1px solid ${BORDER}`, display:'flex', flexDirection:'column', gap:'4px' }}>
-        <Link to="/dashboard" style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 13px', borderRadius:'10px', color:'#9CA3AF', textDecoration:'none', fontSize:'12.5px', fontWeight:'700', fontFamily:'Cairo,sans-serif' }}>
-          <span>↩</span> لوحة المطعم
-        </Link>
         <button onClick={doSignOut} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 13px', borderRadius:'10px', background:'transparent', border:'none', color:'#F87171', cursor:'pointer', fontSize:'12.5px', fontWeight:'700', fontFamily:'Cairo,sans-serif', textAlign:'right' }}>
           <span>⏻</span> تسجيل الخروج
         </button>
