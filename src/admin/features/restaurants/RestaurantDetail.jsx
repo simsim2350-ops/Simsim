@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
 import { useAuthStore } from '../../../store/authStore'
-import { getRestaurant, setPlatformSuspended, setRestaurantPlan } from './restaurantsApi'
+import { getRestaurant, getRestaurantOperational, setPlatformSuspended, setRestaurantPlan } from './restaurantsApi'
 
 const PLAN_OPTIONS = ['starter', 'pro', 'business']
 const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED'
@@ -33,6 +33,9 @@ export default function RestaurantDetail() {
   const [planSel, setPlanSel] = useState('')
   const [busy, setBusy] = useState(false)
   const [confirm, setConfirm] = useState(null)
+  // الحالة التشغيلية — Lazy: تُجلب مرة واحدة عند أول فتح للتبويب
+  const [op, setOp] = useState(null)
+  const [opState, setOpState] = useState('idle') // idle | loading | done | error
 
   useEffect(() => {
     let cancelled = false
@@ -44,6 +47,17 @@ export default function RestaurantDetail() {
     })()
     return () => { cancelled = true }
   }, [id])
+
+  // جلب الحالة التشغيلية عند أول فتح للتبويب فقط
+  useEffect(() => {
+    if (tab !== 'operational' || opState !== 'idle') return
+    let cancelled = false
+    setOpState('loading')
+    getRestaurantOperational(id)
+      .then((data) => { if (!cancelled) { setOp(data); setOpState('done') } })
+      .catch(() => { if (!cancelled) setOpState('error') })
+    return () => { cancelled = true }
+  }, [tab, opState, id])
 
   const runConfirm = async () => {
     if (!confirm) return
@@ -65,7 +79,7 @@ export default function RestaurantDetail() {
   const st = d?.stats || {}
   const daily = d?.daily || []
   const maxOrders = Math.max(...daily.map(x => num(x.orders)), 1)
-  const TABS = [['overview', 'نظرة عامة'], ['orders', 'الطلبات'], ['billing', 'الفوترة'], ['branches', `الفروع (${(d?.branches || []).length})`], ['activity', 'النشاط']]
+  const TABS = [['overview', 'نظرة عامة'], ['operational', '🩺 الحالة التشغيلية'], ['orders', 'الطلبات'], ['billing', 'الفوترة'], ['branches', `الفروع (${(d?.branches || []).length})`], ['activity', 'النشاط']]
 
   return (
     <AdminShell active="restaurants" title="ملف المطعم">
@@ -137,6 +151,67 @@ export default function RestaurantDetail() {
                   </Section>
                 )}
               </>
+            )}
+
+            {/* الحالة التشغيلية */}
+            {tab === 'operational' && (
+              opState === 'loading' ? <Empty msg="جارٍ التحميل…" />
+              : opState === 'error' ? <Empty msg="تعذّر تحميل الحالة التشغيلية" />
+              : op ? (() => {
+                const m = op.menu || {}, c = op.config || {}
+                const warn = (bad) => (bad ? '#FBBF24' : '#6EE7B7')
+                const menuTiles = [
+                  { label: 'الأقسام', val: num(m.categories), bad: num(m.categories) === 0 },
+                  { label: 'المنتجات', val: num(m.products_total), bad: num(m.products_total) === 0 },
+                  { label: 'متاح', val: num(m.products_available), bad: false },
+                  { label: 'مخفي', val: num(m.products_hidden), bad: num(m.products_hidden) > 0 },
+                  { label: 'بلا قسم', val: num(m.uncategorized), bad: num(m.uncategorized) > 0 },
+                  { label: 'بلا سعر', val: num(m.missing_price), bad: num(m.missing_price) > 0 },
+                  { label: 'بلا صورة', val: num(m.missing_image), bad: num(m.missing_image) > 0 },
+                ]
+                const menuUrl = c.slug ? `${window.location.origin}/menu/${c.slug}` : null
+                const readiness = [
+                  { label: 'المطعم نشِط', ok: !!c.is_active },
+                  { label: 'غير معلّق من المنصّة', ok: !c.platform_suspended },
+                  { label: 'رابط عام (slug)', ok: !!c.slug },
+                  { label: 'عملة محدّدة', ok: !!c.currency },
+                  { label: 'شعار', ok: !!c.has_logo },
+                  { label: 'هاتف', ok: !!c.has_phone },
+                  { label: 'عنوان', ok: !!c.has_address },
+                  { label: 'فرع نشط واحد على الأقل', ok: num(c.branches_active) > 0 },
+                ]
+                return (
+                  <>
+                    <Section title="🍽️ جاهزية المنيو">
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(110px,1fr))', gap: '10px' }}>
+                        {menuTiles.map(t => (
+                          <div key={t.label} style={{ background: '#0B0D12', border: `1px solid ${BORDER}`, borderRadius: '12px', padding: '12px' }}>
+                            <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '20px', color: warn(t.bad) }}>{fmt(t.val)}</div>
+                            <div style={{ fontSize: '11.5px', color: '#D1D5DB', fontWeight: '700', marginTop: '2px' }}>{t.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </Section>
+                    <Section title="⚙️ جاهزية الإعداد">
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '8px', marginBottom: menuUrl ? '14px' : 0 }}>
+                        {readiness.map(r => (
+                          <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: '9px', fontSize: '12.5px' }}>
+                            <span style={{ color: r.ok ? '#6EE7B7' : '#FBBF24', fontWeight: '900' }}>{r.ok ? '✓' : '✗'}</span>
+                            <span style={{ color: '#D1D5DB' }}>{r.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {menuUrl && (
+                        <div style={{ fontSize: '12px', color: MUTED, borderTop: `1px solid ${BORDER}`, paddingTop: '12px' }}>
+                          الرابط العام:{' '}
+                          <a href={menuUrl} target="_blank" rel="noreferrer" style={{ color: '#C4B5FD', direction: 'ltr', display: 'inline-block' }}>{menuUrl}</a>
+                          <span style={{ marginInlineStart: '8px' }}>· الفروع النشطة {fmt(c.branches_active)}/{fmt(c.branches_total)}</span>
+                        </div>
+                      )}
+                    </Section>
+                  </>
+                )
+              })() : <Empty msg="لا بيانات" />
             )}
 
             {/* الطلبات */}
