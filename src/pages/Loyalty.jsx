@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
-import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { useBreakpoint } from '../hooks/useBreakpoint'
-import { fetchBranches } from '../lib/branchesApi'
+import { fetchLoyaltyData, saveLoyaltyProgram, createRedemption } from '../lib/loyaltyApi'
 
 function Spinner() {
   return (
@@ -47,23 +46,17 @@ export default function Loyalty() {
 
   const fetchAll = async () => {
     try {
-      const [progRes, ordRes, redRes, revRes, br] = await Promise.all([
-        supabase.from('loyalty_programs').select('*').eq('restaurant_id', restaurant.id).maybeSingle(),
-        supabase.from('orders').select('customer_phone, customer_name, total, status').eq('restaurant_id', restaurant.id).eq('status', 'completed'),
-        supabase.from('loyalty_redemptions').select('*').eq('restaurant_id', restaurant.id),
-        supabase.from('reviews').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending:false }).limit(50),
-        fetchBranches(restaurant.id),
-      ])
-      if (progRes.data) {
-        setEnabled(progRes.data.enabled)
-        setEarnRate(Number(progRes.data.earn_rate) || 1)
-        setRewardThreshold(progRes.data.reward_threshold ?? 100)
-        setRewardDescription(progRes.data.reward_description || '')
+      const { program, orders, redemptions, reviews, branches } = await fetchLoyaltyData(restaurant.id)
+      if (program) {
+        setEnabled(program.enabled)
+        setEarnRate(Number(program.earn_rate) || 1)
+        setRewardThreshold(program.reward_threshold ?? 100)
+        setRewardDescription(program.reward_description || '')
       }
-      setOrders(ordRes.data || [])
-      setRedemptions(redRes.data || [])
-      setReviews(revRes.data || [])
-      setBranches(br || [])
+      setOrders(orders)
+      setRedemptions(redemptions)
+      setReviews(reviews)
+      setBranches(branches)
     } finally {
       setLoading(false)
     }
@@ -72,15 +65,7 @@ export default function Loyalty() {
   const saveProgram = async () => {
     setSaving(true)
     try {
-      const { error } = await supabase.from('loyalty_programs').upsert({
-        restaurant_id: restaurant.id,
-        enabled,
-        earn_rate: Number(earnRate) || 0,
-        reward_threshold: parseInt(rewardThreshold) || 0,
-        reward_description: rewardDescription.trim(),
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'restaurant_id' })
-      if (error) throw error
+      await saveLoyaltyProgram(restaurant.id, { enabled, earnRate, rewardThreshold, rewardDescription })
       toast.success('تم حفظ إعدادات الولاء ✅')
     } catch (err) {
       toast.error(err.message || 'تعذّر الحفظ')
@@ -118,13 +103,7 @@ export default function Loyalty() {
     const pts = parseInt(rewardThreshold) || 0
     if (c.balance < pts) { toast.error('رصيد نقاط العميل لا يكفي للمكافأة'); return }
     try {
-      const { data, error } = await supabase.from('loyalty_redemptions').insert({
-        restaurant_id: restaurant.id,
-        customer_phone: c.phone,
-        points: pts,
-        note: rewardDescription.trim() || null,
-      }).select().single()
-      if (error) throw error
+      const data = await createRedemption({ restaurantId: restaurant.id, phone: c.phone, points: pts, note: rewardDescription.trim() || null })
       setRedemptions(prev => [...prev, data])
       toast.success('تم تسجيل الاستبدال 🎁')
     } catch (err) {
