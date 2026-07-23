@@ -3,6 +3,7 @@
 export const ADMIN_NAV = [
   { key: 'overview',    label: 'نظرة عامة',    icon: '📊', path: '/admin',             ready: true  },
   { key: 'restaurants', label: 'المطاعم',      icon: '🏪', path: '/admin/restaurants', ready: true  },
+  { key: 'growth',      label: 'النمو',        icon: '📈', path: '/admin/growth',      ready: true  },
   { key: 'billing',     label: 'الفوترة',      icon: '💳', path: '/admin/billing',     ready: true  },
   { key: 'flags',       label: 'المزايا',      icon: '🚩', path: '/admin/flags',       ready: false },
   { key: 'admins',      label: 'المشرفون',     icon: '👥', path: '/admin/admins',      ready: true  },
