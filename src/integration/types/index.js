@@ -38,8 +38,8 @@ export const IntegrationEventType = Object.freeze({
   PROVIDER_HEALTH_CHANGED: 'integration.provider.health_changed',
 })
 
-/** مستويات التسجيل (Logging) العامة. */
-export const LogLevel = Object.freeze({ DEBUG: 'debug', INFO: 'info', WARN: 'warn', ERROR: 'error' })
+/** مستويات التسجيل — المصدر الموحّد في طبقة Observability (يُعاد تصديره هنا للتوافق). */
+export { LogLevel } from '../../observability'
 
 // ————— JSDoc typedefs —————
 

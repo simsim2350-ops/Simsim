@@ -1,11 +1,16 @@
 import { Component } from 'react'
+import { observability } from '../observability'
 
 // مصيدة أخطاء على جذر التطبيق: تمنع الشاشة البيضاء الكاملة عند أي خطأ Render غير متوقّع،
 // وتعرض رسالة ودّية + زر إعادة تحميل بدل انهيار الشجرة بأكملها (بما فيها القائمة الجانبية).
 export default class RootErrorBoundary extends Component {
   constructor(p) { super(p); this.state = { err: null } }
   static getDerivedStateFromError(err) { return { err } }
-  componentDidCatch(err, info) { console.error('Root error boundary:', err, info) }
+  componentDidCatch(err, info) {
+    console.error('Root error boundary:', err, info)
+    // إبلاغ موحّد عبر طبقة Observability (خامل افتراضياً؛ يصبح فعّالاً عند ضبط مزوّد).
+    observability.errorReporter.captureException(err, { source: 'RootErrorBoundary', componentStack: info?.componentStack })
+  }
   render() {
     if (this.state.err) {
       return (
