@@ -27,6 +27,27 @@ const btn = (bg) => ({
   fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '12.5px', color: 'white', background: bg,
 })
 
+// طباعة/PDF عبر نافذة المتصفح (بلا مكتبة) + مشاركة واتساب
+function printInvoice(inv) {
+  const w = window.open('', '_blank', 'width=720,height=900')
+  if (!w) return
+  const row = (k, v) => `<tr><td style="padding:6px 0;color:#666">${k}</td><td style="padding:6px 0;text-align:left;font-weight:700">${v}</td></tr>`
+  const dt = (v) => v ? new Date(v).toLocaleDateString('ar') : '—'
+  w.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>فاتورة #${inv.invoice_number}</title>
+    <style>body{font-family:Tahoma,Arial,sans-serif;padding:40px;color:#111}h1{color:#7C3AED;margin:0}
+    table{width:100%;border-collapse:collapse;margin-top:18px}.total{font-size:22px;font-weight:900;margin-top:16px}</style></head><body>
+    <h1>سِمسِم</h1><div style="color:#666">فاتورة اشتراك المنصّة</div>
+    <table>${row('رقم الفاتورة', '#' + inv.invoice_number)}${row('المطعم', inv.restaurant_name)}${row('الحالة', INV_STATUS[inv.status] || inv.status)}${row('تاريخ الإصدار', dt(inv.issued_at))}${inv.due_at ? row('تاريخ الاستحقاق', dt(inv.due_at)) : ''}${inv.paid_at ? row('تاريخ الدفع', dt(inv.paid_at)) : ''}</table>
+    <table style="margin-top:24px;border-top:2px solid #eee">${row('الصافي', fmt(inv.amount_net) + ' ﷼')}${row('ض.ق.م 15%', fmt(inv.vat_amount) + ' ﷼')}</table>
+    <div class="total">الإجمالي: ${fmt(inv.total)} ﷼</div>
+    <script>window.onload=function(){window.print()}</script></body></html>`)
+  w.document.close()
+}
+function whatsappInvoice(inv) {
+  const txt = `فاتورة سِمسِم #${inv.invoice_number}\nالمطعم: ${inv.restaurant_name}\nالإجمالي: ${fmt(inv.total)} ﷼ (شامل ض.ق.م)\nالحالة: ${INV_STATUS[inv.status] || inv.status}`
+  window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank')
+}
+
 function Modal({ title, children, onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
@@ -292,12 +313,16 @@ function InvoicesTab({ canManage }) {
                 </div>
               </div>
               <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '16px', color: 'white' }}>{fmt(i.total)} <span style={{ fontSize: '11px', color: MUTED }}>﷼</span></div>
-              {canManage && i.status === 'open' && (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button style={btn('#065F46')} onClick={() => pay(i)}>تعليم مدفوعة</button>
-                  <button style={btn('#7F1D1D')} onClick={() => cancel(i)}>إلغاء</button>
-                </div>
-              )}
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                <button style={btn('#374151')} onClick={() => printInvoice(i)} title="طباعة / PDF">🖨️</button>
+                <button style={btn('#065F46')} onClick={() => whatsappInvoice(i)} title="مشاركة واتساب">واتساب</button>
+                {canManage && i.status === 'open' && (
+                  <>
+                    <button style={btn('#065F46')} onClick={() => pay(i)}>تعليم مدفوعة</button>
+                    <button style={btn('#7F1D1D')} onClick={() => cancel(i)}>إلغاء</button>
+                  </>
+                )}
+              </div>
             </div>
           ))}
         </div>
