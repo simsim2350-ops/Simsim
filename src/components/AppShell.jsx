@@ -5,6 +5,7 @@ import { useBreakpoint } from '../hooks/useBreakpoint'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { NAV_GROUPS } from '../lib/nav'
 import { canAccess, navPage } from '../lib/permissions'
+import NotificationsBell from './NotificationsBell'
 
 /**
  * التخطيط الموحّد لكل صفحات لوحة التحكم.
@@ -103,7 +104,10 @@ export default function AppShell({ active, title, actions, badges = {}, children
         <div style={{ minHeight:'56px', background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', alignItems:'center', padding:'8px 16px', gap:'10px', flexShrink:0, flexWrap:'wrap' }}>
           {!isDesktop && <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background:'none', border:'none', fontSize:'22px', cursor:'pointer', padding:'0 2px' }}>☰</button>}
           <span style={{ fontSize:'16px', fontWeight:'800', color:'#0F1117' }}>{title}</span>
-          {actions && <div style={{ marginRight:'auto', display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap' }}>{actions}</div>}
+          <div style={{ marginRight:'auto', display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap' }}>
+            {actions}
+            <NotificationsBell />
+          </div>
         </div>
 
         <div style={{ flex:1, minHeight:0, display:'flex', flexDirection:'column' }}>
