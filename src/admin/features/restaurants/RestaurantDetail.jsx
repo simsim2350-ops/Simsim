@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
 import { useAuthStore } from '../../../store/authStore'
-import { getRestaurant, getRestaurantOperational, setPlatformSuspended, setRestaurantPlan } from './restaurantsApi'
+import { getRestaurant, getRestaurantOperational, getRestaurantFeatures, setPlatformSuspended, setRestaurantPlan } from './restaurantsApi'
 
 const PLAN_OPTIONS = ['starter', 'pro', 'business']
 const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED'
@@ -36,6 +36,8 @@ export default function RestaurantDetail() {
   // الحالة التشغيلية — Lazy: تُجلب مرة واحدة عند أول فتح للتبويب
   const [op, setOp] = useState(null)
   const [opState, setOpState] = useState('idle') // idle | loading | done | error
+  const [feat, setFeat] = useState(null)
+  const [featState, setFeatState] = useState('idle')
 
   useEffect(() => {
     let cancelled = false
@@ -58,6 +60,17 @@ export default function RestaurantDetail() {
       .catch(() => { if (!cancelled) setOpState('error') })
     return () => { cancelled = true }
   }, [tab, opState, id])
+
+  // المزايا الفعّالة — نداء مستقل، عند أول فتح للتبويب فقط
+  useEffect(() => {
+    if (tab !== 'operational' || featState !== 'idle') return
+    let cancelled = false
+    setFeatState('loading')
+    getRestaurantFeatures(id)
+      .then((data) => { if (!cancelled) { setFeat(data); setFeatState('done') } })
+      .catch(() => { if (!cancelled) setFeatState('error') })
+    return () => { cancelled = true }
+  }, [tab, featState, id])
 
   const runConfirm = async () => {
     if (!confirm) return
@@ -208,6 +221,24 @@ export default function RestaurantDetail() {
                           <span style={{ marginInlineStart: '8px' }}>· الفروع النشطة {fmt(c.branches_active)}/{fmt(c.branches_total)}</span>
                         </div>
                       )}
+                    </Section>
+                    <Section title="🚩 المزايا الفعّالة">
+                      {featState === 'loading' ? <Empty msg="جارٍ التحميل…" />
+                        : featState === 'error' ? <Empty msg="تعذّر تحميل المزايا" />
+                        : (feat || []).length === 0 ? <Empty msg="لا مزايا معرّفة على المنصّة." />
+                        : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {feat.map(fx => (
+                              <div key={fx.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: `1px solid ${BORDER}` }}>
+                                <span style={{ color: fx.effective ? '#6EE7B7' : '#F87171', fontWeight: '900', fontSize: '13px' }}>{fx.effective ? '●' : '○'}</span>
+                                <span style={{ fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', direction: 'ltr', fontSize: '12.5px', color: 'white', fontWeight: '700' }}>{fx.key}</span>
+                                {fx.description && <span style={{ fontSize: '11px', color: MUTED, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fx.description}</span>}
+                                <span style={{ marginInlineStart: 'auto', fontSize: '10px', fontWeight: '800', color: fx.effective ? '#6EE7B7' : '#F87171' }}>{fx.effective ? 'مفعّلة' : 'معطّلة'}</span>
+                                {fx.overridden && <span style={{ fontSize: '10px', fontWeight: '800', color: '#C4B5FD', background: 'rgba(124,58,237,0.15)', borderRadius: '100px', padding: '2px 9px' }}>مُخصّص</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                     </Section>
                   </>
                 )
