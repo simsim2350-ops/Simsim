@@ -58,6 +58,7 @@ const AdminLogin = lazyWithRetry(() => import('./admin/AdminLogin'))
 const AdminAdmins = lazyWithRetry(() => import('./admin/features/admins/Admins'))
 const AdminGrowth = lazyWithRetry(() => import('./admin/features/growth/Growth'))
 const AdminFlags = lazyWithRetry(() => import('./admin/features/flags/Flags'))
+const AdminAnnouncements = lazyWithRetry(() => import('./admin/features/announcements/Announcements'))
 
 // نفس شاشة التحميل المعتمدة في ProtectedRoute — تُعرض أثناء جلب chunk الصفحة
 function PageLoader() {
@@ -146,6 +147,7 @@ export default function App() {
         <Route path="/admin/admins"      element={<RequirePlatformAdmin><AdminAdmins /></RequirePlatformAdmin>} />
         <Route path="/admin/growth"      element={<RequirePlatformAdmin><AdminGrowth /></RequirePlatformAdmin>} />
         <Route path="/admin/flags"       element={<RequirePlatformAdmin><AdminFlags /></RequirePlatformAdmin>} />
+        <Route path="/admin/announcements" element={<RequirePlatformAdmin><AdminAnnouncements /></RequirePlatformAdmin>} />
         <Route path="*"                element={<Navigate to="/login" replace />} />
       </Routes>
       </Suspense>
