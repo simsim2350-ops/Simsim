@@ -1,11 +1,6 @@
--- تفاصيل مطعم واحد للمشرف (قراءة) — M3.1 (Super Admin / إدارة المطاعم)
--- قرار الخصوصية (أ): مقاييس + إعدادات + فروع + ملخّصات فقط — بلا بيانات عملاء فردية (جوال/اسم).
--- SECURITY DEFINER مبوّبة بـ is_platform_admin() (raise لغير المشرف). نُفِّذ في Supabase ✅
---
--- ADR-28 (توحيد المسحات): طلبات المطعم تُقرأ مرة واحدة في CTE `ro` (materialized) بدل ~6 مسحات
--- منفصلة (orders_total/30d/revenue/customers/top_products/daily). كلها مُقيَّدة بمطعم واحد أصلاً
--- (لا تجميع عابر لكل المطاعم — النمط المكلف غائب هنا)، لكن التوحيد يخفّف الحمل لمطعم ضخم.
--- تحقّق تطابق 100% مع النسخة السابقة على المطاعم الحيّة قبل النشر (نمط ADR-26).
+-- تفاصيل مطعم واحد للمشرف (قراءة) — Restaurant 360 (Super Admin)
+-- مقاييس + إعدادات + فروع + ملخّصات + Health/MRR (من restaurant_stats) + الاشتراك + الفواتير + النشاط.
+-- SECURITY DEFINER مبوّبة بـ is_platform_admin(). ro materialized (توحيد المسحات — ADR-28).
 create or replace function public.admin_get_restaurant(p_restaurant_id uuid)
 returns jsonb language plpgsql stable security definer set search_path = public as $$
 declare result jsonb;
@@ -35,7 +30,7 @@ begin
       from ro where created_at >= now() - interval '14 days' group by 1) x
   )
   select jsonb_build_object(
-    'id', r.id, 'name', r.name, 'slug', r.slug, 'is_active', r.is_active,
+    'id', r.id, 'name', r.name, 'slug', r.slug, 'is_active', r.is_active, 'platform_suspended', r.platform_suspended,
     'subscription_plan', r.subscription_plan, 'created_at', r.created_at,
     'phone', r.phone, 'address', r.address, 'type', r.type, 'currency', r.currency, 'logo_url', r.logo_url,
     'owner_email', (select u.email from auth.users u where u.id = r.owner_id),
@@ -45,7 +40,17 @@ begin
     'branches', (select coalesce(jsonb_agg(jsonb_build_object(
                    'id',b.id,'name',b.name,'is_primary',b.is_primary,'is_active',b.is_active,'is_paused',b.is_paused,'address',b.address
                  ) order by b.is_primary desc, b.sort_order),'[]'::jsonb) from branches b where b.restaurant_id = r.id),
-    'top_products', tp.v, 'daily', dl.v
+    'top_products', tp.v, 'daily', dl.v,
+    -- Restaurant 360: طبقة F1 + الفوترة + النشاط
+    'stats', (select to_jsonb(rs) from restaurant_stats rs where rs.restaurant_id = r.id),
+    'subscription', (select to_jsonb(s) from subscriptions s where s.restaurant_id = r.id),
+    'invoices', (select coalesce(jsonb_agg(jsonb_build_object(
+                   'id',i.id,'number',i.invoice_number,'total',i.total,'net',i.amount_net,'vat',i.vat_amount,
+                   'status',i.status,'issued_at',i.issued_at,'due_at',i.due_at,'paid_at',i.paid_at) order by i.issued_at desc),'[]'::jsonb)
+                 from (select * from invoices where restaurant_id = r.id order by issued_at desc limit 10) i),
+    'activity', (select coalesce(jsonb_agg(jsonb_build_object(
+                   'action',a.action,'at',a.created_at,'role',a.role,'old',a.old_value,'new',a.new_value) order by a.created_at desc),'[]'::jsonb)
+                 from (select * from platform_audit_logs where target_type='restaurant' and target_id = r.id order by created_at desc limit 15) a)
   ) into result
   from restaurants r, agg, tp, dl where r.id = p_restaurant_id;
   return result;
