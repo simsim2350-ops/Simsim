@@ -75,10 +75,12 @@ Deno.serve(async (req) => {
     }
 
     // 7) تدوين الإجراء في سجلّ التدقيق (بهوية الطالب — الدالة تُسجّل admin_user_id تلقائياً)
-    await userClient.rpc('log_platform_action', {
-      p_action: 'admin.create', p_target_type: 'admin', p_target_id: created.user.id,
-      p_new: { email, role_id },
-    }).catch(() => {})
+    try {
+      await userClient.rpc('log_platform_action', {
+        p_action: 'admin.create', p_target_type: 'admin', p_target_id: created.user.id,
+        p_new: { email, role_id },
+      })
+    } catch { /* تجاهل فشل التدقيق — لا يُبطل الإنشاء */ }
 
     return json({ ok: true, user_id: created.user.id }, 200)
   } catch (e) {
