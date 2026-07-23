@@ -3,9 +3,9 @@ import { supabase } from '../../../lib/supabase'
 // خدمة مطاعم المشرف (Admin Service): كل وصول للبيانات عبر RPC مبوّبة بـ is_platform_admin —
 // لا وصول مباشر لجداول المستأجرين من أي صفحة داخل Super Admin (قرار معماري ثابت).
 // بحث/ترقيم خادمي: يُرجع { rows, total } — total من total_count المرفق بكل صف.
-export async function listRestaurants({ search = '', limit = 25, offset = 0 } = {}) {
+export async function listRestaurants({ search = '', sort = 'created_at', dir = 'desc', filter = null, limit = 25, offset = 0 } = {}) {
   const { data, error } = await supabase.rpc('admin_list_restaurants', {
-    p_search: search.trim() || null, p_limit: limit, p_offset: offset,
+    p_search: search.trim() || null, p_sort: sort, p_dir: dir, p_filter: filter, p_limit: limit, p_offset: offset,
   })
   if (error) throw error
   const rows = data || []
