@@ -5,5 +5,6 @@ export const ADMIN_NAV = [
   { key: 'restaurants', label: 'المطاعم',      icon: '🏪', path: '/admin/restaurants', ready: true  },
   { key: 'billing',     label: 'الفوترة',      icon: '💳', path: '/admin/billing',     ready: true  },
   { key: 'flags',       label: 'المزايا',      icon: '🚩', path: '/admin/flags',       ready: false },
+  { key: 'admins',      label: 'المشرفون',     icon: '👥', path: '/admin/admins',      ready: true  },
   { key: 'audit',       label: 'سجلّ التدقيق', icon: '📜', path: '/admin/audit',       ready: true  },
 ]
