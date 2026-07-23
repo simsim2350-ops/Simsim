@@ -38,7 +38,7 @@ Presentation  ──►  Application (use-cases/hooks)  ──►  Data-Access  
 | **Presentation** | ✅ | العرض والتفاعل فقط | `pages/` · `components/` · `features/*/` (JSX) · `admin/features/*/*.jsx` · `AppShell`/`AdminShell` |
 | **Application (Use-Cases)** | 🟡 قائمة ضمنياً | تنسيق حالة الاستخدام | `features/menu/hooks/` · `payments/services` · `integration/factories` |
 | **Domain** | 🟡 موزّعة | قواعد الأعمال النقيّة | `lib/pricing.js` · `lib/permissions.js` · `payments/types+contracts` · `integration/types` · **+ SQL** |
-| **Data-Access (Repository)** | 🟡 غير موحّدة | الوصول للبيانات وتطبيعها | `lib/*Api.js` · `admin/features/*/*Api.js` · `lib/announcements.js` |
+| **Data-Access (Repository)** | 🟡 اصطلاح مُرسَى | الوصول للبيانات وتطبيعها | `lib/*Api.js` (branches/tables/recommendations/**loyalty**) · `admin/features/*/*Api.js` · `lib/announcements.js` |
 | **Infrastructure** | ✅ | عملاء/أدوات خارجية | `lib/supabase.js` · `lib/uploadImage.js` · `supabase/functions/` |
 | **Persistence / Data** | ✅ قوية | التخزين والتجميع | `sql/` |
 | **Integration** | ✅ (خاملة) | بوابة الخدمات الخارجية | `src/integration/` |
@@ -48,8 +48,8 @@ Presentation  ──►  Application (use-cases/hooks)  ──►  Data-Access  
 | **State Management** | 🟡 محدودة | الحالة العامة | `store/authStore.js` (Zustand) |
 | **Audit** | ✅ (أدمن) | سجلّ الإجراءات | `sql` `platform_audit_logs` |
 | **Shared / Common** | 🟡 | مكوّنات/أدوات مشتركة | `components/` (عامة) · `hooks/` · helpers |
-| **Configuration** | 🔴 هدف Scaffold | مصدر الإعدادات الموحّد | (لاحقاً) `src/config/` · حالياً `integration/config` |
-| **Observability** | 🔴 هدف Scaffold | تسجيل/إبلاغ أخطاء | (لاحقاً) `src/observability/` · حالياً `integration/logs` + `RootErrorBoundary` |
+| **Configuration** | ✅ (خامل) | مصدر الإعدادات الموحّد | `src/config/` (`appConfig`) — لا أسرار |
+| **Observability** | ✅ (خامل) | تسجيل/إبلاغ أخطاء | `src/observability/` (`Logger`/`ErrorReporter`/`observability`) · `RootErrorBoundary` مربوط |
 | **Payment (نطاق)** | ✅ (خامل) | نموذج الدفع | `src/payments/` |
 
 ---
@@ -94,7 +94,7 @@ Presentation  ──►  Application (use-cases/hooks)  ──►  Data-Access  
 ## 4) «اللهجتان» والهدف
 
 - **اللهجة الحديثة (Super Admin + التكامل + الدفع):** Presentation → Data-Access(`*Api`) → RPC مبوّبة → DB. **هي النموذج المعتمد.**
-- **اللهجة القديمة (تطبيق المطعم):** صفحات تستدعي Supabase مباشرة. **تُوحَّد تدريجياً** إلى الاصطلاح الحديث، صفحةً صفحة، بلا إعادة كتابة جماعية.
+- **اللهجة القديمة (تطبيق المطعم):** صفحات تستدعي Supabase مباشرة. **تُوحَّد تدريجياً** إلى الاصطلاح الحديث، صفحةً صفحة، بلا إعادة كتابة جماعية. **بدأ الترحيل:** `Loyalty.jsx` → `lib/loyaltyApi.js` كصفحة مرجعية (ADR-36)؛ بقية الصفحات تتبع بنفس النمط.
 
 **قاعدة من الآن:** أي صفحة/ميزة **جديدة** تلتزم بالاصطلاح الحديث (بلا `supabase.from` في العرض).
 

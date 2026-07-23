@@ -50,6 +50,10 @@ src/
       contracts · adapters · providers(فارغ) · registry · factories · config
       errors · events · webhooks · logs · dto · types · utils · tests
   components/NotificationsBell.jsx ← جرس إشعارات المطعم (ADR-33/م2)
+  observability/               ← تجريد Logging/ErrorReporting موحّد (خامل) — ADR-36/م1
+  config/                      ← مصدر الإعدادات غير السرّية الموحّد (appConfig) — ADR-36/م2
+  lib/loyaltyApi.js            ← طبقة وصول بيانات الولاء (صفحة مرجعية) — ADR-36/م3
+LAYERS.md                      ← الدستور المعماري (الطبقات + قواعد التواصل) — ADR-36/م0
 sql/                           ← ملفات SQL تُحفظ هنا وتُنفَّذ عبر موصّل Supabase بعد موافقة المالك
 ```
 - **خادمية:** Edge Function `delete-staff` (service_role) — حذف كامل لحساب الموظف بعد التحقق من المالك.
@@ -103,6 +107,8 @@ sql/                           ← ملفات SQL تُحفظ هنا وتُنفَ
 - **[ADR-34] أساس نظام الدفع (Payment Foundation) — بنية محايدة للمزوّد، خاملة (يوليو 2026):** بقرار المالك «ضع الأساس بلا بناء أي تكامل، قابل للتوسّع لأي مزوّد دون إعادة تصميم». `sql/payments_gateway_foundation.sql`: 3 جداول — `payment_providers` (سجل manual/moyasar/tap/hyperpay/stripe، **كلهم معطّلون**؛ الاختيار قرار **بيانات** لا كود) · `payment_transactions` (دورة حياة **المحاولة**: initiated/pending/succeeded/failed/cancelled/refunded + `provider_ref` + `idempotency_key` + `raw`، **منفصلة عمداً** عن `payments`=السجل المُسوّى) · `payment_webhook_events` (فهرس فريد `(provider,event_id)` للإتقان). RLS إداري. **طبقة كود `src/payments/`:** `types` (Enums مصدر الحقيقة) · `contracts/PaymentAdapter` (عقد مجرّد: createCharge/verifyPayment/parseWebhook/refundPayment/mapStatus) · `adapters` (فارغ) · `services` (تنسيق خامل) · `utils` + `docs/PAYMENTS.md`. **ممنوعات محترمة:** لا مزوّد مربوط · لا Edge Functions · لا مفاتيح (تعيش في بيئة الخادم) · لا واجهة · لا تحصيل فعلي.
 
 - **[ADR-35] طبقة التكامل (Integration Layer) — البوابة الموحّدة لكل خدمة خارجية، تأسيس معماري خامل (يوليو 2026):** بقرار المالك، `src/integration/` كبوابة **وحيدة** لأي API خارجي مستقبلي (دفع/واتساب/SMS/إيميل/خرائط/إشعارات/تخزين/AI/توصيل/ERP/CRM) وفق Clean Architecture · SOLID/ISP · Dependency Inversion · Adapter · Strategy · Interface First · **Open/Closed** (إضافة مزوّد = مُهايئ + تسجيله، **بلا تعديل كود قائم**). المجلدات: `contracts` (IntegrationAdapter + عقد لكل قدرة) · `adapters` (BaseAdapter) · `providers` (فارغ) · `registry` (Strategy، **بلا if/else**) · `factories` (نقطة الدخول الوحيدة) · `config` (اختيار المزوّد، **بلا أسرار**) · `errors` (سلسلة External→Integration→Application) · `events` (ناقل عام) · `webhooks` (عقد+موجِّه) · `logs` (NullLogger افتراضي) · `dto`/`types`/`utils`/`tests` (8 اختبارات معمارية)/`README`. **القاعدة الذهبية:** ممنوع على أي Module استدعاء API خارجي مباشرة. `src/payments` **لم يُعدَّل** — يُربط معمارياً كقدرة `payment` عبر `PaymentContract`. خامل تماماً: لا مزوّد/تكامل/منطق أعمال/واجهة/مفاتيح.
+
+- **[ADR-36] إعادة تنظيم المشروع إلى طبقات احترافية — الخيار A (التدريجي الآمن) (يوليو 2026):** بعد مراجعة معمارية شاملة للطبقات (تقرير مُعتمد من المالك) كشفت **«لهجتين» معماريتين** (تطبيق المطعم: صفحات ↔ Supabase مباشرة · Super Admin/التكامل/الدفع: طبقات نظيفة)، اعتُمد **الخيار A**: تنظيم الطبقات **منطقياً** وسدّ الفجوات بالحد الأدنى فوق البنية القائمة (Feature-Sliced) — **لا** إعادة رصف فيزيائية (رُفض B لأنه Cargo-Cult عالي الخطر لـSPA). نُفِّذ على 5 مراحل، كلٌّ PR منفصل بموافقة: **(م0)** `LAYERS.md` — الدستور المعماري (اتجاه الاعتماد + خريطة الطبقات + قواعد التواصل + المؤجَّلة + دليل «أين أضع X؟»). **(م1)** طبقة `src/observability/` — تجريد Logging/ErrorReporting موحّد خامل (`Logger`/`ErrorReporter`/`NullLogger`/`observability.configure`)؛ `integration/logs` يعيد التصدير منها (بلا تكرار)، و`RootErrorBoundary` مربوط بنداء لا-أثر (سلوك مطابق). **(م2)** طبقة `src/config/` — مصدر واحد للإعدادات غير السرّية (`appConfig`)؛ وُحِّدت قراءات `import.meta.env` (كانت في `supabase.js` و`Staff.jsx`) فصارت في مكان واحد فقط، **بلا أسرار** في العميل. **(م3)** إرساء اصطلاح الوصول للبيانات (كل وصول عبر `*Api`) + ترحيل `Loyalty.jsx` كصفحة مرجعية → `lib/loyaltyApi.js` (سلوك مطابق 100%، الصفحة صارت عرضاً فقط بلا `supabase.from`). **(م4)** التوثيق (هذا القرار + تحديث `LAYERS.md`). **مبادئ محفوظة:** Clean Architecture (اتجاه الاعتماد) · SOLID/SRP لكل طبقة · Open/Closed (الطبقات الخاملة تقبل مزوّداً بلا لمس المتصلين). **صفر كسر ميزة، صفر تغيير سلوك، صفر لمس RLS/SQL.** **مؤجَّل بقرار موثّق (بلا بناء):** ترحيل بقية صفحات المطعم لطبقة الوصول (تدريجي، صفحةً صفحة) · ربط مزوّد Observability فعلي (Sentry) · طبقة AI · Domain Models صريحة — كلها جاهزة الأساس، تُبنى عند الحاجة بلا إعادة هيكلة.
 
 ## 4) واجهة AppShell
 ```jsx
@@ -214,6 +220,7 @@ sql/                           ← ملفات SQL تُحفظ هنا وتُنفَ
 | الإعلانات (منصّة + جرس المطعم) — ADR-33 | ✅ منجزة (PR #181–#182) |
 | أساس نظام الدفع (خامل، محايد للمزوّد) — ADR-34 | ✅ منجز (PR #183) — ربط مزوّد فعلي مؤجَّل بقرار المالك |
 | طبقة التكامل (البوابة الموحّدة، خاملة) — ADR-35 | ✅ منجز (PR #184) — ربط مزوّدين فعليين لاحقاً |
+| إعادة التنظيم لطبقات احترافية (LAYERS/Observability/Config/Data-Access) — ADR-36 | ✅ منجز (PR #186–#189) — ترحيل بقية صفحات المطعم تدريجياً |
 | خطة أساس المينيو: فصل الحزم (~137KB بدل 783) · 22 اختبار فلوس في CI · تفكيك PublicMenu (1,974←~290) · Skeleton + صور كسولة · إضافة سريعة · اقتراحات السلة | ✅ منجزة 6/6 |
 | الهندسة البصرية الجديدة للمينيو (ADR-10): هيرو/ورقة/تبويبات نصية/☰/ولاء/تقييم ★ + جولات ضبط المالك | ✅ منجزة |
 | قائمتا الصدارة (يعجب زبائننا + الأكثر طلباً) + إعادة تصميم «طلباتي» مرحلة 1 — ADR-11 | ✅ منجزة (PR #69–#76) |
