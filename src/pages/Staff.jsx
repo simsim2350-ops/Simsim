@@ -3,15 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { appConfig } from '../config'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { fetchBranches } from '../lib/branchesApi'
 
-// عميل ثانوي لإنشاء حسابات الموظفين دون التأثير على جلسة صاحب المطعم
+// عميل ثانوي لإنشاء حسابات الموظفين دون التأثير على جلسة صاحب المطعم.
+// الإعدادات من طبقة config الموحّدة (نفس قيم العميل الرئيسي، بلا قراءة import.meta.env هنا).
 const signupClient = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY,
+  appConfig.supabaseUrl,
+  appConfig.supabaseAnonKey,
   { auth: { persistSession: false, autoRefreshToken: false } }
 )
 
