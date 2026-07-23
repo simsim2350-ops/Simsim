@@ -12,6 +12,7 @@ const CAPS = [
   ['manage_billing', 'الفوترة'],
   ['manage_admins', 'إدارة المشرفين'],
   ['manage_roles', 'إدارة الأدوار'],
+  ['manage_flags', 'إدارة المزايا'],
 ]
 const capLabel = (c) => (c === '*' ? 'كل الصلاحيات' : (CAPS.find((x) => x[0] === c)?.[1] || c))
 const fmtDate = (v) => v ? new Date(v).toLocaleDateString('ar', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
