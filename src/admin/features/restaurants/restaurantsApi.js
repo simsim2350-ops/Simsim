@@ -26,6 +26,13 @@ export async function getRestaurantOperational(id) {
   return data
 }
 
+// المزايا الفعّالة لمطعم واحد (قراءة فقط، Lazy): لكل ميزة حالتها الفعلية + هل مُخصّصة.
+export async function getRestaurantFeatures(id) {
+  const { data, error } = await supabase.rpc('admin_restaurant_features', { p_restaurant_id: id })
+  if (error) throw error
+  return data || []
+}
+
 // إجراءات كتابة (super_admin فقط، تُسجّل Audit ذرّياً في الخادم).
 // تعليق المنصّة: علم منفصل عن is_active الخاص بالمالك — لا يقدر المالك تغييره، ويمنع استقبال الطلبات خادمياً.
 export async function setPlatformSuspended(id, suspended) {
