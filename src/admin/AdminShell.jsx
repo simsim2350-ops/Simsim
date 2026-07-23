@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { ADMIN_NAV } from './adminNav'
+import CommandPalette from './components/CommandPalette'
 
 // القشرة المستقلة لـ Super Admin: هوية بصرية «وضع المنصّة» (داكنة/بنفسجية) مميّزة عن لوحة المطعم
 // حتى لا يختلط على المشرف أي سياق يعمل فيه. مستقلة تماماً عن AppShell الخاص بالمطعم.
@@ -16,8 +17,20 @@ export default function AdminShell({ active, title, children }) {
   const { platformRole, signOut } = useAuthStore()
   const { isDesktop } = useBreakpoint()
   const [open, setOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
 
   const doSignOut = async () => { await signOut(); navigate('/login', { replace: true }) }
+
+  // اختصار عام ⌘K / Ctrl+K لفتح شريط الأوامر من أي صفحة في اللوحة
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault(); setPaletteOpen((v) => !v)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const NavList = () => (
     <nav style={{ display:'flex', flexDirection:'column', gap:'4px', padding:'8px' }}>
@@ -78,12 +91,20 @@ export default function AdminShell({ active, title, children }) {
             <button onClick={() => setOpen(true)} style={{ background:'transparent', border:'none', color:'white', fontSize:'20px', cursor:'pointer' }}>☰</button>
           )}
           <div style={{ flex:1, fontSize:'15px', fontWeight:'800', color:'white', fontFamily:'Cairo,sans-serif' }}>{title}</div>
+          <button onClick={() => setPaletteOpen(true)} title="بحث (⌘K)"
+            style={{ display:'flex', alignItems:'center', gap:'8px', background:BG, border:`1px solid ${BORDER}`, borderRadius:'9px', padding:'6px 11px', color:'#9CA3AF', cursor:'pointer', fontFamily:'Tajawal,sans-serif', fontSize:'12px' }}>
+            <span>🔍</span>
+            {isDesktop && <span>بحث</span>}
+            {isDesktop && <kbd style={{ fontSize:'9.5px', fontWeight:'800', border:`1px solid ${BORDER}`, borderRadius:'5px', padding:'1px 5px' }}>⌘K</kbd>}
+          </button>
           <span style={{ fontSize:'11px', fontWeight:'800', color:'#C4B5FD', background:'rgba(124,58,237,0.15)', border:`1px solid ${ACCENT}55`, borderRadius:'100px', padding:'4px 11px' }}>
             🛡️ {platformRole || '—'}
           </span>
         </header>
         <main style={{ flex:1, overflowY:'auto' }}>{children}</main>
       </div>
+
+      {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
     </div>
   )
 }
