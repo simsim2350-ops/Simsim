@@ -1,8 +1,15 @@
 import { supabase } from '../../../lib/supabase'
 
-// خدمة لوحة المنصّة: مقاييس عبر كل المطاعم (RPC مبوّبة بـ is_platform_admin).
-export async function platformOverview() {
-  const { data, error } = await supabase.rpc('admin_platform_overview')
+// خدمة لوحة المنصّة — تقرأ ملخّصات F1 الجاهزة (RPC مبوّبة بـ is_platform_admin).
+export async function dashboard() {
+  const { data, error } = await supabase.rpc('admin_dashboard')
   if (error) throw error
   return data || {}
+}
+
+// تحديث فوري للملخّصات (بدل انتظار المهمّة المجدولة كل 10 دقائق).
+export async function refreshMetrics() {
+  const { data, error } = await supabase.rpc('admin_refresh_metrics')
+  if (error) throw error
+  return data
 }
