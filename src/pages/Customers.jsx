@@ -6,6 +6,7 @@ import AppShell from '../components/AppShell'
 import ErrBoundary from '../features/menu/ErrBoundary'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { fetchBranches } from '../lib/branchesApi'
+import { fetchCustomerLedger } from '../lib/loyaltyApi'
 
 function Spinner() {
   return (
@@ -66,7 +67,7 @@ function CustomersInner() {
   const [detailCustomer, setDetailCustomer] = useState(null)
   const [detailTab, setDetailTab] = useState('overview')
   // تفاصيل العميل (سجل الطلبات + المنتجات المفضّلة) تُحمَّل كسولاً عند فتح عميل واحد فقط
-  const [detailData, setDetailData] = useState({ loading:false, orders:[], favoriteProducts:[] })
+  const [detailData, setDetailData] = useState({ loading:false, orders:[], favoriteProducts:[], ledger:[], reviews:[] })
   // قفل تمرير الصفحة خلف أي نافذة منزلقة مفتوحة (فلاتر أكثر / لوحة تفاصيل العميل)
   useBodyScrollLock(moreFiltersOpen)
   useBodyScrollLock(!!detailCustomer)
@@ -99,17 +100,24 @@ function CustomersInner() {
     }
   }
 
-  // تحميل كسول لتفاصيل عميل واحد عند فتح لوحته: سجل طلباته + منتجاته المفضّلة (استعلام صغير مفلتر بجواله، يخضع لـ RLS)
+  // تحميل كسول لتفاصيل عميل واحد عند فتح لوحته: طلبات + منتجات مفضّلة + كشف نقاط + تقييمات
+  // (استعلامات صغيرة مفلترة بجواله، تخضع لـ RLS — نمط قابل للتوسّع، ADR-26/38)
   useEffect(() => {
-    if (!detailCustomer || !restaurant) { setDetailData({ loading:false, orders:[], favoriteProducts:[] }); return }
+    if (!detailCustomer || !restaurant) { setDetailData({ loading:false, orders:[], favoriteProducts:[], ledger:[], reviews:[] }); return }
     let cancelled = false
-    setDetailData({ loading:true, orders:[], favoriteProducts:[] })
+    setDetailData({ loading:true, orders:[], favoriteProducts:[], ledger:[], reviews:[] })
     ;(async () => {
-      const { data } = await supabase.from('orders').select('*')
-        .eq('restaurant_id', restaurant.id).eq('customer_phone', detailCustomer.phone)
-        .order('created_at', { ascending:false })
+      const [ordRes, ledger, revRes] = await Promise.all([
+        supabase.from('orders').select('*')
+          .eq('restaurant_id', restaurant.id).eq('customer_phone', detailCustomer.phone)
+          .order('created_at', { ascending:false }),
+        fetchCustomerLedger(restaurant.id, detailCustomer.phone).catch(() => []),
+        supabase.from('reviews').select('*')
+          .eq('restaurant_id', restaurant.id).eq('customer_phone', detailCustomer.phone)
+          .order('created_at', { ascending:false }),
+      ])
       if (cancelled) return
-      const list = data || []
+      const list = ordRes.data || []
       // المنتجات المفضّلة: من الطلبات غير الملغاة فقط (نفس منطق الحساب السابق)
       const productCounts = {}
       list.forEach(o => {
@@ -118,7 +126,7 @@ function CustomersInner() {
         items.forEach(it => { if (it?.name) productCounts[it.name] = (productCounts[it.name] || 0) + (Number(it.qty) || 1) })
       })
       const favoriteProducts = Object.entries(productCounts).sort((a,b) => b[1]-a[1]).slice(0,3).map(([n,q]) => ({ name:n, qty:q }))
-      setDetailData({ loading:false, orders:list, favoriteProducts })
+      setDetailData({ loading:false, orders:list, favoriteProducts, ledger: ledger || [], reviews: revRes.data || [] })
     })()
     return () => { cancelled = true }
   }, [detailCustomer, restaurant])
@@ -494,6 +502,7 @@ function CustomersInner() {
             { key:'overview', label:'نظرة عامة' },
             { key:'orders', label:`الطلبات${detailData.loading ? '' : ` (${detailData.orders.length})`}` },
             ...(loyaltyProgram?.enabled ? [{ key:'loyalty', label:'الولاء والمكافآت' }] : []),
+            { key:'reviews', label:`التقييمات${detailData.loading ? '' : ` (${detailData.reviews.length})`}` },
           ]
           return (
             <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={() => setDetailCustomer(null)}>
@@ -616,9 +625,55 @@ function CustomersInner() {
                             <div style={{ fontSize:'11px', color:'#9CA3AF', fontWeight:'700', marginTop:'2px' }}>نقاط مُستبدَلة</div>
                           </div>
                         </div>
+
+                        {/* كشف حساب النقاط */}
+                        <div>
+                          <div style={{ fontSize:'12.5px', fontWeight:'800', marginBottom:'8px' }}>📒 كشف حساب النقاط</div>
+                          {detailData.loading ? (
+                            <div style={{ fontSize:'12px', color:'#9CA3AF' }}>جارٍ التحميل...</div>
+                          ) : detailData.ledger.length === 0 ? (
+                            <div style={{ fontSize:'12px', color:'#9CA3AF', background:'#F8F9FB', borderRadius:'10px', padding:'12px' }}>لا توجد حركات نقاط بعد.</div>
+                          ) : (
+                            <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+                              {detailData.ledger.map(t => {
+                                const pos = t.points > 0
+                                return (
+                                  <div key={t.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', padding:'9px 11px', background:'#F8F9FB', borderRadius:'10px' }}>
+                                    <div style={{ minWidth:0 }}>
+                                      <div style={{ fontSize:'12px', fontWeight:'600' }}>{t.reason || t.type}</div>
+                                      <div style={{ fontSize:'10.5px', color:'#9CA3AF' }}>{new Date(t.created_at).toLocaleDateString('ar', { day:'numeric', month:'short' })} · رصيد: {t.balance_after}</div>
+                                    </div>
+                                    <div style={{ flexShrink:0, fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color: pos ? '#10B981' : '#EF4444' }}>{pos ? '+' : ''}{t.points}</div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )
                   })()}
+
+                  {detailTab === 'reviews' && (
+                    <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+                      {detailData.loading && <div style={{ textAlign:'center', padding:'20px', color:'#9CA3AF', fontSize:'13px' }}>جارٍ التحميل...</div>}
+                      {!detailData.loading && detailData.reviews.length === 0 && <div style={{ textAlign:'center', padding:'20px', color:'#9CA3AF', fontSize:'13px' }}>لا توجد تقييمات من هذا العميل</div>}
+                      {detailData.reviews.map(r => (
+                        <div key={r.id} style={{ padding:'12px', background:'#F8F9FB', borderRadius:'12px' }}>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', marginBottom: r.comment ? '6px' : 0 }}>
+                            <span style={{ fontSize:'13px', fontWeight:'800', color:'#F59E0B' }}>{'⭐'.repeat(r.rating || 0)}</span>
+                            <span style={{ fontSize:'11px', color:'#9CA3AF' }}>{new Date(r.created_at).toLocaleDateString('ar', { day:'numeric', month:'short' })}</span>
+                          </div>
+                          {r.comment && <div style={{ fontSize:'12.5px', color:'#0F1117', lineHeight:'1.6' }}>{r.comment}</div>}
+                          {r.reply && (
+                            <div style={{ marginTop:'8px', paddingRight:'10px', borderRight:'2px solid #FF6B3540', fontSize:'11.5px', color:'#6B7280' }}>
+                              <b style={{ color:'#C2410C' }}>ردّ داخلي:</b> {r.reply}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
