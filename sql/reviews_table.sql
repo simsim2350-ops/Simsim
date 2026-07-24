@@ -6,11 +6,10 @@
 --    كل العبارات تستخدم IF NOT EXISTS فلا تُغيّر شيئاً عند إعادة التشغيل.
 -- المرجع: PROJECT_STATE §3 [ADR-9] · Phase 1 / خطوة 1 (توثيق الكائنات الغائبة)
 --
--- 🔴 ملاحظة أمنية موثّقة (ستُعالَج في Phase 1 / خطوة 7):
---    السياسة `reviews_insert_public` تسمح بإدراج أي تقييم من عميل anon بلا أي
---    تحقّق خادمي أن الطلب حقيقي/مكتمل/يخص هذا الجوال → تزوير/إغراق ممكن.
---    البديل المخطّط: دالة `submit_review` (SECURITY DEFINER) تتحقق ثم تُدرج،
---    ثم استبدال هذه السياسة المفتوحة.
+-- ✅ [ADR-37/خطوة 7] سُدّت الثغرة: أُزيلت سياسة `reviews_insert_public` المفتوحة،
+--    وصار الإدراج حصراً عبر دالة `submit_review` (DEFINER) التي تتحقّق أن الطلب
+--    موجود/مكتمل/غير مُقيَّم وتشتقّ الهوية منه. انظر sql/submit_review.sql.
+--    أُضيفت أعمدة reply/reply_at/status خاملة (جاهزة لـPhase 2) + قيد فريد لكل طلب.
 -- ============================================================================
 
 create table if not exists public.reviews (
@@ -23,7 +22,10 @@ create table if not exists public.reviews (
   comment        text,
   is_read        boolean default false,
   created_at     timestamptz default now(),
-  branch_id      uuid references public.branches(id)
+  branch_id      uuid references public.branches(id),
+  reply          text,          -- [ADR-37/خطوة 7] خامل — جاهز لـPhase 2 (الرد على التقييم)
+  reply_at       timestamptz,   -- خامل
+  status         text           -- خامل — جاهز لـPhase 2 (إدارة الشكاوى)
 );
 
 create index if not exists idx_reviews_branch
@@ -32,6 +34,10 @@ create index if not exists idx_reviews_branch
 create index if not exists idx_reviews_restaurant
   on public.reviews (restaurant_id, created_at desc);
 
+-- [ADR-37/خطوة 7] تقييم واحد لكل طلب
+create unique index if not exists uq_reviews_order_id
+  on public.reviews (order_id) where order_id is not null;
+
 alter table public.reviews enable row level security;
 
 -- وصول صاحب المطعم/الموظف المخوّل (كل العمليات)
@@ -39,6 +45,5 @@ create policy reviews_access on public.reviews
   for all using (has_restaurant_access(restaurant_id))
   with check (has_restaurant_access(restaurant_id));
 
--- 🔴 إدراج عام بلا تحقّق (ثغرة موثّقة — تُستبدل في خطوة 7)
-create policy reviews_insert_public on public.reviews
-  for insert with check (true);
+-- ملاحظة: لا سياسة INSERT عامة — الإدراج حصراً عبر submit_review (DEFINER).
+-- سياسة reviews_insert_public القديمة (with check true) أُزيلت في خطوة 7.
