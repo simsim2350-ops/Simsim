@@ -6,6 +6,7 @@ import AppShell from '../components/AppShell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { vatBreakdown } from '../lib/pricing'
 import { fetchBranches } from '../lib/branchesApi'
+import { exportRows, printReport, buildTable, stampName } from '../lib/exportUtils'
 
 const PERIOD_DAYS = { week: 7, month: 30, quarter: 90 }
 const STATUS_LABELS = { pending:'انتظار', preparing:'تحضير', ready:'جاهز', completed:'مكتمل', cancelled:'ملغي' }
@@ -121,6 +122,76 @@ export default function Analytics() {
     a.download = `analytics-${period}-${new Date().toISOString().split('T')[0]}.csv`; a.click()
   }
 
+  // تقرير قابل للطباعة/الحفظ كـPDF — يشمل ملخّص الفترة والمؤشّرات المتقدمة (ADR-39/P3.2)
+  // (تصدير CSV اليومي موجود أصلاً أعلاه — لم يُكرَّر)
+  const printAnalytics = () => {
+    const li = (adv && adv.loyalty_impact) || {}
+    const sat = (adv && adv.satisfaction) || {}
+    const bperf = (adv && Array.isArray(adv.branch_performance)) ? adv.branch_performance : []
+    const creasons = (adv && Array.isArray(adv.complaint_reasons)) ? adv.complaint_reasons : []
+    const kv = (items) => `<div class="kv">${items.map(i => `<div>${i.label}<b>${i.val}</b></div>`).join('')}</div>`
+    const periodLabel = period === 'week' ? 'آخر 7 أيام' : period === 'month' ? 'آخر 30 يوماً' : 'آخر 90 يوماً'
+
+    const sections = [
+      { title:'ملخّص الفترة', html: kv([
+        { label:'إجمالي المبيعات', val:`${Math.round(revenue)} ﷼` },
+        { label:'صافي المبيعات', val:`${Math.round(netSales)} ﷼` },
+        { label:'ض.ق.م المحصّلة', val:`${Math.round(taxCollected)} ﷼` },
+        { label:'عدد الطلبات', val:totalOrders },
+        { label:'مكتملة', val:completedCount },
+        { label:'ملغاة', val:`${cancelledCount} (${cancelRate}٪)` },
+        { label:'متوسط الطلب', val:`${Math.round(avgOrder)} ﷼` },
+        { label:'عملاء فريدون', val:uniqueCustomers },
+        { label:'ساعة الذروة', val:peakHourLabel },
+      ]) },
+      { title:'المبيعات اليومية', html: buildTable(dailyRevenue, [
+        { key:'day', label:'اليوم' },
+        { key:'orders', label:'الطلبات' },
+        { key:'revenue', label:'المبيعات', format:v => `${Number(v).toFixed(2)} ﷼` },
+      ]) },
+      { title:'أفضل المنتجات', html: buildTable(topProducts, [
+        { key:p => `${p.emoji} ${p.name}`, label:'الصنف' },
+        { key:'count', label:'الكمية' },
+        { key:'revenue', label:'الإيراد', format:v => `${Number(v).toFixed(2)} ﷼` },
+      ]) },
+    ]
+
+    if (adv) {
+      sections.push({ title:'تأثير الولاء على المبيعات', html: kv([
+        { label:'حصّة الأعضاء من الإيراد', val:`${num(li.member_revenue_share)}٪` },
+        { label:'طلبات الأعضاء', val:num(li.member_orders) },
+        { label:'متوسط طلب العضو', val:`${Math.round(num(li.member_aov))} ﷼` },
+        { label:'طلبات غير الأعضاء', val:num(li.nonmember_orders) },
+        { label:'متوسط طلب غير العضو', val:`${Math.round(num(li.nonmember_aov))} ﷼` },
+        { label:'فرق متوسط الطلب', val:`${num(li.aov_uplift_pct)}٪` },
+      ]) })
+      sections.push({ title:'رضا العملاء', html: kv([
+        { label:'متوسط التقييم', val:`${num(sat.avg_rating)} / 5` },
+        { label:'عدد التقييمات', val:num(sat.reviews_count) },
+        { label:'راضون (4-5⭐)', val:`${num(sat.satisfied_pct)}٪` },
+        { label:'ساخطون (1-2⭐)', val:`${num(sat.detractors_pct)}٪` },
+        { label:'معدل العودة', val:`${num(adv.return_rate)}٪` },
+      ]) })
+      if (bperf.length > 0) sections.push({ title:'أداء الفروع', html: buildTable(bperf, [
+        { key:b => `${b.is_primary ? '🏠' : '🏢'} ${b.name}`, label:'الفرع' },
+        { key:'revenue', label:'الإيراد', format:v => `${Math.round(Number(v))} ﷼` },
+        { key:'orders', label:'الطلبات' },
+        { key:b => b.avg_rating == null ? '—' : `${b.avg_rating} ⭐`, label:'التقييم' },
+        { key:'complaints', label:'شكاوى' },
+      ]) })
+      if (creasons.length > 0) sections.push({ title:'أسباب الشكاوى', html: buildTable(creasons, [
+        { key:'category', label:'السبب' },
+        { key:'count', label:'العدد' },
+      ]) })
+    }
+
+    printReport({
+      title: `تقرير التحليلات — ${restaurant?.name || ''}`,
+      subtitle: `${periodLabel}${branchFilter !== 'all' ? ` · ${branchName(branchFilter)}` : ''} · ${new Date().toLocaleDateString('ar')}`,
+      sections,
+    })
+  }
+
   const Card = ({ children, style }) => <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden', ...style }}>{children}</div>
   const CardHead = ({ children }) => <div style={{ padding:'14px 16px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>{children}</div>
   const Empty = ({ text='لا توجد بيانات بعد' }) => <div style={{ padding:'28px', textAlign:'center', color:'#9CA3AF', fontSize:'13px' }}>{text}</div>
@@ -152,6 +223,7 @@ export default function Analytics() {
           <button key={p.key} onClick={() => setPeriod(p.key)} style={{ padding:'6px 12px', borderRadius:'8px', border:`1.5px solid ${period===p.key?'#FF6B35':'#E5E7EB'}`, background: period===p.key?'#FFF0EB':'white', color: period===p.key?'#FF6B35':'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>{p.label}</button>
         ))}
         <button onClick={exportCSV} title="تصدير CSV" style={{ padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>⬇️ تصدير</button>
+        <button onClick={printAnalytics} title="طباعة / حفظ كـPDF" style={{ padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>🖨️ تقرير</button>
       </>}
     >
         {/* Content */}

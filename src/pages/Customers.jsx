@@ -7,6 +7,7 @@ import ErrBoundary from '../features/menu/ErrBoundary'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { fetchBranches } from '../lib/branchesApi'
 import { fetchCustomerLedger } from '../lib/loyaltyApi'
+import { exportRows, printReport, buildTable, stampName } from '../lib/exportUtils'
 
 function Spinner() {
   return (
@@ -306,9 +307,28 @@ function CustomersInner() {
     { icon:'🏆', val: topSpender ? `${topSpender.totalSpent.toFixed(0)} ﷼` : '—', label: topSpender ? `أعلى إنفاقاً: ${topSpender.name || topSpender.phone}` : 'أعلى عميل إنفاقاً', color:'#B45309', bg:'rgba(180,83,9,0.1)' },
   ]
 
+  // ===== التصدير (يحترم الفلاتر الحالية) — ADR-39/P3.2 =====
+  const exportColumns = [
+    { key:'name', label:'الاسم', format:v => v || 'بدون اسم' },
+    { key:'phone', label:'الجوال' },
+    { key:'orderCount', label:'عدد الطلبات' },
+    { key:'totalSpent', label:'إجمالي الإنفاق', format:v => Number(v).toFixed(2) },
+    { key:'avgOrderValue', label:'متوسط الطلب', format:v => Number(v).toFixed(2) },
+    { key:'lastOrderAt', label:'آخر طلب', format:v => v ? new Date(v).toLocaleDateString('ar') : '—' },
+    { key:c => displayTier(c).label, label:'المستوى' },
+    { key:'loyaltyBalance', label:'رصيد النقاط' },
+    { key:c => branchName(c.mostOrderedBranchId), label:'الفرع المفضّل' },
+  ]
+  const exportCustomersCSV = () => exportRows(stampName('customers'), filtered, exportColumns)
+  const printCustomers = () => printReport({
+    title: `تقرير العملاء — ${restaurant?.name || ''}`,
+    subtitle: `${filtered.length} عميل · ${new Date().toLocaleDateString('ar')}`,
+    sections: [{ html: buildTable(filtered, exportColumns) }],
+  })
+
   if (loading) return <Spinner />
 
-  const selectStyle = { padding:'10px 12px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'12.5px', outline:'none', cursor:'pointer', background:'white', flex:'1 1 auto', minWidth:'0' }
+  const selectStyle ={ padding:'10px 12px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'12.5px', outline:'none', cursor:'pointer', background:'white', flex:'1 1 auto', minWidth:'0' }
 
   return (
     <AppShell
@@ -409,6 +429,12 @@ function CustomersInner() {
             </select>
             <button onClick={() => setMoreFiltersOpen(true)} style={{ padding:'10px 14px', border:'1.5px solid #E5E7EB', borderRadius:'11px', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12.5px', cursor:'pointer', color:'#374151', flexShrink:0 }}>
               فلاتر أكثر {minSpent ? '●' : ''}
+            </button>
+            <button onClick={exportCustomersCSV} disabled={filtered.length === 0} style={{ padding:'10px 14px', border:'1.5px solid #E5E7EB', borderRadius:'11px', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12.5px', cursor: filtered.length ? 'pointer':'not-allowed', color:'#059669', flexShrink:0, opacity: filtered.length ? 1 : 0.5 }}>
+              ⬇️ CSV
+            </button>
+            <button onClick={printCustomers} disabled={filtered.length === 0} style={{ padding:'10px 14px', border:'1.5px solid #E5E7EB', borderRadius:'11px', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12.5px', cursor: filtered.length ? 'pointer':'not-allowed', color:'#374151', flexShrink:0, opacity: filtered.length ? 1 : 0.5 }}>
+              🖨️ طباعة / PDF
             </button>
           </div>
 

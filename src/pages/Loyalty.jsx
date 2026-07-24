@@ -12,6 +12,7 @@ import {
   saveTier, deleteTier, recomputeTiers, fetchLoyaltyDashboard,
   fetchReviewsSummary, saveReviewReply, setReviewStatus, setReviewCategory,
 } from '../lib/loyaltyApi'
+import { exportRows, printReport, buildTable, stampName } from '../lib/exportUtils'
 
 // تصنيفات أسباب الشكاوى (تغذّي تحليل «أكثر أسباب الشكاوى» — ADR-39)
 const COMPLAINT_CATEGORIES = ['طعام', 'خدمة', 'توصيل', 'سعر', 'نظافة', 'أخرى']
@@ -350,6 +351,40 @@ export default function Loyalty() {
     } catch { toast.error('تعذّر حفظ التصنيف') }
   }
 
+  // ===== التصدير (ADR-39/P3.2) =====
+  const accountColumns = [
+    { key:'customer_name', label:'الاسم', format:v => v || 'عميل' },
+    { key:'customer_phone', label:'الجوال' },
+    { key:a => tierById[a.tier_id]?.name || '—', label:'المستوى' },
+    { key:'current_balance', label:'الرصيد' },
+    { key:'lifetime_earned', label:'إجمالي المكتسب' },
+    { key:'lifetime_redeemed', label:'إجمالي المستبدَل' },
+    { key:'last_activity_at', label:'آخر نشاط', format:v => v ? new Date(v).toLocaleDateString('ar') : '—' },
+  ]
+  const reviewColumns = [
+    { key:'created_at', label:'التاريخ', format:v => new Date(v).toLocaleDateString('ar') },
+    { key:'rating', label:'النجوم' },
+    { key:'customer_name', label:'العميل', format:v => v || 'عميل' },
+    { key:'customer_phone', label:'الجوال' },
+    { key:'comment', label:'التعليق', format:v => v || '' },
+    { key:r => branchName(r.branch_id), label:'الفرع' },
+    { key:r => reviewStatusMeta(r.status).label, label:'الحالة' },
+    { key:'complaint_category', label:'سبب الشكوى', format:v => v || '' },
+    { key:'reply', label:'الرد الداخلي', format:v => v || '' },
+  ]
+  const exportAccounts = () => exportRows(stampName('loyalty-points'), accounts, accountColumns)
+  const printAccounts = () => printReport({
+    title: `تقرير نقاط العملاء — ${restaurant?.name || ''}`,
+    subtitle: `${accounts.length} عميل · ${new Date().toLocaleDateString('ar')}`,
+    sections: [{ html: buildTable(accounts, accountColumns) }],
+  })
+  const exportReviews = () => exportRows(stampName('reviews'), filteredReviews, reviewColumns)
+  const printReviews = () => printReport({
+    title: `تقرير التقييمات — ${restaurant?.name || ''}`,
+    subtitle: `${filteredReviews.length} تقييم · متوسط ${avgRating || '—'} · ${new Date().toLocaleDateString('ar')}`,
+    sections: [{ html: buildTable(filteredReviews, reviewColumns) }],
+  })
+
   const inputStyle = { width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', outline:'none', boxSizing:'border-box' }
   const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px', color:'#374151' }
 
@@ -589,8 +624,14 @@ export default function Loyalty() {
 
               {/* لوحة نقاط العملاء (من الدفتر) */}
               <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
-                <div style={{ padding:'14px 16px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>
-                  🏆 نقاط العملاء ({accounts.length})
+                <div style={{ padding:'14px 16px', borderBottom:'1px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', flexWrap:'wrap' }}>
+                  <span style={{ fontSize:'14px', fontWeight:'800' }}>🏆 نقاط العملاء ({accounts.length})</span>
+                  {accounts.length > 0 && (
+                    <span style={{ display:'flex', gap:'6px' }}>
+                      <button onClick={exportAccounts} style={{ background:'#ECFDF5', color:'#059669', border:'none', borderRadius:'8px', padding:'5px 10px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>⬇️ CSV</button>
+                      <button onClick={printAccounts} style={{ background:'#F3F4F6', color:'#374151', border:'none', borderRadius:'8px', padding:'5px 10px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>🖨️ طباعة</button>
+                    </span>
+                  )}
                 </div>
                 {accounts.length === 0 ? (
                   <div style={{ padding:'32px 16px', textAlign:'center', color:'#9CA3AF' }}>
@@ -779,6 +820,8 @@ export default function Loyalty() {
                   </select>
                 )}
                 <input value={reviewSearch} onChange={e => setReviewSearch(e.target.value)} placeholder="بحث بالاسم/التعليق..." style={{ ...inputStyle, width:'auto', flex:'1 1 160px' }} />
+                <button onClick={exportReviews} disabled={filteredReviews.length === 0} style={{ padding:'10px 12px', border:'1.5px solid #E5E7EB', borderRadius:'11px', background:'white', color:'#059669', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor: filteredReviews.length ? 'pointer':'not-allowed', opacity: filteredReviews.length ? 1:0.5, flexShrink:0 }}>⬇️ CSV</button>
+                <button onClick={printReviews} disabled={filteredReviews.length === 0} style={{ padding:'10px 12px', border:'1.5px solid #E5E7EB', borderRadius:'11px', background:'white', color:'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor: filteredReviews.length ? 'pointer':'not-allowed', opacity: filteredReviews.length ? 1:0.5, flexShrink:0 }}>🖨️ طباعة</button>
               </div>
 
               {/* القائمة */}
