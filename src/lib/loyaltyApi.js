@@ -9,14 +9,16 @@ const phoneDigits = (p) => (p || '').replace(/[^\d]/g, '')
 
 // جلب كل بيانات صفحة الولاء دفعةً واحدة (متوازية). يُرجع القيم كما تستهلكها الصفحة.
 export async function fetchLoyaltyData(restaurantId) {
-  const [progRes, accRes, rwRes, revRes, branches] = await Promise.all([
+  const [progRes, accRes, rwRes, tierRes, revRes, branches] = await Promise.all([
     supabase.from('loyalty_programs').select('*').eq('restaurant_id', restaurantId).maybeSingle(),
     supabase.from('loyalty_accounts')
-      .select('customer_phone, customer_name, current_balance, lifetime_earned, lifetime_redeemed, last_activity_at')
+      .select('customer_phone, customer_name, current_balance, lifetime_earned, lifetime_redeemed, tier_id, last_activity_at')
       .eq('restaurant_id', restaurantId)
       .order('current_balance', { ascending: false }),
     supabase.from('loyalty_rewards').select('*').eq('restaurant_id', restaurantId)
       .order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
+    supabase.from('loyalty_tiers').select('*').eq('restaurant_id', restaurantId)
+      .order('min_points', { ascending: true }),
     supabase.from('reviews').select('*').eq('restaurant_id', restaurantId)
       .order('created_at', { ascending: false }).limit(50),
     fetchBranches(restaurantId),
@@ -25,6 +27,7 @@ export async function fetchLoyaltyData(restaurantId) {
     program: progRes.data || null,
     accounts: accRes.data || [],
     rewards: rwRes.data || [],
+    tiers: tierRes.data || [],
     reviews: revRes.data || [],
     branches: branches || [],
   }
@@ -100,4 +103,40 @@ export async function toggleReward(id, isActive) {
 export async function deleteReward(id) {
   const { error } = await supabase.from('loyalty_rewards').delete().eq('id', id)
   if (error) throw error
+}
+
+// ── مستويات العضوية (ADR-38) ─────────────────────────────────────────────────
+// إنشاء/تعديل مستوى (insert أو update حسب id). يُرجع الصف.
+export async function saveTier(restaurantId, tier) {
+  const payload = {
+    restaurant_id: restaurantId,
+    name: (tier.name || '').trim(),
+    min_points: parseInt(tier.min_points) || 0,
+    earn_multiplier: (tier.earn_multiplier === '' || tier.earn_multiplier == null) ? 1 : Number(tier.earn_multiplier),
+    color: tier.color || null,
+    icon: tier.icon || null,
+    sort_order: parseInt(tier.sort_order) || 0,
+    updated_at: new Date().toISOString(),
+  }
+  if (tier.id) {
+    const { data, error } = await supabase.from('loyalty_tiers').update(payload).eq('id', tier.id).select().single()
+    if (error) throw error
+    return data
+  }
+  const { data, error } = await supabase.from('loyalty_tiers').insert(payload).select().single()
+  if (error) throw error
+  return data
+}
+
+// حذف مستوى (FK على الحسابات = on delete set null؛ يُعاد التصنيف بعده).
+export async function deleteTier(id) {
+  const { error } = await supabase.from('loyalty_tiers').delete().eq('id', id)
+  if (error) throw error
+}
+
+// إعادة تصنيف كل الحسابات (تُستدعى بعد أي تغيير مستوى). تُرجع عدد المتغيّرين.
+export async function recomputeTiers(restaurantId) {
+  const { data, error } = await supabase.rpc('loyalty_recompute_tiers', { p_restaurant_id: restaurantId })
+  if (error) throw error
+  return data
 }

@@ -50,6 +50,7 @@ function CustomersInner() {
   const [insightsData, setInsightsData] = useState(null) // رؤى عامة للمطعم — get_customers_insights
   const [loyaltyProgram, setLoyaltyProgram] = useState(null)
   const [accounts, setAccounts] = useState([])   // حسابات الولاء (دفتر النقاط) — ADR-37
+  const [tiers, setTiers] = useState([])         // مستويات العضوية — ADR-38 (التوحيد D5)
   const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -79,17 +80,19 @@ function CustomersInner() {
     setLoading(true)
     try {
       // التجميع يتم في قاعدة البيانات (صف لكل عميل) بدل تنزيل كل الطلبات الخام للمتصفح — أساس قابلية التوسع
-      const [sumRes, insRes, progRes, accRes, br] = await Promise.all([
+      const [sumRes, insRes, progRes, accRes, tierRes, br] = await Promise.all([
         supabase.rpc('get_customers_summary', { p_restaurant_id: restaurant.id }),
         supabase.rpc('get_customers_insights', { p_restaurant_id: restaurant.id }),
         supabase.from('loyalty_programs').select('*').eq('restaurant_id', restaurant.id).maybeSingle(),
-        supabase.from('loyalty_accounts').select('customer_phone, current_balance, lifetime_earned, lifetime_redeemed').eq('restaurant_id', restaurant.id),
+        supabase.from('loyalty_accounts').select('customer_phone, current_balance, lifetime_earned, lifetime_redeemed, tier_id').eq('restaurant_id', restaurant.id),
+        supabase.from('loyalty_tiers').select('*').eq('restaurant_id', restaurant.id).order('min_points', { ascending: true }),
         fetchBranches(restaurant.id),
       ])
       if (sumRes.data) setSummaryRows(sumRes.data)
       if (insRes.data) setInsightsData(Array.isArray(insRes.data) ? insRes.data[0] : insRes.data)
       if (progRes.data) setLoyaltyProgram(progRes.data)
       if (accRes.data) setAccounts(accRes.data)
+      if (tierRes.data) setTiers(tierRes.data)
       setBranches(br || [])
     } finally {
       setLoading(false)
@@ -166,8 +169,25 @@ function CustomersInner() {
       loyaltyEarned: acc?.lifetime_earned || 0,
       loyaltyRedeemed: acc?.lifetime_redeemed || 0,
       loyaltyBalance: acc?.current_balance || 0,
+      tierId: acc?.tier_id || null,
     }
   }), [customers, accountsByPhone])
+
+  // خريطة مستوى الولاء بالمعرّف (للتوحيد D5 — تحلّ محلّ شارة عدد الطلبات حيث الولاء مفعّل)
+  const tierById = useMemo(() => {
+    const m = {}
+    tiers.forEach(t => { m[t.id] = t })
+    return m
+  }, [tiers])
+
+  // الشارة المعروضة: مستوى الولاء لو مفعّل وله مستوى، وإلا الشريحة التشغيلية (عدد الطلبات)
+  const displayTier = (c) => {
+    if (loyaltyProgram?.enabled && c.tierId && tierById[c.tierId]) {
+      const t = tierById[c.tierId]
+      return { label: `${t.icon || '🏅'} ${t.name}`, bg: (t.color || '#9CA3AF') + '22', color: t.color || '#6B7280' }
+    }
+    return c.tier
+  }
 
   // أعلى عميل إنفاقاً (للشارة ⭐ وللإحصائية)
   const topSpender = useMemo(() => {
@@ -202,7 +222,11 @@ function CustomersInner() {
     if (branchFilter !== 'all') list = list.filter(c => c.branchIds.has(branchFilter))
     if (statusFilter === 'active') list = list.filter(c => c.isActive)
     else if (statusFilter === 'inactive') list = list.filter(c => !c.isActive)
-    if (tierFilter !== 'all') list = list.filter(c => c.tier.key === tierFilter)
+    if (tierFilter !== 'all') {
+      list = loyaltyProgram?.enabled
+        ? list.filter(c => c.tierId === tierFilter)
+        : list.filter(c => c.tier.key === tierFilter)
+    }
     const minS = parseFloat(minSpent)
     if (!isNaN(minS) && minS > 0) list = list.filter(c => c.totalSpent >= minS)
 
@@ -225,7 +249,7 @@ function CustomersInner() {
     }
     else sorted.sort((a,b) => new Date(b.lastOrderAt) - new Date(a.lastOrderAt))
     return sorted
-  }, [customersFull, search, branchFilter, statusFilter, tierFilter, minSpent, sortBy])
+  }, [customersFull, search, branchFilter, statusFilter, tierFilter, minSpent, sortBy, loyaltyProgram])
 
   // إحصائيات Dashboard — 6 أساسية + 4 إضافية قابلة للطي
   const stats = useMemo(() => {
@@ -359,9 +383,13 @@ function CustomersInner() {
             </select>
             <select value={tierFilter} onChange={e => setTierFilter(e.target.value)} style={selectStyle}>
               <option value="all">المستوى: الكل</option>
-              <option value="vip">💎 VIP</option>
-              <option value="regular">⭐ مميز</option>
-              <option value="new">🆕 جديد</option>
+              {loyaltyProgram?.enabled
+                ? tiers.map(t => <option key={t.id} value={t.id}>{t.icon || '🏅'} {t.name}</option>)
+                : (<>
+                    <option value="vip">💎 VIP</option>
+                    <option value="regular">⭐ مميز</option>
+                    <option value="new">🆕 جديد</option>
+                  </>)}
             </select>
             <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={selectStyle}>
               <option value="recent">ترتيب: الأحدث</option>
@@ -401,7 +429,7 @@ function CustomersInner() {
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'3px', flexWrap:'wrap' }}>
                           <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px' }}>{c.name || 'بدون اسم'}</span>
-                          <span style={{ padding:'2px 8px', borderRadius:'100px', background:c.tier.bg, color:c.tier.color, fontSize:'10px', fontWeight:'700' }}>{c.tier.label}</span>
+                          <span style={{ padding:'2px 8px', borderRadius:'100px', background:displayTier(c).bg, color:displayTier(c).color, fontSize:'10px', fontWeight:'700' }}>{displayTier(c).label}</span>
                           {situational && <span style={{ padding:'2px 8px', borderRadius:'100px', background:situational.bg, color:situational.color, fontSize:'10px', fontWeight:'700' }}>{situational.label}</span>}
                         </div>
                         <div style={{ fontSize:'11.5px', color:'#9CA3AF', display:'flex', gap:'6px', flexWrap:'wrap' }}>
@@ -480,7 +508,7 @@ function CustomersInner() {
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap', marginBottom:'3px' }}>
                       <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px' }}>{c.name || 'بدون اسم'}</span>
-                      <span style={{ padding:'2px 8px', borderRadius:'100px', background:c.tier.bg, color:c.tier.color, fontSize:'10px', fontWeight:'700' }}>{c.tier.label}</span>
+                      <span style={{ padding:'2px 8px', borderRadius:'100px', background:displayTier(c).bg, color:displayTier(c).color, fontSize:'10px', fontWeight:'700' }}>{displayTier(c).label}</span>
                       {situational && <span style={{ padding:'2px 8px', borderRadius:'100px', background:situational.bg, color:situational.color, fontSize:'10px', fontWeight:'700' }}>{situational.label}</span>}
                     </div>
                     <div style={{ fontSize:'12px', color:'#9CA3AF', direction:'ltr', textAlign:'right' }}>{c.phone}</div>

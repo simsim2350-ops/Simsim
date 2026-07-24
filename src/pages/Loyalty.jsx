@@ -9,6 +9,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import {
   fetchLoyaltyData, saveLoyaltyProgram, fetchCustomerLedger,
   redeemReward, saveReward, toggleReward, deleteReward,
+  saveTier, deleteTier, recomputeTiers,
 } from '../lib/loyaltyApi'
 
 // أنواع المكافآت — مصدر واحد للتسميات وأيّ حقل قيمة يلزم كل نوع
@@ -49,6 +50,7 @@ export default function Loyalty() {
   // بيانات (من الدفتر)
   const [accounts, setAccounts] = useState([])   // حسابات الولاء (لوحة الصدارة)
   const [rewards, setRewards] = useState([])      // كتالوج المكافآت
+  const [tiers, setTiers] = useState([])          // مستويات العضوية
   const [branches, setBranches] = useState([])
   const [reviews, setReviews] = useState([])
   const [reviewBranch, setReviewBranch] = useState('all')
@@ -62,8 +64,13 @@ export default function Loyalty() {
   const [rewardForm, setRewardForm] = useState(null)       // null | {..reward}
   const [confirmDeleteReward, setConfirmDeleteReward] = useState(null)
 
+  // نموذج المستوى
+  const [tierForm, setTierForm] = useState(null)           // null | {..tier}
+  const [confirmDeleteTier, setConfirmDeleteTier] = useState(null)
+
   useBodyScrollLock(!!detailCustomer)
   useBodyScrollLock(!!rewardForm)
+  useBodyScrollLock(!!tierForm)
 
   useEffect(() => {
     if (!restaurant) { setLoading(false); return }
@@ -72,7 +79,7 @@ export default function Loyalty() {
 
   const fetchAll = async () => {
     try {
-      const { program, accounts, rewards, reviews, branches } = await fetchLoyaltyData(restaurant.id)
+      const { program, accounts, rewards, tiers, reviews, branches } = await fetchLoyaltyData(restaurant.id)
       if (program) {
         setEnabled(program.enabled)
         setEarnRate(Number(program.earn_rate) || 1)
@@ -81,12 +88,63 @@ export default function Loyalty() {
       }
       setAccounts(accounts)
       setRewards(rewards)
+      setTiers(tiers)
       setReviews(reviews)
       setBranches(branches)
     } finally {
       setLoading(false)
     }
   }
+
+  // خريطة المستوى بالمعرّف (للشارات)
+  const tierById = useMemo(() => {
+    const m = {}
+    tiers.forEach(t => { m[t.id] = t })
+    return m
+  }, [tiers])
+
+  const TierBadge = ({ tierId, small }) => {
+    const t = tierById[tierId]
+    if (!t) return null
+    return (
+      <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', padding: small ? '1px 6px' : '2px 8px', borderRadius:'100px', background:(t.color||'#9CA3AF')+'22', color:t.color||'#6B7280', fontSize: small ? '10px' : '11px', fontWeight:'800', whiteSpace:'nowrap' }}>
+        {t.icon && <span>{t.icon}</span>}{t.name}
+      </span>
+    )
+  }
+
+  // ── حفظ مستوى ──
+  const submitTier = async () => {
+    const f = tierForm
+    if (!f.name?.trim()) { toast.error('اكتب اسم المستوى'); return }
+    if (parseInt(f.min_points) < 0 || isNaN(parseInt(f.min_points))) { toast.error('حدّد عتبة نقاط صحيحة'); return }
+    if (!(Number(f.earn_multiplier) > 0)) { toast.error('المضاعف يجب أن يكون أكبر من صفر'); return }
+    try {
+      await saveTier(restaurant.id, f)
+      await recomputeTiers(restaurant.id)
+      toast.success(f.id ? 'تم تعديل المستوى ✅' : 'تمت إضافة المستوى ✅')
+      setTierForm(null)
+      await fetchAll()
+    } catch (err) {
+      toast.error(err.message || 'تعذّر الحفظ')
+    }
+  }
+
+  const onDeleteTier = async (t) => {
+    try {
+      await deleteTier(t.id)
+      await recomputeTiers(restaurant.id)
+      toast.success('تم حذف المستوى')
+      await fetchAll()
+    } catch { toast.error('تعذّر الحذف') }
+  }
+
+  // عدد العملاء في كل مستوى (للعرض)
+  const tierCounts = useMemo(() => {
+    const m = {}
+    accounts.forEach(a => { if (a.tier_id) m[a.tier_id] = (m[a.tier_id] || 0) + 1 })
+    return m
+  }, [accounts])
 
   const saveProgram = async () => {
     setSaving(true)
@@ -197,6 +255,7 @@ export default function Loyalty() {
           {[
             { key:'loyalty', label:'💎 النقاط والولاء' },
             { key:'rewards', label:`🎁 المكافآت${rewards.length ? ` (${rewards.length})` : ''}` },
+            { key:'tiers', label:`🏅 المستويات${tiers.length ? ` (${tiers.length})` : ''}` },
             { key:'reviews', label:`⭐ التقييمات${reviews.length ? ` (${reviews.length})` : ''}` },
           ].map(t => (
             <button
@@ -275,7 +334,10 @@ export default function Loyalty() {
                       <div key={c.customer_phone} onClick={() => openCustomer(c)} style={{ padding:'12px 16px', borderBottom:'1px solid #F3F4F6', display:'flex', alignItems:'center', gap:'12px', cursor:'pointer' }}>
                         <div style={{ width:'26px', fontSize:'13px', fontWeight:'800', color:'#9CA3AF', flexShrink:0, textAlign:'center' }}>{i+1}</div>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.customer_name || 'عميل'}</div>
+                          <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap' }}>
+                            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.customer_name || 'عميل'}</span>
+                            <TierBadge tierId={c.tier_id} small />
+                          </div>
                           <div style={{ fontSize:'11px', color:'#9CA3AF', direction:'ltr', textAlign:'right' }}>{c.customer_phone}</div>
                         </div>
                         <div style={{ textAlign:'center', flexShrink:0 }}>
@@ -328,6 +390,48 @@ export default function Loyalty() {
                         <button onClick={() => setRewardForm({ ...r, points_cost:String(r.points_cost), value:r.value==null?'':String(r.value) })} style={{ background:'#F3F4F6', color:'#374151', border:'none', borderRadius:'8px', padding:'6px 12px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>✏️ تعديل</button>
                         <button onClick={() => onToggleReward(r)} style={{ background: r.is_active ? '#FEF3C7' : '#DCFCE7', color: r.is_active ? '#92400E' : '#166534', border:'none', borderRadius:'8px', padding:'6px 12px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>{r.is_active ? '⏸️ تعطيل' : '▶️ تفعيل'}</button>
                         <button onClick={() => setConfirmDeleteReward(r)} style={{ background:'#FEE2E2', color:'#991B1B', border:'none', borderRadius:'8px', padding:'6px 12px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>🗑️ حذف</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ========== تبويب المستويات ========== */}
+          {activeTab === 'tiers' && (
+            <div style={{ maxWidth:'640px' }}>
+              <div style={{ fontSize:'12px', color:'#6B7280', background:'#F8F9FB', borderRadius:'10px', padding:'10px 12px', marginBottom:'14px' }}>
+                يترقّى العميل تلقائياً حسب <b>إجمالي نقاطه المكتسبة</b>. مضاعف الكسب يمنح نقاطاً أكثر لأصحاب المستويات الأعلى (×1 = بلا مضاعفة).
+              </div>
+
+              <button onClick={() => setTierForm({ name:'', min_points:'', earn_multiplier:'1', color:'#9CA3AF', icon:'🏅', sort_order: tiers.length + 1 })} style={{ width:'100%', padding:'12px', borderRadius:'11px', border:'1.5px dashed #FF6B35', background:'#FFF7ED', color:'#C2410C', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', marginBottom:'14px' }}>
+                ➕ مستوى جديد
+              </button>
+
+              {tiers.length === 0 ? (
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', padding:'40px 16px', textAlign:'center', color:'#9CA3AF' }}>
+                  <div style={{ fontSize:'40px', opacity:0.3, marginBottom:'10px' }}>🏅</div>
+                  <div style={{ fontSize:'13px' }}>لا توجد مستويات — أضف أول مستوى</div>
+                </div>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+                  {tiers.map(t => (
+                    <div key={t.id} style={{ background:'white', borderRadius:'14px', border:'1.5px solid #E5E7EB', borderRight:`4px solid ${t.color||'#E5E7EB'}`, padding:'14px 16px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                        <div style={{ fontSize:'22px', flexShrink:0 }}>{t.icon || '🏅'}</div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px' }}>{t.name}</div>
+                          <div style={{ fontSize:'11.5px', color:'#9CA3AF', display:'flex', gap:'10px', flexWrap:'wrap' }}>
+                            <span>من {t.min_points} نقطة</span>
+                            <span>كسب ×{Number(t.earn_multiplier)}</span>
+                            <span>{tierCounts[t.id] || 0} عميل</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display:'flex', gap:'6px', marginTop:'12px', flexWrap:'wrap' }}>
+                        <button onClick={() => setTierForm({ ...t, min_points:String(t.min_points), earn_multiplier:String(t.earn_multiplier) })} style={{ background:'#F3F4F6', color:'#374151', border:'none', borderRadius:'8px', padding:'6px 12px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>✏️ تعديل</button>
+                        <button onClick={() => setConfirmDeleteTier(t)} style={{ background:'#FEE2E2', color:'#991B1B', border:'none', borderRadius:'8px', padding:'6px 12px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>🗑️ حذف</button>
                       </div>
                     </div>
                   ))}
@@ -399,7 +503,10 @@ export default function Loyalty() {
             <div style={{ padding:'0 18px 14px', flexShrink:0 }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                 <div style={{ minWidth:0 }}>
-                  <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px' }}>{detailCustomer.customer_name || 'عميل'}</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap' }}>
+                    <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px' }}>{detailCustomer.customer_name || 'عميل'}</span>
+                    <TierBadge tierId={detailCustomer.tier_id} />
+                  </div>
                   <div style={{ fontSize:'12px', color:'#9CA3AF', direction:'ltr', textAlign:'right' }}>{detailCustomer.customer_phone}</div>
                 </div>
                 <button onClick={() => setDetailCustomer(null)} style={{ background:'none', border:'none', fontSize:'20px', color:'#9CA3AF', cursor:'pointer', flexShrink:0 }}>✕</button>
@@ -507,6 +614,46 @@ export default function Loyalty() {
         )
       })()}
 
+      {/* نموذج المستوى */}
+      {tierForm && (
+        <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={() => setTierForm(null)}>
+          <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', animation:'fadeIn 0.2s ease' }}/>
+          <div onClick={e => e.stopPropagation()} style={{ position:'relative', background:'white', width:'100%', maxWidth:'480px', borderRadius:'24px 24px 0 0', padding:'12px 18px 24px', maxHeight:'86vh', overflowY:'auto', animation:'slideUp 0.25s ease' }}>
+            <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 14px' }}/>
+            <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', margin:'0 0 16px', textAlign:'center' }}>{tierForm.id ? 'تعديل مستوى' : 'مستوى جديد'}</h3>
+
+            <label style={labelStyle}>اسم المستوى</label>
+            <input value={tierForm.name} onChange={e => setTierForm({ ...tierForm, name:e.target.value })} placeholder="مثال: ذهبي" style={{ ...inputStyle, marginBottom:'14px' }} />
+
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'14px' }}>
+              <div>
+                <label style={labelStyle}>العتبة (نقاط مكتسبة)</label>
+                <input type="number" min="0" value={tierForm.min_points} onChange={e => setTierForm({ ...tierForm, min_points:e.target.value })} placeholder="0" style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>مضاعف الكسب</label>
+                <input type="number" min="0" step="0.1" value={tierForm.earn_multiplier} onChange={e => setTierForm({ ...tierForm, earn_multiplier:e.target.value })} placeholder="1" style={inputStyle} />
+              </div>
+            </div>
+
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'18px' }}>
+              <div>
+                <label style={labelStyle}>الأيقونة (إيموجي)</label>
+                <input value={tierForm.icon || ''} onChange={e => setTierForm({ ...tierForm, icon:e.target.value })} placeholder="🥇" style={{ ...inputStyle, textAlign:'center' }} />
+              </div>
+              <div>
+                <label style={labelStyle}>اللون</label>
+                <input type="color" value={tierForm.color || '#9CA3AF'} onChange={e => setTierForm({ ...tierForm, color:e.target.value })} style={{ ...inputStyle, height:'44px', padding:'4px', cursor:'pointer' }} />
+              </div>
+            </div>
+
+            <button onClick={submitTier} style={{ width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
+              💾 حفظ
+            </button>
+          </div>
+        </div>
+      )}
+
       <ConfirmDialog
         open={!!confirmRedeem}
         icon="🎁"
@@ -527,6 +674,17 @@ export default function Loyalty() {
         confirmLabel="حذف"
         onCancel={() => setConfirmDeleteReward(null)}
         onConfirm={() => { const r = confirmDeleteReward; setConfirmDeleteReward(null); onDeleteReward(r) }}
+      />
+
+      <ConfirmDialog
+        open={!!confirmDeleteTier}
+        icon="🗑️"
+        danger={true}
+        title="حذف المستوى"
+        body={confirmDeleteTier ? `حذف مستوى «${confirmDeleteTier.name}»؟ سيُعاد تصنيف العملاء تلقائياً.` : ''}
+        confirmLabel="حذف"
+        onCancel={() => setConfirmDeleteTier(null)}
+        onConfirm={() => { const t = confirmDeleteTier; setConfirmDeleteTier(null); onDeleteTier(t) }}
       />
     </AppShell>
   )
