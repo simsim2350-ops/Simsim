@@ -55,6 +55,14 @@ export default function LoyaltyCard({ loyalty, brandColor, isEn, t }) {
           <span>{isEn ? `${toNext} pts to reach ${nextTier}` : `باقي ${toNext} نقطة للترقّي إلى ${nextTier}`}</span>
         </div>
       )}
+
+      {/* تنبيه صلاحية النقاط (لو مفعّلة والعميل له رصيد) */}
+      {loyalty.expiry_months > 0 && balance > 0 && (
+        <div style={{ marginTop:'8px', fontSize:'10.5px', opacity:0.75, display:'flex', alignItems:'center', gap:'6px', position:'relative' }}>
+          <span>⌛</span>
+          <span>{isEn ? `Order within ${loyalty.expiry_months} months to keep your points` : `اطلب خلال ${loyalty.expiry_months} شهر للحفاظ على نقاطك`}</span>
+        </div>
+      )}
     </div>
   )
 }

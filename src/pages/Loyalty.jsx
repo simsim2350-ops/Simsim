@@ -73,6 +73,7 @@ export default function Loyalty() {
   const [campaignMultiplier, setCampaignMultiplier] = useState(1)
   const [campaignStartsAt, setCampaignStartsAt] = useState('')     // datetime-local
   const [campaignEndsAt, setCampaignEndsAt] = useState('')
+  const [pointsExpiryMonths, setPointsExpiryMonths] = useState(0)  // 0 = لا تنتهي
   const [savingRules, setSavingRules] = useState(false)
 
   // بيانات (من الدفتر)
@@ -130,6 +131,7 @@ export default function Loyalty() {
         setCampaignMultiplier(Number(program.campaign_multiplier) || 1)
         setCampaignStartsAt(toLocalInput(program.campaign_starts_at))
         setCampaignEndsAt(toLocalInput(program.campaign_ends_at))
+        setPointsExpiryMonths(Number(program.points_expiry_months) || 0)
       }
       setAccounts(accounts)
       setRewards(rewards)
@@ -198,6 +200,7 @@ export default function Loyalty() {
     minOrderAmount, earningBranches, excludedProductIds, campaignMultiplier,
     campaignStartsAt: campaignStartsAt ? new Date(campaignStartsAt).toISOString() : null,
     campaignEndsAt: campaignEndsAt ? new Date(campaignEndsAt).toISOString() : null,
+    pointsExpiryMonths,
   })
 
   const saveProgram = async () => {
@@ -561,6 +564,12 @@ export default function Loyalty() {
                     </div>
                   </div>
                   <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>المضاعف=1 أو بلا تواريخ = لا حملة. يتضاعف مع مضاعف المستوى.</div>
+                </div>
+
+                <div style={{ borderTop:'1px solid #F3F4F6', paddingTop:'14px', marginBottom:'16px' }}>
+                  <label style={labelStyle}>⌛ صلاحية النقاط (شهور خمول)</label>
+                  <input type="number" min="0" value={pointsExpiryMonths} onChange={e => setPointsExpiryMonths(e.target.value)} style={inputStyle} />
+                  <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>0 = لا تنتهي. تنتهي نقاط العميل كاملةً لو لم يطلب/يستبدل خلال هذه المدة. أول انتهاء يبدأ بعد مدة كاملة من التفعيل (سماح).</div>
                 </div>
 
                 <button onClick={saveRules} disabled={savingRules} style={{ width:'100%', padding:'12px', borderRadius:'11px', border:'none', background:'#0F1117', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity: savingRules?0.7:1 }}>

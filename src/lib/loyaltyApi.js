@@ -50,6 +50,7 @@ export async function saveLoyaltyProgram(restaurantId, p) {
     campaign_multiplier: Number(p.campaignMultiplier) || 1,
     campaign_starts_at: p.campaignStartsAt || null,
     campaign_ends_at: p.campaignEndsAt || null,
+    points_expiry_months: parseInt(p.pointsExpiryMonths) || 0,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'restaurant_id' })
   if (error) throw error
