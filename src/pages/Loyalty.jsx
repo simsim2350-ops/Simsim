@@ -258,6 +258,7 @@ export default function Loyalty() {
         reward_inactive: 'المكافأة غير مفعّلة',
         reward_not_found: 'المكافأة غير موجودة',
         access_denied: 'لا تملك صلاحية هذا الإجراء',
+        reward_limit_reached: 'بلغ العميل حدّ استخدام هذه المكافأة',
       }
       toast.error(map[err.message] || 'تعذّر تسجيل الاستبدال')
     }
@@ -608,7 +609,7 @@ export default function Loyalty() {
           {/* ========== تبويب المكافآت ========== */}
           {activeTab === 'rewards' && (
             <div style={{ maxWidth:'640px' }}>
-              <button onClick={() => setRewardForm({ type:'gift', is_active:true, points_cost:'', name:'', value:'' })} style={{ width:'100%', padding:'12px', borderRadius:'11px', border:'1.5px dashed #FF6B35', background:'#FFF7ED', color:'#C2410C', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', marginBottom:'14px' }}>
+              <button onClick={() => setRewardForm({ type:'gift', is_active:true, points_cost:'', name:'', value:'', per_customer_limit:'', period:'none' })} style={{ width:'100%', padding:'12px', borderRadius:'11px', border:'1.5px dashed #FF6B35', background:'#FFF7ED', color:'#C2410C', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', marginBottom:'14px' }}>
                 ➕ مكافأة جديدة
               </button>
 
@@ -636,7 +637,7 @@ export default function Loyalty() {
                         </div>
                       </div>
                       <div style={{ display:'flex', gap:'6px', marginTop:'12px', flexWrap:'wrap' }}>
-                        <button onClick={() => setRewardForm({ ...r, points_cost:String(r.points_cost), value:r.value==null?'':String(r.value) })} style={{ background:'#F3F4F6', color:'#374151', border:'none', borderRadius:'8px', padding:'6px 12px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>✏️ تعديل</button>
+                        <button onClick={() => setRewardForm({ ...r, points_cost:String(r.points_cost), value:r.value==null?'':String(r.value), per_customer_limit: r.conditions?.per_customer_limit ? String(r.conditions.per_customer_limit) : '', period: r.conditions?.period || 'none' })} style={{ background:'#F3F4F6', color:'#374151', border:'none', borderRadius:'8px', padding:'6px 12px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>✏️ تعديل</button>
                         <button onClick={() => onToggleReward(r)} style={{ background: r.is_active ? '#FEF3C7' : '#DCFCE7', color: r.is_active ? '#92400E' : '#166534', border:'none', borderRadius:'8px', padding:'6px 12px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>{r.is_active ? '⏸️ تعطيل' : '▶️ تفعيل'}</button>
                         <button onClick={() => setConfirmDeleteReward(r)} style={{ background:'#FEE2E2', color:'#991B1B', border:'none', borderRadius:'8px', padding:'6px 12px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>🗑️ حذف</button>
                       </div>
@@ -927,6 +928,22 @@ export default function Loyalty() {
                   <input type="number" min="0" value={rewardForm.value} onChange={e => setRewardForm({ ...rewardForm, value:e.target.value })} style={{ ...inputStyle, marginBottom:'14px' }} />
                 </>
               )}
+
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'14px' }}>
+                <div>
+                  <label style={labelStyle}>حد لكل عميل</label>
+                  <input type="number" min="0" value={rewardForm.per_customer_limit || ''} onChange={e => setRewardForm({ ...rewardForm, per_customer_limit:e.target.value })} placeholder="0 = بلا حد" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>ضمن فترة</label>
+                  <select value={rewardForm.period || 'none'} onChange={e => setRewardForm({ ...rewardForm, period:e.target.value })} disabled={!(parseInt(rewardForm.per_customer_limit) > 0)} style={{ ...inputStyle, cursor:'pointer', background:'white', opacity:(parseInt(rewardForm.per_customer_limit)>0)?1:0.5 }}>
+                    <option value="none">مدى الحياة</option>
+                    <option value="day">يومي</option>
+                    <option value="week">أسبوعي</option>
+                    <option value="month">شهري</option>
+                  </select>
+                </div>
+              </div>
 
               <label style={{ display:'flex', alignItems:'center', gap:'8px', fontSize:'13px', fontWeight:'700', color:'#374151', marginBottom:'18px', cursor:'pointer' }}>
                 <input type="checkbox" checked={rewardForm.is_active !== false} onChange={e => setRewardForm({ ...rewardForm, is_active:e.target.checked })} />

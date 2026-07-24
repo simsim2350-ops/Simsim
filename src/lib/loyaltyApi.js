@@ -80,6 +80,7 @@ export async function redeemReward({ restaurantId, rewardId, phone }) {
 
 // إنشاء/تعديل مكافأة في الكتالوج (insert أو update حسب وجود id). يُرجع الصف.
 export async function saveReward(restaurantId, reward) {
+  const limit = parseInt(reward.per_customer_limit) || 0
   const payload = {
     restaurant_id: restaurantId,
     name: (reward.name || '').trim(),
@@ -89,6 +90,7 @@ export async function saveReward(restaurantId, reward) {
     product_id: reward.product_id || null,
     is_active: reward.is_active !== false,
     sort_order: parseInt(reward.sort_order) || 0,
+    conditions: { per_customer_limit: limit, period: limit > 0 ? (reward.period || 'none') : 'none' },
     updated_at: new Date().toISOString(),
   }
   if (reward.id) {
