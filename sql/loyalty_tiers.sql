@@ -66,6 +66,9 @@ as $$
   limit 1;
 $$;
 
+-- دالة داخلية بحتة (تُستدعى من Triggers فقط) — تُمنع عن أدوار العميل
+revoke all on function public.loyalty_compute_tier(uuid, int) from public, anon, authenticated;
+
 -- 5) تحديث Trigger صيانة الرصيد ليحسب المستوى مع كل تغيّر في lifetime_earned
 create or replace function public.loyalty_tx_after_insert()
 returns trigger
