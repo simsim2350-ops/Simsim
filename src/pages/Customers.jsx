@@ -49,7 +49,7 @@ function CustomersInner() {
   const [summaryRows, setSummaryRows] = useState([])   // صفوف مُجمَّعة خادمياً (صف لكل عميل) — get_customers_summary
   const [insightsData, setInsightsData] = useState(null) // رؤى عامة للمطعم — get_customers_insights
   const [loyaltyProgram, setLoyaltyProgram] = useState(null)
-  const [redemptions, setRedemptions] = useState([])
+  const [accounts, setAccounts] = useState([])   // حسابات الولاء (دفتر النقاط) — ADR-37
   const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -79,17 +79,17 @@ function CustomersInner() {
     setLoading(true)
     try {
       // التجميع يتم في قاعدة البيانات (صف لكل عميل) بدل تنزيل كل الطلبات الخام للمتصفح — أساس قابلية التوسع
-      const [sumRes, insRes, progRes, redRes, br] = await Promise.all([
+      const [sumRes, insRes, progRes, accRes, br] = await Promise.all([
         supabase.rpc('get_customers_summary', { p_restaurant_id: restaurant.id }),
         supabase.rpc('get_customers_insights', { p_restaurant_id: restaurant.id }),
         supabase.from('loyalty_programs').select('*').eq('restaurant_id', restaurant.id).maybeSingle(),
-        supabase.from('loyalty_redemptions').select('customer_phone, points').eq('restaurant_id', restaurant.id),
+        supabase.from('loyalty_accounts').select('customer_phone, current_balance, lifetime_earned, lifetime_redeemed').eq('restaurant_id', restaurant.id),
         fetchBranches(restaurant.id),
       ])
       if (sumRes.data) setSummaryRows(sumRes.data)
       if (insRes.data) setInsightsData(Array.isArray(insRes.data) ? insRes.data[0] : insRes.data)
       if (progRes.data) setLoyaltyProgram(progRes.data)
-      if (redRes.data) setRedemptions(redRes.data)
+      if (accRes.data) setAccounts(accRes.data)
       setBranches(br || [])
     } finally {
       setLoading(false)
@@ -132,7 +132,6 @@ function CustomersInner() {
     return summaryRows.map(r => {
       const orderCount = Number(r.order_count) || 0
       const totalSpent = Number(r.total_spent) || 0
-      const completedSpent = Number(r.completed_spent) || 0
       const lastOrderAt = r.last_order_at || null
       const firstOrderAt = r.first_order_at || null
       const branchIds = new Set(Object.keys(r.branch_counts || {}))
@@ -141,7 +140,6 @@ function CustomersInner() {
       const isActive = daysSinceLast <= ACTIVE_DAYS
       const recentOrders30 = Number(r.recent_orders_30) || 0
       const tier = getTierBadge(orderCount)
-      const earned = loyaltyProgram?.enabled ? Math.floor(completedSpent * (Number(loyaltyProgram.earn_rate) || 0)) : 0
 
       return {
         phone: r.phone, name: r.name || null,
@@ -149,22 +147,27 @@ function CustomersInner() {
         lastOrderAt, firstOrderAt,
         branchIds, mostOrderedBranchId: r.most_ordered_branch_id || null,
         daysSinceLast, isNewCustomer, isActive, recentOrders30,
-        tier, loyaltyEarned: earned,
+        tier,
       }
     })
-  }, [summaryRows, loyaltyProgram])
+  }, [summaryRows])
 
-  // رصيد نقاط الولاء لكل عميل (مُحسوب حيّاً — بلا ledger، مطابق لصفحة الولاء)
-  const redemptionsByPhone = useMemo(() => {
+  // رصيد نقاط الولاء لكل عميل — من دفتر النقاط (loyalty_accounts) مباشرةً (ADR-37)
+  const accountsByPhone = useMemo(() => {
     const map = {}
-    redemptions.forEach(r => { map[r.customer_phone] = (map[r.customer_phone] || 0) + (r.points || 0) })
+    accounts.forEach(a => { map[a.customer_phone] = a })
     return map
-  }, [redemptions])
+  }, [accounts])
 
   const customersFull = useMemo(() => customers.map(c => {
-    const redeemed = redemptionsByPhone[c.phone] || 0
-    return { ...c, loyaltyRedeemed: redeemed, loyaltyBalance: c.loyaltyEarned - redeemed }
-  }), [customers, redemptionsByPhone])
+    const acc = accountsByPhone[c.phone]
+    return {
+      ...c,
+      loyaltyEarned: acc?.lifetime_earned || 0,
+      loyaltyRedeemed: acc?.lifetime_redeemed || 0,
+      loyaltyBalance: acc?.current_balance || 0,
+    }
+  }), [customers, accountsByPhone])
 
   // أعلى عميل إنفاقاً (للشارة ⭐ وللإحصائية)
   const topSpender = useMemo(() => {
