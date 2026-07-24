@@ -21,6 +21,14 @@ const REVIEW_STATUSES = [
 ]
 const reviewStatusMeta = (s) => REVIEW_STATUSES.find(x => x.key === (s || 'new')) || REVIEW_STATUSES[0]
 
+// ISO → قيمة datetime-local (توقيت محلي)
+const toLocalInput = (iso) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 // أنواع المكافآت — مصدر واحد للتسميات وأيّ حقل قيمة يلزم كل نوع
 const REWARD_TYPES = [
   { key:'free_product',     label:'🍔 منتج مجاني',      valueLabel:null },
@@ -56,6 +64,16 @@ export default function Loyalty() {
   const [rewardThreshold, setRewardThreshold] = useState(100)
   const [rewardDescription, setRewardDescription] = useState('خصم 10 ﷼ على طلبك القادم')
   const [saving, setSaving] = useState(false)
+
+  // قواعد الكسب المتقدمة (ADR-38/هـ)
+  const [products, setProducts] = useState([])
+  const [minOrderAmount, setMinOrderAmount] = useState(0)
+  const [earningBranches, setEarningBranches] = useState([])       // [] = كل الفروع
+  const [excludedProductIds, setExcludedProductIds] = useState([]) // [] = لا استثناء
+  const [campaignMultiplier, setCampaignMultiplier] = useState(1)
+  const [campaignStartsAt, setCampaignStartsAt] = useState('')     // datetime-local
+  const [campaignEndsAt, setCampaignEndsAt] = useState('')
+  const [savingRules, setSavingRules] = useState(false)
 
   // بيانات (من الدفتر)
   const [accounts, setAccounts] = useState([])   // حسابات الولاء (لوحة الصدارة)
@@ -94,7 +112,7 @@ export default function Loyalty() {
 
   const fetchAll = async () => {
     try {
-      const [{ program, accounts, rewards, tiers, reviews, branches }, dash, revSum] = await Promise.all([
+      const [{ program, accounts, rewards, tiers, reviews, branches, products }, dash, revSum] = await Promise.all([
         fetchLoyaltyData(restaurant.id),
         fetchLoyaltyDashboard(restaurant.id).catch(() => null),
         fetchReviewsSummary(restaurant.id).catch(() => null),
@@ -106,12 +124,19 @@ export default function Loyalty() {
         setEarnRate(Number(program.earn_rate) || 1)
         setRewardThreshold(program.reward_threshold ?? 100)
         setRewardDescription(program.reward_description || '')
+        setMinOrderAmount(Number(program.min_order_amount) || 0)
+        setEarningBranches(Array.isArray(program.earning_branches) ? program.earning_branches : [])
+        setExcludedProductIds(Array.isArray(program.excluded_product_ids) ? program.excluded_product_ids : [])
+        setCampaignMultiplier(Number(program.campaign_multiplier) || 1)
+        setCampaignStartsAt(toLocalInput(program.campaign_starts_at))
+        setCampaignEndsAt(toLocalInput(program.campaign_ends_at))
       }
       setAccounts(accounts)
       setRewards(rewards)
       setTiers(tiers)
       setReviews(reviews)
       setBranches(branches)
+      setProducts(products || [])
     } finally {
       setLoading(false)
     }
@@ -167,10 +192,18 @@ export default function Loyalty() {
     return m
   }, [accounts])
 
+  // كل الحقول تُمرَّر معاً دائماً (حتى لا يُصفَّر شيء عند الحفظ من أي بطاقة)
+  const buildProgram = () => ({
+    enabled, earnRate, rewardThreshold, rewardDescription,
+    minOrderAmount, earningBranches, excludedProductIds, campaignMultiplier,
+    campaignStartsAt: campaignStartsAt ? new Date(campaignStartsAt).toISOString() : null,
+    campaignEndsAt: campaignEndsAt ? new Date(campaignEndsAt).toISOString() : null,
+  })
+
   const saveProgram = async () => {
     setSaving(true)
     try {
-      await saveLoyaltyProgram(restaurant.id, { enabled, earnRate, rewardThreshold, rewardDescription })
+      await saveLoyaltyProgram(restaurant.id, buildProgram())
       toast.success('تم حفظ إعدادات الولاء ✅')
     } catch (err) {
       toast.error(err.message || 'تعذّر الحفظ')
@@ -178,6 +211,20 @@ export default function Loyalty() {
       setSaving(false)
     }
   }
+
+  const saveRules = async () => {
+    setSavingRules(true)
+    try {
+      await saveLoyaltyProgram(restaurant.id, buildProgram())
+      toast.success('تم حفظ قواعد الكسب ✅')
+    } catch (err) {
+      toast.error(err.message || 'تعذّر الحفظ')
+    } finally {
+      setSavingRules(false)
+    }
+  }
+
+  const toggleInArray = (arr, val) => arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]
 
   // ── فتح ورقة عميل: تحميل كشف الحساب كسولاً ──
   const openCustomer = async (acc) => {
@@ -448,6 +495,76 @@ export default function Loyalty() {
                     البرنامج متوقف حالياً — لن تظهر النقاط للعملاء في المنيو حتى تفعّله.
                   </div>
                 )}
+              </div>
+
+              {/* قواعد الكسب المتقدمة */}
+              <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', padding:'18px', marginBottom:'16px', maxWidth:'640px' }}>
+                <div style={{ fontSize:'15px', fontWeight:'800', marginBottom:'4px' }}>⚙️ قواعد الكسب المتقدمة</div>
+                <div style={{ fontSize:'11.5px', color:'#9CA3AF', marginBottom:'16px' }}>اختيارية — القيم الافتراضية تعني «بلا قيود».</div>
+
+                <div style={{ marginBottom:'16px' }}>
+                  <label style={labelStyle}>الحد الأدنى للطلب (على مجموع الأصناف)</label>
+                  <input type="number" min="0" value={minOrderAmount} onChange={e => setMinOrderAmount(e.target.value)} style={inputStyle} />
+                  <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'5px' }}>0 = بلا حد. الطلبات الأقل لا تكسب نقاطاً.</div>
+                </div>
+
+                {branches.length > 1 && (
+                  <div style={{ marginBottom:'16px' }}>
+                    <label style={labelStyle}>الفروع المشمولة بالكسب</label>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:'8px' }}>
+                      {branches.map(b => {
+                        const on = earningBranches.includes(b.id)
+                        return (
+                          <button key={b.id} onClick={() => setEarningBranches(prev => toggleInArray(prev, b.id))} style={{ padding:'6px 12px', borderRadius:'100px', border:`1.5px solid ${on ? '#FF6B35' : '#E5E7EB'}`, background: on ? '#FFF7ED' : 'white', color: on ? '#C2410C' : '#6B7280', fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>
+                            {b.is_primary ? '🏠' : '🏢'} {b.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>لا شيء محدّد = كل الفروع تكسب.</div>
+                  </div>
+                )}
+
+                {products.length > 0 && (
+                  <div style={{ marginBottom:'16px' }}>
+                    <label style={labelStyle}>منتجات مستثناة من الكسب {excludedProductIds.length ? `(${excludedProductIds.length})` : ''}</label>
+                    <div style={{ maxHeight:'160px', overflowY:'auto', border:'1.5px solid #E5E7EB', borderRadius:'11px', padding:'8px' }}>
+                      {products.map(p => {
+                        const on = excludedProductIds.includes(p.id)
+                        return (
+                          <label key={p.id} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'5px 4px', cursor:'pointer', fontSize:'12.5px' }}>
+                            <input type="checkbox" checked={on} onChange={() => setExcludedProductIds(prev => toggleInArray(prev, p.id))} />
+                            {p.name}
+                          </label>
+                        )
+                      })}
+                    </div>
+                    <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>المنتجات المحدّدة لا تُحتسب ضمن نقاط الطلب.</div>
+                  </div>
+                )}
+
+                <div style={{ borderTop:'1px solid #F3F4F6', paddingTop:'14px', marginBottom:'16px' }}>
+                  <label style={labelStyle}>🎉 حملة نقاط مضاعفة (اختياري)</label>
+                  <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap:'10px' }}>
+                    <div>
+                      <div style={{ fontSize:'11px', color:'#9CA3AF', marginBottom:'4px' }}>المضاعف</div>
+                      <input type="number" min="1" step="0.1" value={campaignMultiplier} onChange={e => setCampaignMultiplier(e.target.value)} style={inputStyle} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize:'11px', color:'#9CA3AF', marginBottom:'4px' }}>من</div>
+                      <input type="datetime-local" value={campaignStartsAt} onChange={e => setCampaignStartsAt(e.target.value)} style={inputStyle} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize:'11px', color:'#9CA3AF', marginBottom:'4px' }}>إلى</div>
+                      <input type="datetime-local" value={campaignEndsAt} onChange={e => setCampaignEndsAt(e.target.value)} style={inputStyle} />
+                    </div>
+                  </div>
+                  <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>المضاعف=1 أو بلا تواريخ = لا حملة. يتضاعف مع مضاعف المستوى.</div>
+                </div>
+
+                <button onClick={saveRules} disabled={savingRules} style={{ width:'100%', padding:'12px', borderRadius:'11px', border:'none', background:'#0F1117', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity: savingRules?0.7:1 }}>
+                  💾 حفظ قواعد الكسب
+                </button>
               </div>
 
               {/* لوحة نقاط العملاء (من الدفتر) */}

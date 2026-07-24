@@ -9,7 +9,7 @@ const phoneDigits = (p) => (p || '').replace(/[^\d]/g, '')
 
 // جلب كل بيانات صفحة الولاء دفعةً واحدة (متوازية). يُرجع القيم كما تستهلكها الصفحة.
 export async function fetchLoyaltyData(restaurantId) {
-  const [progRes, accRes, rwRes, tierRes, revRes, branches] = await Promise.all([
+  const [progRes, accRes, rwRes, tierRes, revRes, branches, prodRes] = await Promise.all([
     supabase.from('loyalty_programs').select('*').eq('restaurant_id', restaurantId).maybeSingle(),
     supabase.from('loyalty_accounts')
       .select('customer_phone, customer_name, current_balance, lifetime_earned, lifetime_redeemed, tier_id, last_activity_at')
@@ -22,6 +22,7 @@ export async function fetchLoyaltyData(restaurantId) {
     supabase.from('reviews').select('*').eq('restaurant_id', restaurantId)
       .order('created_at', { ascending: false }).limit(200),
     fetchBranches(restaurantId),
+    supabase.from('products').select('id, name').eq('restaurant_id', restaurantId).order('name'),
   ])
   return {
     program: progRes.data || null,
@@ -30,17 +31,25 @@ export async function fetchLoyaltyData(restaurantId) {
     tiers: tierRes.data || [],
     reviews: revRes.data || [],
     branches: branches || [],
+    products: prodRes.data || [],
   }
 }
 
-// حفظ إعدادات برنامج الولاء (upsert على restaurant_id).
-export async function saveLoyaltyProgram(restaurantId, { enabled, earnRate, rewardThreshold, rewardDescription }) {
+// حفظ إعدادات برنامج الولاء (upsert على restaurant_id) — يشمل قواعد الكسب المتقدمة (ADR-38/هـ).
+// ملاحظة: كل الحقول تُمرَّر معاً دائماً (الحالة تحمل كل القيم) حتى لا يُصفَّر شيء.
+export async function saveLoyaltyProgram(restaurantId, p) {
   const { error } = await supabase.from('loyalty_programs').upsert({
     restaurant_id: restaurantId,
-    enabled,
-    earn_rate: Number(earnRate) || 0,
-    reward_threshold: parseInt(rewardThreshold) || 0,
-    reward_description: (rewardDescription || '').trim(),
+    enabled: p.enabled,
+    earn_rate: Number(p.earnRate) || 0,
+    reward_threshold: parseInt(p.rewardThreshold) || 0,
+    reward_description: (p.rewardDescription || '').trim(),
+    min_order_amount: Number(p.minOrderAmount) || 0,
+    earning_branches: (Array.isArray(p.earningBranches) && p.earningBranches.length) ? p.earningBranches : null,
+    excluded_product_ids: (Array.isArray(p.excludedProductIds) && p.excludedProductIds.length) ? p.excludedProductIds : null,
+    campaign_multiplier: Number(p.campaignMultiplier) || 1,
+    campaign_starts_at: p.campaignStartsAt || null,
+    campaign_ends_at: p.campaignEndsAt || null,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'restaurant_id' })
   if (error) throw error
