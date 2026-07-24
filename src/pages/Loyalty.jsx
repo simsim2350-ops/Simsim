@@ -10,7 +10,16 @@ import {
   fetchLoyaltyData, saveLoyaltyProgram, fetchCustomerLedger,
   redeemReward, saveReward, toggleReward, deleteReward,
   saveTier, deleteTier, recomputeTiers, fetchLoyaltyDashboard,
+  fetchReviewsSummary, saveReviewReply, setReviewStatus,
 } from '../lib/loyaltyApi'
+
+// حالات معالجة التقييم/الشكوى
+const REVIEW_STATUSES = [
+  { key:'new', label:'جديد', bg:'#DBEAFE', color:'#1E40AF' },
+  { key:'in_progress', label:'قيد المعالجة', bg:'#FEF3C7', color:'#92400E' },
+  { key:'resolved', label:'محلول', bg:'#DCFCE7', color:'#166534' },
+]
+const reviewStatusMeta = (s) => REVIEW_STATUSES.find(x => x.key === (s || 'new')) || REVIEW_STATUSES[0]
 
 // أنواع المكافآت — مصدر واحد للتسميات وأيّ حقل قيمة يلزم كل نوع
 const REWARD_TYPES = [
@@ -54,7 +63,12 @@ export default function Loyalty() {
   const [tiers, setTiers] = useState([])          // مستويات العضوية
   const [branches, setBranches] = useState([])
   const [reviews, setReviews] = useState([])
+  const [reviewsSummary, setReviewsSummary] = useState(null)
   const [reviewBranch, setReviewBranch] = useState('all')
+  const [reviewRating, setReviewRating] = useState('all')   // all | 1..5 | complaints
+  const [reviewStatusF, setReviewStatusF] = useState('all') // all | new | in_progress | resolved
+  const [reviewSearch, setReviewSearch] = useState('')
+  const [replyDraft, setReplyDraft] = useState({})          // { [id]: text }
 
   // ورقة العميل (كشف حساب + استبدال)
   const [detailCustomer, setDetailCustomer] = useState(null)
@@ -80,11 +94,13 @@ export default function Loyalty() {
 
   const fetchAll = async () => {
     try {
-      const [{ program, accounts, rewards, tiers, reviews, branches }, dash] = await Promise.all([
+      const [{ program, accounts, rewards, tiers, reviews, branches }, dash, revSum] = await Promise.all([
         fetchLoyaltyData(restaurant.id),
         fetchLoyaltyDashboard(restaurant.id).catch(() => null),
+        fetchReviewsSummary(restaurant.id).catch(() => null),
       ])
       setDashboard(dash)
+      setReviewsSummary(revSum)
       if (program) {
         setEnabled(program.enabled)
         setEarnRate(Number(program.earn_rate) || 1)
@@ -236,13 +252,42 @@ export default function Loyalty() {
   }
 
   const filteredReviews = useMemo(() => {
-    if (reviewBranch === 'all') return reviews
-    return reviews.filter(r => r.branch_id === reviewBranch)
-  }, [reviews, reviewBranch])
+    let list = reviews
+    if (reviewBranch !== 'all') list = list.filter(r => r.branch_id === reviewBranch)
+    if (reviewRating === 'complaints') list = list.filter(r => (r.rating || 0) <= 2)
+    else if (reviewRating !== 'all') list = list.filter(r => String(r.rating) === reviewRating)
+    if (reviewStatusF !== 'all') list = list.filter(r => (r.status || 'new') === reviewStatusF)
+    const q = reviewSearch.trim().toLowerCase()
+    if (q) list = list.filter(r => [r.customer_name || '', r.comment || '', r.customer_phone || ''].join(' ').toLowerCase().includes(q))
+    return list
+  }, [reviews, reviewBranch, reviewRating, reviewStatusF, reviewSearch])
 
-  const avgRating = reviews.length > 0
-    ? (reviews.reduce((s,r) => s + (r.rating||0), 0) / reviews.length).toFixed(1)
-    : null
+  // متوسط من التجميع الخادمي (دقيق على كل التقييمات) مع fallback محلي
+  const avgRating = reviewsSummary ? Number(reviewsSummary.avg_rating).toFixed(1)
+    : (reviews.length > 0 ? (reviews.reduce((s,r) => s + (r.rating||0), 0) / reviews.length).toFixed(1) : null)
+
+  const refreshReviewsSummary = async () => {
+    try { setReviewsSummary(await fetchReviewsSummary(restaurant.id)) } catch { /* تجاهل */ }
+  }
+
+  const doReply = async (r) => {
+    const text = (replyDraft[r.id] ?? r.reply ?? '')
+    try {
+      await saveReviewReply(r.id, text)
+      const reply_at = new Date().toISOString()
+      setReviews(prev => prev.map(x => x.id === r.id ? { ...x, reply: text.trim() || null, reply_at } : x))
+      toast.success('تم حفظ الرد ✅')
+      refreshReviewsSummary()
+    } catch { toast.error('تعذّر حفظ الرد') }
+  }
+
+  const doReviewStatus = async (r, status) => {
+    try {
+      await setReviewStatus(r.id, status)
+      setReviews(prev => prev.map(x => x.id === r.id ? { ...x, status } : x))
+      refreshReviewsSummary()
+    } catch { toast.error('تعذّر تغيير الحالة') }
+  }
 
   const inputStyle = { width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', outline:'none', boxSizing:'border-box' }
   const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px', color:'#374151' }
@@ -527,56 +572,134 @@ export default function Loyalty() {
             </div>
           )}
 
-          {/* ========== تبويب التقييمات (بلا تغيير) ========== */}
-          {activeTab === 'reviews' && (
+          {/* ========== تبويب التقييمات ========== */}
+          {activeTab === 'reviews' && (() => {
+            const sum = reviewsSummary
+            const total = sum?.total_count ?? reviews.length
+            const dist = sum?.distribution || {}
+            const trendThis = sum?.this_month_avg == null ? null : Number(sum.this_month_avg)
+            const trendLast = sum?.last_month_avg == null ? null : Number(sum.last_month_avg)
+            const trendDelta = (trendThis != null && trendLast != null) ? (trendThis - trendLast) : null
+            return (
             <>
-              <div style={{ display:'flex', gap:'12px', marginBottom:'16px', flexWrap:'wrap' }}>
-                <div style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding:'16px', flex:1, minWidth:'140px' }}>
-                  <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'26px', color:'#F59E0B', lineHeight:1 }}>{avgRating || '—'}</div>
-                  <div style={{ fontSize:'12px', color:'#9CA3AF', marginTop:'6px' }}>متوسط التقييم من 5</div>
+              {/* بطاقات إحصائية */}
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'12px', marginBottom:'14px', maxWidth:'720px' }}>
+                <div style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding:'14px' }}>
+                  <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'24px', color:'#F59E0B', lineHeight:1 }}>{avgRating || '—'} <span style={{ fontSize:'13px', color:'#9CA3AF' }}>/ 5</span></div>
+                  <div style={{ fontSize:'12px', color:'#9CA3AF', marginTop:'6px' }}>متوسط التقييم</div>
                 </div>
-                <div style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding:'16px', flex:1, minWidth:'140px' }}>
-                  <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'26px', color:'#3B82F6', lineHeight:1 }}>{reviews.length}</div>
+                <div style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding:'14px' }}>
+                  <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'24px', color:'#3B82F6', lineHeight:1 }}>{total}</div>
                   <div style={{ fontSize:'12px', color:'#9CA3AF', marginTop:'6px' }}>إجمالي التقييمات</div>
+                </div>
+                <div style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding:'14px' }}>
+                  <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'24px', color:'#EF4444', lineHeight:1 }}>{sum?.complaints_count ?? '—'}</div>
+                  <div style={{ fontSize:'12px', color:'#9CA3AF', marginTop:'6px' }}>شكاوى (≤ ⭐⭐)</div>
+                </div>
+                <div style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding:'14px' }}>
+                  <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'24px', color: trendDelta==null?'#9CA3AF':(trendDelta>=0?'#10B981':'#EF4444'), lineHeight:1 }}>
+                    {trendDelta==null ? '—' : `${trendDelta>=0?'▲':'▼'} ${Math.abs(trendDelta).toFixed(1)}`}
+                  </div>
+                  <div style={{ fontSize:'12px', color:'#9CA3AF', marginTop:'6px' }}>الاتجاه هذا الشهر</div>
                 </div>
               </div>
 
-              {branches.length > 0 && (
-                <select value={reviewBranch} onChange={e => setReviewBranch(e.target.value)} style={{ ...inputStyle, width:'auto', marginBottom:'14px', cursor:'pointer', background:'white' }}>
-                  <option value="all">🏢 كل الفروع</option>
-                  {branches.map(b => <option key={b.id} value={b.id}>{b.is_primary ? '🏠' : '🏢'} {b.name}</option>)}
-                </select>
+              {/* توزيع النجوم */}
+              {total > 0 && (
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', padding:'16px', marginBottom:'14px', maxWidth:'720px' }}>
+                  <div style={{ fontSize:'13px', fontWeight:'800', marginBottom:'12px' }}>توزيع النجوم</div>
+                  {[5,4,3,2,1].map(star => {
+                    const c = Number(dist[star] || 0)
+                    const pct = total > 0 ? Math.round((c/total)*100) : 0
+                    return (
+                      <div key={star} style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'6px' }}>
+                        <span style={{ fontSize:'12px', fontWeight:'700', color:'#F59E0B', width:'34px', flexShrink:0 }}>{star} ⭐</span>
+                        <div style={{ flex:1, height:'8px', background:'#F3F4F6', borderRadius:'100px', overflow:'hidden' }}>
+                          <div style={{ width:`${pct}%`, height:'100%', background:'#F59E0B', borderRadius:'100px' }}/>
+                        </div>
+                        <span style={{ fontSize:'11.5px', color:'#9CA3AF', width:'40px', textAlign:'left', flexShrink:0 }}>{c}</span>
+                      </div>
+                    )
+                  })}
+                </div>
               )}
 
-              <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+              {/* الفلاتر */}
+              <div style={{ display:'flex', gap:'8px', marginBottom:'14px', flexWrap:'wrap' }}>
+                <select value={reviewRating} onChange={e => setReviewRating(e.target.value)} style={{ ...inputStyle, width:'auto', cursor:'pointer', background:'white' }}>
+                  <option value="all">كل التقييمات</option>
+                  <option value="complaints">🚩 الشكاوى (≤ ⭐⭐)</option>
+                  {[5,4,3,2,1].map(s => <option key={s} value={String(s)}>{s} نجوم</option>)}
+                </select>
+                <select value={reviewStatusF} onChange={e => setReviewStatusF(e.target.value)} style={{ ...inputStyle, width:'auto', cursor:'pointer', background:'white' }}>
+                  <option value="all">كل الحالات</option>
+                  {REVIEW_STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                </select>
+                {branches.length > 0 && (
+                  <select value={reviewBranch} onChange={e => setReviewBranch(e.target.value)} style={{ ...inputStyle, width:'auto', cursor:'pointer', background:'white' }}>
+                    <option value="all">🏢 كل الفروع</option>
+                    {branches.map(b => <option key={b.id} value={b.id}>{b.is_primary ? '🏠' : '🏢'} {b.name}</option>)}
+                  </select>
+                )}
+                <input value={reviewSearch} onChange={e => setReviewSearch(e.target.value)} placeholder="بحث بالاسم/التعليق..." style={{ ...inputStyle, width:'auto', flex:'1 1 160px' }} />
+              </div>
+
+              {/* القائمة */}
+              <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden', maxWidth:'720px' }}>
                 {filteredReviews.length === 0 ? (
                   <div style={{ padding:'40px 16px', textAlign:'center', color:'#9CA3AF' }}>
                     <div style={{ fontSize:'40px', opacity:0.3, marginBottom:'10px' }}>💬</div>
-                    <div style={{ fontSize:'13px' }}>لا توجد تقييمات — تظهر بعد أن يقيّم العملاء طلباتهم المكتملة</div>
+                    <div style={{ fontSize:'13px' }}>{total === 0 ? 'لا توجد تقييمات بعد' : 'لا نتائج مطابقة للفلاتر'}</div>
                   </div>
                 ) : (
-                  filteredReviews.map(r => (
-                    <div key={r.id} style={{ padding:'14px 16px', borderBottom:'1px solid #F3F4F6' }}>
-                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: r.comment ? '8px' : 0, gap:'8px' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:'8px', minWidth:0, flexWrap:'wrap' }}>
-                          <span style={{ fontSize:'14px', fontWeight:'800', color:'#F59E0B', whiteSpace:'nowrap' }}>{'⭐'.repeat(r.rating || 0)}</span>
-                          <span style={{ fontSize:'13px', fontWeight:'700', color:'#374151' }}>{r.customer_name || 'عميل'}</span>
-                          {r.branch_id && <span style={{ fontSize:'10px', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 7px', borderRadius:'100px' }}>{branchName(r.branch_id)}</span>}
+                  filteredReviews.map(r => {
+                    const isComplaint = (r.rating || 0) <= 2
+                    const st = reviewStatusMeta(r.status)
+                    const draft = replyDraft[r.id] ?? r.reply ?? ''
+                    return (
+                      <div key={r.id} style={{ padding:'14px 16px', borderBottom:'1px solid #F3F4F6', background: isComplaint ? '#FFFbFA' : 'white' }}>
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', marginBottom:'8px' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:'8px', minWidth:0, flexWrap:'wrap' }}>
+                            <span style={{ fontSize:'14px', fontWeight:'800', color:'#F59E0B', whiteSpace:'nowrap' }}>{'⭐'.repeat(r.rating || 0)}</span>
+                            <span style={{ fontSize:'13px', fontWeight:'700', color:'#374151' }}>{r.customer_name || 'عميل'}</span>
+                            {isComplaint && <span style={{ fontSize:'10px', color:'#991B1B', background:'#FEE2E2', padding:'2px 7px', borderRadius:'100px', fontWeight:'700' }}>🚩 شكوى</span>}
+                            <span style={{ fontSize:'10px', color:st.color, background:st.bg, padding:'2px 7px', borderRadius:'100px', fontWeight:'700' }}>{st.label}</span>
+                            {r.branch_id && <span style={{ fontSize:'10px', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 7px', borderRadius:'100px' }}>{branchName(r.branch_id)}</span>}
+                          </div>
+                          <span style={{ fontSize:'11px', color:'#9CA3AF', flexShrink:0 }}>{new Date(r.created_at).toLocaleDateString('ar', { day:'numeric', month:'short' })}</span>
                         </div>
-                        <span style={{ fontSize:'11px', color:'#9CA3AF', flexShrink:0 }}>{new Date(r.created_at).toLocaleDateString('ar', { day:'numeric', month:'short' })}</span>
+
+                        {r.comment && (
+                          <div style={{ fontSize:'13px', color:'#0F1117', lineHeight:'1.7', background:'#F8F9FB', borderRadius:'10px', padding:'9px 12px' }}>{r.comment}</div>
+                        )}
+
+                        {r.customer_phone && (
+                          <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'8px' }}>
+                            <span style={{ fontSize:'11px', color:'#9CA3AF', direction:'ltr' }}>📱 {r.customer_phone}</span>
+                            <a href={`https://wa.me/${r.customer_phone}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration:'none', background:'#ECFDF5', color:'#059669', borderRadius:'7px', padding:'3px 9px', fontSize:'11px', fontWeight:'700' }}>💬 واتساب</a>
+                          </div>
+                        )}
+
+                        {/* الرد الداخلي */}
+                        <div style={{ marginTop:'10px' }}>
+                          <textarea value={draft} onChange={e => setReplyDraft(prev => ({ ...prev, [r.id]: e.target.value }))} placeholder="رد داخلي / ملاحظة على هذا التقييم..." rows={2} style={{ ...inputStyle, resize:'vertical', fontSize:'12.5px' }} />
+                          <div style={{ display:'flex', gap:'6px', marginTop:'8px', flexWrap:'wrap', alignItems:'center' }}>
+                            <button onClick={() => doReply(r)} style={{ background:'#FF6B35', color:'white', border:'none', borderRadius:'8px', padding:'6px 12px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>💾 حفظ الرد</button>
+                            {r.reply_at && <span style={{ fontSize:'10.5px', color:'#9CA3AF' }}>آخر رد: {new Date(r.reply_at).toLocaleDateString('ar', { day:'numeric', month:'short' })}</span>}
+                            <div style={{ flex:1 }}/>
+                            {REVIEW_STATUSES.map(s => (
+                              <button key={s.key} onClick={() => doReviewStatus(r, s.key)} style={{ background: (r.status||'new')===s.key ? s.bg : '#F3F4F6', color:(r.status||'new')===s.key ? s.color : '#9CA3AF', border:'none', borderRadius:'8px', padding:'5px 9px', fontSize:'11px', fontWeight:'700', cursor:'pointer' }}>{s.label}</button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                      {r.comment && (
-                        <div style={{ fontSize:'13px', color:'#0F1117', lineHeight:'1.7', background:'#F8F9FB', borderRadius:'10px', padding:'9px 12px' }}>{r.comment}</div>
-                      )}
-                      {r.customer_phone && (
-                        <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px', direction:'ltr', textAlign:'right' }}>📱 {r.customer_phone}</div>
-                      )}
-                    </div>
-                  ))
+                    )
+                  })
                 )}
               </div>
             </>
-          )}
+            )
+          })()}
 
         </div>
 

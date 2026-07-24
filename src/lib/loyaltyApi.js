@@ -20,7 +20,7 @@ export async function fetchLoyaltyData(restaurantId) {
     supabase.from('loyalty_tiers').select('*').eq('restaurant_id', restaurantId)
       .order('min_points', { ascending: true }),
     supabase.from('reviews').select('*').eq('restaurant_id', restaurantId)
-      .order('created_at', { ascending: false }).limit(50),
+      .order('created_at', { ascending: false }).limit(200),
     fetchBranches(restaurantId),
   ])
   return {
@@ -146,4 +146,26 @@ export async function fetchLoyaltyDashboard(restaurantId) {
   const { data, error } = await supabase.rpc('get_loyalty_dashboard', { p_restaurant_id: restaurantId })
   if (error) throw error
   return data || null
+}
+
+// ── التقييمات (ADR-38/ج) ─────────────────────────────────────────────────────
+// تجميع إحصائيات التقييمات (متوسط/توزيع/شكاوى/حالات/اتجاه). jsonb.
+export async function fetchReviewsSummary(restaurantId) {
+  const { data, error } = await supabase.rpc('get_reviews_summary', { p_restaurant_id: restaurantId })
+  if (error) throw error
+  return data || null
+}
+
+// حفظ رد المطعم على تقييم (داخلي — تحديث مباشر عبر RLS).
+export async function saveReviewReply(id, reply) {
+  const { error } = await supabase.from('reviews')
+    .update({ reply: (reply || '').trim() || null, reply_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
+// تغيير حالة معالجة التقييم/الشكوى.
+export async function setReviewStatus(id, status) {
+  const { error } = await supabase.from('reviews').update({ status }).eq('id', id)
+  if (error) throw error
 }
