@@ -6,6 +6,7 @@ import AppShell from '../components/AppShell'
 import ErrBoundary from '../features/menu/ErrBoundary'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { fetchBranches } from '../lib/branchesApi'
+import { fetchCustomerLedger } from '../lib/loyaltyApi'
 
 function Spinner() {
   return (
@@ -49,7 +50,8 @@ function CustomersInner() {
   const [summaryRows, setSummaryRows] = useState([])   // صفوف مُجمَّعة خادمياً (صف لكل عميل) — get_customers_summary
   const [insightsData, setInsightsData] = useState(null) // رؤى عامة للمطعم — get_customers_insights
   const [loyaltyProgram, setLoyaltyProgram] = useState(null)
-  const [redemptions, setRedemptions] = useState([])
+  const [accounts, setAccounts] = useState([])   // حسابات الولاء (دفتر النقاط) — ADR-37
+  const [tiers, setTiers] = useState([])         // مستويات العضوية — ADR-38 (التوحيد D5)
   const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -65,7 +67,7 @@ function CustomersInner() {
   const [detailCustomer, setDetailCustomer] = useState(null)
   const [detailTab, setDetailTab] = useState('overview')
   // تفاصيل العميل (سجل الطلبات + المنتجات المفضّلة) تُحمَّل كسولاً عند فتح عميل واحد فقط
-  const [detailData, setDetailData] = useState({ loading:false, orders:[], favoriteProducts:[] })
+  const [detailData, setDetailData] = useState({ loading:false, orders:[], favoriteProducts:[], ledger:[], reviews:[] })
   // قفل تمرير الصفحة خلف أي نافذة منزلقة مفتوحة (فلاتر أكثر / لوحة تفاصيل العميل)
   useBodyScrollLock(moreFiltersOpen)
   useBodyScrollLock(!!detailCustomer)
@@ -79,34 +81,43 @@ function CustomersInner() {
     setLoading(true)
     try {
       // التجميع يتم في قاعدة البيانات (صف لكل عميل) بدل تنزيل كل الطلبات الخام للمتصفح — أساس قابلية التوسع
-      const [sumRes, insRes, progRes, redRes, br] = await Promise.all([
+      const [sumRes, insRes, progRes, accRes, tierRes, br] = await Promise.all([
         supabase.rpc('get_customers_summary', { p_restaurant_id: restaurant.id }),
         supabase.rpc('get_customers_insights', { p_restaurant_id: restaurant.id }),
         supabase.from('loyalty_programs').select('*').eq('restaurant_id', restaurant.id).maybeSingle(),
-        supabase.from('loyalty_redemptions').select('customer_phone, points').eq('restaurant_id', restaurant.id),
+        supabase.from('loyalty_accounts').select('customer_phone, current_balance, lifetime_earned, lifetime_redeemed, tier_id').eq('restaurant_id', restaurant.id),
+        supabase.from('loyalty_tiers').select('*').eq('restaurant_id', restaurant.id).order('min_points', { ascending: true }),
         fetchBranches(restaurant.id),
       ])
       if (sumRes.data) setSummaryRows(sumRes.data)
       if (insRes.data) setInsightsData(Array.isArray(insRes.data) ? insRes.data[0] : insRes.data)
       if (progRes.data) setLoyaltyProgram(progRes.data)
-      if (redRes.data) setRedemptions(redRes.data)
+      if (accRes.data) setAccounts(accRes.data)
+      if (tierRes.data) setTiers(tierRes.data)
       setBranches(br || [])
     } finally {
       setLoading(false)
     }
   }
 
-  // تحميل كسول لتفاصيل عميل واحد عند فتح لوحته: سجل طلباته + منتجاته المفضّلة (استعلام صغير مفلتر بجواله، يخضع لـ RLS)
+  // تحميل كسول لتفاصيل عميل واحد عند فتح لوحته: طلبات + منتجات مفضّلة + كشف نقاط + تقييمات
+  // (استعلامات صغيرة مفلترة بجواله، تخضع لـ RLS — نمط قابل للتوسّع، ADR-26/38)
   useEffect(() => {
-    if (!detailCustomer || !restaurant) { setDetailData({ loading:false, orders:[], favoriteProducts:[] }); return }
+    if (!detailCustomer || !restaurant) { setDetailData({ loading:false, orders:[], favoriteProducts:[], ledger:[], reviews:[] }); return }
     let cancelled = false
-    setDetailData({ loading:true, orders:[], favoriteProducts:[] })
+    setDetailData({ loading:true, orders:[], favoriteProducts:[], ledger:[], reviews:[] })
     ;(async () => {
-      const { data } = await supabase.from('orders').select('*')
-        .eq('restaurant_id', restaurant.id).eq('customer_phone', detailCustomer.phone)
-        .order('created_at', { ascending:false })
+      const [ordRes, ledger, revRes] = await Promise.all([
+        supabase.from('orders').select('*')
+          .eq('restaurant_id', restaurant.id).eq('customer_phone', detailCustomer.phone)
+          .order('created_at', { ascending:false }),
+        fetchCustomerLedger(restaurant.id, detailCustomer.phone).catch(() => []),
+        supabase.from('reviews').select('*')
+          .eq('restaurant_id', restaurant.id).eq('customer_phone', detailCustomer.phone)
+          .order('created_at', { ascending:false }),
+      ])
       if (cancelled) return
-      const list = data || []
+      const list = ordRes.data || []
       // المنتجات المفضّلة: من الطلبات غير الملغاة فقط (نفس منطق الحساب السابق)
       const productCounts = {}
       list.forEach(o => {
@@ -115,7 +126,7 @@ function CustomersInner() {
         items.forEach(it => { if (it?.name) productCounts[it.name] = (productCounts[it.name] || 0) + (Number(it.qty) || 1) })
       })
       const favoriteProducts = Object.entries(productCounts).sort((a,b) => b[1]-a[1]).slice(0,3).map(([n,q]) => ({ name:n, qty:q }))
-      setDetailData({ loading:false, orders:list, favoriteProducts })
+      setDetailData({ loading:false, orders:list, favoriteProducts, ledger: ledger || [], reviews: revRes.data || [] })
     })()
     return () => { cancelled = true }
   }, [detailCustomer, restaurant])
@@ -132,7 +143,6 @@ function CustomersInner() {
     return summaryRows.map(r => {
       const orderCount = Number(r.order_count) || 0
       const totalSpent = Number(r.total_spent) || 0
-      const completedSpent = Number(r.completed_spent) || 0
       const lastOrderAt = r.last_order_at || null
       const firstOrderAt = r.first_order_at || null
       const branchIds = new Set(Object.keys(r.branch_counts || {}))
@@ -141,7 +151,6 @@ function CustomersInner() {
       const isActive = daysSinceLast <= ACTIVE_DAYS
       const recentOrders30 = Number(r.recent_orders_30) || 0
       const tier = getTierBadge(orderCount)
-      const earned = loyaltyProgram?.enabled ? Math.floor(completedSpent * (Number(loyaltyProgram.earn_rate) || 0)) : 0
 
       return {
         phone: r.phone, name: r.name || null,
@@ -149,22 +158,44 @@ function CustomersInner() {
         lastOrderAt, firstOrderAt,
         branchIds, mostOrderedBranchId: r.most_ordered_branch_id || null,
         daysSinceLast, isNewCustomer, isActive, recentOrders30,
-        tier, loyaltyEarned: earned,
+        tier,
       }
     })
-  }, [summaryRows, loyaltyProgram])
+  }, [summaryRows])
 
-  // رصيد نقاط الولاء لكل عميل (مُحسوب حيّاً — بلا ledger، مطابق لصفحة الولاء)
-  const redemptionsByPhone = useMemo(() => {
+  // رصيد نقاط الولاء لكل عميل — من دفتر النقاط (loyalty_accounts) مباشرةً (ADR-37)
+  const accountsByPhone = useMemo(() => {
     const map = {}
-    redemptions.forEach(r => { map[r.customer_phone] = (map[r.customer_phone] || 0) + (r.points || 0) })
+    accounts.forEach(a => { map[a.customer_phone] = a })
     return map
-  }, [redemptions])
+  }, [accounts])
 
   const customersFull = useMemo(() => customers.map(c => {
-    const redeemed = redemptionsByPhone[c.phone] || 0
-    return { ...c, loyaltyRedeemed: redeemed, loyaltyBalance: c.loyaltyEarned - redeemed }
-  }), [customers, redemptionsByPhone])
+    const acc = accountsByPhone[c.phone]
+    return {
+      ...c,
+      loyaltyEarned: acc?.lifetime_earned || 0,
+      loyaltyRedeemed: acc?.lifetime_redeemed || 0,
+      loyaltyBalance: acc?.current_balance || 0,
+      tierId: acc?.tier_id || null,
+    }
+  }), [customers, accountsByPhone])
+
+  // خريطة مستوى الولاء بالمعرّف (للتوحيد D5 — تحلّ محلّ شارة عدد الطلبات حيث الولاء مفعّل)
+  const tierById = useMemo(() => {
+    const m = {}
+    tiers.forEach(t => { m[t.id] = t })
+    return m
+  }, [tiers])
+
+  // الشارة المعروضة: مستوى الولاء لو مفعّل وله مستوى، وإلا الشريحة التشغيلية (عدد الطلبات)
+  const displayTier = (c) => {
+    if (loyaltyProgram?.enabled && c.tierId && tierById[c.tierId]) {
+      const t = tierById[c.tierId]
+      return { label: `${t.icon || '🏅'} ${t.name}`, bg: (t.color || '#9CA3AF') + '22', color: t.color || '#6B7280' }
+    }
+    return c.tier
+  }
 
   // أعلى عميل إنفاقاً (للشارة ⭐ وللإحصائية)
   const topSpender = useMemo(() => {
@@ -199,7 +230,11 @@ function CustomersInner() {
     if (branchFilter !== 'all') list = list.filter(c => c.branchIds.has(branchFilter))
     if (statusFilter === 'active') list = list.filter(c => c.isActive)
     else if (statusFilter === 'inactive') list = list.filter(c => !c.isActive)
-    if (tierFilter !== 'all') list = list.filter(c => c.tier.key === tierFilter)
+    if (tierFilter !== 'all') {
+      list = loyaltyProgram?.enabled
+        ? list.filter(c => c.tierId === tierFilter)
+        : list.filter(c => c.tier.key === tierFilter)
+    }
     const minS = parseFloat(minSpent)
     if (!isNaN(minS) && minS > 0) list = list.filter(c => c.totalSpent >= minS)
 
@@ -222,7 +257,7 @@ function CustomersInner() {
     }
     else sorted.sort((a,b) => new Date(b.lastOrderAt) - new Date(a.lastOrderAt))
     return sorted
-  }, [customersFull, search, branchFilter, statusFilter, tierFilter, minSpent, sortBy])
+  }, [customersFull, search, branchFilter, statusFilter, tierFilter, minSpent, sortBy, loyaltyProgram])
 
   // إحصائيات Dashboard — 6 أساسية + 4 إضافية قابلة للطي
   const stats = useMemo(() => {
@@ -356,9 +391,13 @@ function CustomersInner() {
             </select>
             <select value={tierFilter} onChange={e => setTierFilter(e.target.value)} style={selectStyle}>
               <option value="all">المستوى: الكل</option>
-              <option value="vip">💎 VIP</option>
-              <option value="regular">⭐ مميز</option>
-              <option value="new">🆕 جديد</option>
+              {loyaltyProgram?.enabled
+                ? tiers.map(t => <option key={t.id} value={t.id}>{t.icon || '🏅'} {t.name}</option>)
+                : (<>
+                    <option value="vip">💎 VIP</option>
+                    <option value="regular">⭐ مميز</option>
+                    <option value="new">🆕 جديد</option>
+                  </>)}
             </select>
             <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={selectStyle}>
               <option value="recent">ترتيب: الأحدث</option>
@@ -398,7 +437,7 @@ function CustomersInner() {
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'3px', flexWrap:'wrap' }}>
                           <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px' }}>{c.name || 'بدون اسم'}</span>
-                          <span style={{ padding:'2px 8px', borderRadius:'100px', background:c.tier.bg, color:c.tier.color, fontSize:'10px', fontWeight:'700' }}>{c.tier.label}</span>
+                          <span style={{ padding:'2px 8px', borderRadius:'100px', background:displayTier(c).bg, color:displayTier(c).color, fontSize:'10px', fontWeight:'700' }}>{displayTier(c).label}</span>
                           {situational && <span style={{ padding:'2px 8px', borderRadius:'100px', background:situational.bg, color:situational.color, fontSize:'10px', fontWeight:'700' }}>{situational.label}</span>}
                         </div>
                         <div style={{ fontSize:'11.5px', color:'#9CA3AF', display:'flex', gap:'6px', flexWrap:'wrap' }}>
@@ -463,6 +502,7 @@ function CustomersInner() {
             { key:'overview', label:'نظرة عامة' },
             { key:'orders', label:`الطلبات${detailData.loading ? '' : ` (${detailData.orders.length})`}` },
             ...(loyaltyProgram?.enabled ? [{ key:'loyalty', label:'الولاء والمكافآت' }] : []),
+            { key:'reviews', label:`التقييمات${detailData.loading ? '' : ` (${detailData.reviews.length})`}` },
           ]
           return (
             <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={() => setDetailCustomer(null)}>
@@ -477,7 +517,7 @@ function CustomersInner() {
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap', marginBottom:'3px' }}>
                       <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px' }}>{c.name || 'بدون اسم'}</span>
-                      <span style={{ padding:'2px 8px', borderRadius:'100px', background:c.tier.bg, color:c.tier.color, fontSize:'10px', fontWeight:'700' }}>{c.tier.label}</span>
+                      <span style={{ padding:'2px 8px', borderRadius:'100px', background:displayTier(c).bg, color:displayTier(c).color, fontSize:'10px', fontWeight:'700' }}>{displayTier(c).label}</span>
                       {situational && <span style={{ padding:'2px 8px', borderRadius:'100px', background:situational.bg, color:situational.color, fontSize:'10px', fontWeight:'700' }}>{situational.label}</span>}
                     </div>
                     <div style={{ fontSize:'12px', color:'#9CA3AF', direction:'ltr', textAlign:'right' }}>{c.phone}</div>
@@ -585,9 +625,55 @@ function CustomersInner() {
                             <div style={{ fontSize:'11px', color:'#9CA3AF', fontWeight:'700', marginTop:'2px' }}>نقاط مُستبدَلة</div>
                           </div>
                         </div>
+
+                        {/* كشف حساب النقاط */}
+                        <div>
+                          <div style={{ fontSize:'12.5px', fontWeight:'800', marginBottom:'8px' }}>📒 كشف حساب النقاط</div>
+                          {detailData.loading ? (
+                            <div style={{ fontSize:'12px', color:'#9CA3AF' }}>جارٍ التحميل...</div>
+                          ) : detailData.ledger.length === 0 ? (
+                            <div style={{ fontSize:'12px', color:'#9CA3AF', background:'#F8F9FB', borderRadius:'10px', padding:'12px' }}>لا توجد حركات نقاط بعد.</div>
+                          ) : (
+                            <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+                              {detailData.ledger.map(t => {
+                                const pos = t.points > 0
+                                return (
+                                  <div key={t.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', padding:'9px 11px', background:'#F8F9FB', borderRadius:'10px' }}>
+                                    <div style={{ minWidth:0 }}>
+                                      <div style={{ fontSize:'12px', fontWeight:'600' }}>{t.reason || t.type}</div>
+                                      <div style={{ fontSize:'10.5px', color:'#9CA3AF' }}>{new Date(t.created_at).toLocaleDateString('ar', { day:'numeric', month:'short' })} · رصيد: {t.balance_after}</div>
+                                    </div>
+                                    <div style={{ flexShrink:0, fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color: pos ? '#10B981' : '#EF4444' }}>{pos ? '+' : ''}{t.points}</div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )
                   })()}
+
+                  {detailTab === 'reviews' && (
+                    <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+                      {detailData.loading && <div style={{ textAlign:'center', padding:'20px', color:'#9CA3AF', fontSize:'13px' }}>جارٍ التحميل...</div>}
+                      {!detailData.loading && detailData.reviews.length === 0 && <div style={{ textAlign:'center', padding:'20px', color:'#9CA3AF', fontSize:'13px' }}>لا توجد تقييمات من هذا العميل</div>}
+                      {detailData.reviews.map(r => (
+                        <div key={r.id} style={{ padding:'12px', background:'#F8F9FB', borderRadius:'12px' }}>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', marginBottom: r.comment ? '6px' : 0 }}>
+                            <span style={{ fontSize:'13px', fontWeight:'800', color:'#F59E0B' }}>{'⭐'.repeat(r.rating || 0)}</span>
+                            <span style={{ fontSize:'11px', color:'#9CA3AF' }}>{new Date(r.created_at).toLocaleDateString('ar', { day:'numeric', month:'short' })}</span>
+                          </div>
+                          {r.comment && <div style={{ fontSize:'12.5px', color:'#0F1117', lineHeight:'1.6' }}>{r.comment}</div>}
+                          {r.reply && (
+                            <div style={{ marginTop:'8px', paddingRight:'10px', borderRight:'2px solid #FF6B3540', fontSize:'11.5px', color:'#6B7280' }}>
+                              <b style={{ color:'#C2410C' }}>ردّ داخلي:</b> {r.reply}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
