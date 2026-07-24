@@ -176,9 +176,13 @@ begin
 end;
 $$;
 
--- منع الاستدعاء المباشر من أي دور عميل (anon/authenticated): تُستدعى داخلياً فقط.
-revoke all on function public.loyalty_ensure_account(uuid, text) from public;
-revoke all on function public.loyalty_post(uuid, text, text, int, text, text, uuid, uuid, uuid, uuid, jsonb) from public;
+-- منع الاستدعاء المباشر من أي دور عميل: تُستدعى داخلياً فقط (من دوال/Triggers DEFINER).
+-- ⚠️ لا يكفي revoke from public — Supabase يمنح anon/authenticated صلاحية تنفيذ
+--    مباشرة، فيجب إلغاؤها عنهما صراحةً (وإلا استطاع عميل مجهول منح نفسه نقاطاً).
+revoke all on function public.loyalty_ensure_account(uuid, text) from public, anon, authenticated;
+revoke all on function public.loyalty_post(uuid, text, text, int, text, text, uuid, uuid, uuid, uuid, jsonb) from public, anon, authenticated;
+revoke all on function public.loyalty_tx_before_insert() from public, anon, authenticated;
+revoke all on function public.loyalty_tx_after_insert()  from public, anon, authenticated;
 
 -- ── 5) RLS: قراءة لصاحب المطعم/الموظف المخوّل · لا كتابة مباشرة · لا حذف/تعديل ──
 alter table public.loyalty_accounts     enable row level security;
