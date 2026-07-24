@@ -9,7 +9,7 @@ const phoneDigits = (p) => (p || '').replace(/[^\d]/g, '')
 
 // جلب كل بيانات صفحة الولاء دفعةً واحدة (متوازية). يُرجع القيم كما تستهلكها الصفحة.
 export async function fetchLoyaltyData(restaurantId) {
-  const [progRes, accRes, rwRes, tierRes, revRes, branches, prodRes] = await Promise.all([
+  const [progRes, accRes, rwRes, tierRes, revRes, branches, prodRes, campRes] = await Promise.all([
     supabase.from('loyalty_programs').select('*').eq('restaurant_id', restaurantId).maybeSingle(),
     supabase.from('loyalty_accounts')
       .select('customer_phone, customer_name, current_balance, lifetime_earned, lifetime_redeemed, tier_id, last_activity_at')
@@ -23,6 +23,8 @@ export async function fetchLoyaltyData(restaurantId) {
       .order('created_at', { ascending: false }).limit(200),
     fetchBranches(restaurantId),
     supabase.from('products').select('id, name').eq('restaurant_id', restaurantId).order('name'),
+    supabase.from('loyalty_campaigns').select('*').eq('restaurant_id', restaurantId)
+      .order('starts_at', { ascending: false }),
   ])
   return {
     program: progRes.data || null,
@@ -32,6 +34,7 @@ export async function fetchLoyaltyData(restaurantId) {
     reviews: revRes.data || [],
     branches: branches || [],
     products: prodRes.data || [],
+    campaigns: campRes.data || [],
   }
 }
 
@@ -47,9 +50,6 @@ export async function saveLoyaltyProgram(restaurantId, p) {
     min_order_amount: Number(p.minOrderAmount) || 0,
     earning_branches: (Array.isArray(p.earningBranches) && p.earningBranches.length) ? p.earningBranches : null,
     excluded_product_ids: (Array.isArray(p.excludedProductIds) && p.excludedProductIds.length) ? p.excludedProductIds : null,
-    campaign_multiplier: Number(p.campaignMultiplier) || 1,
-    campaign_starts_at: p.campaignStartsAt || null,
-    campaign_ends_at: p.campaignEndsAt || null,
     points_expiry_months: parseInt(p.pointsExpiryMonths) || 0,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'restaurant_id' })
@@ -179,5 +179,46 @@ export async function saveReviewReply(id, reply) {
 // تغيير حالة معالجة التقييم/الشكوى.
 export async function setReviewStatus(id, status) {
   const { error } = await supabase.from('reviews').update({ status }).eq('id', id)
+  if (error) throw error
+}
+
+// ── الحملات الموسمية (ADR-39/P3.3) ──────────────────────────────────────────
+// إنشاء/تعديل حملة (insert أو update حسب id).
+export async function saveCampaign(restaurantId, c) {
+  const payload = {
+    restaurant_id: restaurantId,
+    name: (c.name || '').trim(),
+    multiplier: Number(c.multiplier) || 2,
+    starts_at: c.starts_at ? new Date(c.starts_at).toISOString() : null,
+    ends_at: c.ends_at ? new Date(c.ends_at).toISOString() : null,
+    is_active: c.is_active !== false,
+    updated_at: new Date().toISOString(),
+  }
+  if (c.id) {
+    const { data, error } = await supabase.from('loyalty_campaigns').update(payload).eq('id', c.id).select().single()
+    if (error) throw error
+    return data
+  }
+  const { data, error } = await supabase.from('loyalty_campaigns').insert(payload).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteCampaign(id) {
+  const { error } = await supabase.from('loyalty_campaigns').delete().eq('id', id)
+  if (error) throw error
+}
+
+// أثر الحملات (نقاط/طلبات/عملاء لكل حملة) — مفتاحه معرّف الحملة.
+export async function fetchCampaignsImpact(restaurantId) {
+  const { data, error } = await supabase.rpc('get_campaigns_impact', { p_restaurant_id: restaurantId })
+  if (error) throw error
+  return data || {}
+}
+
+// تصنيف سبب الشكوى (يدوي — يغذّي تحليل «أكثر أسباب الشكاوى»، ADR-39).
+export async function setReviewCategory(id, category) {
+  const { error } = await supabase.from('reviews')
+    .update({ complaint_category: category || null }).eq('id', id)
   if (error) throw error
 }
