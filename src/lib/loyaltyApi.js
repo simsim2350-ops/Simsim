@@ -140,3 +140,10 @@ export async function recomputeTiers(restaurantId) {
   if (error) throw error
   return data
 }
+
+// لوحة تحكم الولاء (KPIs مجمّعة خادمياً — ADR-38/ب). تُرجع jsonb.
+export async function fetchLoyaltyDashboard(restaurantId) {
+  const { data, error } = await supabase.rpc('get_loyalty_dashboard', { p_restaurant_id: restaurantId })
+  if (error) throw error
+  return data || null
+}

@@ -9,7 +9,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import {
   fetchLoyaltyData, saveLoyaltyProgram, fetchCustomerLedger,
   redeemReward, saveReward, toggleReward, deleteReward,
-  saveTier, deleteTier, recomputeTiers,
+  saveTier, deleteTier, recomputeTiers, fetchLoyaltyDashboard,
 } from '../lib/loyaltyApi'
 
 // أنواع المكافآت — مصدر واحد للتسميات وأيّ حقل قيمة يلزم كل نوع
@@ -37,7 +37,8 @@ export default function Loyalty() {
   const navigate = useNavigate()
   const { restaurant } = useAuthStore()
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('loyalty')
+  const [activeTab, setActiveTab] = useState('overview')
+  const [dashboard, setDashboard] = useState(null)
   const { isMobile } = useBreakpoint()
 
   // إعدادات برنامج الولاء
@@ -79,7 +80,11 @@ export default function Loyalty() {
 
   const fetchAll = async () => {
     try {
-      const { program, accounts, rewards, tiers, reviews, branches } = await fetchLoyaltyData(restaurant.id)
+      const [{ program, accounts, rewards, tiers, reviews, branches }, dash] = await Promise.all([
+        fetchLoyaltyData(restaurant.id),
+        fetchLoyaltyDashboard(restaurant.id).catch(() => null),
+      ])
+      setDashboard(dash)
       if (program) {
         setEnabled(program.enabled)
         setEarnRate(Number(program.earn_rate) || 1)
@@ -253,6 +258,7 @@ export default function Loyalty() {
         {/* Tabs */}
         <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', padding:'0 16px', gap:'6px', flexShrink:0, overflowX:'auto' }}>
           {[
+            { key:'overview', label:'📊 نظرة عامة' },
             { key:'loyalty', label:'💎 النقاط والولاء' },
             { key:'rewards', label:`🎁 المكافآت${rewards.length ? ` (${rewards.length})` : ''}` },
             { key:'tiers', label:`🏅 المستويات${tiers.length ? ` (${tiers.length})` : ''}` },
@@ -273,6 +279,87 @@ export default function Loyalty() {
 
         {/* Content */}
         <div style={{ flex:1, overflowY:'auto', padding:'16px' }}>
+
+          {/* ========== تبويب نظرة عامة ========== */}
+          {activeTab === 'overview' && (
+            <div style={{ maxWidth:'720px' }}>
+              {!dashboard ? (
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', padding:'40px 16px', textAlign:'center', color:'#9CA3AF', fontSize:'13px' }}>
+                  لا توجد بيانات بعد.
+                </div>
+              ) : (
+                <>
+                  {/* بطاقات KPIs */}
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'12px', marginBottom:'16px' }}>
+                    {[
+                      { icon:'🎁', val:dashboard.points_granted, label:'نقاط ممنوحة', color:'#10B981', bg:'rgba(16,185,129,0.1)' },
+                      { icon:'🔄', val:dashboard.points_used, label:'نقاط مستبدَلة', color:'#F59E0B', bg:'rgba(245,158,11,0.1)' },
+                      { icon:'💰', val:dashboard.points_outstanding, label:'نقاط قائمة (التزام)', color:'#3B82F6', bg:'rgba(59,130,246,0.1)' },
+                      { icon:'⌛', val:dashboard.points_expired, label:'نقاط منتهية', color:'#6B7280', bg:'rgba(107,114,128,0.1)' },
+                      { icon:'👥', val:dashboard.total_customers, label:'إجمالي العملاء', color:'#6D28D9', bg:'rgba(109,40,217,0.1)' },
+                      { icon:'🔥', val:dashboard.active_customers, label:'نشطون (30 يوم)', color:'#059669', bg:'rgba(5,150,105,0.1)' },
+                      { icon:'📊', val:`${dashboard.redemption_rate}٪`, label:'معدل الاستبدال', color:'#E85A24', bg:'rgba(232,90,36,0.1)' },
+                      { icon:'🔁', val:`${dashboard.retention_rate}٪`, label:'معدل الاحتفاظ', color:'#0891B2', bg:'rgba(8,145,178,0.1)' },
+                    ].map(s => (
+                      <div key={s.label} style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding:'14px' }}>
+                        <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', marginBottom:'10px' }}>{s.icon}</div>
+                        <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'20px', color:s.color, marginBottom:'3px' }}>{s.val}</div>
+                        <div style={{ fontSize:'12px', color:'#374151', fontWeight:'700' }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* توزيع المستويات */}
+                  {Array.isArray(dashboard.tier_distribution) && dashboard.tier_distribution.length > 0 && (
+                    <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', padding:'16px', marginBottom:'16px' }}>
+                      <div style={{ fontSize:'14px', fontWeight:'800', marginBottom:'12px' }}>🏅 توزيع المستويات</div>
+                      <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+                        {dashboard.tier_distribution.map(td => {
+                          const pct = dashboard.total_customers > 0 ? Math.round((td.customers / dashboard.total_customers) * 100) : 0
+                          return (
+                            <div key={td.name} style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                              <span style={{ fontSize:'12.5px', fontWeight:'700', width:'88px', flexShrink:0 }}>{td.icon} {td.name}</span>
+                              <div style={{ flex:1, height:'8px', background:'#F3F4F6', borderRadius:'100px', overflow:'hidden' }}>
+                                <div style={{ width:`${pct}%`, height:'100%', background:td.color || '#9CA3AF', borderRadius:'100px' }}/>
+                              </div>
+                              <span style={{ fontSize:'11.5px', color:'#9CA3AF', width:'54px', textAlign:'left', flexShrink:0 }}>{td.customers} عميل</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* أفضل العملاء + أكثر المكافآت */}
+                  <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:'12px' }}>
+                    <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', padding:'16px' }}>
+                      <div style={{ fontSize:'14px', fontWeight:'800', marginBottom:'12px' }}>🏆 أفضل العملاء</div>
+                      {(!dashboard.top_customers || dashboard.top_customers.length === 0) ? (
+                        <div style={{ fontSize:'12px', color:'#9CA3AF' }}>لا يوجد بعد</div>
+                      ) : dashboard.top_customers.map((c, i) => (
+                        <div key={c.phone} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'8px 0', borderBottom: i < dashboard.top_customers.length-1 ? '1px solid #F3F4F6' : 'none' }}>
+                          <span style={{ width:'20px', fontSize:'12px', fontWeight:'800', color:'#9CA3AF', flexShrink:0 }}>{i+1}</span>
+                          <span style={{ flex:1, fontSize:'12.5px', fontWeight:'700', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.name || 'عميل'} {c.tier_icon || ''}</span>
+                          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color:'#FF6B35', flexShrink:0 }}>{c.balance}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', padding:'16px' }}>
+                      <div style={{ fontSize:'14px', fontWeight:'800', marginBottom:'12px' }}>🎁 أكثر المكافآت استخداماً</div>
+                      {(!dashboard.top_rewards || dashboard.top_rewards.length === 0) ? (
+                        <div style={{ fontSize:'12px', color:'#9CA3AF' }}>لا استبدالات بعد</div>
+                      ) : dashboard.top_rewards.map((r, i) => (
+                        <div key={r.name+i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', padding:'8px 0', borderBottom: i < dashboard.top_rewards.length-1 ? '1px solid #F3F4F6' : 'none' }}>
+                          <span style={{ fontSize:'12.5px', fontWeight:'700', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.name}</span>
+                          <span style={{ fontSize:'11.5px', color:'#9CA3AF', flexShrink:0 }}>{r.uses} مرة</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* ========== تبويب الولاء ========== */}
           {activeTab === 'loyalty' && (
