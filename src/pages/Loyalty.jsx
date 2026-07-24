@@ -11,6 +11,7 @@ import {
   redeemReward, saveReward, toggleReward, deleteReward,
   saveTier, deleteTier, recomputeTiers, fetchLoyaltyDashboard,
   fetchReviewsSummary, saveReviewReply, setReviewStatus, setReviewCategory,
+  saveCampaign, deleteCampaign, fetchCampaignsImpact,
 } from '../lib/loyaltyApi'
 import { exportRows, printReport, buildTable, stampName } from '../lib/exportUtils'
 
@@ -74,10 +75,13 @@ export default function Loyalty() {
   const [minOrderAmount, setMinOrderAmount] = useState(0)
   const [earningBranches, setEarningBranches] = useState([])       // [] = كل الفروع
   const [excludedProductIds, setExcludedProductIds] = useState([]) // [] = لا استثناء
-  const [campaignMultiplier, setCampaignMultiplier] = useState(1)
-  const [campaignStartsAt, setCampaignStartsAt] = useState('')     // datetime-local
-  const [campaignEndsAt, setCampaignEndsAt] = useState('')
   const [pointsExpiryMonths, setPointsExpiryMonths] = useState(0)  // 0 = لا تنتهي
+
+  // الحملات الموسمية (ADR-39/P3.3)
+  const [campaigns, setCampaigns] = useState([])
+  const [campaignsImpact, setCampaignsImpact] = useState({})
+  const [campaignForm, setCampaignForm] = useState(null)
+  const [confirmDeleteCampaign, setConfirmDeleteCampaign] = useState(null)
   const [savingRules, setSavingRules] = useState(false)
 
   // بيانات (من الدفتر)
@@ -109,6 +113,7 @@ export default function Loyalty() {
   useBodyScrollLock(!!detailCustomer)
   useBodyScrollLock(!!rewardForm)
   useBodyScrollLock(!!tierForm)
+  useBodyScrollLock(!!campaignForm)
 
   useEffect(() => {
     if (!restaurant) { setLoading(false); return }
@@ -117,13 +122,16 @@ export default function Loyalty() {
 
   const fetchAll = async () => {
     try {
-      const [{ program, accounts, rewards, tiers, reviews, branches, products }, dash, revSum] = await Promise.all([
+      const [{ program, accounts, rewards, tiers, reviews, branches, products, campaigns }, dash, revSum, impact] = await Promise.all([
         fetchLoyaltyData(restaurant.id),
         fetchLoyaltyDashboard(restaurant.id).catch(() => null),
         fetchReviewsSummary(restaurant.id).catch(() => null),
+        fetchCampaignsImpact(restaurant.id).catch(() => ({})),
       ])
       setDashboard(dash)
       setReviewsSummary(revSum)
+      setCampaigns(campaigns || [])
+      setCampaignsImpact(impact || {})
       if (program) {
         setEnabled(program.enabled)
         setEarnRate(Number(program.earn_rate) || 1)
@@ -133,8 +141,6 @@ export default function Loyalty() {
         setEarningBranches(Array.isArray(program.earning_branches) ? program.earning_branches : [])
         setExcludedProductIds(Array.isArray(program.excluded_product_ids) ? program.excluded_product_ids : [])
         setCampaignMultiplier(Number(program.campaign_multiplier) || 1)
-        setCampaignStartsAt(toLocalInput(program.campaign_starts_at))
-        setCampaignEndsAt(toLocalInput(program.campaign_ends_at))
         setPointsExpiryMonths(Number(program.points_expiry_months) || 0)
       }
       setAccounts(accounts)
@@ -201,10 +207,7 @@ export default function Loyalty() {
   // كل الحقول تُمرَّر معاً دائماً (حتى لا يُصفَّر شيء عند الحفظ من أي بطاقة)
   const buildProgram = () => ({
     enabled, earnRate, rewardThreshold, rewardDescription,
-    minOrderAmount, earningBranches, excludedProductIds, campaignMultiplier,
-    campaignStartsAt: campaignStartsAt ? new Date(campaignStartsAt).toISOString() : null,
-    campaignEndsAt: campaignEndsAt ? new Date(campaignEndsAt).toISOString() : null,
-    pointsExpiryMonths,
+    minOrderAmount, earningBranches, excludedProductIds, pointsExpiryMonths,
   })
 
   const saveProgram = async () => {
@@ -232,6 +235,37 @@ export default function Loyalty() {
   }
 
   const toggleInArray = (arr, val) => arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]
+
+  // ── الحملات ──
+  const submitCampaign = async () => {
+    const f = campaignForm
+    if (!f.name?.trim()) { toast.error('اكتب اسم الحملة'); return }
+    if (!(Number(f.multiplier) > 0)) { toast.error('المضاعف يجب أن يكون أكبر من صفر'); return }
+    if (!f.starts_at || !f.ends_at) { toast.error('حدّد تاريخي البداية والنهاية'); return }
+    if (new Date(f.ends_at) <= new Date(f.starts_at)) { toast.error('تاريخ النهاية يجب أن يكون بعد البداية'); return }
+    try {
+      await saveCampaign(restaurant.id, f)
+      toast.success(f.id ? 'تم تعديل الحملة ✅' : 'تمت إضافة الحملة ✅')
+      setCampaignForm(null)
+      await fetchAll()
+    } catch (err) { toast.error(err.message || 'تعذّر الحفظ') }
+  }
+
+  const onDeleteCampaign = async (c) => {
+    try {
+      await deleteCampaign(c.id)
+      toast.success('تم حذف الحملة')
+      setCampaigns(prev => prev.filter(x => x.id !== c.id))
+    } catch { toast.error('تعذّر الحذف') }
+  }
+
+  const campaignState = (c) => {
+    const now = new Date()
+    if (!c.is_active) return { label:'معطّلة', bg:'#F3F4F6', color:'#9CA3AF' }
+    if (new Date(c.starts_at) > now) return { label:'مجدولة', bg:'#DBEAFE', color:'#1E40AF' }
+    if (new Date(c.ends_at) < now) return { label:'منتهية', bg:'#F3F4F6', color:'#6B7280' }
+    return { label:'🔴 جارية الآن', bg:'#DCFCE7', color:'#166534' }
+  }
 
   // ── فتح ورقة عميل: تحميل كشف الحساب كسولاً ──
   const openCustomer = async (acc) => {
@@ -593,25 +627,6 @@ export default function Loyalty() {
                 )}
 
                 <div style={{ borderTop:'1px solid #F3F4F6', paddingTop:'14px', marginBottom:'16px' }}>
-                  <label style={labelStyle}>🎉 حملة نقاط مضاعفة (اختياري)</label>
-                  <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap:'10px' }}>
-                    <div>
-                      <div style={{ fontSize:'11px', color:'#9CA3AF', marginBottom:'4px' }}>المضاعف</div>
-                      <input type="number" min="1" step="0.1" value={campaignMultiplier} onChange={e => setCampaignMultiplier(e.target.value)} style={inputStyle} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize:'11px', color:'#9CA3AF', marginBottom:'4px' }}>من</div>
-                      <input type="datetime-local" value={campaignStartsAt} onChange={e => setCampaignStartsAt(e.target.value)} style={inputStyle} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize:'11px', color:'#9CA3AF', marginBottom:'4px' }}>إلى</div>
-                      <input type="datetime-local" value={campaignEndsAt} onChange={e => setCampaignEndsAt(e.target.value)} style={inputStyle} />
-                    </div>
-                  </div>
-                  <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>المضاعف=1 أو بلا تواريخ = لا حملة. يتضاعف مع مضاعف المستوى.</div>
-                </div>
-
-                <div style={{ borderTop:'1px solid #F3F4F6', paddingTop:'14px', marginBottom:'16px' }}>
                   <label style={labelStyle}>⌛ صلاحية النقاط (شهور خمول)</label>
                   <input type="number" min="0" value={pointsExpiryMonths} onChange={e => setPointsExpiryMonths(e.target.value)} style={inputStyle} />
                   <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>0 = لا تنتهي. تنتهي نقاط العميل كاملةً لو لم يطلب/يستبدل خلال هذه المدة. أول انتهاء يبدأ بعد مدة كاملة من التفعيل (سماح).</div>
@@ -620,6 +635,61 @@ export default function Loyalty() {
                 <button onClick={saveRules} disabled={savingRules} style={{ width:'100%', padding:'12px', borderRadius:'11px', border:'none', background:'#0F1117', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity: savingRules?0.7:1 }}>
                   💾 حفظ قواعد الكسب
                 </button>
+              </div>
+
+              {/* الحملات الموسمية */}
+              <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', padding:'18px', marginBottom:'16px', maxWidth:'640px' }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', marginBottom:'4px', flexWrap:'wrap' }}>
+                  <div style={{ fontSize:'15px', fontWeight:'800' }}>🎉 الحملات الموسمية</div>
+                  <button onClick={() => setCampaignForm({ name:'', multiplier:'2', starts_at:'', ends_at:'', is_active:true })} style={{ background:'#FFF7ED', color:'#C2410C', border:'1.5px dashed #FF6B35', borderRadius:'9px', padding:'6px 12px', fontSize:'12px', fontWeight:'800', cursor:'pointer' }}>
+                    ➕ حملة جديدة
+                  </button>
+                </div>
+                <div style={{ fontSize:'11.5px', color:'#9CA3AF', marginBottom:'14px' }}>
+                  نقاط مضاعفة لفترة محدّدة. عند تداخل حملتين يُطبَّق <b>الأعلى مضاعفاً</b> فقط، ويتضاعف مع مضاعف المستوى.
+                </div>
+
+                {campaigns.length === 0 ? (
+                  <div style={{ fontSize:'12.5px', color:'#9CA3AF', background:'#F8F9FB', borderRadius:'10px', padding:'14px', textAlign:'center' }}>
+                    لا توجد حملات — أنشئ حملة موسمية (رمضان، اليوم الوطني، عطلة نهاية الأسبوع…)
+                  </div>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+                    {campaigns.map(c => {
+                      const st = campaignState(c)
+                      const im = campaignsImpact[c.id]
+                      return (
+                        <div key={c.id} style={{ border:'1.5px solid #E5E7EB', borderRadius:'12px', padding:'12px 14px' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap', marginBottom:'6px' }}>
+                            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13.5px' }}>{c.name}</span>
+                            <span style={{ padding:'2px 8px', borderRadius:'100px', background:st.bg, color:st.color, fontSize:'10.5px', fontWeight:'700' }}>{st.label}</span>
+                            <span style={{ padding:'2px 8px', borderRadius:'100px', background:'#FFF7ED', color:'#C2410C', fontSize:'10.5px', fontWeight:'800' }}>×{Number(c.multiplier)}</span>
+                          </div>
+                          <div style={{ fontSize:'11.5px', color:'#9CA3AF' }}>
+                            {new Date(c.starts_at).toLocaleDateString('ar', { day:'numeric', month:'short' })} — {new Date(c.ends_at).toLocaleDateString('ar', { day:'numeric', month:'short' })}
+                          </div>
+                          {im && (
+                            <div style={{ marginTop:'8px', display:'flex', gap:'8px', flexWrap:'wrap' }}>
+                              {[
+                                { l:'نقاط ممنوحة', v:im.points },
+                                { l:'طلبات', v:im.orders },
+                                { l:'عملاء', v:im.customers },
+                              ].map(x => (
+                                <span key={x.l} style={{ background:'#F8F9FB', borderRadius:'8px', padding:'4px 10px', fontSize:'11px', color:'#374151', fontWeight:'700' }}>
+                                  {x.l}: <b style={{ color:'#FF6B35' }}>{x.v}</b>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div style={{ display:'flex', gap:'6px', marginTop:'10px', flexWrap:'wrap' }}>
+                            <button onClick={() => setCampaignForm({ ...c, multiplier:String(c.multiplier), starts_at:toLocalInput(c.starts_at), ends_at:toLocalInput(c.ends_at) })} style={{ background:'#F3F4F6', color:'#374151', border:'none', borderRadius:'8px', padding:'5px 11px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>✏️ تعديل</button>
+                            <button onClick={() => setConfirmDeleteCampaign(c)} style={{ background:'#FEE2E2', color:'#991B1B', border:'none', borderRadius:'8px', padding:'5px 11px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>🗑️ حذف</button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* لوحة نقاط العملاء (من الدفتر) */}
@@ -1074,6 +1144,54 @@ export default function Loyalty() {
           </div>
         </div>
       )}
+
+      {/* نموذج الحملة */}
+      {campaignForm && (
+        <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={() => setCampaignForm(null)}>
+          <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', animation:'fadeIn 0.2s ease' }}/>
+          <div onClick={e => e.stopPropagation()} style={{ position:'relative', background:'white', width:'100%', maxWidth:'480px', borderRadius:'24px 24px 0 0', padding:'12px 18px 24px', maxHeight:'86vh', overflowY:'auto', animation:'slideUp 0.25s ease' }}>
+            <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 14px' }}/>
+            <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', margin:'0 0 16px', textAlign:'center' }}>{campaignForm.id ? 'تعديل حملة' : 'حملة جديدة'}</h3>
+
+            <label style={labelStyle}>اسم الحملة</label>
+            <input value={campaignForm.name} onChange={e => setCampaignForm({ ...campaignForm, name:e.target.value })} placeholder="مثال: عروض رمضان" style={{ ...inputStyle, marginBottom:'14px' }} />
+
+            <label style={labelStyle}>مضاعف النقاط</label>
+            <input type="number" min="1" step="0.5" value={campaignForm.multiplier} onChange={e => setCampaignForm({ ...campaignForm, multiplier:e.target.value })} style={{ ...inputStyle, marginBottom:'14px' }} />
+
+            <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:'12px', marginBottom:'14px' }}>
+              <div>
+                <label style={labelStyle}>تبدأ</label>
+                <input type="datetime-local" value={campaignForm.starts_at} onChange={e => setCampaignForm({ ...campaignForm, starts_at:e.target.value })} style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>تنتهي</label>
+                <input type="datetime-local" value={campaignForm.ends_at} onChange={e => setCampaignForm({ ...campaignForm, ends_at:e.target.value })} style={inputStyle} />
+              </div>
+            </div>
+
+            <label style={{ display:'flex', alignItems:'center', gap:'8px', fontSize:'13px', fontWeight:'700', color:'#374151', marginBottom:'18px', cursor:'pointer' }}>
+              <input type="checkbox" checked={campaignForm.is_active !== false} onChange={e => setCampaignForm({ ...campaignForm, is_active:e.target.checked })} />
+              مفعّلة
+            </label>
+
+            <button onClick={submitCampaign} style={{ width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
+              💾 حفظ
+            </button>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!confirmDeleteCampaign}
+        icon="🗑️"
+        danger={true}
+        title="حذف الحملة"
+        body={confirmDeleteCampaign ? `حذف حملة «${confirmDeleteCampaign.name}»؟ النقاط الممنوحة سابقاً تبقى كما هي.` : ''}
+        confirmLabel="حذف"
+        onCancel={() => setConfirmDeleteCampaign(null)}
+        onConfirm={() => { const c = confirmDeleteCampaign; setConfirmDeleteCampaign(null); onDeleteCampaign(c) }}
+      />
 
       <ConfirmDialog
         open={!!confirmRedeem}
