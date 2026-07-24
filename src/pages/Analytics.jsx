@@ -23,6 +23,7 @@ export default function Analytics() {
   const [branches, setBranches] = useState([])
   const [branchFilter, setBranchFilter] = useState('all')
   const [data, setData] = useState(null)   // ناتج التجميع الخادمي get_analytics_summary
+  const [adv, setAdv] = useState(null)     // تحليلات متقدمة (ولاء/رضا/فروع/شكاوى) — ADR-39
 
   useEffect(() => { if (restaurant) fetchBranches(restaurant.id).then(setBranches).catch(() => {}) }, [restaurant])
   useEffect(() => { if (restaurant) fetchAnalytics() }, [restaurant, period, branchFilter])
@@ -36,15 +37,26 @@ export default function Analytics() {
       const prevFrom = new Date(from); prevFrom.setDate(from.getDate() - days)
       // التجميع في قاعدة البيانات (استدعاء واحد) بدل تنزيل كل طلبات الفترة للمتصفح.
       // فلتر الفرع أصبح معامل خادمي (إعادة جلب) — لا ننزّل بيانات كل الفروع لنفلترها محلياً.
-      const { data: j } = await supabase.rpc('get_analytics_summary', {
-        p_restaurant_id: restaurant.id,
-        p_from: from.toISOString(),
-        p_to: now.toISOString(),
-        p_prev_from: prevFrom.toISOString(),
-        p_prev_to: from.toISOString(),
-        p_branch_id: branchFilter === 'all' ? null : branchFilter,
-      })
+      const branchParam = branchFilter === 'all' ? null : branchFilter
+      const [{ data: j }, { data: a }] = await Promise.all([
+        supabase.rpc('get_analytics_summary', {
+          p_restaurant_id: restaurant.id,
+          p_from: from.toISOString(),
+          p_to: now.toISOString(),
+          p_prev_from: prevFrom.toISOString(),
+          p_prev_to: from.toISOString(),
+          p_branch_id: branchParam,
+        }),
+        // تحليلات متقدمة (ولاء/رضا/أداء الفروع/شكاوى) — دالة منفصلة، لا تمسّ ما سبق
+        supabase.rpc('get_advanced_analytics', {
+          p_restaurant_id: restaurant.id,
+          p_from: from.toISOString(),
+          p_to: now.toISOString(),
+          p_branch_id: branchParam,
+        }),
+      ])
       setData(j || null)
+      setAdv(a || null)
     } finally { setLoading(false) }
   }
 
@@ -288,6 +300,134 @@ export default function Analytics() {
                 </div>
               </Card>
             </div>
+
+            {/* ===== تحليلات متقدمة (ولاء / رضا / فروع / شكاوى) ===== */}
+            {adv && (() => {
+              const li = adv.loyalty_impact || {}
+              const sat = adv.satisfaction || {}
+              const bperf = Array.isArray(adv.branch_performance) ? adv.branch_performance : []
+              const creasons = Array.isArray(adv.complaint_reasons) ? adv.complaint_reasons : []
+              const totalComplaints = creasons.reduce((s, x) => s + num(x.count), 0)
+              const uplift = num(li.aov_uplift_pct)
+              return (
+                <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
+                  <div style={{ fontSize:'15px', fontWeight:'900', marginTop:'4px' }}>🎯 تحليلات متقدمة</div>
+
+                  {/* تأثير الولاء على المبيعات */}
+                  <Card>
+                    <CardHead>💎 تأثير الولاء على المبيعات</CardHead>
+                    <div style={{ padding:'14px 16px' }}>
+                      <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(2,1fr)':'repeat(4,1fr)', gap:'12px', marginBottom:'12px' }}>
+                        {[
+                          { label:'حصّة الأعضاء من الإيراد', val:`${num(li.member_revenue_share)}٪`, color:'#7C3AED' },
+                          { label:'طلبات الأعضاء', val:num(li.member_orders), color:'#10B981' },
+                          { label:'متوسط طلب العضو', val:`${Math.round(num(li.member_aov))} ﷼`, color:'#FF6B35' },
+                          { label:'متوسط طلب غير العضو', val:`${Math.round(num(li.nonmember_aov))} ﷼`, color:'#6B7280' },
+                        ].map(s => (
+                          <div key={s.label} style={{ background:'#F8F9FB', borderRadius:'12px', padding:'12px' }}>
+                            <div style={{ fontSize:'11px', color:'#9CA3AF', fontWeight:'700', marginBottom:'4px' }}>{s.label}</div>
+                            <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', color:s.color }}>{s.val}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ fontSize:'12.5px', color: uplift >= 0 ? '#166534' : '#92400E', background: uplift >= 0 ? '#DCFCE7' : '#FEF3C7', borderRadius:'10px', padding:'10px 12px', lineHeight:1.7 }}>
+                        {uplift >= 0
+                          ? `متوسط طلب عضو الولاء أعلى بـ ${Math.abs(uplift)}٪ من غير الأعضاء — البرنامج يرفع قيمة السلة.`
+                          : `متوسط طلب عضو الولاء أقل بـ ${Math.abs(uplift)}٪ من غير الأعضاء — البرنامج يرفع تكرار الطلب لا حجمه. فكّر بمكافآت تشجّع سلّة أكبر.`}
+                      </div>
+                    </div>
+                  </Card>
+
+                  <div style={{ display:'grid', gridTemplateColumns: isDesktop?'1fr 1fr':'1fr', gap:'14px' }}>
+                    {/* رضا العملاء */}
+                    <Card>
+                      <CardHead>😊 رضا العملاء</CardHead>
+                      <div style={{ padding:'14px 16px' }}>
+                        {num(sat.reviews_count) === 0 ? <Empty text="لا توجد تقييمات في هذه الفترة" /> : (
+                          <>
+                            <div style={{ display:'flex', alignItems:'baseline', gap:'8px', marginBottom:'12px' }}>
+                              <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'30px', color:'#F59E0B' }}>{num(sat.avg_rating)}</span>
+                              <span style={{ fontSize:'13px', color:'#9CA3AF' }}>/ 5 · {num(sat.reviews_count)} تقييم</span>
+                            </div>
+                            {[
+                              { label:'راضون (4-5 ⭐)', pct:num(sat.satisfied_pct), color:'#10B981' },
+                              { label:'ساخطون (1-2 ⭐)', pct:num(sat.detractors_pct), color:'#EF4444' },
+                            ].map(s => (
+                              <div key={s.label} style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'8px' }}>
+                                <span style={{ fontSize:'12.5px', fontWeight:'600', width:'110px', flexShrink:0 }}>{s.label}</span>
+                                <div style={{ flex:1, height:'8px', background:'#F3F4F6', borderRadius:'100px', overflow:'hidden' }}>
+                                  <div style={{ width:`${s.pct}%`, height:'100%', background:s.color, borderRadius:'100px' }}/>
+                                </div>
+                                <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', width:'46px', textAlign:'left' }}>{s.pct}٪</span>
+                              </div>
+                            ))}
+                            <div style={{ marginTop:'12px', paddingTop:'12px', borderTop:'1px solid #F3F4F6', display:'flex', justifyContent:'space-between', fontSize:'12.5px' }}>
+                              <span style={{ color:'#9CA3AF', fontWeight:'700' }}>معدل عودة العملاء (الفترة)</span>
+                              <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', color:'#0891B2' }}>{num(adv.return_rate)}٪</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </Card>
+
+                    {/* أسباب الشكاوى */}
+                    <Card>
+                      <CardHead>🚩 أكثر أسباب الشكاوى</CardHead>
+                      <div style={{ padding:'14px 16px' }}>
+                        {creasons.length === 0 ? <Empty text="لا توجد شكاوى 🎉" /> : creasons.map(r => {
+                          const pct = totalComplaints > 0 ? Math.round((num(r.count) / totalComplaints) * 100) : 0
+                          return (
+                            <div key={r.category} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'7px 0' }}>
+                              <span style={{ fontSize:'12.5px', fontWeight:'600', flex:1 }}>{r.category}</span>
+                              <div style={{ flex:1.4, height:'6px', background:'#F3F4F6', borderRadius:'3px', overflow:'hidden' }}>
+                                <div style={{ height:'100%', width:`${pct}%`, background:'#EF4444', borderRadius:'3px' }}/>
+                              </div>
+                              <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', minWidth:'26px', textAlign:'left' }}>{num(r.count)}</span>
+                            </div>
+                          )
+                        })}
+                        {creasons.some(r => r.category === 'غير مصنّف') && (
+                          <div style={{ marginTop:'10px', fontSize:'11.5px', color:'#9CA3AF', lineHeight:1.6 }}>
+                            صنّف الشكاوى من صفحة «الولاء والتقييمات» لتحليل أدقّ.
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  </div>
+
+                  {/* أداء الفروع */}
+                  {bperf.length > 1 && (
+                    <Card>
+                      <CardHead>🏢 أداء الفروع (أفضل ← أسوأ)</CardHead>
+                      <div style={{ padding:'6px 16px 14px', overflowX:'auto' }}>
+                        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'12.5px', minWidth:'420px' }}>
+                          <thead>
+                            <tr style={{ color:'#9CA3AF', fontSize:'11.5px', textAlign:'right' }}>
+                              <th style={{ padding:'8px 4px', fontWeight:'700' }}>الفرع</th>
+                              <th style={{ padding:'8px 4px', fontWeight:'700' }}>الإيراد</th>
+                              <th style={{ padding:'8px 4px', fontWeight:'700' }}>الطلبات</th>
+                              <th style={{ padding:'8px 4px', fontWeight:'700' }}>التقييم</th>
+                              <th style={{ padding:'8px 4px', fontWeight:'700' }}>شكاوى</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {bperf.map(b => (
+                              <tr key={b.id} style={{ borderTop:'1px solid #F3F4F6' }}>
+                                <td style={{ padding:'10px 4px', fontWeight:'700' }}>{b.is_primary ? '🏠' : '🏢'} {b.name}</td>
+                                <td style={{ padding:'10px 4px', fontFamily:'Cairo,sans-serif', fontWeight:'800', color:'#FF6B35' }}>{Math.round(num(b.revenue))} ﷼</td>
+                                <td style={{ padding:'10px 4px' }}>{num(b.orders)}</td>
+                                <td style={{ padding:'10px 4px', color:'#F59E0B', fontWeight:'700' }}>{b.avg_rating == null ? '—' : `${num(b.avg_rating)} ⭐`}</td>
+                                <td style={{ padding:'10px 4px', color: num(b.complaints) > 0 ? '#EF4444' : '#9CA3AF', fontWeight:'700' }}>{num(b.complaints)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* ملخص */}
             <div style={{ background:'linear-gradient(135deg,#0F1117,#1A1A2E)', borderRadius:'16px', padding:'20px' }}>

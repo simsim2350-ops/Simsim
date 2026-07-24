@@ -10,8 +10,11 @@ import {
   fetchLoyaltyData, saveLoyaltyProgram, fetchCustomerLedger,
   redeemReward, saveReward, toggleReward, deleteReward,
   saveTier, deleteTier, recomputeTiers, fetchLoyaltyDashboard,
-  fetchReviewsSummary, saveReviewReply, setReviewStatus,
+  fetchReviewsSummary, saveReviewReply, setReviewStatus, setReviewCategory,
 } from '../lib/loyaltyApi'
+
+// تصنيفات أسباب الشكاوى (تغذّي تحليل «أكثر أسباب الشكاوى» — ADR-39)
+const COMPLAINT_CATEGORIES = ['طعام', 'خدمة', 'توصيل', 'سعر', 'نظافة', 'أخرى']
 
 // حالات معالجة التقييم/الشكوى
 const REVIEW_STATUSES = [
@@ -338,6 +341,13 @@ export default function Loyalty() {
       setReviews(prev => prev.map(x => x.id === r.id ? { ...x, status } : x))
       refreshReviewsSummary()
     } catch { toast.error('تعذّر تغيير الحالة') }
+  }
+
+  const doReviewCategory = async (r, category) => {
+    try {
+      await setReviewCategory(r.id, category)
+      setReviews(prev => prev.map(x => x.id === r.id ? { ...x, complaint_category: category || null } : x))
+    } catch { toast.error('تعذّر حفظ التصنيف') }
   }
 
   const inputStyle = { width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', outline:'none', boxSizing:'border-box' }
@@ -804,6 +814,21 @@ export default function Loyalty() {
                           <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'8px' }}>
                             <span style={{ fontSize:'11px', color:'#9CA3AF', direction:'ltr' }}>📱 {r.customer_phone}</span>
                             <a href={`https://wa.me/${r.customer_phone}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration:'none', background:'#ECFDF5', color:'#059669', borderRadius:'7px', padding:'3px 9px', fontSize:'11px', fontWeight:'700' }}>💬 واتساب</a>
+                          </div>
+                        )}
+
+                        {/* تصنيف سبب الشكوى (للشكاوى فقط — يغذّي التحليلات) */}
+                        {isComplaint && (
+                          <div style={{ marginTop:'10px', display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap' }}>
+                            <span style={{ fontSize:'11.5px', color:'#9CA3AF', fontWeight:'700' }}>سبب الشكوى:</span>
+                            <select
+                              value={r.complaint_category || ''}
+                              onChange={e => doReviewCategory(r, e.target.value)}
+                              style={{ padding:'5px 9px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'11.5px', background:'white', cursor:'pointer', outline:'none' }}
+                            >
+                              <option value="">غير مصنّف</option>
+                              {COMPLAINT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
                           </div>
                         )}
 

@@ -181,3 +181,10 @@ export async function setReviewStatus(id, status) {
   const { error } = await supabase.from('reviews').update({ status }).eq('id', id)
   if (error) throw error
 }
+
+// تصنيف سبب الشكوى (يدوي — يغذّي تحليل «أكثر أسباب الشكاوى»، ADR-39).
+export async function setReviewCategory(id, category) {
+  const { error } = await supabase.from('reviews')
+    .update({ complaint_category: category || null }).eq('id', id)
+  if (error) throw error
+}
