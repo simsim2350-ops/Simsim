@@ -45,3 +45,7 @@ export async function setRestaurantPlan(id, plan) {
   if (error) throw error
   return data
 }
+
+// فحص صلاحية المستخدم الحالي (لإظهار/إخفاء إجراءات الكتابة) — نفس نمط can() في باقي خدمات المشرف.
+export const can = (capability) =>
+  supabase.rpc('platform_admin_can', { p_capability: capability }).then(({ data }) => !!data)

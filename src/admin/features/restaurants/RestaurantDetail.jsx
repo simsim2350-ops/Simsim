@@ -2,11 +2,10 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
-import { useAuthStore } from '../../../store/authStore'
-import { getRestaurant, getRestaurantOperational, getRestaurantFeatures, setPlatformSuspended, setRestaurantPlan } from './restaurantsApi'
+import { PANEL as CARD, BORDER, MUTED, ACCENT, DANGER, SUCCESS } from '../../theme'
+import { getRestaurant, getRestaurantOperational, getRestaurantFeatures, setPlatformSuspended, setRestaurantPlan, can } from './restaurantsApi'
 
 const PLAN_OPTIONS = ['starter', 'pro', 'business']
-const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED'
 const HEALTH_C = { green: '#6EE7B7', yellow: '#FBBF24', red: '#F87171' }
 const INV_C = { draft: '#9CA3AF', open: '#FBBF24', paid: '#6EE7B7', void: '#9CA3AF' }
 const num = (v) => Number(v) || 0
@@ -24,8 +23,7 @@ const Empty = ({ msg }) => <div style={{ color: MUTED, fontSize: '12px' }}>{msg}
 
 export default function RestaurantDetail() {
   const { id } = useParams()
-  const { platformRole } = useAuthStore()
-  const canManage = platformRole === 'super_admin'
+  const [canManage, setCanManage] = useState(false)
   const [d, setD] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -49,6 +47,9 @@ export default function RestaurantDetail() {
     })()
     return () => { cancelled = true }
   }, [id])
+
+  // صلاحية الإدارة الفعلية عبر RBAC (نفس نمط can() في باقي شاشات المشرف) — لا مطابقة اسم دور حرفية.
+  useEffect(() => { can('manage_restaurants').then(setCanManage).catch(() => {}) }, [])
 
   // جلب الحالة التشغيلية عند أول فتح للتبويب فقط
   useEffect(() => {
@@ -154,7 +155,7 @@ export default function RestaurantDetail() {
                 {canManage && (
                   <Section title="⚙️ إجراءات الإدارة">
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                      <button onClick={askToggleSuspend} disabled={busy} style={{ padding: '10px 16px', borderRadius: '11px', border: 'none', cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '12.5px', color: 'white', background: d.platform_suspended ? '#059669' : '#B91C1C' }}>{d.platform_suspended ? '▶ رفع تعليق المنصّة' : '⛔ تعليق من المنصّة'}</button>
+                      <button onClick={askToggleSuspend} disabled={busy} style={{ padding: '10px 16px', borderRadius: '11px', border: 'none', cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '12.5px', color: 'white', background: d.platform_suspended ? SUCCESS : DANGER }}>{d.platform_suspended ? '▶ رفع تعليق المنصّة' : '⛔ تعليق من المنصّة'}</button>
                       <span style={{ width: '1px', height: '26px', background: BORDER }} />
                       <select value={planSel} onChange={e => setPlanSel(e.target.value)} style={{ background: '#0B0D12', border: `1px solid ${BORDER}`, color: 'white', borderRadius: '10px', padding: '9px 12px', fontFamily: 'Tajawal,sans-serif', fontSize: '13px' }}>
                         {[...new Set([...(d.subscription_plan ? [d.subscription_plan] : []), ...PLAN_OPTIONS])].map(p => <option key={p} value={p}>{p}</option>)}
