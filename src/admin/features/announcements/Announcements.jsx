@@ -2,43 +2,17 @@ import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
 import { listAnnouncements, upsertAnnouncement, deleteAnnouncement, can } from './announcementsApi'
+import { ACCENT, MUTED, BORDER } from '../../theme'
+import Button from '../../components/ui/Button'
+import Modal from '../../components/ui/Modal'
+import Field from '../../components/ui/Field'
+import { Loading, EmptyState, ErrorState } from '../../components/ui/States'
 
-const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED'
+const CARD = '#12141C'
 const PLANS = ['starter', 'pro', 'business']
 const TYPES = [['info', 'ℹ️ معلومة', '#60A5FA'], ['warning', '⚠️ تحذير', '#FBBF24'], ['maintenance', '🛠️ صيانة', '#F87171']]
 const typeMeta = (t) => TYPES.find((x) => x[0] === t) || TYPES[0]
 const fmtDate = (v) => v ? new Date(v).toLocaleDateString('ar', { day: 'numeric', month: 'short', year: 'numeric' }) : null
-
-const inputStyle = {
-  background: '#0B0D12', border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '9px 12px',
-  color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '13px', outline: 'none', width: '100%',
-}
-const btn = (bg) => ({
-  padding: '9px 15px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-  fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '12.5px', color: 'white', background: bg,
-})
-const Loading = () => <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>جارٍ التحميل…</div>
-const ErrBox = ({ msg }) => <div style={{ background: '#3B1113', border: '1px solid #7F1D1D', borderRadius: '12px', padding: '16px', color: '#FCA5A5', fontSize: '13px' }}>⚠️ {msg}</div>
-
-function Modal({ title, children, onClose }) {
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)' }} />
-      <div style={{ position: 'relative', background: CARD, border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px', width: '100%', maxWidth: '480px', maxHeight: '88vh', overflowY: 'auto' }}>
-        <div style={{ fontSize: '15px', fontWeight: '900', color: 'white', fontFamily: 'Cairo,sans-serif', marginBottom: '16px' }}>{title}</div>
-        {children}
-      </div>
-    </div>
-  )
-}
-function Field({ label, children }) {
-  return (
-    <label style={{ display: 'block', marginBottom: '12px' }}>
-      <span style={{ display: 'block', fontSize: '11.5px', color: MUTED, fontWeight: '700', marginBottom: '6px' }}>{label}</span>
-      {children}
-    </label>
-  )
-}
 
 const EMPTY = { title: '', body: '', type: 'info', target_scope: 'all', target_plans: [], is_active: true, starts_at: '', ends_at: '' }
 // تحويل timestamptz إلى قيمة input[type=date] (yyyy-mm-dd) والعكس
@@ -91,12 +65,12 @@ export default function Announcements() {
         </div>
         {canManage && (
           <div style={{ marginBottom: '14px' }}>
-            <button style={btn(ACCENT)} onClick={() => openEdit(null)}>+ إعلان جديد</button>
+            <Button variant="primary" onClick={() => openEdit(null)}>+ إعلان جديد</Button>
           </div>
         )}
 
-        {loading ? <Loading /> : error ? <ErrBox msg={error} /> : rows.length === 0 ? (
-          <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>لا إعلانات بعد.</div>
+        {loading ? <Loading /> : error ? <ErrorState msg={error} onRetry={load} /> : rows.length === 0 ? (
+          <EmptyState msg="لا إعلانات بعد." />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {rows.map((a) => {
@@ -118,9 +92,9 @@ export default function Announcements() {
                   </div>
                   {canManage && (
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <button style={btn(a.is_active ? '#374151' : '#065F46')} onClick={() => quickToggle(a)}>{a.is_active ? 'تعطيل' : 'تفعيل'}</button>
-                      <button style={btn('#374151')} onClick={() => openEdit(a)}>تعديل</button>
-                      <button style={btn('#7F1D1D')} onClick={() => setConfirm(a)}>حذف</button>
+                      <Button variant={a.is_active ? 'neutral' : 'success'} onClick={() => quickToggle(a)}>{a.is_active ? 'تعطيل' : 'تفعيل'}</Button>
+                      <Button variant="neutral" onClick={() => openEdit(a)}>تعديل</Button>
+                      <Button variant="danger" onClick={() => setConfirm(a)}>حذف</Button>
                     </div>
                   )}
                 </div>
@@ -132,9 +106,9 @@ export default function Announcements() {
 
       {edit && (
         <Modal title={edit.id ? 'تعديل إعلان' : 'إعلان جديد'} onClose={() => setEdit(null)}>
-          <Field label="العنوان"><input style={inputStyle} value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} /></Field>
+          <Field label="العنوان"><input className="admin-input" value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} /></Field>
           <Field label="النص (اختياري)">
-            <textarea style={{ ...inputStyle, minHeight: '70px', resize: 'vertical' }} value={edit.body} onChange={(e) => setEdit({ ...edit, body: e.target.value })} />
+            <textarea className="admin-textarea" style={{ minHeight: '70px', resize: 'vertical' }} value={edit.body} onChange={(e) => setEdit({ ...edit, body: e.target.value })} />
           </Field>
           <Field label="النوع">
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -167,16 +141,16 @@ export default function Announcements() {
             )}
           </Field>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <Field label="يبدأ (اختياري)"><input type="date" style={inputStyle} value={edit.starts_at} onChange={(e) => setEdit({ ...edit, starts_at: e.target.value })} /></Field>
-            <Field label="ينتهي (اختياري)"><input type="date" style={inputStyle} value={edit.ends_at} onChange={(e) => setEdit({ ...edit, ends_at: e.target.value })} /></Field>
+            <Field label="يبدأ (اختياري)"><input type="date" className="admin-input" value={edit.starts_at} onChange={(e) => setEdit({ ...edit, starts_at: e.target.value })} /></Field>
+            <Field label="ينتهي (اختياري)"><input type="date" className="admin-input" value={edit.ends_at} onChange={(e) => setEdit({ ...edit, ends_at: e.target.value })} /></Field>
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '16px', cursor: 'pointer', fontSize: '13px', color: '#D1D5DB' }}>
             <input type="checkbox" checked={edit.is_active} onChange={(e) => setEdit({ ...edit, is_active: e.target.checked })} style={{ width: '16px', height: '16px', accentColor: ACCENT }} />
             نشِط
           </label>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button style={{ ...btn(ACCENT), flex: 1, opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={save}>{busy ? '…' : 'حفظ'}</button>
-            <button style={btn('#374151')} disabled={busy} onClick={() => setEdit(null)}>إلغاء</button>
+            <Button variant="primary" style={{ flex: 1, opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={save}>{busy ? '…' : 'حفظ'}</Button>
+            <Button variant="neutral" disabled={busy} onClick={() => setEdit(null)}>إلغاء</Button>
           </div>
         </Modal>
       )}
@@ -184,8 +158,8 @@ export default function Announcements() {
         <Modal title="حذف إعلان" onClose={() => setConfirm(null)}>
           <div style={{ fontSize: '13px', color: '#D1D5DB', marginBottom: '16px' }}>حذف الإعلان «{confirm.title}»؟</div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button style={{ ...btn('#7F1D1D'), flex: 1, opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={doDelete}>{busy ? '…' : 'حذف'}</button>
-            <button style={btn('#374151')} disabled={busy} onClick={() => setConfirm(null)}>إلغاء</button>
+            <Button variant="danger" style={{ flex: 1, opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={doDelete}>{busy ? '…' : 'حذف'}</Button>
+            <Button variant="neutral" disabled={busy} onClick={() => setConfirm(null)}>إلغاء</Button>
           </div>
         </Modal>
       )}

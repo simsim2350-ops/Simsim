@@ -4,6 +4,8 @@ import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
 import { PANEL as CARD, BORDER, MUTED, ACCENT, DANGER, SUCCESS } from '../../theme'
 import { getRestaurant, getRestaurantOperational, getRestaurantFeatures, setPlatformSuspended, setRestaurantPlan, can } from './restaurantsApi'
+import Button from '../../components/ui/Button'
+import Modal, { ModalActions } from '../../components/ui/Modal'
 
 const PLAN_OPTIONS = ['starter', 'pro', 'business']
 const HEALTH_C = { green: '#6EE7B7', yellow: '#FBBF24', red: '#F87171' }
@@ -155,12 +157,12 @@ export default function RestaurantDetail() {
                 {canManage && (
                   <Section title="⚙️ إجراءات الإدارة">
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                      <button onClick={askToggleSuspend} disabled={busy} style={{ padding: '10px 16px', borderRadius: '11px', border: 'none', cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '12.5px', color: 'white', background: d.platform_suspended ? SUCCESS : DANGER }}>{d.platform_suspended ? '▶ رفع تعليق المنصّة' : '⛔ تعليق من المنصّة'}</button>
+                      <Button variant={d.platform_suspended ? 'success' : 'danger'} onClick={askToggleSuspend} disabled={busy}>{d.platform_suspended ? '▶ رفع تعليق المنصّة' : '⛔ تعليق من المنصّة'}</Button>
                       <span style={{ width: '1px', height: '26px', background: BORDER }} />
-                      <select value={planSel} onChange={e => setPlanSel(e.target.value)} style={{ background: '#0B0D12', border: `1px solid ${BORDER}`, color: 'white', borderRadius: '10px', padding: '9px 12px', fontFamily: 'Tajawal,sans-serif', fontSize: '13px' }}>
+                      <select value={planSel} onChange={e => setPlanSel(e.target.value)} className="admin-select" style={{ width: 'auto' }}>
                         {[...new Set([...(d.subscription_plan ? [d.subscription_plan] : []), ...PLAN_OPTIONS])].map(p => <option key={p} value={p}>{p}</option>)}
                       </select>
-                      <button onClick={askApplyPlan} disabled={busy || !planSel || planSel === d.subscription_plan} style={{ padding: '9px 14px', borderRadius: '10px', border: `1px solid ${ACCENT}`, background: 'transparent', color: '#C4B5FD', cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontWeight: '700', fontSize: '12.5px', opacity: (!planSel || planSel === d.subscription_plan) ? 0.5 : 1 }}>تطبيق الخطة</button>
+                      <Button variant="ghost" onClick={askApplyPlan} disabled={busy || !planSel || planSel === d.subscription_plan} style={{ opacity: (!planSel || planSel === d.subscription_plan) ? 0.5 : 1 }}>تطبيق الخطة</Button>
                     </div>
                   </Section>
                 )}
@@ -344,17 +346,10 @@ export default function RestaurantDetail() {
         )}
 
         {confirm && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <div onClick={() => !busy && setConfirm(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)' }} />
-            <div style={{ position: 'relative', background: CARD, border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px', maxWidth: '360px', width: '100%' }}>
-              <div style={{ fontSize: '15px', fontWeight: '900', color: 'white', fontFamily: 'Cairo,sans-serif', marginBottom: '8px' }}>{confirm.title}</div>
-              <div style={{ fontSize: '13px', color: MUTED, lineHeight: 1.7, marginBottom: '18px' }}>{confirm.msg}</div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={runConfirm} disabled={busy} style={{ flex: 1, padding: '11px', borderRadius: '11px', border: 'none', background: ACCENT, color: 'white', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '13px', cursor: 'pointer' }}>{busy ? '…' : 'تأكيد'}</button>
-                <button onClick={() => setConfirm(null)} disabled={busy} style={{ flex: 1, padding: '11px', borderRadius: '11px', border: `1px solid ${BORDER}`, background: 'transparent', color: '#D1D5DB', fontFamily: 'Cairo,sans-serif', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>إلغاء</button>
-              </div>
-            </div>
-          </div>
+          <Modal title={confirm.title} onClose={() => !busy && setConfirm(null)} maxWidth="360px">
+            <div style={{ fontSize: '13px', color: MUTED, lineHeight: 1.7, marginBottom: '18px' }}>{confirm.msg}</div>
+            <ModalActions busy={busy} onSave={runConfirm} saveLabel="تأكيد" onCancel={() => setConfirm(null)} />
+          </Modal>
         )}
       </div>
     </AdminShell>

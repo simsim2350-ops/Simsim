@@ -8,8 +8,14 @@ import {
   listSubscriptions, upsertSubscription,
   listInvoices, createInvoice, markInvoicePaid, voidInvoice,
 } from './billingApi'
+import { MUTED, BORDER, ACCENT } from '../../theme'
+import Button from '../../components/ui/Button'
+import Modal, { ModalActions } from '../../components/ui/Modal'
+import Field from '../../components/ui/Field'
+import Badge from '../../components/ui/Badge'
+import { Loading, EmptyState, ErrorState } from '../../components/ui/States'
 
-const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED'
+const CARD = '#12141C'
 const num = (v) => Number(v) || 0
 const fmt = (v) => num(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const fmtDate = (v) => v ? new Date(v).toLocaleDateString('ar', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
@@ -17,15 +23,6 @@ const CYCLE = { monthly: 'شهري', yearly: 'سنوي' }
 const SUB_STATUS = { trialing: 'تجريبي', active: 'نشط', past_due: 'متأخّر', canceled: 'ملغى' }
 const INV_STATUS = { draft: 'مسودّة', open: 'مفتوحة', paid: 'مدفوعة', void: 'ملغاة' }
 const INV_COLOR = { draft: '#9CA3AF', open: '#FBBF24', paid: '#6EE7B7', void: '#F87171' }
-
-const inputStyle = {
-  background: '#0B0D12', border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '9px 12px',
-  color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '13px', outline: 'none', width: '100%',
-}
-const btn = (bg) => ({
-  padding: '9px 15px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-  fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '12.5px', color: 'white', background: bg,
-})
 
 // طباعة/PDF عبر نافذة المتصفح (بلا مكتبة) + مشاركة واتساب
 function printInvoice(inv) {
@@ -46,29 +43,6 @@ function printInvoice(inv) {
 function whatsappInvoice(inv) {
   const txt = `فاتورة سِمسِم #${inv.invoice_number}\nالمطعم: ${inv.restaurant_name}\nالإجمالي: ${fmt(inv.total)} ﷼ (شامل ض.ق.م)\nالحالة: ${INV_STATUS[inv.status] || inv.status}`
   window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank')
-}
-
-function Modal({ title, children, onClose }) {
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)' }} />
-      <div style={{ position: 'relative', background: CARD, border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px', width: '100%', maxWidth: '440px', maxHeight: '88vh', overflowY: 'auto' }}>
-        <div style={{ fontSize: '15px', fontWeight: '900', color: 'white', fontFamily: 'Cairo,sans-serif', marginBottom: '16px' }}>{title}</div>
-        {children}
-      </div>
-    </div>
-  )
-}
-function Field({ label, children }) {
-  return (
-    <label style={{ display: 'block', marginBottom: '12px' }}>
-      <span style={{ display: 'block', fontSize: '11.5px', color: MUTED, fontWeight: '700', marginBottom: '6px' }}>{label}</span>
-      {children}
-    </label>
-  )
-}
-function Badge({ text, color }) {
-  return <span style={{ fontSize: '10px', fontWeight: '800', color, background: `${color}22`, borderRadius: '100px', padding: '2px 9px' }}>{text}</span>
 }
 
 export default function Billing() {
@@ -123,11 +97,11 @@ function PlansTab({ canManage }) {
   }
 
   if (loading) return <Loading />
-  if (error) return <ErrBox msg={error} />
+  if (error) return <ErrorState msg={error} onRetry={load} />
   return (
     <div>
-      {canManage && <div style={{ marginBottom: '14px' }}><button style={btn(ACCENT)} onClick={() => setEdit({ billing_cycle: 'monthly', price: '', sort_order: 0 })}>+ باقة جديدة</button></div>}
-      {rows.length === 0 ? <Empty msg="لا توجد باقات بعد" /> : (
+      {canManage && <div style={{ marginBottom: '14px' }}><Button variant="primary" onClick={() => setEdit({ billing_cycle: 'monthly', price: '', sort_order: 0 })}>+ باقة جديدة</Button></div>}
+      {rows.length === 0 ? <EmptyState msg="لا توجد باقات بعد" /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {rows.map((p) => (
             <div key={p.id} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -143,8 +117,8 @@ function PlansTab({ canManage }) {
               <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '16px', color: 'white' }}>{fmt(p.price)} <span style={{ fontSize: '11px', color: MUTED }}>﷼</span></div>
               {canManage && (
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button style={btn('#374151')} onClick={() => setEdit(p)}>تعديل</button>
-                  <button style={btn(p.is_active ? '#7F1D1D' : '#065F46')} onClick={() => toggle(p)}>{p.is_active ? 'تعطيل' : 'تفعيل'}</button>
+                  <Button variant="neutral" onClick={() => setEdit(p)}>تعديل</Button>
+                  <Button variant={p.is_active ? 'danger' : 'success'} onClick={() => toggle(p)}>{p.is_active ? 'تعطيل' : 'تفعيل'}</Button>
                 </div>
               )}
             </div>
@@ -153,15 +127,15 @@ function PlansTab({ canManage }) {
       )}
       {edit && (
         <Modal title={edit.id ? 'تعديل باقة' : 'باقة جديدة'} onClose={() => setEdit(null)}>
-          <Field label="اسم الباقة"><input style={inputStyle} value={edit.name || ''} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></Field>
+          <Field label="اسم الباقة"><input className="admin-input" value={edit.name || ''} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></Field>
           <Field label="الدورة">
-            <select style={inputStyle} value={edit.billing_cycle} onChange={(e) => setEdit({ ...edit, billing_cycle: e.target.value })}>
+            <select className="admin-select" value={edit.billing_cycle} onChange={(e) => setEdit({ ...edit, billing_cycle: e.target.value })}>
               <option value="monthly">شهري</option><option value="yearly">سنوي</option>
             </select>
           </Field>
-          <Field label="السعر (﷼، شامل الضريبة)"><input style={inputStyle} type="number" inputMode="decimal" value={edit.price} onChange={(e) => setEdit({ ...edit, price: e.target.value })} /></Field>
-          <Field label="المزايا (اختياري)"><input style={inputStyle} value={edit.features || ''} onChange={(e) => setEdit({ ...edit, features: e.target.value })} /></Field>
-          <Field label="الترتيب"><input style={inputStyle} type="number" value={edit.sort_order ?? 0} onChange={(e) => setEdit({ ...edit, sort_order: e.target.value })} /></Field>
+          <Field label="السعر (﷼، شامل الضريبة)"><input className="admin-input" type="number" inputMode="decimal" value={edit.price} onChange={(e) => setEdit({ ...edit, price: e.target.value })} /></Field>
+          <Field label="المزايا (اختياري)"><input className="admin-input" value={edit.features || ''} onChange={(e) => setEdit({ ...edit, features: e.target.value })} /></Field>
+          <Field label="الترتيب"><input className="admin-input" type="number" value={edit.sort_order ?? 0} onChange={(e) => setEdit({ ...edit, sort_order: e.target.value })} /></Field>
           <ModalActions busy={busy} onSave={save} onCancel={() => setEdit(null)} />
         </Modal>
       )}
@@ -197,11 +171,11 @@ function SubsTab({ canManage }) {
   }
 
   if (loading) return <Loading />
-  if (error) return <ErrBox msg={error} />
+  if (error) return <ErrorState msg={error} onRetry={load} />
   return (
     <div>
-      {canManage && <div style={{ marginBottom: '14px' }}><button style={btn(ACCENT)} onClick={() => setEdit({ status: 'active' })}>+ ربط مطعم بباقة</button></div>}
-      {subs.length === 0 ? <Empty msg="لا توجد اشتراكات بعد" /> : (
+      {canManage && <div style={{ marginBottom: '14px' }}><Button variant="primary" onClick={() => setEdit({ status: 'active' })}>+ ربط مطعم بباقة</Button></div>}
+      {subs.length === 0 ? <EmptyState msg="لا توجد اشتراكات بعد" /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {subs.map((s) => (
             <div key={s.id} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -214,7 +188,7 @@ function SubsTab({ canManage }) {
                 {num(s.outstanding_total) > 0 && <div style={{ fontSize: '11px', color: '#FBBF24', marginTop: '2px' }}>مستحقّ مفتوح: {fmt(s.outstanding_total)} ﷼</div>}
               </div>
               <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '16px', color: 'white' }}>{fmt(s.amount)} <span style={{ fontSize: '11px', color: MUTED }}>﷼</span></div>
-              {canManage && <button style={btn('#374151')} onClick={() => setEdit({ restaurant_id: s.restaurant_id, plan_id: s.plan_id, amount: s.amount, status: s.status, period_start: '', period_end: '', notes: '' })}>تعديل</button>}
+              {canManage && <Button variant="neutral" onClick={() => setEdit({ restaurant_id: s.restaurant_id, plan_id: s.plan_id, amount: s.amount, status: s.status, period_start: '', period_end: '', notes: '' })}>تعديل</Button>}
             </div>
           ))}
         </div>
@@ -222,26 +196,26 @@ function SubsTab({ canManage }) {
       {edit && (
         <Modal title="اشتراك مطعم" onClose={() => setEdit(null)}>
           <Field label="المطعم">
-            <select style={inputStyle} value={edit.restaurant_id || ''} onChange={(e) => setEdit({ ...edit, restaurant_id: e.target.value })}>
+            <select className="admin-select" value={edit.restaurant_id || ''} onChange={(e) => setEdit({ ...edit, restaurant_id: e.target.value })}>
               <option value="">— اختر —</option>
               {rests.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
           </Field>
           <Field label="الباقة">
-            <select style={inputStyle} value={edit.plan_id || ''} onChange={(e) => { const p = plans.find((x) => x.id === e.target.value); setEdit({ ...edit, plan_id: e.target.value, amount: edit.amount ?? (p ? p.price : '') }) }}>
+            <select className="admin-select" value={edit.plan_id || ''} onChange={(e) => { const p = plans.find((x) => x.id === e.target.value); setEdit({ ...edit, plan_id: e.target.value, amount: edit.amount ?? (p ? p.price : '') }) }}>
               <option value="">— اختر —</option>
               {plans.map((p) => <option key={p.id} value={p.id}>{p.name} — {fmt(p.price)} ﷼ ({CYCLE[p.billing_cycle]})</option>)}
             </select>
           </Field>
-          <Field label="السعر الفعلي (قابل للتعديل)"><input style={inputStyle} type="number" inputMode="decimal" value={edit.amount ?? ''} onChange={(e) => setEdit({ ...edit, amount: e.target.value })} placeholder="يرث سعر الباقة إن تُرك فارغاً" /></Field>
+          <Field label="السعر الفعلي (قابل للتعديل)"><input className="admin-input" type="number" inputMode="decimal" value={edit.amount ?? ''} onChange={(e) => setEdit({ ...edit, amount: e.target.value })} placeholder="يرث سعر الباقة إن تُرك فارغاً" /></Field>
           <Field label="الحالة">
-            <select style={inputStyle} value={edit.status} onChange={(e) => setEdit({ ...edit, status: e.target.value })}>
+            <select className="admin-select" value={edit.status} onChange={(e) => setEdit({ ...edit, status: e.target.value })}>
               {Object.entries(SUB_STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </Field>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <Field label="بداية الفترة"><input style={inputStyle} type="date" value={edit.period_start || ''} onChange={(e) => setEdit({ ...edit, period_start: e.target.value })} /></Field>
-            <Field label="نهاية الفترة"><input style={inputStyle} type="date" value={edit.period_end || ''} onChange={(e) => setEdit({ ...edit, period_end: e.target.value })} /></Field>
+            <Field label="بداية الفترة"><input className="admin-input" type="date" value={edit.period_start || ''} onChange={(e) => setEdit({ ...edit, period_start: e.target.value })} /></Field>
+            <Field label="نهاية الفترة"><input className="admin-input" type="date" value={edit.period_end || ''} onChange={(e) => setEdit({ ...edit, period_end: e.target.value })} /></Field>
           </div>
           <ModalActions busy={busy} onSave={save} onCancel={() => setEdit(null)} />
         </Modal>
@@ -288,18 +262,18 @@ function InvoicesTab({ canManage }) {
   }
 
   if (loading) return <Loading />
-  if (error) return <ErrBox msg={error} />
+  if (error) return <ErrorState msg={error} onRetry={load} />
   return (
     <div>
       <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap' }}>
-        {canManage && <button style={btn(ACCENT)} onClick={() => setCreating({ total: '', period_start: '', period_end: '', due_at: '', notes: '' })}>+ فاتورة جديدة</button>}
+        {canManage && <Button variant="primary" onClick={() => setCreating({ total: '', period_start: '', period_end: '', due_at: '', notes: '' })}>+ فاتورة جديدة</Button>}
         <div style={{ flex: 1 }} />
-        <select style={{ ...inputStyle, width: 'auto', minWidth: '180px' }} value={filterRest} onChange={(e) => setFilterRest(e.target.value)}>
+        <select className="admin-select" style={{ width: 'auto', minWidth: '180px' }} value={filterRest} onChange={(e) => setFilterRest(e.target.value)}>
           <option value="">كل المطاعم</option>
           {rests.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
         </select>
       </div>
-      {rows.length === 0 ? <Empty msg="لا توجد فواتير" /> : (
+      {rows.length === 0 ? <EmptyState msg="لا توجد فواتير" /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {rows.map((i) => (
             <div key={i.id} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -314,12 +288,12 @@ function InvoicesTab({ canManage }) {
               </div>
               <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '16px', color: 'white' }}>{fmt(i.total)} <span style={{ fontSize: '11px', color: MUTED }}>﷼</span></div>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                <button style={btn('#374151')} onClick={() => printInvoice(i)} title="طباعة / PDF">🖨️</button>
-                <button style={btn('#065F46')} onClick={() => whatsappInvoice(i)} title="مشاركة واتساب">واتساب</button>
+                <Button variant="neutral" onClick={() => printInvoice(i)} title="طباعة / PDF" aria-label="طباعة الفاتورة">🖨️</Button>
+                <Button variant="success" onClick={() => whatsappInvoice(i)} title="مشاركة واتساب">واتساب</Button>
                 {canManage && i.status === 'open' && (
                   <>
-                    <button style={btn('#065F46')} onClick={() => pay(i)}>تعليم مدفوعة</button>
-                    <button style={btn('#7F1D1D')} onClick={() => cancel(i)}>إلغاء</button>
+                    <Button variant="success" onClick={() => pay(i)}>تعليم مدفوعة</Button>
+                    <Button variant="danger" onClick={() => cancel(i)}>إلغاء</Button>
                   </>
                 )}
               </div>
@@ -330,35 +304,22 @@ function InvoicesTab({ canManage }) {
       {creating && (
         <Modal title="فاتورة جديدة" onClose={() => setCreating(null)}>
           <Field label="المطعم">
-            <select style={inputStyle} value={creating.restaurant_id || ''} onChange={(e) => setCreating({ ...creating, restaurant_id: e.target.value })}>
+            <select className="admin-select" value={creating.restaurant_id || ''} onChange={(e) => setCreating({ ...creating, restaurant_id: e.target.value })}>
               <option value="">— اختر —</option>
               {rests.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
           </Field>
-          <Field label="الإجمالي (﷼، شامل الضريبة)"><input style={inputStyle} type="number" inputMode="decimal" value={creating.total} onChange={(e) => setCreating({ ...creating, total: e.target.value })} /></Field>
+          <Field label="الإجمالي (﷼، شامل الضريبة)"><input className="admin-input" type="number" inputMode="decimal" value={creating.total} onChange={(e) => setCreating({ ...creating, total: e.target.value })} /></Field>
           {num(creating.total) > 0 && <div style={{ fontSize: '11px', color: MUTED, margin: '-6px 0 12px' }}>صافي ≈ {fmt(num(creating.total) / 1.15)} + ضريبة ≈ {fmt(num(creating.total) - num(creating.total) / 1.15)}</div>}
           <div style={{ display: 'flex', gap: '10px' }}>
-            <Field label="بداية الفترة"><input style={inputStyle} type="date" value={creating.period_start} onChange={(e) => setCreating({ ...creating, period_start: e.target.value })} /></Field>
-            <Field label="نهاية الفترة"><input style={inputStyle} type="date" value={creating.period_end} onChange={(e) => setCreating({ ...creating, period_end: e.target.value })} /></Field>
+            <Field label="بداية الفترة"><input className="admin-input" type="date" value={creating.period_start} onChange={(e) => setCreating({ ...creating, period_start: e.target.value })} /></Field>
+            <Field label="نهاية الفترة"><input className="admin-input" type="date" value={creating.period_end} onChange={(e) => setCreating({ ...creating, period_end: e.target.value })} /></Field>
           </div>
-          <Field label="تاريخ الاستحقاق"><input style={inputStyle} type="date" value={creating.due_at} onChange={(e) => setCreating({ ...creating, due_at: e.target.value })} /></Field>
-          <Field label="ملاحظات (اختياري)"><input style={inputStyle} value={creating.notes} onChange={(e) => setCreating({ ...creating, notes: e.target.value })} /></Field>
+          <Field label="تاريخ الاستحقاق"><input className="admin-input" type="date" value={creating.due_at} onChange={(e) => setCreating({ ...creating, due_at: e.target.value })} /></Field>
+          <Field label="ملاحظات (اختياري)"><input className="admin-input" value={creating.notes} onChange={(e) => setCreating({ ...creating, notes: e.target.value })} /></Field>
           <ModalActions busy={busy} onSave={doCreate} saveLabel="إنشاء" onCancel={() => setCreating(null)} />
         </Modal>
       )}
     </div>
   )
 }
-
-// ============ مشتركات ============
-function ModalActions({ busy, onSave, onCancel, saveLabel = 'حفظ' }) {
-  return (
-    <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-      <button style={{ ...btn(ACCENT), flex: 1, opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={onSave}>{busy ? '…' : saveLabel}</button>
-      <button style={btn('#374151')} disabled={busy} onClick={onCancel}>إلغاء</button>
-    </div>
-  )
-}
-const Loading = () => <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>جارٍ التحميل…</div>
-const Empty = ({ msg }) => <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>{msg}</div>
-const ErrBox = ({ msg }) => <div style={{ background: '#3B1113', border: '1px solid #7F1D1D', borderRadius: '12px', padding: '16px', color: '#FCA5A5', fontSize: '13px' }}>⚠️ {msg}</div>

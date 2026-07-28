@@ -8,3 +8,4 @@ export const BORDER = 'rgba(255,255,255,0.08)'
 export const MUTED = '#9CA3AF'
 export const DANGER = '#7F1D1D'
 export const SUCCESS = '#065F46'
+export const ACCENT_SOFT = 'rgba(124,58,237,0.15)' // خلفية شارات/تخصيصات دلالتها "بنفسجي المنصّة" (كانت تُكتب حرفياً في كل ملف)

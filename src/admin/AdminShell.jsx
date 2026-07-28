@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { ADMIN_NAV } from './adminNav'
 import CommandPalette from './components/CommandPalette'
+import './admin-theme.css'
 
 // القشرة المستقلة لـ Super Admin: هوية بصرية «وضع المنصّة» (داكنة/بنفسجية) مميّزة عن لوحة المطعم
 // حتى لا يختلط على المشرف أي سياق يعمل فيه. مستقلة تماماً عن AppShell الخاص بالمطعم.
@@ -74,7 +75,7 @@ export default function AdminShell({ active, title, children }) {
   )
 
   return (
-    <div style={{ height:'100vh', display:'flex', direction:'rtl', background:BG, color:'white', fontFamily:'Tajawal,sans-serif' }}>
+    <div className="admin-root" style={{ height:'100vh', display:'flex', direction:'rtl', background:BG, color:'white', fontFamily:'Tajawal,sans-serif' }}>
       {/* السايدبار: ثابت على اللابتوب، منزلق على الموبايل/التابلت */}
       {isDesktop ? <Sidebar /> : (
         open && (

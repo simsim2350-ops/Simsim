@@ -5,8 +5,14 @@ import {
   listRoles, upsertRole, deleteRole,
   listAdmins, updateAdmin, revokeAdmin, createAdmin, can,
 } from './adminsApi'
+import { ACCENT, MUTED, BORDER, ACCENT_SOFT } from '../../theme'
+import Button from '../../components/ui/Button'
+import Modal, { ModalActions } from '../../components/ui/Modal'
+import Field from '../../components/ui/Field'
+import Badge from '../../components/ui/Badge'
+import { Loading, EmptyState, ErrorState } from '../../components/ui/States'
 
-const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED'
+const CARD = '#12141C'
 const CAPS = [
   ['manage_restaurants', 'إدارة المطاعم'],
   ['manage_billing', 'الفوترة'],
@@ -17,48 +23,6 @@ const CAPS = [
 ]
 const capLabel = (c) => (c === '*' ? 'كل الصلاحيات' : (CAPS.find((x) => x[0] === c)?.[1] || c))
 const fmtDate = (v) => v ? new Date(v).toLocaleDateString('ar', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
-
-const inputStyle = {
-  background: '#0B0D12', border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '9px 12px',
-  color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '13px', outline: 'none', width: '100%',
-}
-const btn = (bg) => ({
-  padding: '9px 15px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-  fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '12.5px', color: 'white', background: bg,
-})
-
-function Modal({ title, children, onClose }) {
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)' }} />
-      <div style={{ position: 'relative', background: CARD, border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px', width: '100%', maxWidth: '440px', maxHeight: '88vh', overflowY: 'auto' }}>
-        <div style={{ fontSize: '15px', fontWeight: '900', color: 'white', fontFamily: 'Cairo,sans-serif', marginBottom: '16px' }}>{title}</div>
-        {children}
-      </div>
-    </div>
-  )
-}
-function Field({ label, children }) {
-  return (
-    <label style={{ display: 'block', marginBottom: '12px' }}>
-      <span style={{ display: 'block', fontSize: '11.5px', color: MUTED, fontWeight: '700', marginBottom: '6px' }}>{label}</span>
-      {children}
-    </label>
-  )
-}
-function Chip({ text }) {
-  return <span style={{ fontSize: '10px', fontWeight: '800', color: '#C4B5FD', background: 'rgba(124,58,237,0.15)', borderRadius: '100px', padding: '2px 9px' }}>{text}</span>
-}
-function ModalActions({ busy, onSave, onCancel, saveLabel = 'حفظ' }) {
-  return (
-    <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-      <button style={{ ...btn(ACCENT), flex: 1, opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={onSave}>{busy ? '…' : saveLabel}</button>
-      <button style={btn('#374151')} disabled={busy} onClick={onCancel}>إلغاء</button>
-    </div>
-  )
-}
-const Loading = () => <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>جارٍ التحميل…</div>
-const ErrBox = ({ msg }) => <div style={{ background: '#3B1113', border: '1px solid #7F1D1D', borderRadius: '12px', padding: '16px', color: '#FCA5A5', fontSize: '13px' }}>⚠️ {msg}</div>
 
 export default function Admins() {
   const [tab, setTab] = useState('admins')
@@ -129,10 +93,10 @@ function AdminsTab({ canManage }) {
   }
 
   if (loading) return <Loading />
-  if (error) return <ErrBox msg={error} />
+  if (error) return <ErrorState msg={error} onRetry={load} />
   return (
     <div>
-      {canManage && <div style={{ marginBottom: '14px' }}><button style={btn(ACCENT)} onClick={() => setCreating({ email: '', password: '', full_name: '', role_id: '' })}>+ مشرف جديد</button></div>}
+      {canManage && <div style={{ marginBottom: '14px' }}><Button variant="primary" onClick={() => setCreating({ email: '', password: '', full_name: '', role_id: '' })}>+ مشرف جديد</Button></div>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {admins.map((a) => (
           <div key={a.user_id} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -146,24 +110,24 @@ function AdminsTab({ canManage }) {
             </div>
             {canManage ? (
               <>
-                <select value={a.role_id || ''} onChange={(e) => changeRole(a, e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: '130px' }}>
+                <select value={a.role_id || ''} onChange={(e) => changeRole(a, e.target.value)} className="admin-select" style={{ width: 'auto', minWidth: '130px' }}>
                   {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
-                <button style={btn(a.is_active ? '#374151' : '#065F46')} onClick={() => toggleActive(a)}>{a.is_active ? 'تعطيل' : 'تفعيل'}</button>
-                <button style={btn('#7F1D1D')} onClick={() => setConfirm(a)}>إلغاء</button>
+                <Button variant={a.is_active ? 'neutral' : 'success'} onClick={() => toggleActive(a)}>{a.is_active ? 'تعطيل' : 'تفعيل'}</Button>
+                <Button variant="danger" onClick={() => setConfirm(a)}>إلغاء</Button>
               </>
-            ) : <Chip text={a.role_name || '—'} />}
+            ) : <Badge text={a.role_name || '—'} color="#C4B5FD" bg={ACCENT_SOFT} />}
           </div>
         ))}
       </div>
 
       {creating && (
         <Modal title="مشرف جديد" onClose={() => setCreating(null)}>
-          <Field label="الاسم (اختياري)"><input style={inputStyle} value={creating.full_name} onChange={(e) => setCreating({ ...creating, full_name: e.target.value })} /></Field>
-          <Field label="البريد الإلكتروني"><input style={inputStyle} type="email" value={creating.email} onChange={(e) => setCreating({ ...creating, email: e.target.value })} placeholder="admin@simsim.app" /></Field>
-          <Field label="كلمة المرور (8 أحرف على الأقل)"><input style={inputStyle} type="text" value={creating.password} onChange={(e) => setCreating({ ...creating, password: e.target.value })} /></Field>
+          <Field label="الاسم (اختياري)"><input className="admin-input" value={creating.full_name} onChange={(e) => setCreating({ ...creating, full_name: e.target.value })} /></Field>
+          <Field label="البريد الإلكتروني"><input className="admin-input" type="email" value={creating.email} onChange={(e) => setCreating({ ...creating, email: e.target.value })} placeholder="admin@simsim.app" /></Field>
+          <Field label="كلمة المرور (8 أحرف على الأقل)"><input className="admin-input" type="text" value={creating.password} onChange={(e) => setCreating({ ...creating, password: e.target.value })} /></Field>
           <Field label="الدور">
-            <select style={inputStyle} value={creating.role_id} onChange={(e) => setCreating({ ...creating, role_id: e.target.value })}>
+            <select className="admin-select" value={creating.role_id} onChange={(e) => setCreating({ ...creating, role_id: e.target.value })}>
               <option value="">— اختر —</option>
               {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
@@ -214,10 +178,10 @@ function RolesTab({ canManage }) {
   }
 
   if (loading) return <Loading />
-  if (error) return <ErrBox msg={error} />
+  if (error) return <ErrorState msg={error} onRetry={load} />
   return (
     <div>
-      {canManage && <div style={{ marginBottom: '14px' }}><button style={btn(ACCENT)} onClick={() => setEdit({ name: '', description: '', capabilities: [] })}>+ دور جديد</button></div>}
+      {canManage && <div style={{ marginBottom: '14px' }}><Button variant="primary" onClick={() => setEdit({ name: '', description: '', capabilities: [] })}>+ دور جديد</Button></div>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {roles.map((r) => (
           <div key={r.id} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -229,13 +193,13 @@ function RolesTab({ canManage }) {
               </div>
               {r.description && <div style={{ fontSize: '11.5px', color: MUTED, marginBottom: '6px' }}>{r.description}</div>}
               <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                {(r.capabilities || []).map((c) => <Chip key={c} text={capLabel(c)} />)}
+                {(r.capabilities || []).map((c) => <Badge key={c} text={capLabel(c)} color="#C4B5FD" bg={ACCENT_SOFT} />)}
               </div>
             </div>
             {canManage && !r.is_system && (
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button style={btn('#374151')} onClick={() => setEdit({ id: r.id, name: r.name, description: r.description || '', capabilities: [...(r.capabilities || [])] })}>تعديل</button>
-                <button style={btn('#7F1D1D')} onClick={() => setConfirm(r)}>حذف</button>
+                <Button variant="neutral" onClick={() => setEdit({ id: r.id, name: r.name, description: r.description || '', capabilities: [...(r.capabilities || [])] })}>تعديل</Button>
+                <Button variant="danger" onClick={() => setConfirm(r)}>حذف</Button>
               </div>
             )}
           </div>
@@ -244,8 +208,8 @@ function RolesTab({ canManage }) {
 
       {edit && (
         <Modal title={edit.id ? 'تعديل دور' : 'دور جديد'} onClose={() => setEdit(null)}>
-          <Field label="اسم الدور"><input style={inputStyle} value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></Field>
-          <Field label="الوصف (اختياري)"><input style={inputStyle} value={edit.description} onChange={(e) => setEdit({ ...edit, description: e.target.value })} /></Field>
+          <Field label="اسم الدور"><input className="admin-input" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></Field>
+          <Field label="الوصف (اختياري)"><input className="admin-input" value={edit.description} onChange={(e) => setEdit({ ...edit, description: e.target.value })} /></Field>
           <Field label="الصلاحيات">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {CAPS.map(([key, label]) => (
