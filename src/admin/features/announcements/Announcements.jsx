@@ -6,7 +6,8 @@ import { ACCENT, MUTED, BORDER } from '../../theme'
 import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
 import Field from '../../components/ui/Field'
-import { Loading, EmptyState, ErrorState } from '../../components/ui/States'
+import { EmptyState, ErrorState } from '../../components/ui/States'
+import { SkeletonRows } from '../../components/ui/Skeleton'
 
 const CARD = '#12141C'
 const PLANS = ['starter', 'pro', 'business']
@@ -28,7 +29,7 @@ export default function Announcements() {
   const [busy, setBusy] = useState(false)
 
   const load = () => {
-    setLoading(true)
+    setLoading(true); setError(null)
     listAnnouncements().then(setRows).catch((e) => setError(e?.message || 'تعذّر التحميل')).finally(() => setLoading(false))
   }
   useEffect(() => { load(); can('manage_announcements').then(setCanManage).catch(() => {}) }, [])
@@ -69,7 +70,7 @@ export default function Announcements() {
           </div>
         )}
 
-        {loading ? <Loading /> : error ? <ErrorState msg={error} onRetry={load} /> : rows.length === 0 ? (
+        {loading ? <SkeletonRows count={4} /> : error ? <ErrorState msg={error} onRetry={load} /> : rows.length === 0 ? (
           <EmptyState msg="لا إعلانات بعد." />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

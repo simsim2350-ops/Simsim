@@ -4,7 +4,8 @@ import AdminShell from '../../AdminShell'
 import { listRestaurants } from './restaurantsApi'
 import { useBreakpoint } from '../../../hooks/useBreakpoint'
 import { PANEL as CARD, BORDER, MUTED, ACCENT } from '../../theme'
-import { Loading, EmptyState, ErrorState } from '../../components/ui/States'
+import { EmptyState, ErrorState } from '../../components/ui/States'
+import { SkeletonRows } from '../../components/ui/Skeleton'
 
 const PAGE_SIZE = 25
 const HEALTH_C = { green: '#6EE7B7', yellow: '#FBBF24', red: '#F87171' }
@@ -85,7 +86,7 @@ export default function RestaurantsList() {
         {error ? (
           <ErrorState msg={error} onRetry={reload} />
         ) : loading ? (
-          <Loading />
+          <SkeletonRows count={6} />
         ) : rows.length === 0 ? (
           <EmptyState msg="لا توجد نتائج" />
         ) : isMobile ? (

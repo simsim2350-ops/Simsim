@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import AdminShell from '../../AdminShell'
 import { listAuditLogs, auditActions } from './auditApi'
 import { PANEL as CARD, BORDER, MUTED, ACCENT } from '../../theme'
-import { Loading, EmptyState, ErrorState } from '../../components/ui/States'
+import { EmptyState, ErrorState } from '../../components/ui/States'
+import { SkeletonRows } from '../../components/ui/Skeleton'
 
 const PAGE_SIZE = 50
 
@@ -86,7 +87,7 @@ export default function AuditLog() {
         {error ? (
           <ErrorState msg={error} onRetry={reload} />
         ) : loading ? (
-          <Loading />
+          <SkeletonRows count={6} />
         ) : rows.length === 0 ? (
           <EmptyState msg="📜 لا سجلّات مطابقة." />
         ) : (

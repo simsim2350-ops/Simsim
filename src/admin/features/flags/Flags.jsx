@@ -8,6 +8,7 @@ import Button from '../../components/ui/Button'
 import Modal, { ModalActions } from '../../components/ui/Modal'
 import Field from '../../components/ui/Field'
 import { Loading, EmptyState, ErrorState } from '../../components/ui/States'
+import { SkeletonRows } from '../../components/ui/Skeleton'
 
 const CARD = '#12141C'
 const mono = { fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', direction: 'ltr' }
@@ -35,7 +36,7 @@ export default function Flags() {
   const [busy, setBusy] = useState(false)
 
   const load = () => {
-    setLoading(true)
+    setLoading(true); setError(null)
     listFlags().then(setFlags).catch((e) => setError(e?.message || 'تعذّر التحميل')).finally(() => setLoading(false))
   }
   useEffect(() => { load(); can('manage_flags').then(setCanManage).catch(() => {}) }, [])
@@ -69,7 +70,7 @@ export default function Flags() {
           </div>
         )}
 
-        {loading ? <Loading /> : error ? <ErrorState msg={error} onRetry={load} /> : flags.length === 0 ? (
+        {loading ? <SkeletonRows count={4} /> : error ? <ErrorState msg={error} onRetry={load} /> : flags.length === 0 ? (
           <EmptyState msg="لا مزايا معرّفة بعد." />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

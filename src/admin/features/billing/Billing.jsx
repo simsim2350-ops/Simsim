@@ -13,7 +13,8 @@ import Button from '../../components/ui/Button'
 import Modal, { ModalActions } from '../../components/ui/Modal'
 import Field from '../../components/ui/Field'
 import Badge from '../../components/ui/Badge'
-import { Loading, EmptyState, ErrorState } from '../../components/ui/States'
+import { EmptyState, ErrorState } from '../../components/ui/States'
+import { SkeletonRows } from '../../components/ui/Skeleton'
 
 const CARD = '#12141C'
 const num = (v) => Number(v) || 0
@@ -79,7 +80,7 @@ function PlansTab({ canManage }) {
   const [busy, setBusy] = useState(false)
 
   const load = () => {
-    setLoading(true)
+    setLoading(true); setError(null)
     listPlans().then(setRows).catch((e) => setError(e?.message || 'تعذّر التحميل')).finally(() => setLoading(false))
   }
   useEffect(load, [])
@@ -96,7 +97,7 @@ function PlansTab({ canManage }) {
     catch (e) { toast.error(e?.message || 'فشل') }
   }
 
-  if (loading) return <Loading />
+  if (loading) return <SkeletonRows count={4} />
   if (error) return <ErrorState msg={error} onRetry={load} />
   return (
     <div>
@@ -154,7 +155,7 @@ function SubsTab({ canManage }) {
   const [busy, setBusy] = useState(false)
 
   const load = () => {
-    setLoading(true)
+    setLoading(true); setError(null)
     Promise.all([listSubscriptions(), listPlans(), listRestaurants({ limit: 100 })])
       .then(([s, p, r]) => { setSubs(s); setPlans(p.filter((x) => x.is_active)); setRests(r.rows) })
       .catch((e) => setError(e?.message || 'تعذّر التحميل')).finally(() => setLoading(false))
@@ -170,7 +171,7 @@ function SubsTab({ canManage }) {
     finally { setBusy(false) }
   }
 
-  if (loading) return <Loading />
+  if (loading) return <SkeletonRows count={4} />
   if (error) return <ErrorState msg={error} onRetry={load} />
   return (
     <div>
@@ -235,7 +236,7 @@ function InvoicesTab({ canManage }) {
   const [busy, setBusy] = useState(false)
 
   const load = () => {
-    setLoading(true)
+    setLoading(true); setError(null)
     Promise.all([listInvoices({ restaurantId: filterRest || null, limit: 100 }), listRestaurants({ limit: 100 })])
       .then(([inv, r]) => { setRows(inv.rows); setRests(r.rows) })
       .catch((e) => setError(e?.message || 'تعذّر التحميل')).finally(() => setLoading(false))
@@ -261,7 +262,7 @@ function InvoicesTab({ canManage }) {
     catch (e) { toast.error(e?.message || 'فشل') }
   }
 
-  if (loading) return <Loading />
+  if (loading) return <SkeletonRows count={4} />
   if (error) return <ErrorState msg={error} onRetry={load} />
   return (
     <div>

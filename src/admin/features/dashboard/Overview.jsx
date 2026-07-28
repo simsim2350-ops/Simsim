@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
 import { dashboard, refreshMetrics } from './dashboardApi'
+import { PANEL as CARD, BORDER, MUTED, ACCENT } from '../../theme'
+import { ErrorState } from '../../components/ui/States'
+import { SkeletonTiles, SkeletonChart, SkeletonRows } from '../../components/ui/Skeleton'
 
-const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED'
 const num = (v) => Number(v) || 0
 const fmt = (v) => num(v).toLocaleString('en-US', { maximumFractionDigits: 0 })
 const money = (v) => num(v).toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' ﷼'
@@ -33,7 +35,11 @@ export default function Overview() {
   const [error, setError] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
 
-  const load = () => dashboard().then(setD).catch((e) => setError(e?.message || 'تعذّر التحميل')).finally(() => setLoading(false))
+  // إعادة ضبط error/loading في كل نداء — ضروري لأن onRetry يستدعي load() نفسها بعد فشل سابق.
+  const load = () => {
+    setLoading(true); setError(null)
+    dashboard().then(setD).catch((e) => setError(e?.message || 'تعذّر التحميل')).finally(() => setLoading(false))
+  }
   useEffect(() => { load() }, [])
 
   const doRefresh = async () => {
@@ -66,9 +72,18 @@ export default function Overview() {
         </div>
 
         {error ? (
-          <div style={{ background: '#3B1113', border: '1px solid #7F1D1D', borderRadius: '12px', padding: '16px', color: '#FCA5A5', fontSize: '13px' }}>⚠️ {error}</div>
+          <ErrorState msg={error} onRetry={load} />
         ) : loading ? (
-          <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>جارٍ التحميل…</div>
+          <>
+            <SkeletonTiles count={4} />
+            <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '16px', marginBottom: '12px' }}>
+              <SkeletonChart />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <SkeletonRows count={3} />
+              <SkeletonRows count={3} />
+            </div>
+          </>
         ) : (
           <>
             {/* 🔔 يحتاج تدخّلك */}

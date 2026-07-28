@@ -74,6 +74,13 @@
   margin-bottom: 16px;
 }
 
+@keyframes admin-pulse { 0%, 100% { opacity: .35; } 50% { opacity: .7; } }
+.admin-skel {
+  background: rgba(255, 255, 255, 0.06);
+  animation: admin-pulse 1.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .admin-btn { transition: none; }
+  .admin-skel { animation: none; opacity: .5; }
 }

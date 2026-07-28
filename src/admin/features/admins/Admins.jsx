@@ -10,7 +10,8 @@ import Button from '../../components/ui/Button'
 import Modal, { ModalActions } from '../../components/ui/Modal'
 import Field from '../../components/ui/Field'
 import Badge from '../../components/ui/Badge'
-import { Loading, EmptyState, ErrorState } from '../../components/ui/States'
+import { ErrorState } from '../../components/ui/States'
+import { SkeletonRows } from '../../components/ui/Skeleton'
 
 const CARD = '#12141C'
 const CAPS = [
@@ -63,7 +64,7 @@ function AdminsTab({ canManage }) {
   const [busy, setBusy] = useState(false)
 
   const load = () => {
-    setLoading(true)
+    setLoading(true); setError(null)
     Promise.all([listAdmins(), listRoles()])
       .then(([a, r]) => { setAdmins(a); setRoles(r) })
       .catch((e) => setError(e?.message || 'تعذّر التحميل')).finally(() => setLoading(false))
@@ -92,7 +93,7 @@ function AdminsTab({ canManage }) {
     catch (e) { toast.error(e?.message || 'فشل') } finally { setBusy(false) }
   }
 
-  if (loading) return <Loading />
+  if (loading) return <SkeletonRows count={4} />
   if (error) return <ErrorState msg={error} onRetry={load} />
   return (
     <div>
@@ -156,7 +157,7 @@ function RolesTab({ canManage }) {
   const [busy, setBusy] = useState(false)
 
   const load = () => {
-    setLoading(true)
+    setLoading(true); setError(null)
     listRoles().then(setRoles).catch((e) => setError(e?.message || 'تعذّر التحميل')).finally(() => setLoading(false))
   }
   useEffect(load, [])
@@ -177,7 +178,7 @@ function RolesTab({ canManage }) {
     setEdit({ ...edit, capabilities: has ? edit.capabilities.filter((x) => x !== c) : [...edit.capabilities, c] })
   }
 
-  if (loading) return <Loading />
+  if (loading) return <SkeletonRows count={4} />
   if (error) return <ErrorState msg={error} onRetry={load} />
   return (
     <div>
