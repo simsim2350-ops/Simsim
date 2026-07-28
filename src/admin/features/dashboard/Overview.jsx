@@ -6,6 +6,7 @@ import { dashboard, refreshMetrics } from './dashboardApi'
 import { PANEL as CARD, BORDER, MUTED, ACCENT } from '../../theme'
 import { ErrorState } from '../../components/ui/States'
 import { SkeletonTiles, SkeletonChart, SkeletonRows } from '../../components/ui/Skeleton'
+import { IconRefresh } from '../../components/ui/Icon'
 
 const num = (v) => Number(v) || 0
 const fmt = (v) => num(v).toLocaleString('en-US', { maximumFractionDigits: 0 })
@@ -68,7 +69,7 @@ export default function Overview() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
           <div style={{ flex: 1 }} />
           <span style={{ fontSize: '11px', color: MUTED }}>آخر تحديث {fmtTime(d?.updated_at)}</span>
-          <button onClick={doRefresh} disabled={refreshing} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '8px 13px', color: '#C4B5FD', fontFamily: 'Cairo,sans-serif', fontWeight: '700', fontSize: '12px', cursor: 'pointer', opacity: refreshing ? 0.6 : 1 }}>↻ تحديث</button>
+          <button onClick={doRefresh} disabled={refreshing} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: CARD, border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '8px 13px', color: '#C4B5FD', fontFamily: 'Cairo,sans-serif', fontWeight: '700', fontSize: '12px', cursor: 'pointer', opacity: refreshing ? 0.6 : 1 }}><IconRefresh size={13} /> تحديث</button>
         </div>
 
         {error ? (

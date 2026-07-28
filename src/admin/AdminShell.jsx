@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { ADMIN_NAV } from './adminNav'
 import CommandPalette from './components/CommandPalette'
+import { NAV_ICON_MAP, IconMenu, IconSearch, IconShield, IconLogout } from './components/ui/Icon'
 import './admin-theme.css'
 
 // القشرة المستقلة لـ Super Admin: هوية بصرية «وضع المنصّة» (داكنة/بنفسجية) مميّزة عن لوحة المطعم
@@ -37,13 +38,14 @@ export default function AdminShell({ active, title, children }) {
     <nav style={{ display:'flex', flexDirection:'column', gap:'4px', padding:'8px' }}>
       {ADMIN_NAV.map(item => {
         const isActive = item.key === active
+        const ItemIcon = NAV_ICON_MAP[item.key]
         const base = {
           display:'flex', alignItems:'center', gap:'11px', padding:'11px 13px', borderRadius:'11px',
           fontSize:'13.5px', fontWeight:'700', fontFamily:'Cairo,sans-serif', textDecoration:'none',
         }
         if (!item.ready) return (
           <div key={item.key} style={{ ...base, color:'#4B5563', cursor:'not-allowed' }}>
-            <span style={{ fontSize:'17px', opacity:0.5 }}>{item.icon}</span>
+            <ItemIcon size={17} style={{ opacity:0.5, flexShrink:0 }} />
             <span style={{ flex:1 }}>{item.label}</span>
             <span style={{ fontSize:'9px', fontWeight:'800', color:'#6B7280', border:`1px solid ${BORDER}`, borderRadius:'100px', padding:'2px 7px' }}>قريباً</span>
           </div>
@@ -51,7 +53,7 @@ export default function AdminShell({ active, title, children }) {
         return (
           <Link key={item.key} to={item.path} onClick={() => setOpen(false)}
             style={{ ...base, color: isActive ? 'white' : '#9CA3AF', background: isActive ? ACCENT : 'transparent' }}>
-            <span style={{ fontSize:'17px' }}>{item.icon}</span>
+            <ItemIcon size={17} style={{ flexShrink:0 }} />
             <span>{item.label}</span>
           </Link>
         )
@@ -68,7 +70,7 @@ export default function AdminShell({ active, title, children }) {
       <div style={{ flex:1, overflowY:'auto' }}><NavList /></div>
       <div style={{ padding:'10px', borderTop:`1px solid ${BORDER}`, display:'flex', flexDirection:'column', gap:'4px' }}>
         <button onClick={doSignOut} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 13px', borderRadius:'10px', background:'transparent', border:'none', color:'#F87171', cursor:'pointer', fontSize:'12.5px', fontWeight:'700', fontFamily:'Cairo,sans-serif', textAlign:'right' }}>
-          <span>⏻</span> تسجيل الخروج
+          <IconLogout size={15} /> تسجيل الخروج
         </button>
       </div>
     </aside>
@@ -89,17 +91,17 @@ export default function AdminShell({ active, title, children }) {
       <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0 }}>
         <header style={{ height:'56px', flexShrink:0, background:PANEL, borderBottom:`1px solid ${BORDER}`, display:'flex', alignItems:'center', gap:'12px', padding:'0 16px' }}>
           {!isDesktop && (
-            <button onClick={() => setOpen(true)} style={{ background:'transparent', border:'none', color:'white', fontSize:'20px', cursor:'pointer' }}>☰</button>
+            <button onClick={() => setOpen(true)} aria-label="فتح القائمة" style={{ background:'transparent', border:'none', color:'white', cursor:'pointer', display:'flex' }}><IconMenu size={20} /></button>
           )}
           <div style={{ flex:1, fontSize:'15px', fontWeight:'800', color:'white', fontFamily:'Cairo,sans-serif' }}>{title}</div>
           <button onClick={() => setPaletteOpen(true)} title="بحث (⌘K)"
             style={{ display:'flex', alignItems:'center', gap:'8px', background:BG, border:`1px solid ${BORDER}`, borderRadius:'9px', padding:'6px 11px', color:'#9CA3AF', cursor:'pointer', fontFamily:'Tajawal,sans-serif', fontSize:'12px' }}>
-            <span>🔍</span>
+            <IconSearch size={14} />
             {isDesktop && <span>بحث</span>}
             {isDesktop && <kbd style={{ fontSize:'9.5px', fontWeight:'800', border:`1px solid ${BORDER}`, borderRadius:'5px', padding:'1px 5px' }}>⌘K</kbd>}
           </button>
-          <span style={{ fontSize:'11px', fontWeight:'800', color:'#C4B5FD', background:'rgba(124,58,237,0.15)', border:`1px solid ${ACCENT}55`, borderRadius:'100px', padding:'4px 11px' }}>
-            🛡️ {platformRole || '—'}
+          <span style={{ display:'flex', alignItems:'center', gap:'6px', fontSize:'11px', fontWeight:'800', color:'#C4B5FD', background:'rgba(124,58,237,0.15)', border:`1px solid ${ACCENT}55`, borderRadius:'100px', padding:'4px 11px' }}>
+            <IconShield size={13} /> {platformRole || '—'}
           </span>
         </header>
         <main style={{ flex:1, overflowY:'auto' }}>{children}</main>
