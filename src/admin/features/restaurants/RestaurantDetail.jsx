@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
-import { useAuthStore } from '../../../store/authStore'
-import { getRestaurant, getRestaurantOperational, getRestaurantFeatures, setPlatformSuspended, setRestaurantPlan } from './restaurantsApi'
+import { PANEL as CARD, BORDER, MUTED, ACCENT, DANGER, SUCCESS } from '../../theme'
+import { getRestaurant, getRestaurantOperational, getRestaurantFeatures, setPlatformSuspended, setRestaurantPlan, can } from './restaurantsApi'
+import Button from '../../components/ui/Button'
+import Modal, { ModalActions } from '../../components/ui/Modal'
+import { EmptyState, ErrorState } from '../../components/ui/States'
+import { SkeletonTiles } from '../../components/ui/Skeleton'
 
 const PLAN_OPTIONS = ['starter', 'pro', 'business']
-const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED'
 const HEALTH_C = { green: '#6EE7B7', yellow: '#FBBF24', red: '#F87171' }
 const INV_C = { draft: '#9CA3AF', open: '#FBBF24', paid: '#6EE7B7', void: '#9CA3AF' }
 const num = (v) => Number(v) || 0
@@ -24,8 +27,8 @@ const Empty = ({ msg }) => <div style={{ color: MUTED, fontSize: '12px' }}>{msg}
 
 export default function RestaurantDetail() {
   const { id } = useParams()
-  const { platformRole } = useAuthStore()
-  const canManage = platformRole === 'super_admin'
+  const [canManage, setCanManage] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const [d, setD] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -41,14 +44,17 @@ export default function RestaurantDetail() {
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
+    setLoading(true); setError(null)
     ;(async () => {
       try { const data = await getRestaurant(id); if (!cancelled) { setD(data); setPlanSel(data?.subscription_plan || '') } }
       catch (e) { if (!cancelled) setError(e?.message || 'تعذّر التحميل') }
       finally { if (!cancelled) setLoading(false) }
     })()
     return () => { cancelled = true }
-  }, [id])
+  }, [id, reloadKey])
+
+  // صلاحية الإدارة الفعلية عبر RBAC (نفس نمط can() في باقي شاشات المشرف) — لا مطابقة اسم دور حرفية.
+  useEffect(() => { can('manage_restaurants').then(setCanManage).catch(() => {}) }, [])
 
   // جلب الحالة التشغيلية عند أول فتح للتبويب فقط
   useEffect(() => {
@@ -100,11 +106,11 @@ export default function RestaurantDetail() {
         <Link to="/admin/restaurants" style={{ color: MUTED, fontSize: '12.5px', textDecoration: 'none', fontWeight: '700' }}>← كل المطاعم</Link>
 
         {error ? (
-          <div style={{ marginTop: '14px', background: '#3B1113', border: '1px solid #7F1D1D', borderRadius: '12px', padding: '16px', color: '#FCA5A5', fontSize: '13px' }}>⚠️ {error}</div>
+          <div style={{ marginTop: '14px' }}><ErrorState msg={error} onRetry={() => setReloadKey((k) => k + 1)} /></div>
         ) : loading ? (
-          <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>جارٍ التحميل…</div>
+          <div style={{ marginTop: '14px' }}><SkeletonTiles count={4} /></div>
         ) : !d ? (
-          <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>المطعم غير موجود</div>
+          <EmptyState msg="المطعم غير موجود" />
         ) : (
           <div style={{ marginTop: '14px' }}>
             {/* رأس */}
@@ -154,12 +160,12 @@ export default function RestaurantDetail() {
                 {canManage && (
                   <Section title="⚙️ إجراءات الإدارة">
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                      <button onClick={askToggleSuspend} disabled={busy} style={{ padding: '10px 16px', borderRadius: '11px', border: 'none', cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '12.5px', color: 'white', background: d.platform_suspended ? '#059669' : '#B91C1C' }}>{d.platform_suspended ? '▶ رفع تعليق المنصّة' : '⛔ تعليق من المنصّة'}</button>
+                      <Button variant={d.platform_suspended ? 'success' : 'danger'} onClick={askToggleSuspend} disabled={busy}>{d.platform_suspended ? '▶ رفع تعليق المنصّة' : '⛔ تعليق من المنصّة'}</Button>
                       <span style={{ width: '1px', height: '26px', background: BORDER }} />
-                      <select value={planSel} onChange={e => setPlanSel(e.target.value)} style={{ background: '#0B0D12', border: `1px solid ${BORDER}`, color: 'white', borderRadius: '10px', padding: '9px 12px', fontFamily: 'Tajawal,sans-serif', fontSize: '13px' }}>
+                      <select value={planSel} onChange={e => setPlanSel(e.target.value)} className="admin-select" style={{ width: 'auto' }}>
                         {[...new Set([...(d.subscription_plan ? [d.subscription_plan] : []), ...PLAN_OPTIONS])].map(p => <option key={p} value={p}>{p}</option>)}
                       </select>
-                      <button onClick={askApplyPlan} disabled={busy || !planSel || planSel === d.subscription_plan} style={{ padding: '9px 14px', borderRadius: '10px', border: `1px solid ${ACCENT}`, background: 'transparent', color: '#C4B5FD', cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontWeight: '700', fontSize: '12.5px', opacity: (!planSel || planSel === d.subscription_plan) ? 0.5 : 1 }}>تطبيق الخطة</button>
+                      <Button variant="ghost" onClick={askApplyPlan} disabled={busy || !planSel || planSel === d.subscription_plan} style={{ opacity: (!planSel || planSel === d.subscription_plan) ? 0.5 : 1 }}>تطبيق الخطة</Button>
                     </div>
                   </Section>
                 )}
@@ -343,17 +349,10 @@ export default function RestaurantDetail() {
         )}
 
         {confirm && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <div onClick={() => !busy && setConfirm(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)' }} />
-            <div style={{ position: 'relative', background: CARD, border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px', maxWidth: '360px', width: '100%' }}>
-              <div style={{ fontSize: '15px', fontWeight: '900', color: 'white', fontFamily: 'Cairo,sans-serif', marginBottom: '8px' }}>{confirm.title}</div>
-              <div style={{ fontSize: '13px', color: MUTED, lineHeight: 1.7, marginBottom: '18px' }}>{confirm.msg}</div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={runConfirm} disabled={busy} style={{ flex: 1, padding: '11px', borderRadius: '11px', border: 'none', background: ACCENT, color: 'white', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '13px', cursor: 'pointer' }}>{busy ? '…' : 'تأكيد'}</button>
-                <button onClick={() => setConfirm(null)} disabled={busy} style={{ flex: 1, padding: '11px', borderRadius: '11px', border: `1px solid ${BORDER}`, background: 'transparent', color: '#D1D5DB', fontFamily: 'Cairo,sans-serif', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>إلغاء</button>
-              </div>
-            </div>
-          </div>
+          <Modal title={confirm.title} onClose={() => !busy && setConfirm(null)} maxWidth="360px">
+            <div style={{ fontSize: '13px', color: MUTED, lineHeight: 1.7, marginBottom: '18px' }}>{confirm.msg}</div>
+            <ModalActions busy={busy} onSave={runConfirm} saveLabel="تأكيد" onCancel={() => setConfirm(null)} />
+          </Modal>
         )}
       </div>
     </AdminShell>

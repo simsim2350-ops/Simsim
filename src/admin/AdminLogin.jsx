@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
+import { IconShield, IconEye, IconEyeOff } from './components/ui/Icon'
 
 // باب دخول مستقل لـ Super Admin — لا يمرّ بأي شاشة مطعم أو Onboarding إطلاقاً.
 // هوية «وضع المنصّة» الداكنة/البنفسجية. من ليس مشرفاً يُرفض ويُسجَّل خروجه (الخيار أ).
@@ -54,7 +55,7 @@ export default function AdminLogin() {
       <div style={{ width: '100%', maxWidth: '400px' }}>
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{ fontSize: '11px', letterSpacing: '3px', color: ACCENT, fontWeight: '800' }}>SIMSIM</div>
-          <div style={{ fontSize: '24px', fontWeight: '900', color: 'white', fontFamily: 'Cairo,sans-serif', marginTop: '4px' }}>🛡️ لوحة المنصّة</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '24px', fontWeight: '900', color: 'white', fontFamily: 'Cairo,sans-serif', marginTop: '4px' }}><IconShield size={22} /> لوحة المنصّة</div>
           <div style={{ fontSize: '13px', color: MUTED, marginTop: '6px' }}>دخول مخصّص لمشرفي منصّة سِمسِم</div>
         </div>
 
@@ -67,7 +68,7 @@ export default function AdminLogin() {
             <span style={{ display: 'block', fontSize: '12.5px', color: MUTED, fontWeight: '700', marginBottom: '7px' }}>كلمة المرور</span>
             <div style={{ position: 'relative' }}>
               <input type={showPass ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} style={{ ...input, paddingLeft: '44px' }} placeholder="••••••••" autoComplete="current-password" />
-              <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: MUTED, fontSize: '16px', cursor: 'pointer' }}>{showPass ? '🙈' : '👁️'}</button>
+              <button type="button" onClick={() => setShowPass(!showPass)} aria-label={showPass ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: MUTED, cursor: 'pointer', display: 'flex' }}>{showPass ? <IconEyeOff size={17} /> : <IconEye size={17} />}</button>
             </div>
           </label>
           <button type="submit" disabled={loading} style={{ width: '100%', padding: '14px', borderRadius: '13px', border: 'none', background: ACCENT, color: 'white', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '15px', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}>

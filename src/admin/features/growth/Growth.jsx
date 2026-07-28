@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import AdminShell from '../../AdminShell'
 import { growth } from './growthApi'
+import { PANEL as CARD, BORDER, MUTED, ACCENT } from '../../theme'
+import { ErrorState } from '../../components/ui/States'
+import { SkeletonTiles, SkeletonChart, SkeletonRows } from '../../components/ui/Skeleton'
 
-const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED'
 const num = (v) => Number(v) || 0
 const fmt = (v) => num(v).toLocaleString('en-US', { maximumFractionDigits: 0 })
 const money = (v) => fmt(v) + ' ﷼'
@@ -25,7 +27,11 @@ export default function Growth() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => { growth().then(setD).catch((e) => setError(e?.message || 'تعذّر التحميل')).finally(() => setLoading(false)) }, [])
+  const load = () => {
+    setLoading(true); setError(null)
+    growth().then(setD).catch((e) => setError(e?.message || 'تعذّر التحميل')).finally(() => setLoading(false))
+  }
+  useEffect(load, [])
 
   const s = d?.summary || {}
   const churnRate = num(s.active_subs) > 0 ? Math.round((num(s.churned_subs_30d) / num(s.active_subs)) * 100) : null
@@ -44,9 +50,15 @@ export default function Growth() {
     <AdminShell active="growth" title="📈 النمو">
       <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
         {error ? (
-          <div style={{ background: '#3B1113', border: '1px solid #7F1D1D', borderRadius: '12px', padding: '16px', color: '#FCA5A5', fontSize: '13px' }}>⚠️ {error}</div>
+          <ErrorState msg={error} onRetry={load} />
         ) : loading ? (
-          <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>جارٍ التحميل…</div>
+          <>
+            <SkeletonTiles count={6} />
+            <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '16px', marginBottom: '12px' }}>
+              <SkeletonChart />
+            </div>
+            <SkeletonRows count={4} />
+          </>
         ) : (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '12px', marginBottom: '16px' }}>
