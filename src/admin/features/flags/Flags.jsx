@@ -3,53 +3,20 @@ import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
 import { listFlags, upsertFlag, deleteFlag, listOverrides, setOverride, can } from './flagsApi'
 import { listRestaurants } from '../restaurants/restaurantsApi'
+import { ACCENT, MUTED, BORDER } from '../../theme'
+import Button from '../../components/ui/Button'
+import Modal, { ModalActions } from '../../components/ui/Modal'
+import Field from '../../components/ui/Field'
+import { Loading, EmptyState, ErrorState } from '../../components/ui/States'
+import { SkeletonRows } from '../../components/ui/Skeleton'
 
-const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED'
-
-const inputStyle = {
-  background: '#0B0D12', border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '9px 12px',
-  color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '13px', outline: 'none', width: '100%',
-}
-const btn = (bg) => ({
-  padding: '9px 15px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-  fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '12.5px', color: 'white', background: bg,
-})
+const CARD = '#12141C'
 const mono = { fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', direction: 'ltr' }
 
-const Loading = () => <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>جارٍ التحميل…</div>
-const ErrBox = ({ msg }) => <div style={{ background: '#3B1113', border: '1px solid #7F1D1D', borderRadius: '12px', padding: '16px', color: '#FCA5A5', fontSize: '13px' }}>⚠️ {msg}</div>
-
-function Modal({ title, children, onClose, maxWidth = '440px' }) {
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)' }} />
-      <div style={{ position: 'relative', background: CARD, border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px', width: '100%', maxWidth, maxHeight: '88vh', overflowY: 'auto' }}>
-        <div style={{ fontSize: '15px', fontWeight: '900', color: 'white', fontFamily: 'Cairo,sans-serif', marginBottom: '16px' }}>{title}</div>
-        {children}
-      </div>
-    </div>
-  )
-}
-function Field({ label, children }) {
-  return (
-    <label style={{ display: 'block', marginBottom: '12px' }}>
-      <span style={{ display: 'block', fontSize: '11.5px', color: MUTED, fontWeight: '700', marginBottom: '6px' }}>{label}</span>
-      {children}
-    </label>
-  )
-}
-function ModalActions({ busy, onSave, onCancel, saveLabel = 'حفظ' }) {
-  return (
-    <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-      <button style={{ ...btn(ACCENT), flex: 1, opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={onSave}>{busy ? '…' : saveLabel}</button>
-      <button style={btn('#374151')} disabled={busy} onClick={onCancel}>إلغاء</button>
-    </div>
-  )
-}
 // مفتاح تشغيل/إيقاف بصري
 function Toggle({ on, onClick, disabled }) {
   return (
-    <button onClick={onClick} disabled={disabled} title={on ? 'مفعّل' : 'معطّل'} style={{
+    <button onClick={onClick} disabled={disabled} title={on ? 'مفعّل' : 'معطّل'} role="switch" aria-checked={on} style={{
       width: '42px', height: '24px', borderRadius: '100px', border: 'none', position: 'relative', flexShrink: 0,
       cursor: disabled ? 'default' : 'pointer', background: on ? ACCENT : '#374151', transition: 'background .15s', opacity: disabled ? 0.6 : 1,
     }}>
@@ -69,7 +36,7 @@ export default function Flags() {
   const [busy, setBusy] = useState(false)
 
   const load = () => {
-    setLoading(true)
+    setLoading(true); setError(null)
     listFlags().then(setFlags).catch((e) => setError(e?.message || 'تعذّر التحميل')).finally(() => setLoading(false))
   }
   useEffect(() => { load(); can('manage_flags').then(setCanManage).catch(() => {}) }, [])
@@ -99,12 +66,12 @@ export default function Flags() {
         </div>
         {canManage && (
           <div style={{ marginBottom: '14px' }}>
-            <button style={btn(ACCENT)} onClick={() => setEdit({ key: '', description: '', enabled_global: false, isNew: true })}>+ ميزة جديدة</button>
+            <Button variant="primary" onClick={() => setEdit({ key: '', description: '', enabled_global: false, isNew: true })}>+ ميزة جديدة</Button>
           </div>
         )}
 
-        {loading ? <Loading /> : error ? <ErrBox msg={error} /> : flags.length === 0 ? (
-          <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>لا مزايا معرّفة بعد.</div>
+        {loading ? <SkeletonRows count={4} /> : error ? <ErrorState msg={error} onRetry={load} /> : flags.length === 0 ? (
+          <EmptyState msg="لا مزايا معرّفة بعد." />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {flags.map((f) => (
@@ -125,11 +92,11 @@ export default function Flags() {
                     <span style={{ fontSize: '11.5px', color: f.enabled_global ? '#6EE7B7' : MUTED, fontWeight: '700' }}>{f.enabled_global ? 'عام' : 'معطّل'}</span>
                     <Toggle on={f.enabled_global} onClick={() => toggleGlobal(f)} disabled={!canManage} />
                   </div>
-                  <button style={btn('#374151')} onClick={() => setOverridesOf(f)}>التخصيصات</button>
+                  <Button variant="neutral" onClick={() => setOverridesOf(f)}>التخصيصات</Button>
                   {canManage && (
                     <>
-                      <button style={btn('#374151')} onClick={() => setEdit({ key: f.key, description: f.description || '', enabled_global: f.enabled_global, isNew: false })}>تعديل</button>
-                      <button style={btn('#7F1D1D')} onClick={() => setConfirm(f)}>حذف</button>
+                      <Button variant="neutral" onClick={() => setEdit({ key: f.key, description: f.description || '', enabled_global: f.enabled_global, isNew: false })}>تعديل</Button>
+                      <Button variant="danger" onClick={() => setConfirm(f)}>حذف</Button>
                     </>
                   )}
                 </div>
@@ -142,11 +109,11 @@ export default function Flags() {
       {edit && (
         <Modal title={edit.isNew ? 'ميزة جديدة' : 'تعديل ميزة'} onClose={() => setEdit(null)}>
           <Field label="المفتاح (بالإنجليزية، ثابت)">
-            <input style={{ ...inputStyle, ...mono }} value={edit.key} disabled={!edit.isNew}
+            <input className="admin-input" style={mono} value={edit.key} disabled={!edit.isNew}
               onChange={(e) => setEdit({ ...edit, key: e.target.value })} placeholder="loyalty_v2" />
           </Field>
           <Field label="الوصف (اختياري)">
-            <input style={inputStyle} value={edit.description} onChange={(e) => setEdit({ ...edit, description: e.target.value })} />
+            <input className="admin-input" value={edit.description} onChange={(e) => setEdit({ ...edit, description: e.target.value })} />
           </Field>
           <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', cursor: 'pointer' }}>
             <Toggle on={edit.enabled_global} onClick={() => setEdit({ ...edit, enabled_global: !edit.enabled_global })} />
@@ -219,7 +186,7 @@ function OverridesModal({ flag, canManage, onClose }) {
               {canManage && (
                 <>
                   <Toggle on={r.enabled} onClick={() => apply(r.restaurant_id, !r.enabled)} />
-                  <button style={{ ...btn('#374151'), padding: '6px 10px' }} onClick={() => remove(r.restaurant_id)} title="إزالة التخصيص (وراثة العام)">↺</button>
+                  <Button variant="neutral" style={{ padding: '6px 10px' }} onClick={() => remove(r.restaurant_id)} title="إزالة التخصيص (وراثة العام)">↺</Button>
                 </>
               )}
             </div>
@@ -231,22 +198,22 @@ function OverridesModal({ flag, canManage, onClose }) {
         <div style={{ marginTop: '14px', borderTop: `1px solid ${BORDER}`, paddingTop: '14px' }}>
           <div style={{ fontSize: '11.5px', color: MUTED, fontWeight: '700', marginBottom: '8px' }}>إضافة تخصيص لمطعم</div>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-            <input style={inputStyle} value={search} onChange={(e) => setSearch(e.target.value)}
+            <input className="admin-input" value={search} onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && doSearch()} placeholder="ابحث باسم المطعم…" />
-            <button style={btn(ACCENT)} onClick={doSearch} disabled={searching}>{searching ? '…' : 'بحث'}</button>
+            <Button variant="primary" onClick={doSearch} disabled={searching}>{searching ? '…' : 'بحث'}</Button>
           </div>
           {results.filter((r) => !overriddenIds.has(r.id)).map((r) => (
             <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 4px', borderBottom: `1px solid ${BORDER}` }}>
               <span style={{ flex: 1, fontSize: '13px', color: '#D1D5DB' }}>{r.name}</span>
-              <button style={{ ...btn('#065F46'), padding: '6px 12px' }} onClick={() => apply(r.id, true)}>تفعيل</button>
-              <button style={{ ...btn('#7F1D1D'), padding: '6px 12px' }} onClick={() => apply(r.id, false)}>إيقاف</button>
+              <Button variant="success" style={{ padding: '6px 12px' }} onClick={() => apply(r.id, true)}>تفعيل</Button>
+              <Button variant="danger" style={{ padding: '6px 12px' }} onClick={() => apply(r.id, false)}>إيقاف</Button>
             </div>
           ))}
         </div>
       )}
 
       <div style={{ marginTop: '16px' }}>
-        <button style={{ ...btn('#374151'), width: '100%' }} onClick={onClose}>إغلاق</button>
+        <Button variant="neutral" style={{ width: '100%' }} onClick={onClose}>إغلاق</Button>
       </div>
     </Modal>
   )

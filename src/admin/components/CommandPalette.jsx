@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ADMIN_NAV } from '../adminNav'
 import { listRestaurants } from '../features/restaurants/restaurantsApi'
+import { NAV_ICON_MAP, IconSearch } from './ui/Icon'
 
 // شريط أوامر ⌘K لـ Super Admin: بحث المطاعم (خادمي، بإعادة استخدام admin_list_restaurants)
 // + القفز لأقسام اللوحة. بحث مؤجَّل (debounce) بحد أدنى حرفين، وتنقّل كامل بلوحة المفاتيح.
@@ -43,7 +44,7 @@ export default function CommandPalette({ onClose }) {
 
   // قائمة مسطّحة موحّدة للتنقّل بالكيبورد
   const items = useMemo(() => ([
-    ...navMatches.map((n) => ({ type: 'nav', id: n.key, label: n.label, icon: n.icon, sub: 'قسم', go: () => navigate(n.path) })),
+    ...navMatches.map((n) => ({ type: 'nav', id: n.key, label: n.label, icon: NAV_ICON_MAP[n.key], sub: 'قسم', go: () => navigate(n.path) })),
     ...rows.map((r) => ({ type: 'rest', id: r.id, label: r.name, icon: '🏪', sub: `/${r.slug}${r.subscription_plan ? ' · ' + r.subscription_plan : ''}`, go: () => navigate(`/admin/restaurants/${r.id}`) })),
   ]), [navMatches, rows, navigate])
 
@@ -72,7 +73,7 @@ export default function CommandPalette({ onClose }) {
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)' }} />
       <div style={{ position: 'relative', width: '100%', maxWidth: '560px', background: PANEL, border: `1px solid ${BORDER}`, borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)', overflow: 'hidden', fontFamily: 'Tajawal,sans-serif' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 16px', borderBottom: `1px solid ${BORDER}` }}>
-          <span style={{ fontSize: '16px', color: MUTED }}>🔍</span>
+          <IconSearch size={16} style={{ color: MUTED, flexShrink: 0 }} />
           <input
             ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKeyDown}
             placeholder="ابحث عن مطعم أو انتقل لقسم…"
@@ -95,7 +96,7 @@ export default function CommandPalette({ onClose }) {
                     display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 12px', borderRadius: '10px', cursor: 'pointer',
                     background: idx === active ? 'rgba(124,58,237,0.18)' : 'transparent',
                   }}>
-                  <span style={{ fontSize: '16px' }}>{it.icon}</span>
+                  {it.type === 'nav' ? <it.icon size={16} style={{ flexShrink: 0 }} /> : <span style={{ fontSize: '16px' }}>{it.icon}</span>}
                   <span style={{ flex: 1, fontSize: '13.5px', fontWeight: '700', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.label}</span>
                   <span style={{ fontSize: '11px', color: MUTED, direction: 'ltr' }}>{it.sub}</span>
                 </div>

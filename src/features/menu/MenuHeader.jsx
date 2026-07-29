@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SOCIAL_ICONS } from './SocialIcons'
 import { estimatedPrepTime } from './helpers'
 
-// أقصى عدد أحرف يظهر من وصف المطعم (قرار المالك)
-const DESC_MAX_CHARS = 105
-const HERO_HEIGHT = 170
+const HERO_HEIGHT = 128
 
 const clamp01 = v => Math.min(1, Math.max(0, v))
 
@@ -42,14 +40,30 @@ export default function MenuHeader({
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
-  const heroOpacity = 1 - clamp01((scrollY - 130) / 130) // يبقى كاملاً حتى 130px ثم يتلاشى بالكامل عند 260px
+  const heroOpacity = 1 - clamp01((scrollY - 86) / 130) // يبقى كاملاً حتى 86px ثم يتلاشى بالكامل عند 216px (عُوير بعد تقصير الهيرو)
   // الهيدر المصغّر الدائم: عنصر منفصل (fixed) يظهر بتلاشٍ تماماً عندما ينزلق اسم البطاقة الحقيقي تحت أعلى الشاشة
-  // (نطاق 122→164 يطابق لحظة مرور اسم المطعم خلف شريط 56px العلوي، فلا يظهر الاسم مرّتين)
-  const compactT = clamp01((scrollY - 122) / 42)
+  // (نطاق 78→120 يطابق لحظة مرور اسم المطعم خلف شريط 56px العلوي بعد ارتفاع البطاقة ~44px، فلا يظهر الاسم مرّتين)
+  const compactT = clamp01((scrollY - 78) / 42)
 
-  // قصّ الوصف عند الحد الأقصى
+  // وصف المطعم — يُعرض بسطرين فقط (line-clamp) مع زر «عرض المزيد» يوسّعه بالكامل ثم «عرض أقل»
   const fullDesc = tx(restaurant, 'description')
-  const desc = fullDesc && fullDesc.length > DESC_MAX_CHARS ? fullDesc.slice(0, DESC_MAX_CHARS).trim() + '…' : fullDesc
+  const descRef = useRef(null)
+  const [descExpanded, setDescExpanded] = useState(false)
+  const [descOverflows, setDescOverflows] = useState(false)
+  useEffect(() => {
+    if (descExpanded) return // نقيس فقط في حالة الطيّ (سطرين) لتحديد إن كان النص يتجاوزهما
+    const el = descRef.current
+    if (el) setDescOverflows(el.scrollHeight > el.clientHeight + 2)
+  }, [fullDesc, isEn, descExpanded])
+
+  // روابط التواصل — تُعرض 3 فقط ثم زر «+N» يوسّع الباقي (وضغطة أخرى تطويه)
+  const [socialExpanded, setSocialExpanded] = useState(false)
+  const showSocial = (restaurant.show_social_links ?? true) && restaurant.social_links
+  const socialKeys = showSocial
+    ? ['instagram', 'whatsapp_social', 'snapchat', 'twitter', 'tiktok'].filter(key => restaurant.social_links[key])
+    : []
+  const shownSocialKeys = socialExpanded ? socialKeys : socialKeys.slice(0, 3)
+  const hiddenSocialCount = socialKeys.length - shownSocialKeys.length
   // خلية إحصائيات واحدة (حالة الفتح / وقت التجهيز / التوصيل)
   const statCells = [
     ...((restaurant?.show_hours ?? true) ? [{
@@ -94,18 +108,18 @@ export default function MenuHeader({
         <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, rgba(0,0,0,0.12), transparent 30%, transparent 70%, rgba(0,0,0,0.18))', pointerEvents:'none' }}/>
 
         {/* زر اللغة — عائم */}
-        <button onClick={toggleLang} style={{ position:'absolute', top:'18px', left:'14px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', color:'#374151', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <button onClick={toggleLang} style={{ position:'absolute', top:'12px', left:'14px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', color:'#374151', display:'flex', alignItems:'center', justifyContent:'center' }}>
           {isEn ? 'ع' : 'EN'}
         </button>
 
         {/* زر البحث — عائم بجانب زر اللغة (أفقياً)، يفتح شاشة البحث المستقلة */}
-        <button onClick={onToggleSearch} aria-label={isEn ? 'Search' : 'بحث'} style={{ position:'absolute', top:'18px', left:'62px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', color:'#374151', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <button onClick={onToggleSearch} aria-label={isEn ? 'Search' : 'بحث'} style={{ position:'absolute', top:'12px', left:'62px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', color:'#374151', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center' }}>
           🔍
         </button>
 
         {/* زر طلباتي — عائم بعداد حي */}
         {hasOrders && (
-          <button onClick={onShowOrders} style={{ position:'absolute', top:'18px', right:'14px', padding:'10px 15px', borderRadius:'100px', border:'none', background:brandColor, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', boxShadow:`0 6px 18px ${brandColor}66` }}>
+          <button onClick={onShowOrders} style={{ position:'absolute', top:'12px', right:'14px', padding:'10px 15px', borderRadius:'100px', border:'none', background:brandColor, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', boxShadow:`0 6px 18px ${brandColor}66` }}>
             📋 {t('myOrders')}
             {liveOrdersCount > 0 && (
               <span style={{ background:'rgba(255,255,255,0.3)', borderRadius:'100px', padding:'1px 7px', fontSize:'11px' }}>{liveOrdersCount}</span>
@@ -115,17 +129,17 @@ export default function MenuHeader({
       </div>
 
       {/* ===== البطاقة العائمة فوق الهيرو (هوامش جانبية + زوايا مدوّرة) — تدفّق طبيعي، تنزلق للأعلى ===== */}
-      <div style={{ position:'relative', zIndex:10, margin:'-76px 16px 0', background:'white', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
+      <div style={{ position:'relative', zIndex:10, margin:'-76px 16px 0', background:'rgba(255,255,255,0.72)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
 
         {/* رأس البطاقة (شعار + اسم + تقييم + حالة الفتح) — تدفّق طبيعي ضمن البطاقة، ينزلق مع الصفحة.
             التثبيت الدائم يتكفّل به «الهيدر المصغّر» المنفصل أدناه (لتفادي التعارض مع شريط الأقسام). */}
-        <div style={{ paddingTop:'6px' }}>
+        <div style={{ paddingTop:'4px' }}>
           {/* مقبض السحب */}
-          <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 6px' }}/>
+          <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 4px' }}/>
 
           {/* الهوية: شعار + اسم + تقييم + حالة الفتح */}
-          <div style={{ display:'flex', alignItems:'center', gap:'12px', padding:'0 16px 7px' }}>
-            <div style={{ width:'56px', height:'56px', borderRadius:'16px', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'26px', flexShrink:0, overflow:'hidden', boxShadow:'0 5px 14px rgba(15,17,23,0.18)' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'11px', padding:'0 16px 5px' }}>
+            <div style={{ width:'52px', height:'52px', borderRadius:'15px', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'25px', flexShrink:0, overflow:'hidden', boxShadow:'0 5px 14px rgba(15,17,23,0.18)' }}>
               {restaurant.logo_url
                 ? <img src={restaurant.logo_url} alt={restaurant.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 : '🍕'}
@@ -149,9 +163,19 @@ export default function MenuHeader({
         </div>
 
         {/* ===== المحتوى الثانوي — تدفّق طبيعي، ينزلق للأعلى خلف صفّ الهوية ويختفي بالتمرير ===== */}
-        {/* وصف المطعم — يكتبه صاحب المطعم من الإعدادات (يدعم الترجمة)، ويُقص عند 105 أحرف */}
-        {(restaurant.show_description ?? true) && desc && (
-          <p style={{ fontSize:'12.5px', color:descColor, lineHeight:'1.45', margin:'4px 16px 0' }}>{desc}</p>
+        {/* وصف المطعم — يكتبه صاحب المطعم من الإعدادات (يدعم الترجمة)، يُعرض بسطرين مع «عرض المزيد» */}
+        {(restaurant.show_description ?? true) && fullDesc && (
+          <div style={{ margin:'2px 16px 0' }}>
+            <p ref={descRef} style={{
+              fontSize:'12.5px', color:descColor, lineHeight:'1.45', margin:0,
+              ...(descExpanded ? {} : { display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }),
+            }}>{fullDesc}</p>
+            {(descOverflows || descExpanded) && (
+              <button onClick={() => setDescExpanded(v => !v)} style={{ border:'none', background:'none', padding:'2px 0 0', color:brandColor, fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'11.5px', cursor:'pointer' }}>
+                {descExpanded ? (isEn ? 'Show less' : 'عرض أقل') : (isEn ? 'Show more' : 'عرض المزيد')}
+              </button>
+            )}
+          </div>
         )}
 
         {/* الموقع + رابط الخريطة */}
@@ -174,21 +198,25 @@ export default function MenuHeader({
         })()}
 
         {/* روابط التواصل + زر المسبّبات */}
-        {(((restaurant.show_social_links ?? true) && restaurant.social_links && Object.values(restaurant.social_links).some(v => v)) || ((restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0)) && (
-          <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'3px 16px 0', flexWrap:'wrap' }}>
-            {(restaurant.show_social_links ?? true) && restaurant.social_links && ['instagram', 'whatsapp_social', 'snapchat', 'twitter', 'tiktok']
-              .filter(key => restaurant.social_links[key])
-              .map(key => {
-                const Icon = SOCIAL_ICONS[key]
-                return (
-                  <a key={key} href={restaurant.social_links[key]} target="_blank" rel="noopener noreferrer"
-                    style={{ width:'32px', height:'32px', borderRadius:'50%', background:'white', border:'1.5px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none', boxShadow:'0 2px 6px rgba(0,0,0,0.06)', overflow:'hidden' }}>
-                    <Icon/>
-                  </a>
-                )
-              })}
+        {(socialKeys.length > 0 || ((restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0)) && (
+          <div style={{ display:'flex', alignItems:'center', gap:'6px', margin:'2px 16px 0', flexWrap:'nowrap', overflowX:'auto' }}>
+            {shownSocialKeys.map(key => {
+              const Icon = SOCIAL_ICONS[key]
+              return (
+                <a key={key} href={restaurant.social_links[key]} target="_blank" rel="noopener noreferrer"
+                  style={{ width:'28px', height:'28px', flexShrink:0, borderRadius:'50%', background:'white', border:'1.5px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none', boxShadow:'0 2px 6px rgba(0,0,0,0.06)', overflow:'hidden' }}>
+                  <Icon/>
+                </a>
+              )
+            })}
+            {(hiddenSocialCount > 0 || socialExpanded) && socialKeys.length > 3 && (
+              <button onClick={() => setSocialExpanded(v => !v)} aria-label={isEn ? 'More links' : 'روابط أكثر'}
+                style={{ width:'28px', height:'28px', flexShrink:0, borderRadius:'50%', background:'#F3F4F6', border:'1.5px solid #E5E7EB', color:'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'11px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                {socialExpanded ? '−' : `+${hiddenSocialCount}`}
+              </button>
+            )}
             {(restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0 && (
-              <button onClick={onShowAllergens} style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 11px', borderRadius:'100px', border:'1.5px solid #FDE68A', background:'#FFFBEB', color:'#92400E', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer' }}>
+              <button onClick={onShowAllergens} style={{ display:'flex', alignItems:'center', gap:'4px', flexShrink:0, whiteSpace:'nowrap', padding:'5px 9px', borderRadius:'100px', border:'1.5px solid #FDE68A', background:'#FFFBEB', color:'#92400E', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'10.5px', cursor:'pointer' }}>
                 ⚠️ {t('allergens')}
               </button>
             )}
@@ -196,11 +224,11 @@ export default function MenuHeader({
         )}
 
         {/* بطاقة الإحصائيات: الحالة · التجهيز · التوصيل */}
-        <div style={{ display:'flex', margin:'5px 14px 2px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'15px', padding:'6px 4px' }}>
+        <div style={{ display:'flex', margin:'2px 14px 2px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'13px', padding:'3px 4px' }}>
           {statCells.map((c, i) => (
             <div key={i} style={{ flex:1, textAlign:'center', borderRight: i > 0 ? '1px solid #E9ECF1' : 'none', padding:'0 4px' }}>
-              <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'12.5px', color:c.color, whiteSpace:'nowrap' }}>{c.value}</div>
-              {c.sub && <div style={{ fontSize:'9.5px', color:'#9CA3AF', fontWeight:'700', marginTop:'3px', direction: c.ltr ? 'ltr' : 'rtl' }}>{c.sub}</div>}
+              <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'12px', color:c.color, whiteSpace:'nowrap' }}>{c.value}</div>
+              {c.sub && <div style={{ fontSize:'9px', color:'#9CA3AF', fontWeight:'700', marginTop:'2px', direction: c.ltr ? 'ltr' : 'rtl' }}>{c.sub}</div>}
             </div>
           ))}
         </div>
@@ -241,10 +269,10 @@ export default function MenuHeader({
               ? (isEn ? `Your points: ${balance} — ${Math.max(0, threshold - balance)} pts to your reward` : `نقاطك: ${balance} — باقي ${Math.max(0, threshold - balance)} نقطة على مكافأتك`)
               : (isEn ? `Your points: ${balance}` : `نقاطك: ${balance}`)
           return (
-            <div onClick={onShowOrders} style={{ margin:'0 14px 4px', background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'13px', padding:'6px 12px', display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
-              <span style={{ fontSize:'15px' }}>🎁</span>
-              <span style={{ flex:1, fontSize:'11.5px', fontWeight:'800', color:'#0F1117', fontFamily:'Cairo,sans-serif' }}>{text}</span>
-              <span style={{ fontSize:'10px', fontWeight:'800', color:brandColor, whiteSpace:'nowrap' }}>{isEn ? 'Details ›' : 'التفاصيل ›'}</span>
+            <div onClick={onShowOrders} style={{ margin:'0 14px 3px', background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'12px', padding:'4px 10px', display:'flex', alignItems:'center', gap:'7px', cursor:'pointer' }}>
+              <span style={{ fontSize:'13px' }}>🎁</span>
+              <span style={{ flex:1, fontSize:'11px', fontWeight:'800', color:'#0F1117', fontFamily:'Cairo,sans-serif' }}>{text}</span>
+              <span style={{ fontSize:'9.5px', fontWeight:'800', color:brandColor, whiteSpace:'nowrap' }}>{isEn ? 'Details ›' : 'التفاصيل ›'}</span>
             </div>
           )
         })()}
