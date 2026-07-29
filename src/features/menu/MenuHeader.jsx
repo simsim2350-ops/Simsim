@@ -256,10 +256,10 @@ export default function MenuHeader({
               ? (isEn ? `Your points: ${balance} — ${Math.max(0, threshold - balance)} pts to your reward` : `نقاطك: ${balance} — باقي ${Math.max(0, threshold - balance)} نقطة على مكافأتك`)
               : (isEn ? `Your points: ${balance}` : `نقاطك: ${balance}`)
           return (
-            <div onClick={onShowOrders} style={{ margin:'0 14px 3px', background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'13px', padding:'5px 11px', display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
-              <span style={{ fontSize:'14px' }}>🎁</span>
-              <span style={{ flex:1, fontSize:'11.5px', fontWeight:'800', color:'#0F1117', fontFamily:'Cairo,sans-serif' }}>{text}</span>
-              <span style={{ fontSize:'10px', fontWeight:'800', color:brandColor, whiteSpace:'nowrap' }}>{isEn ? 'Details ›' : 'التفاصيل ›'}</span>
+            <div onClick={onShowOrders} style={{ margin:'0 14px 3px', background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'12px', padding:'4px 10px', display:'flex', alignItems:'center', gap:'7px', cursor:'pointer' }}>
+              <span style={{ fontSize:'13px' }}>🎁</span>
+              <span style={{ flex:1, fontSize:'11px', fontWeight:'800', color:'#0F1117', fontFamily:'Cairo,sans-serif' }}>{text}</span>
+              <span style={{ fontSize:'9.5px', fontWeight:'800', color:brandColor, whiteSpace:'nowrap' }}>{isEn ? 'Details ›' : 'التفاصيل ›'}</span>
             </div>
           )
         })()}
