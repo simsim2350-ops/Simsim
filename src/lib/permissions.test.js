@@ -1,6 +1,6 @@
 // اختبار منطق صلاحيات الموظفين + أدوار M7 (canAccess) — دوال نقيّة
 import { describe, it, expect } from 'vitest'
-import { canAccess, ROLE_PRESETS, MEMBER_ROLES } from './permissions.js'
+import { canAccess, ROLE_PRESETS, MEMBER_ROLES, OWNER_ONLY } from './permissions.js'
 
 const owner = { isOwner: true }
 const member = (over = {}) => ({ isOwner: false, allowedPages: ['orders', 'menu'], branchScope: 'all', role: 'staff', ...over })
@@ -41,6 +41,15 @@ describe('canAccess — أدوار M7 (required_permissions)', () => {
   })
   it('المالك يتجاوز required_permissions', () => {
     expect(canAccess('orders', { isOwner: true, capabilities: caps(['manager']) })).toBe(true)
+  })
+})
+
+describe('OWNER_ONLY مُشتقّ من الـManifest (Suggestion 3 — توحيد)', () => {
+  it('يطابق الصفحات الخمس الحصرية (required_permissions=[owner])', () => {
+    expect([...OWNER_ONLY].sort()).toEqual(['billing', 'dashboard', 'marketing', 'settings', 'staff'])
+  })
+  it('كل صفحة owner-only ممنوعة على أي موظف', () => {
+    for (const p of OWNER_ONLY) expect(canAccess(p, member({ allowedPages: ['all'] }))).toBe(false)
   })
 })
 

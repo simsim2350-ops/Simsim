@@ -3,8 +3,15 @@
 // يُستخدم في AppShell (فلترة التنقل) و App (حماية المسارات).
 // ============================================================
 
-// صفحات حصرية لصاحب المطعم فقط — لا تُمنح لأي موظف إطلاقاً
-export const OWNER_ONLY = ['dashboard', 'settings', 'staff', 'marketing', 'billing']
+import { CAPABILITIES } from '../registry/features.manifest'
+
+// صفحات حصرية لصاحب المطعم فقط — لا تُمنح لأي موظف إطلاقاً.
+// مُشتقّة من سجل القدرات (مصدر الحقيقة الوحيد — ADR-40): أي قدرة صفحة
+// تحمل required_permissions=['owner']. اشتقاق ثابت من الـManifest (لا اعتماد على
+// تحميل effective_features) فالبوابة مضمونة دائماً بلا fail-open. توحيد Suggestion 3.
+export const OWNER_ONLY = CAPABILITIES
+  .filter((c) => c.kind === 'page' && Array.isArray(c.required_permissions) && c.required_permissions.includes('owner'))
+  .map((c) => c.key)
 
 // أدوار الموظفين (M7 — owner ضمني عبر restaurants.owner_id، ليس دوراً هنا).
 export const MEMBER_ROLES = ['manager', 'cashier', 'staff']

@@ -45,12 +45,12 @@ export const CATEGORIES = [
 // ---------------------------------------------------------------------------
 export const CAPABILITIES = [
   // (1) صفحات (kind=page, type=feature)
-  { key: 'dashboard', name: 'الرئيسية', kind: 'page', category: 'analytics',  module: 'dashboard', type: 'feature', default_enabled: true, sort_order: 10, icon: '📊', description: 'لوحة المؤشرات الرئيسية' },
+  { key: 'dashboard', name: 'الرئيسية', kind: 'page', category: 'analytics',  module: 'dashboard', type: 'feature', default_enabled: true, sort_order: 10, icon: '📊', description: 'لوحة المؤشرات الرئيسية', required_permissions: ['owner'] },
   { key: 'orders',    name: 'الطلبات',   kind: 'page', category: 'operations', module: 'orders',    type: 'feature', default_enabled: true, sort_order: 20, icon: '🛒', description: 'مركز إدارة الطلبات' },
   { key: 'menu',      name: 'المنيو',    kind: 'page', category: 'menu',       module: 'menu',      type: 'feature', default_enabled: true, sort_order: 30, icon: '📋', description: 'إدارة الأقسام والأصناف' },
   { key: 'customers', name: 'العملاء',   kind: 'page', category: 'customers',  module: 'customers', type: 'feature', default_enabled: true, sort_order: 40, icon: '👥', description: 'لوحة العملاء' },
   { key: 'loyalty',   name: 'الولاء والتقييمات', kind: 'page', category: 'loyalty', module: 'loyalty', type: 'feature', default_enabled: true, sort_order: 50, icon: '🎁', description: 'برنامج الولاء والتقييمات' },
-  { key: 'marketing', name: 'العروض والكوبونات', kind: 'page', category: 'marketing', module: 'marketing', type: 'feature', default_enabled: true, sort_order: 60, icon: '📣', description: 'البانرات والكوبونات' },
+  { key: 'marketing', name: 'العروض والكوبونات', kind: 'page', category: 'marketing', module: 'marketing', type: 'feature', default_enabled: true, sort_order: 60, icon: '📣', description: 'البانرات والكوبونات', required_permissions: ['owner'] },
   { key: 'branches',  name: 'الفروع',    kind: 'page', category: 'setup',      module: 'branches',  type: 'feature', default_enabled: true, sort_order: 70, icon: '🏢', description: 'إدارة الفروع' },
   { key: 'tables',    name: 'الطاولات',  kind: 'page', category: 'setup',      module: 'tables',    type: 'feature', default_enabled: true, sort_order: 80, icon: '🪑', description: 'إدارة الطاولات' },
   { key: 'qr',        name: 'QR Code',   kind: 'page', category: 'setup',      module: 'qr',        type: 'feature', default_enabled: true, sort_order: 90, icon: '📱', description: 'رموز QR' },
