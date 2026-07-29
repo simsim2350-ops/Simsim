@@ -24,7 +24,7 @@ export default function AppShell({ active, title, actions, badges = {}, children
   const { isDesktop } = useBreakpoint()
 
   // فلترة روابط التنقل حسب صلاحيات المستخدم (الموظف يرى صفحاته المسموحة فقط)
-  const perms = { isOwner, allowedPages: membership?.allowed_pages, branchScope: membership?.branch_scope }
+  const perms = { isOwner, allowedPages: membership?.allowed_pages, branchScope: membership?.branch_scope, role: membership?.role, capabilities: features }
   // فلترة عناصر كل مجموعة حسب الصلاحيات + سجل القدرات (PCR — ADR-40): الصفحة تظهر
   // إذا سمحت بها الصلاحيات وكانت قدرتها متاحة. fail-open: قدرة غير مسجّلة/غير محمّلة → تظهر
   // (كل الصفحات مفعّلة حالياً enabled_global=true → صفر تغيير مرئي؛ الربط حيّ للمستقبل).

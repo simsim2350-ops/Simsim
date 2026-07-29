@@ -95,10 +95,10 @@ function PublicRoute({ children }) {
 // حماية حسب الصلاحية: صاحب المطعم يمرّ دائماً؛ الموظف يمرّ فقط إن كانت الصفحة مسموحة،
 // وإلا يُوجَّه لأول صفحة مسموحة له (أو الخروج إن لا صفحات).
 function RequirePage({ page, children }) {
-  const { user, loading, isOwner, membership } = useAuthStore()
+  const { user, loading, isOwner, membership, features } = useAuthStore()
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
-  const perms = { isOwner, allowedPages: membership?.allowed_pages, branchScope: membership?.branch_scope }
+  const perms = { isOwner, allowedPages: membership?.allowed_pages, branchScope: membership?.branch_scope, role: membership?.role, capabilities: features }
   if (canAccess(page, perms)) return children
   const dest = firstAllowedPath(perms)
   return <Navigate to={dest || '/login'} replace />
