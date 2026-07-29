@@ -5,6 +5,7 @@ import { useBreakpoint } from '../hooks/useBreakpoint'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { NAV_GROUPS } from '../lib/nav'
 import { canAccess, navPage } from '../lib/permissions'
+import { has as featureHas } from '../lib/features'
 import NotificationsBell from './NotificationsBell'
 
 /**
@@ -19,14 +20,17 @@ import NotificationsBell from './NotificationsBell'
  */
 export default function AppShell({ active, title, actions, badges = {}, children }) {
   const navigate = useNavigate()
-  const { user, restaurant, signOut, isOwner, membership } = useAuthStore()
+  const { user, restaurant, signOut, isOwner, membership, features } = useAuthStore()
   const { isDesktop } = useBreakpoint()
 
   // فلترة روابط التنقل حسب صلاحيات المستخدم (الموظف يرى صفحاته المسموحة فقط)
   const perms = { isOwner, allowedPages: membership?.allowed_pages, branchScope: membership?.branch_scope }
-  // فلترة عناصر كل مجموعة حسب الصلاحيات، ثم إسقاط المجموعات التي فرغت (لا يظهر عنوان مجموعة بلا عناصر)
+  // فلترة عناصر كل مجموعة حسب الصلاحيات + سجل القدرات (PCR — ADR-40): الصفحة تظهر
+  // إذا سمحت بها الصلاحيات وكانت قدرتها متاحة. fail-open: قدرة غير مسجّلة/غير محمّلة → تظهر
+  // (كل الصفحات مفعّلة حالياً enabled_global=true → صفر تغيير مرئي؛ الربط حيّ للمستقبل).
   const visibleGroups = NAV_GROUPS
-    .map(g => ({ ...g, items: g.items.filter(item => canAccess(navPage(item.key), perms)) }))
+    .map(g => ({ ...g, items: g.items.filter(item =>
+      canAccess(navPage(item.key), perms) && featureHas(features, navPage(item.key))) }))
     .filter(g => g.items.length > 0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   // قفل تمرير الصفحة خلف السايدبار المنزلق طول ما هو مفتوح على الجوال/التابلت
