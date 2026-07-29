@@ -55,6 +55,15 @@ export default function MenuHeader({
     const el = descRef.current
     if (el) setDescOverflows(el.scrollHeight > el.clientHeight + 2)
   }, [fullDesc, isEn, descExpanded])
+
+  // روابط التواصل — تُعرض 3 فقط ثم زر «+N» يوسّع الباقي (وضغطة أخرى تطويه)
+  const [socialExpanded, setSocialExpanded] = useState(false)
+  const showSocial = (restaurant.show_social_links ?? true) && restaurant.social_links
+  const socialKeys = showSocial
+    ? ['instagram', 'whatsapp_social', 'snapchat', 'twitter', 'tiktok'].filter(key => restaurant.social_links[key])
+    : []
+  const shownSocialKeys = socialExpanded ? socialKeys : socialKeys.slice(0, 3)
+  const hiddenSocialCount = socialKeys.length - shownSocialKeys.length
   // خلية إحصائيات واحدة (حالة الفتح / وقت التجهيز / التوصيل)
   const statCells = [
     ...((restaurant?.show_hours ?? true) ? [{
@@ -189,19 +198,23 @@ export default function MenuHeader({
         })()}
 
         {/* روابط التواصل + زر المسبّبات */}
-        {(((restaurant.show_social_links ?? true) && restaurant.social_links && Object.values(restaurant.social_links).some(v => v)) || ((restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0)) && (
+        {(socialKeys.length > 0 || ((restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0)) && (
           <div style={{ display:'flex', alignItems:'center', gap:'6px', margin:'2px 16px 0', flexWrap:'nowrap', overflowX:'auto' }}>
-            {(restaurant.show_social_links ?? true) && restaurant.social_links && ['instagram', 'whatsapp_social', 'snapchat', 'twitter', 'tiktok']
-              .filter(key => restaurant.social_links[key])
-              .map(key => {
-                const Icon = SOCIAL_ICONS[key]
-                return (
-                  <a key={key} href={restaurant.social_links[key]} target="_blank" rel="noopener noreferrer"
-                    style={{ width:'28px', height:'28px', flexShrink:0, borderRadius:'50%', background:'white', border:'1.5px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none', boxShadow:'0 2px 6px rgba(0,0,0,0.06)', overflow:'hidden' }}>
-                    <Icon/>
-                  </a>
-                )
-              })}
+            {shownSocialKeys.map(key => {
+              const Icon = SOCIAL_ICONS[key]
+              return (
+                <a key={key} href={restaurant.social_links[key]} target="_blank" rel="noopener noreferrer"
+                  style={{ width:'28px', height:'28px', flexShrink:0, borderRadius:'50%', background:'white', border:'1.5px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none', boxShadow:'0 2px 6px rgba(0,0,0,0.06)', overflow:'hidden' }}>
+                  <Icon/>
+                </a>
+              )
+            })}
+            {(hiddenSocialCount > 0 || socialExpanded) && socialKeys.length > 3 && (
+              <button onClick={() => setSocialExpanded(v => !v)} aria-label={isEn ? 'More links' : 'روابط أكثر'}
+                style={{ width:'28px', height:'28px', flexShrink:0, borderRadius:'50%', background:'#F3F4F6', border:'1.5px solid #E5E7EB', color:'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'11px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                {socialExpanded ? '−' : `+${hiddenSocialCount}`}
+              </button>
+            )}
             {(restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0 && (
               <button onClick={onShowAllergens} style={{ display:'flex', alignItems:'center', gap:'4px', flexShrink:0, whiteSpace:'nowrap', padding:'5px 9px', borderRadius:'100px', border:'1.5px solid #FDE68A', background:'#FFFBEB', color:'#92400E', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'10.5px', cursor:'pointer' }}>
                 ⚠️ {t('allergens')}
@@ -211,11 +224,11 @@ export default function MenuHeader({
         )}
 
         {/* بطاقة الإحصائيات: الحالة · التجهيز · التوصيل */}
-        <div style={{ display:'flex', margin:'3px 14px 2px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'15px', padding:'4px 4px' }}>
+        <div style={{ display:'flex', margin:'2px 14px 2px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'13px', padding:'3px 4px' }}>
           {statCells.map((c, i) => (
             <div key={i} style={{ flex:1, textAlign:'center', borderRight: i > 0 ? '1px solid #E9ECF1' : 'none', padding:'0 4px' }}>
-              <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'12.5px', color:c.color, whiteSpace:'nowrap' }}>{c.value}</div>
-              {c.sub && <div style={{ fontSize:'9.5px', color:'#9CA3AF', fontWeight:'700', marginTop:'3px', direction: c.ltr ? 'ltr' : 'rtl' }}>{c.sub}</div>}
+              <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'12px', color:c.color, whiteSpace:'nowrap' }}>{c.value}</div>
+              {c.sub && <div style={{ fontSize:'9px', color:'#9CA3AF', fontWeight:'700', marginTop:'2px', direction: c.ltr ? 'ltr' : 'rtl' }}>{c.sub}</div>}
             </div>
           ))}
         </div>
