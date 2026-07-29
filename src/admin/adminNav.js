@@ -7,6 +7,7 @@ export const ADMIN_NAV = [
   { key: 'growth',      label: 'النمو',        path: '/admin/growth',      ready: true  },
   { key: 'billing',     label: 'الفوترة',      path: '/admin/billing',     ready: true  },
   { key: 'flags',       label: 'المزايا',      path: '/admin/flags',       ready: true  },
+  { key: 'catalog',     label: 'سجل القدرات',  path: '/admin/catalog',     ready: true  },
   { key: 'announcements', label: 'الإعلانات',  path: '/admin/announcements', ready: true },
   { key: 'admins',      label: 'المشرفون',     path: '/admin/admins',      ready: true  },
   { key: 'audit',       label: 'سجلّ التدقيق', path: '/admin/audit',       ready: true  },

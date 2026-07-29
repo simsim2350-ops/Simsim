@@ -98,6 +98,13 @@ export const IconEyeOff = svg(<>
   <path d="M9.5 9.8a3 3 0 0 0 4.2 4.2" />
 </>)
 
+// أيقونة سجل القدرات (طبقات) — PCR/ADR-40
+export const IconCatalog = svg(<>
+  <path d="M12 3l9 5-9 5-9-5 9-5z" />
+  <path d="M3 12l9 5 9-5" />
+  <path d="M3 16.5l9 5 9-5" />
+</>)
+
 // خريطة أيقونات التنقّل — مصدر واحد يستهلكه AdminShell وCommandPalette معاً.
 export const NAV_ICON_MAP = {
   overview: IconOverview,
@@ -105,6 +112,7 @@ export const NAV_ICON_MAP = {
   growth: IconGrowth,
   billing: IconBilling,
   flags: IconFlag,
+  catalog: IconCatalog,
   announcements: IconAnnouncements,
   admins: IconAdmins,
   audit: IconAudit,

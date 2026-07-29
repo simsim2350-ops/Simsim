@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
+import { fetchEffectiveFeatures } from '../lib/featuresApi'
+import { has as featuresHas, value as featuresValue } from '../lib/features'
 
 export const useAuthStore = create((set, get) => ({
   user: null,
@@ -9,6 +11,7 @@ export const useAuthStore = create((set, get) => ({
   isOwner: false,     // هل المستخدم الحالي صاحب المطعم؟
   isPlatformAdmin: false, // هل هو مشرف منصّة؟ (طبقة منفصلة تماماً عن المطعم)
   platformRole: null,     // دور المشرف (super_admin / read_only)
+  features: {},           // خريطة القدرات الفعّالة (PCR — ADR-40): تُحمَّل مرة عند الدخول
   loading: true,
 
   initialize: async () => {
@@ -24,6 +27,7 @@ export const useAuthStore = create((set, get) => ({
       if (session?.user) {
         set({ user: session.user, session })
         await Promise.all([ get().fetchRestaurant(session.user.id), get().fetchPlatformStatus() ])
+        await get().loadFeatures()
       }
     } catch (err) {
       console.error('Init error:', err)
@@ -35,11 +39,28 @@ export const useAuthStore = create((set, get) => ({
       if (session?.user) {
         set({ user: session.user, session })
         await Promise.all([ get().fetchRestaurant(session.user.id), get().fetchPlatformStatus() ])
+        await get().loadFeatures()
       } else {
-        set({ user: null, session: null, restaurant: null, membership: null, isOwner: false, isPlatformAdmin: false, platformRole: null })
+        set({ user: null, session: null, restaurant: null, membership: null, isOwner: false, isPlatformAdmin: false, platformRole: null, features: {} })
       }
     })
   },
+
+  // تحميل خريطة القدرات الفعّالة للمطعم الحالي (PCR — ADR-40). fail-safe: عند أي خطأ
+  // تبقى {} فيعمل fail-open في طبقة features.has (طرح غير كاسر — لا تُخفى أي ميزة).
+  loadFeatures: async () => {
+    try {
+      const rid = get().restaurant?.id
+      set({ features: rid ? await fetchEffectiveFeatures(rid) : {} })
+    } catch (err) {
+      console.error('Features load error:', err)
+      set({ features: {} })
+    }
+  },
+
+  // فحص قدرة من الواجهة (يمرّ عبر طبقة Domain — ADR-40 حوكمة 9)
+  hasFeature: (key) => featuresHas(get().features, key),
+  featureValue: (key) => featuresValue(get().features, key),
 
   fetchRestaurant: async (userId) => {
     try {
@@ -109,7 +130,7 @@ export const useAuthStore = create((set, get) => ({
 
   signOut: async () => {
     await supabase.auth.signOut()
-    set({ user: null, session: null, restaurant: null, membership: null, isOwner: false, isPlatformAdmin: false, platformRole: null })
+    set({ user: null, session: null, restaurant: null, membership: null, isOwner: false, isPlatformAdmin: false, platformRole: null, features: {} })
   },
 
   resetPassword: async (email) => {
