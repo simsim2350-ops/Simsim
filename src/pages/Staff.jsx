@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { fetchBranches } from '../lib/branchesApi'
+import { MEMBER_ROLES, ROLE_LABELS, ROLE_PRESETS } from '../lib/permissions'
 
 // عميل ثانوي لإنشاء حسابات الموظفين دون التأثير على جلسة صاحب المطعم.
 // الإعدادات من طبقة config الموحّدة (نفس قيم العميل الرئيسي، بلا قراءة import.meta.env هنا).
@@ -45,7 +46,7 @@ const inputStyle = {
 }
 const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px', color:'#374151' }
 
-const emptyForm = { username:'', password:'', allowed_pages:[], branch_scope:'all', all_pages:false }
+const emptyForm = { username:'', password:'', role:'staff', allowed_pages:[], branch_scope:'all', all_pages:false }
 
 export default function Staff() {
   const navigate = useNavigate()
@@ -84,6 +85,7 @@ export default function Staff() {
     setForm({
       username: m.username,
       password: '',
+      role: m.role || 'staff',
       allowed_pages: Array.isArray(m.allowed_pages) ? m.allowed_pages.filter(p => p !== 'all') : [],
       branch_scope: m.branch_scope || 'all',
       all_pages: Array.isArray(m.allowed_pages) && m.allowed_pages.includes('all'),
@@ -98,6 +100,12 @@ export default function Staff() {
         ? f.allowed_pages.filter(p => p !== key)
         : [...f.allowed_pages, key],
     }))
+  }
+
+  // اختيار الدور يطبّق قالبه الافتراضي على الصفحات (يبقى قابلاً للتعديل يدوياً — هجين M7)
+  const applyRole = (role) => {
+    const preset = ROLE_PRESETS[role] || []
+    setForm(f => ({ ...f, role, all_pages: false, allowed_pages: [...preset] }))
   }
 
   const buildEmail = (username) => `${username.toLowerCase()}.${restaurant.slug}@staff.simsim.app`
@@ -117,6 +125,7 @@ export default function Staff() {
       if (editing) {
         // تعديل الصلاحيات فقط (اسم المستخدم وكلمة المرور لا يُعدّلان هنا)
         const { error } = await supabase.from('restaurant_members').update({
+          role: form.role || 'staff',
           allowed_pages: pages,
           branch_scope: form.branch_scope || 'all',
         }).eq('id', editing.id)
@@ -145,6 +154,7 @@ export default function Staff() {
           restaurant_id: restaurant.id,
           user_id: newUserId,
           username,
+          role: form.role || 'staff',
           allowed_pages: pages,
           branch_scope: form.branch_scope || 'all',
           is_active: true,
@@ -240,7 +250,10 @@ export default function Staff() {
                   <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
                     <div style={{ width:'40px', height:'40px', borderRadius:'10px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>👤</div>
                     <div>
-                      <div style={{ fontWeight:'800', fontSize:'15px', fontFamily:'Cairo,sans-serif' }}>{m.username}</div>
+                      <div style={{ display:'flex', alignItems:'center', gap:'7px' }}>
+                        <span style={{ fontWeight:'800', fontSize:'15px', fontFamily:'Cairo,sans-serif' }}>{m.username}</span>
+                        <span style={{ fontSize:'11px', fontWeight:'800', color:'#7C3AED', background:'#F5F3FF', border:'1px solid #DDD6FE', borderRadius:'6px', padding:'1px 7px' }}>{ROLE_LABELS[m.role] || ROLE_LABELS.staff}</span>
+                      </div>
                       <div style={{ fontSize:'12px', color:'#6B7280' }}>
                         {pagesSummary(m)} · {branchLabel(m.branch_scope)}
                       </div>
@@ -279,6 +292,21 @@ export default function Staff() {
                 </div>
               </>
             )}
+
+            <div style={{ marginBottom:'14px' }}>
+              <label style={labelStyle}>الدور</label>
+              <div style={{ display:'flex', gap:'8px' }}>
+                {MEMBER_ROLES.map(r => (
+                  <button key={r} type="button" onClick={() => applyRole(r)}
+                    style={{ flex:1, padding:'10px', borderRadius:'10px', cursor:'pointer', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px',
+                      border:`1.5px solid ${form.role === r ? '#FED7AA' : '#E5E7EB'}`,
+                      background: form.role === r ? '#FFF7ED' : 'white', color: form.role === r ? '#C2410C' : '#374151' }}>
+                    {ROLE_LABELS[r]}
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'4px' }}>اختيار الدور يملأ الصفحات بقالب افتراضي — عدّلها كما تشاء.</div>
+            </div>
 
             <div style={{ marginBottom:'14px' }}>
               <label style={labelStyle}>الصفحات المسموحة *</label>

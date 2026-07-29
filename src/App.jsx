@@ -59,6 +59,7 @@ const AdminAdmins = lazyWithRetry(() => import('./admin/features/admins/Admins')
 const AdminGrowth = lazyWithRetry(() => import('./admin/features/growth/Growth'))
 const AdminFlags = lazyWithRetry(() => import('./admin/features/flags/Flags'))
 const AdminAnnouncements = lazyWithRetry(() => import('./admin/features/announcements/Announcements'))
+const AdminCatalog = lazyWithRetry(() => import('./admin/features/catalog/Catalog'))
 
 // نفس شاشة التحميل المعتمدة في ProtectedRoute — تُعرض أثناء جلب chunk الصفحة
 function PageLoader() {
@@ -94,10 +95,10 @@ function PublicRoute({ children }) {
 // حماية حسب الصلاحية: صاحب المطعم يمرّ دائماً؛ الموظف يمرّ فقط إن كانت الصفحة مسموحة،
 // وإلا يُوجَّه لأول صفحة مسموحة له (أو الخروج إن لا صفحات).
 function RequirePage({ page, children }) {
-  const { user, loading, isOwner, membership } = useAuthStore()
+  const { user, loading, isOwner, membership, features } = useAuthStore()
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
-  const perms = { isOwner, allowedPages: membership?.allowed_pages, branchScope: membership?.branch_scope }
+  const perms = { isOwner, allowedPages: membership?.allowed_pages, branchScope: membership?.branch_scope, role: membership?.role, capabilities: features }
   if (canAccess(page, perms)) return children
   const dest = firstAllowedPath(perms)
   return <Navigate to={dest || '/login'} replace />
@@ -148,6 +149,7 @@ export default function App() {
         <Route path="/admin/growth"      element={<RequirePlatformAdmin><AdminGrowth /></RequirePlatformAdmin>} />
         <Route path="/admin/flags"       element={<RequirePlatformAdmin><AdminFlags /></RequirePlatformAdmin>} />
         <Route path="/admin/announcements" element={<RequirePlatformAdmin><AdminAnnouncements /></RequirePlatformAdmin>} />
+        <Route path="/admin/catalog"     element={<RequirePlatformAdmin><AdminCatalog /></RequirePlatformAdmin>} />
         <Route path="*"                element={<Navigate to="/login" replace />} />
       </Routes>
       </Suspense>
