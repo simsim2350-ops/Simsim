@@ -15,6 +15,7 @@ const SCOPES = ['platform', 'restaurant', 'user']
 const LIFECYCLES = ['draft', 'active', 'deprecated', 'archived']
 const RUNTIMES = ['enabled', 'disabled', 'beta', 'preview']
 const DEP_TYPES = ['required', 'optional', 'conflicts']
+const PERM_ROLES = ['owner', 'manager', 'cashier', 'staff'] // الأدوار المسموح لها (required_permissions)
 const RUNTIME_COLOR = { enabled: '#22C55E', beta: '#3B82F6', preview: '#F59E0B', disabled: '#6B7280' }
 
 const inputStyle = {
@@ -59,7 +60,7 @@ const EMPTY_FORM = {
   key: '', name: '', description: '', category_key: '', module: '', parent_key: '', kind: '',
   type: 'feature', scope: 'restaurant', lifecycle_status: 'active', runtime_status: 'enabled',
   sort_order: 0, icon: '', upgrade_message: '', enabled_global: false,
-  default_value_text: '', allowed_values_text: '', metric: '', unit: '',
+  default_value_text: '', allowed_values_text: '', metric: '', unit: '', required_permissions: [],
 }
 
 export default function Catalog() {
@@ -109,6 +110,7 @@ export default function Catalog() {
         default_value_text: c.default_value == null ? '' : JSON.stringify(c.default_value),
         allowed_values_text: c.allowed_values == null ? '' : JSON.stringify(c.allowed_values),
         metric: c.metric || '', unit: c.unit || '',
+        required_permissions: Array.isArray(c.required_permissions) ? c.required_permissions : [],
       })
     } catch (e) { toast.error(e.message) }
   }
@@ -129,6 +131,7 @@ export default function Catalog() {
       allowed_values: form.type === 'mode' ? parseJsonish(form.allowed_values_text) : null,
       metric: form.type === 'limit' ? (form.metric || null) : null,
       unit: form.type === 'limit' ? (form.unit || null) : null,
+      required_permissions: form.required_permissions || [],
     }
   }, [form])
 
@@ -314,6 +317,10 @@ function Row({ children }) {
 
 function CapForm({ form, setForm, cats, caps }) {
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
+  const toggleRole = (r) => setForm((f) => {
+    const cur = Array.isArray(f.required_permissions) ? f.required_permissions : []
+    return { ...f, required_permissions: cur.includes(r) ? cur.filter((x) => x !== r) : [...cur, r] }
+  })
   const parents = caps.filter((c) => c.key !== form.key && !c.parent_key)
   return (
     <div>
@@ -350,6 +357,20 @@ function CapForm({ form, setForm, cats, caps }) {
           <Field label="الوحدة (unit)"><input value={form.unit} onChange={set('unit')} style={inputStyle} placeholder="count/mb…" /></Field>
         </div>
       )}
+      <Field label="الأدوار المسموح لها (required_permissions) — فارغ = الجميع">
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {PERM_ROLES.map((r) => {
+            const on = (form.required_permissions || []).includes(r)
+            return (
+              <button key={r} type="button" onClick={() => toggleRole(r)}
+                style={{ padding: '7px 12px', borderRadius: '9px', cursor: 'pointer', fontSize: '12px', fontWeight: '700',
+                  border: `1.5px solid ${on ? ACCENT : BORDER}`, background: on ? 'rgba(124,58,237,0.18)' : '#0B0D12', color: on ? '#C4B5FD' : MUTED }}>
+                {r}
+              </button>
+            )
+          })}
+        </div>
+      </Field>
       <Field label="رسالة الترقية"><input value={form.upgrade_message} onChange={set('upgrade_message')} style={inputStyle} /></Field>
     </div>
   )
