@@ -17,6 +17,8 @@ export function useMenuData(slug, branchId) {
   const [loyaltyEnabled, setLoyaltyEnabled] = useState(false) // هل برنامج الولاء مفعّل؟ (بلا حاجة لهوية الزبون — لعرض تشويقي عام)
   const [banners, setBanners] = useState([]) // بانرات العروض النشطة (عامة + خاصة بهذا الفرع)
   const [coupons, setCoupons] = useState([]) // الكوبونات النشطة (عامة + خاصة بهذا الفرع)
+  // قدرات منيو الزبون من سجل القدرات (PCR — ADR-40) — الافتراضي كله مفعّل (fail-open، غير كاسر)
+  const [capabilities, setCapabilities] = useState({ online_orders: true, reviews: true, loyalty: true })
   const restaurantLoadChannelRef = useRef(null)
 
   useEffect(() => {
@@ -75,10 +77,19 @@ export function useMenuData(slug, branchId) {
         }
       } catch { /* تجاهل — النجوم اختيارية */ }
 
-      // هل برنامج الولاء مفعّل؟ (برنامج واحد للمطعم كله — لعرض تشويقي عام في هيدر المنيو)
+      // قدرات منيو الزبون من السجل (PCR): طلبات أونلاين / تقييمات / ولاء — دالة آمنة لـanon.
+      // fail-open: عند أي خطأ تبقى القيم الافتراضية (كلها مفعّلة) فلا حجب خاطئ.
+      let caps = { online_orders: true, reviews: true, loyalty: true }
+      try {
+        const { data: c } = await supabase.rpc('menu_capabilities', { p_restaurant_id: rest.id })
+        if (c && typeof c === 'object') caps = { ...caps, ...c }
+      } catch { /* تجاهل — fail-open */ }
+      setCapabilities(caps)
+
+      // هل برنامج الولاء مفعّل؟ (إعداد المطعم) — ويُشترَط أيضاً أن قدرة الولاء مفعّلة في الباقة (PCR)
       try {
         const { data: loy } = await supabase.from('loyalty_programs').select('enabled').eq('restaurant_id', rest.id).maybeSingle()
-        setLoyaltyEnabled(!!loy?.enabled)
+        setLoyaltyEnabled(!!loy?.enabled && caps.loyalty)
       } catch { /* تجاهل — التشويق اختياري */ }
 
       // بانرات العروض وكوبونات النشطة — عامة (بلا فرع) + خاصة بهذا الفرع تحديداً
@@ -142,6 +153,6 @@ export function useMenuData(slug, branchId) {
     restaurant, branch, branchList,
     categories, products, bestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
-    banners, coupons,
+    banners, coupons, capabilities,
   }
 }

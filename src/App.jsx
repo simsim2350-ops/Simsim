@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from './store/authStore'
 import { canAccess, firstAllowedPath } from './lib/permissions'
+import { has as featureHas, state as featureState } from './lib/features'
 import RootErrorBoundary from './components/RootErrorBoundary'
 import RequirePlatformAdmin from './admin/RequirePlatformAdmin'
 
@@ -92,21 +93,52 @@ function PublicRoute({ children }) {
   return children
 }
 
-// حماية حسب الصلاحية: صاحب المطعم يمرّ دائماً؛ الموظف يمرّ فقط إن كانت الصفحة مسموحة،
-// وإلا يُوجَّه لأول صفحة مسموحة له (أو الخروج إن لا صفحات).
+// شاشة «الميزة غير متاحة» — تُعرض عند حجب القدرة من سجل القدرات (PCR — ADR-40).
+// رسالة بدل توجيه: تفادي حلقات التوجيه + وضوح للمستخدم (بما فيه المالك).
+function FeatureUnavailable({ page, features }) {
+  const st = featureState(features, page)
+  return (
+    <div dir="rtl" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F1117', padding: 24 }}>
+      <div style={{ background: 'white', borderRadius: 18, padding: 28, maxWidth: 380, width: '100%', textAlign: 'center' }}>
+        <div style={{ fontSize: 42, marginBottom: 8 }}>🔒</div>
+        <h2 style={{ fontFamily: 'Cairo,sans-serif', fontWeight: 900, fontSize: 19, margin: '0 0 8px' }}>{st.name || 'هذه الميزة غير متاحة'}</h2>
+        <p style={{ color: '#6B7280', fontSize: 14, lineHeight: 1.7, margin: '0 0 18px' }}>
+          {st.upgrade_message || 'هذه الميزة غير مفعّلة في باقتك الحالية.'}
+        </p>
+        <a href="/dashboard" style={{ display: 'inline-block', background: 'linear-gradient(135deg,#FF6B35,#E85A24)', color: 'white', textDecoration: 'none', borderRadius: 12, padding: '11px 22px', fontFamily: 'Cairo,sans-serif', fontWeight: 800, fontSize: 14 }}>العودة للرئيسية</a>
+      </div>
+    </div>
+  )
+}
+
+// حماية حسب الصلاحية + سجل القدرات:
+//  1) صلاحية الموظف (canAccess) — صاحب المطعم يتجاوزها؛ الموظف يُوجَّه لأول صفحة مسموحة.
+//  2) بوابة سجل القدرات (featureHas) — تُطبَّق على الجميع (بما فيهم المالك): القدرة المُطفأة
+//     تُحجب فعلياً. fail-open: قدرة غير مسجّلة/خريطة غير محمّلة = مسموح (غير كاسر).
 function RequirePage({ page, children }) {
   const { user, loading, isOwner, membership, features } = useAuthStore()
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
   const perms = { isOwner, allowedPages: membership?.allowed_pages, branchScope: membership?.branch_scope, role: membership?.role, capabilities: features }
-  if (canAccess(page, perms)) return children
-  const dest = firstAllowedPath(perms)
-  return <Navigate to={dest || '/login'} replace />
+  if (!canAccess(page, perms)) {
+    const dest = firstAllowedPath(perms)
+    return <Navigate to={dest || '/login'} replace />
+  }
+  if (!featureHas(features, page)) return <FeatureUnavailable page={page} features={features} />
+  return children
 }
 
 export default function App() {
   const initialize = useAuthStore((s) => s.initialize)
-  useEffect(() => { initialize() }, [])
+  const loadFeatures = useAuthStore((s) => s.loadFeatures)
+  useEffect(() => {
+    initialize()
+    // إعادة تحميل خريطة القدرات عند عودة التركيز للنافذة — تسري تغييرات السجل
+    // (تفعيل/إطفاء/باقة) دون إعادة دخول كامل (fail-safe في loadFeatures).
+    const onFocus = () => loadFeatures()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [])
 
   return (
     <RootErrorBoundary>

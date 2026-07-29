@@ -12,6 +12,7 @@ export default function OrdersScreen({
   brandColor, isEn, t, itemName,
   activeOrders, liveOrdersCount, loyalty, prepTime,
   reviewedIds, reviewDraft, setDraft, submitReview, submittingReview,
+  reviewsEnabled = true, ordering = true,
   cancelOrderByCustomer, onBack, onReorder, onMessage,
 }) {
   const [filter, setFilter] = useState('all')   // all | active | completed | cancelled
@@ -157,7 +158,8 @@ export default function OrdersScreen({
               setDraft={setDraft}
               submitReview={submitReview}
               submittingReview={submittingReview}
-              onReorder={onReorder}
+              reviewsEnabled={reviewsEnabled}
+              onReorder={ordering ? onReorder : null}
             />
           </div>
         ))}

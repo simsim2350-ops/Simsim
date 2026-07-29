@@ -15,11 +15,13 @@ export default function HProductCard({ product, onOpen, onQuickAdd, brandColor, 
         <div onClick={onOpen} style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', color:'#1D1923', marginBottom:'7px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', cursor:'pointer' }}>{pName}</div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
           <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'12.5px', color:priceColor }}>{product.price} ﷼</span>
-          <button
-            onClick={() => hasOptions ? onOpen() : onQuickAdd()}
-            style={{ width:'25px', height:'25px', borderRadius:'50%', border:'none', background:brandColor, color:'white', fontSize:'16px', fontWeight:'300', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', lineHeight:1, boxShadow:`0 3px 10px ${brandColor}55` }}
-            aria-label="إضافة"
-          >+</button>
+          {onQuickAdd && (
+            <button
+              onClick={() => hasOptions ? onOpen() : onQuickAdd()}
+              style={{ width:'25px', height:'25px', borderRadius:'50%', border:'none', background:brandColor, color:'white', fontSize:'16px', fontWeight:'300', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', lineHeight:1, boxShadow:`0 3px 10px ${brandColor}55` }}
+              aria-label="إضافة"
+            >+</button>
+          )}
         </div>
       </div>
     </div>

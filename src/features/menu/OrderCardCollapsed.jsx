@@ -6,14 +6,15 @@ import OrderItemRow from './OrderItemRow'
 export default function OrderCardCollapsed({
   order, brandColor, isEn, t, itemName,
   reviewedIds, reviewDraft, setDraft, submitReview, submittingReview,
-  onReorder,
+  reviewsEnabled = true, onReorder,
 }) {
   const items = Array.isArray(order.items) ? order.items : []
   const isCancelled = order.status === 'cancelled'
   const count = items.reduce((s, i) => s + (i.qty || 1), 0)
   const reviewed = reviewedIds.includes(order.id)
-  // الطلب المكتمل غير المُقيَّم يبقى مفتوحاً إجبارياً حتى يرسل الزبون تقييمه — لا يُطوى تلقائياً ولا يدوياً
-  const needsReview = !isCancelled && !reviewed
+  // الطلب المكتمل غير المُقيَّم يبقى مفتوحاً إجبارياً حتى يرسل الزبون تقييمه — إلا لو التقييمات
+  // مُطفأة في الباقة (PCR): لا تقييم فلا فتح إجباري.
+  const needsReview = !isCancelled && !reviewed && reviewsEnabled
   const [manualOpen, setManualOpen] = useState(false)
   const open = needsReview || manualOpen
 
@@ -31,7 +32,7 @@ export default function OrderCardCollapsed({
     timeAgo,
     `${(Number(order.total) || 0).toFixed(2)} ﷼`,
     `${count} ${t('itemsUnit')}`,
-    ...(isCancelled ? [] : [reviewed ? t('ratedShort') : t('notRated')]),
+    ...(isCancelled || !reviewsEnabled ? [] : [reviewed ? t('ratedShort') : t('notRated')]),
   ].filter(Boolean)
 
   return (
@@ -58,7 +59,8 @@ export default function OrderCardCollapsed({
           <div style={{ fontSize:'10px', color:'#9CA3AF', marginTop:'3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{metaBits.join(' · ')}</div>
         </div>
 
-        {/* اطلب تاني */}
+        {/* اطلب تاني — يُخفى لو الطلبات أونلاين مُطفأة (onReorder=null من PCR) */}
+        {onReorder && (
         <div style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:'3px' }}>
           <button
             onClick={(e) => { e.stopPropagation(); onReorder(order) }}
@@ -67,6 +69,7 @@ export default function OrderCardCollapsed({
           >🔄</button>
           <span style={{ fontSize:'8.5px', fontWeight:'800', color:brandColor }}>{t('reorder')}</span>
         </div>
+        )}
       </div>
 
       {/* التفاصيل عند التوسيع */}
@@ -80,8 +83,8 @@ export default function OrderCardCollapsed({
             <span style={{ color:brandColor }}>{(Number(order.total) || 0).toFixed(2)} ﷼</span>
           </div>
 
-          {/* التقييم — للطلب المكتمل فقط */}
-          {!isCancelled && (
+          {/* التقييم — للطلب المكتمل فقط، ويُخفى لو التقييمات مُطفأة في الباقة (PCR) */}
+          {!isCancelled && reviewsEnabled && (
             reviewed ? (
               <div style={{ marginTop:'12px', padding:'11px', borderRadius:'12px', background:'#ECFDF5', border:'1px solid #A7F3D0', textAlign:'center', fontSize:'12.5px', fontWeight:'700', color:'#065F46' }}>
                 {t('reviewedOk')}

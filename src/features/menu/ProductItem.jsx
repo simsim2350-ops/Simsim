@@ -1,7 +1,7 @@
 import { getCalorieBadge } from './helpers'
 
 // بطاقة صنف واحدة في المنيو — تدعم 4 تخطيطات: list (افتراضي) / grid / circles / showcase
-export default function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor, descColor, isEn, layout = 'list' }) {
+export default function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor, descColor, isEn, layout = 'list', ordering = true }) {
   const _priceColor = priceColor || brandColor
   const _descColor = descColor || '#9CA3AF'
   const pName = (isEn && product.name_en) ? product.name_en : product.name
@@ -16,6 +16,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
   // edge: مسافة الزر عن زاوية حاويته (بالبكسل، تقبل قيمة سالبة لتعويم الزر خارجها)
   // floating: يضيف حلقة بيضاء حول الزر لفصله بصرياً عندما يطفو خارج الصورة
   const renderQtyControl = (edge = 6, floating = false) => {
+    if (!ordering) return null // PCR: الطلبات أونلاين مُطفأة → منيو عرض فقط (بلا إضافة)
     const ring = floating ? { border:'2.5px solid white' } : {}
     return qty === 0 ? (
       <button

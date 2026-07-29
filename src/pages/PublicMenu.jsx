@@ -36,8 +36,11 @@ function PublicMenuInner() {
     restaurant, branch,
     categories, products, bestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
-    banners, coupons,
+    banners, coupons, capabilities,
   } = useMenuData(slug, branchId)
+  // قدرات منيو الزبون (PCR — ADR-40): الطلبات أونلاين والتقييمات. إخفاء تام عند الإطفاء.
+  const ordering = capabilities?.online_orders !== false
+  const reviewsEnabled = capabilities?.reviews !== false
   const { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer } = useActiveOrders(slug, t)
   const { cart, setCart, cartOpen, setCartOpen, addToCart, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount } = useCart(slug, t)
   const { couponInput, setCouponInput, appliedCoupon, applyCoupon, removeCoupon, applying: applyingCoupon, discountAmount } = useCoupon({ restaurant, branch, cartTotal })
@@ -143,6 +146,8 @@ function PublicMenuInner() {
       setDraft={setDraft}
       submitReview={(order) => submitReview(order, { customerName, customerPhone })}
       submittingReview={submittingReview}
+      reviewsEnabled={reviewsEnabled}
+      ordering={ordering}
       cancelOrderByCustomer={cancelOrderByCustomer}
       onBack={() => setOrderPlaced(false)}
       onReorder={reorderToCart}
@@ -212,6 +217,7 @@ function PublicMenuInner() {
         t={t}
         tx={tx}
         layout={restaurant.menu_layout}
+        ordering={ordering}
       />
 
       {/* شاشة البحث المستقلة — تفتح من أي زر بحث في الهيدر بغضّ النظر عن موضع التمرير */}
@@ -232,10 +238,11 @@ function PublicMenuInner() {
         t={t}
         tx={tx}
         layout={restaurant.menu_layout}
+        ordering={ordering}
       />
 
-      {/* Floating cart button */}
-      {cartCount > 0 && !cartOpen && (
+      {/* Floating cart button — يُخفى تماماً لو الطلبات أونلاين مُطفأة في الباقة (PCR) */}
+      {ordering && cartCount > 0 && !cartOpen && (
         <div style={{ position:'fixed', bottom:'20px', right:'50%', transform:'translateX(50%)', width:'calc(100% - 32px)', maxWidth:'448px', zIndex:50 }}>
           <button
             onClick={() => setCartOpen(true)}
@@ -248,8 +255,8 @@ function PublicMenuInner() {
         </div>
       )}
 
-      {/* Cart drawer */}
-      {cartOpen && (
+      {/* Cart drawer — يُحجب لو الطلبات أونلاين مُطفأة */}
+      {ordering && cartOpen && (
         <CartDrawer
           cart={cart}
           cartCount={cartCount}
@@ -310,6 +317,7 @@ function PublicMenuInner() {
           products={products}
           recommendationsMap={recommendationsMap}
           onAddCompanion={(p) => addToCart(p, 1)}
+          ordering={ordering}
         />
       )}
 

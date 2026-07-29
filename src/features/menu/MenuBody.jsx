@@ -9,6 +9,7 @@ export default function MenuBody({
   activeCategory, setActiveCategory,
   cart, addToCart, removeFromCart, onOpenProduct,
   brandColor, priceColor, descColor, isEn, t, tx, layout,
+  ordering = true, // PCR: هل الطلبات أونلاين مفعّلة؟ (false = منيو عرض فقط، بلا إضافة/سلة)
 }) {
   // «الأكثر طلباً» = الأصناف التي علّمها صاحب المطعم (is_featured) — يُعرض منها 4 في القسم
   const mostOrdered = products.filter(p => p.is_featured).slice(0, 4)
@@ -70,7 +71,7 @@ export default function MenuBody({
     cart,
     onAdd: () => onOpenProduct(prod),
     onQtyChange: (delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(`${prod.id}____`),
-    brandColor, priceColor, descColor, isEn, layout,
+    brandColor, priceColor, descColor, isEn, layout, ordering,
   })
 
   return (
@@ -142,7 +143,7 @@ export default function MenuBody({
                   key={prod.id}
                   product={prod}
                   onOpen={() => onOpenProduct(prod)}
-                  onQuickAdd={() => addToCart(prod, 1)}
+                  onQuickAdd={ordering ? () => addToCart(prod, 1) : null}
                   brandColor={brandColor}
                   priceColor={priceColor}
                   isEn={isEn}
