@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
 import {
-  listCategories, listCapabilities, capabilityDetail, listPlans,
+  listCategories, listCapabilities, capabilityDetail, listPlans, listRestaurants,
   upsertCapability, deleteCapability, upsertCategory,
   setDependency, deleteDependency, setPlanFeature, deletePlanFeature,
   listOverrides, setOverride, syncCapabilities, manifestSyncPayload, can,
@@ -83,6 +83,7 @@ export default function Catalog() {
   const [cats, setCats] = useState([])
   const [caps, setCaps] = useState([])
   const [plans, setPlans] = useState([])
+  const [restaurants, setRestaurants] = useState([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState(null)
   const [canWrite, setCanWrite] = useState(false)
@@ -104,8 +105,11 @@ export default function Catalog() {
   async function reload() {
     setLoading(true); setErr(null)
     try {
-      const [c, f, p, w] = await Promise.all([listCategories(), listCapabilities(), listPlans().catch(() => []), can('manage_flags')])
-      setCats(c); setCaps(f); setPlans(p); setCanWrite(w)
+      const [c, f, p, rest, w] = await Promise.all([
+        listCategories(), listCapabilities(), listPlans().catch(() => []),
+        listRestaurants({ limit: 100 }).then((r) => r.rows).catch(() => []), can('manage_flags'),
+      ])
+      setCats(c); setCaps(f); setPlans(p); setRestaurants(rest); setCanWrite(w)
     } catch (e) { setErr(e.message || String(e)) } finally { setLoading(false) }
   }
   useEffect(() => { reload() }, [])
@@ -296,15 +300,26 @@ export default function Catalog() {
 
               {/* تخصيصات المطاعم */}
               <Section title={`⚙ تخصيصات المطاعم (${detail.overrides_count})`}>
+                <div style={{ fontSize: '11px', color: MUTED, marginBottom: '4px' }}>
+                  تخصيص قيمة القدرة لمطعم بعينه (يتجاوز الباقة والافتراضي). {form.type === 'feature' ? 'تفعيل/تعطيل.' : 'قيمة (مثل عدد الفروع).'}
+                </div>
+                {canWrite && (
+                  <OverrideAdder restaurants={restaurants} capType={form.type}
+                    onSet={async (rid, value) => { await setOverride(rid, form.key, value); loadOverrides() }} />
+                )}
                 {overrides == null ? (
-                  <button onClick={loadOverrides} style={btn('#374151')}>عرض التخصيصات</button>
-                ) : overrides.length === 0 ? <span style={{ color: MUTED, fontSize: '12px' }}>لا تخصيصات.</span> : (
-                  overrides.map((o) => (
-                    <Row key={o.restaurant_id}>
-                      <span style={{ fontSize: '12.5px', color: 'white' }}>{o.restaurant_name}: {String(o.enabled)}</span>
-                      {canWrite && <button onClick={async () => { await setOverride(o.restaurant_id, form.key, null); loadOverrides() }} style={btn('#374151')}>إزالة</button>}
-                    </Row>
-                  ))
+                  <button onClick={loadOverrides} style={{ ...btn('#374151'), marginTop: '8px' }}>عرض التخصيصات الحالية</button>
+                ) : overrides.length === 0 ? <div style={{ color: MUTED, fontSize: '12px', marginTop: '8px' }}>لا تخصيصات بعد.</div> : (
+                  <div style={{ marginTop: '8px' }}>
+                    {overrides.map((o) => (
+                      <Row key={o.restaurant_id}>
+                        <span style={{ fontSize: '12.5px', color: 'white' }}>
+                          {o.restaurant_name}: <b style={{ color: '#C4B5FD' }}>{o.value != null ? JSON.stringify(o.value) : (o.enabled == null ? '—' : (o.enabled ? 'مفعّلة' : 'معطّلة'))}</b>
+                        </span>
+                        {canWrite && <button onClick={async () => { await setOverride(o.restaurant_id, form.key, null); loadOverrides() }} style={btn('#374151')}>إزالة</button>}
+                      </Row>
+                    ))}
+                  </div>
                 )}
               </Section>
             </>
@@ -388,6 +403,30 @@ function CapForm({ form, setForm, cats, caps }) {
         </div>
       </Field>
       <Field label="رسالة الترقية"><input value={form.upgrade_message} onChange={set('upgrade_message')} style={inputStyle} /></Field>
+    </div>
+  )
+}
+
+function OverrideAdder({ restaurants, capType, onSet }) {
+  const [rid, setRid] = useState('')
+  const [val, setVal] = useState('')
+  const [grant, setGrant] = useState(true)
+  const isFeature = capType === 'feature'
+  return (
+    <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+      <select value={rid} onChange={(e) => setRid(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: '130px' }}>
+        <option value="">اختر مطعماً…</option>
+        {restaurants.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+      </select>
+      {isFeature ? (
+        <select value={grant ? '1' : '0'} onChange={(e) => setGrant(e.target.value === '1')} style={{ ...inputStyle, maxWidth: '110px' }}>
+          <option value="1">تفعيل</option>
+          <option value="0">تعطيل</option>
+        </select>
+      ) : (
+        <input value={val} onChange={(e) => setVal(e.target.value)} placeholder="القيمة (مثل 3)" style={{ ...inputStyle, ...mono, maxWidth: '120px' }} />
+      )}
+      <button disabled={!rid} onClick={() => { onSet(rid, isFeature ? grant : parseJsonish(val)); setRid(''); setVal('') }} style={btn(ACCENT)}>حفظ التخصيص</button>
     </div>
   )
 }

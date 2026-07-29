@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase'
 import { listPlans } from '../billing/billingApi'
+import { listRestaurants } from '../restaurants/restaurantsApi'
 import { CATEGORIES, CAPABILITIES, DEPENDENCIES } from '../../../registry/features.manifest'
 
 // خدمة لوحة الكتالوج (Super Admin): كل وصول عبر دوال admin_* المبوّبة (M6.1).
@@ -13,7 +14,7 @@ const call = async (fn, args) => {
 export const listCategories   = () => call('admin_list_capability_categories').then((d) => d || [])
 export const listCapabilities = () => call('admin_list_capabilities').then((d) => d || [])
 export const capabilityDetail = (key) => call('admin_capability_detail', { p_key: key })
-export { listPlans }
+export { listPlans, listRestaurants }
 
 // ===== كتابة: قدرات/فئات =====
 export const upsertCapability = (payload) => call('admin_upsert_capability', { p: payload })
