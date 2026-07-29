@@ -77,11 +77,12 @@ alter table public.feature_flags
   add column if not exists created_by           uuid,
   add column if not exists updated_by           uuid;
 
--- قيد التسمية snake_case على المفتاح (يُطبَّق على الصفوف القائمة والجديدة).
--- ملاحظة: مفاتيح feature_flags الحالية يجب أن تكون snake_case أصلاً (تُراجَع قبل التنفيذ).
+-- قيد التسمية snake_case على المفتاح — NOT VALID (قرار المالك):
+-- يُفرَض على كل مفتاح جديد أو مُعدَّل، ويتجاوز الصفوف القائمة دون لمسها
+-- (يوجد صف اختبار قائم «Simsim» — يبقى كما هو، مُسجَّل كـSuggestion للتنظيف لاحقاً).
 alter table public.feature_flags drop constraint if exists ff_key_snake_case;
 alter table public.feature_flags add constraint ff_key_snake_case
-  check (key ~ '^[a-z][a-z0-9_]*(@[0-9]+)?$');   -- يسمح بلاحقة الإصدار مثل online_orders@2
+  check (key ~ '^[a-z][a-z0-9_]*(@[0-9]+)?$') not valid;   -- يسمح بلاحقة الإصدار مثل online_orders@2
 
 drop trigger if exists trg_feature_flags_updated on public.feature_flags;
 create trigger trg_feature_flags_updated before update on public.feature_flags
@@ -210,7 +211,7 @@ $$;
 grant  execute on function public.feature_value(uuid, text)      to anon, authenticated;
 grant  execute on function public.has_feature(uuid, text)        to anon, authenticated;
 grant  execute on function public.effective_features(uuid)       to authenticated;
-revoke execute on function public.effective_features(uuid)       from anon;
+revoke execute on function public.effective_features(uuid)       from public, anon;  -- لوحة التحكم فقط
 
 -- ============================================================================
 -- نهاية M1. لا بذر للكتالوج هنا (ذلك M2 عبر Manifest + حارس CI).
