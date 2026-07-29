@@ -16,6 +16,22 @@ const LIFECYCLES = ['draft', 'active', 'deprecated', 'archived']
 const RUNTIMES = ['enabled', 'disabled', 'beta', 'preview']
 const DEP_TYPES = ['required', 'optional', 'conflicts']
 const PERM_ROLES = ['owner', 'manager', 'cashier', 'staff'] // الأدوار المسموح لها (required_permissions)
+
+// تسميات عربية للعرض فقط — القيَم المخزَّنة تبقى إنجليزية (يتطلّبها الكود وقيود قاعدة البيانات).
+const TYPE_AR = { feature: 'ميزة', limit: 'حد', option: 'خيار', mode: 'وضع' }
+const SCOPE_AR = { platform: 'المنصّة', restaurant: 'المطعم', user: 'المستخدم' }
+const LIFECYCLE_AR = { draft: 'مسودّة', active: 'نشطة', deprecated: 'مهجورة', archived: 'مؤرشفة' }
+const RUNTIME_AR = { enabled: 'مفعّلة', disabled: 'معطّلة', beta: 'تجريبية', preview: 'معاينة' }
+const DEP_TYPE_AR = { required: 'إلزامية', optional: 'اختيارية', conflicts: 'متعارضة' }
+const ROLE_AR = { owner: 'المالك', manager: 'مدير', cashier: 'كاشير', staff: 'موظف' }
+const KIND_AR = {
+  page: 'صفحة', tab: 'تبويب', card: 'بطاقة', component: 'مكوّن', button: 'زر', modal: 'نافذة',
+  form: 'نموذج', table: 'جدول', report: 'تقرير', chart: 'رسم بياني', action: 'إجراء',
+  api: 'واجهة API', webhook: 'Webhook', integration: 'تكامل', ai: 'ذكاء اصطناعي',
+  mobile: 'جوال', pos: 'نقطة بيع', delivery: 'توصيل', payment: 'دفع',
+}
+const KINDS = Object.keys(KIND_AR)
+const arOf = (map, v) => map[v] || v
 const RUNTIME_COLOR = { enabled: '#22C55E', beta: '#3B82F6', preview: '#F59E0B', disabled: '#6B7280' }
 
 const inputStyle = {
@@ -195,13 +211,13 @@ export default function Catalog() {
           <option value="">كل الفئات</option>{cats.map((c) => <option key={c.key} value={c.key}>{c.icon} {c.name}</option>)}
         </select>
         <select value={fType} onChange={(e) => setFType(e.target.value)} style={{ ...inputStyle, maxWidth: '120px' }}>
-          <option value="">كل الأنواع</option>{TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          <option value="">كل الأنواع</option>{TYPES.map((t) => <option key={t} value={t}>{TYPE_AR[t]}</option>)}
         </select>
         <select value={fScope} onChange={(e) => setFScope(e.target.value)} style={{ ...inputStyle, maxWidth: '120px' }}>
-          <option value="">كل النطاقات</option>{SCOPES.map((s) => <option key={s} value={s}>{s}</option>)}
+          <option value="">كل النطاقات</option>{SCOPES.map((s) => <option key={s} value={s}>{SCOPE_AR[s]}</option>)}
         </select>
         <select value={fRuntime} onChange={(e) => setFRuntime(e.target.value)} style={{ ...inputStyle, maxWidth: '120px' }}>
-          <option value="">كل الحالات</option>{RUNTIMES.map((r) => <option key={r} value={r}>{r}</option>)}
+          <option value="">كل الحالات</option>{RUNTIMES.map((r) => <option key={r} value={r}>{RUNTIME_AR[r]}</option>)}
         </select>
       </div>
 
@@ -220,7 +236,7 @@ export default function Catalog() {
                       background: selected === c.key ? 'rgba(124,58,237,0.18)' : 'transparent' }}>
                     <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: RUNTIME_COLOR[c.runtime_status] || MUTED, flexShrink: 0 }} />
                     <span style={{ fontSize: '13px', color: 'white', fontWeight: c.parent_key ? '500' : '700' }}>{c.icon ? `${c.icon} ` : ''}{c.name}</span>
-                    <span style={{ ...mono, color: MUTED, fontSize: '10.5px' }}>{c.type !== 'feature' ? c.type : ''}</span>
+                    <span style={{ color: MUTED, fontSize: '10.5px' }}>{c.type !== 'feature' ? TYPE_AR[c.type] : ''}</span>
                     <span style={{ marginRight: 'auto', display: 'flex', gap: '4px', fontSize: '10px', color: MUTED }}>
                       {c.deps_count > 0 && <span title="تبعيات">🔗{c.deps_count}</span>}
                       {c.plans_count > 0 && <span title="باقات">📦{c.plans_count}</span>}
@@ -260,7 +276,7 @@ export default function Catalog() {
               <Section title="🔗 التبعيات">
                 {(detail.dependencies || []).map((d, i) => (
                   <Row key={i}>
-                    <span style={{ fontSize: '12.5px', color: 'white' }}>{d.dependency_type} → {capName(d.depends_on_key)}</span>
+                    <span style={{ fontSize: '12.5px', color: 'white' }}>{DEP_TYPE_AR[d.dependency_type] || d.dependency_type} ← {capName(d.depends_on_key)}</span>
                     {canWrite && <button onClick={async () => { await deleteDependency(form.key, d.depends_on_key, d.dependency_type); openDetail(form.key) }} style={btn('#374151')}>×</button>}
                   </Row>
                 ))}
@@ -332,12 +348,12 @@ function CapForm({ form, setForm, cats, caps }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         <Field label="الفئة"><select value={form.category_key} onChange={set('category_key')} style={inputStyle}><option value="">—</option>{cats.map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}</select></Field>
         <Field label="الأب (Hierarchy)"><select value={form.parent_key} onChange={set('parent_key')} style={inputStyle}><option value="">—</option>{parents.map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}</select></Field>
-        <Field label="النوع"><select value={form.type} onChange={set('type')} style={inputStyle}>{TYPES.map((t) => <option key={t} value={t}>{t}</option>)}</select></Field>
-        <Field label="النطاق"><select value={form.scope} onChange={set('scope')} style={inputStyle}>{SCOPES.map((s) => <option key={s} value={s}>{s}</option>)}</select></Field>
-        <Field label="النوع البصري (kind)"><input value={form.kind} onChange={set('kind')} style={inputStyle} placeholder="page/component/action…" /></Field>
+        <Field label="النوع"><select value={form.type} onChange={set('type')} style={inputStyle}>{TYPES.map((t) => <option key={t} value={t}>{TYPE_AR[t]}</option>)}</select></Field>
+        <Field label="النطاق"><select value={form.scope} onChange={set('scope')} style={inputStyle}>{SCOPES.map((s) => <option key={s} value={s}>{SCOPE_AR[s]}</option>)}</select></Field>
+        <Field label="الشكل"><select value={form.kind} onChange={set('kind')} style={inputStyle}><option value="">—</option>{KINDS.map((k) => <option key={k} value={k}>{KIND_AR[k]}</option>)}</select></Field>
         <Field label="الوحدة (module)"><input value={form.module} onChange={set('module')} style={inputStyle} /></Field>
-        <Field label="حالة التعريف"><select value={form.lifecycle_status} onChange={set('lifecycle_status')} style={inputStyle}>{LIFECYCLES.map((s) => <option key={s} value={s}>{s}</option>)}</select></Field>
-        <Field label="حالة التشغيل"><select value={form.runtime_status} onChange={set('runtime_status')} style={inputStyle}>{RUNTIMES.map((s) => <option key={s} value={s}>{s}</option>)}</select></Field>
+        <Field label="حالة التعريف"><select value={form.lifecycle_status} onChange={set('lifecycle_status')} style={inputStyle}>{LIFECYCLES.map((s) => <option key={s} value={s}>{LIFECYCLE_AR[s]}</option>)}</select></Field>
+        <Field label="حالة التشغيل"><select value={form.runtime_status} onChange={set('runtime_status')} style={inputStyle}>{RUNTIMES.map((s) => <option key={s} value={s}>{RUNTIME_AR[s]}</option>)}</select></Field>
         <Field label="الترتيب"><input type="number" value={form.sort_order} onChange={set('sort_order')} style={inputStyle} /></Field>
       </div>
       {form.type === 'feature' && (
@@ -365,7 +381,7 @@ function CapForm({ form, setForm, cats, caps }) {
               <button key={r} type="button" onClick={() => toggleRole(r)}
                 style={{ padding: '7px 12px', borderRadius: '9px', cursor: 'pointer', fontSize: '12px', fontWeight: '700',
                   border: `1.5px solid ${on ? ACCENT : BORDER}`, background: on ? 'rgba(124,58,237,0.18)' : '#0B0D12', color: on ? '#C4B5FD' : MUTED }}>
-                {r}
+                {ROLE_AR[r]}
               </button>
             )
           })}
@@ -383,7 +399,7 @@ function DepAdder({ caps, selfKey, onAdd }) {
       <select value={dep} onChange={(e) => setDep(e.target.value)} style={{ ...inputStyle, flex: 1 }}>
         <option value="">يعتمد على…</option>{caps.filter((c) => c.key !== selfKey).map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}
       </select>
-      <select value={t} onChange={(e) => setT(e.target.value)} style={{ ...inputStyle, maxWidth: '110px' }}>{DEP_TYPES.map((x) => <option key={x} value={x}>{x}</option>)}</select>
+      <select value={t} onChange={(e) => setT(e.target.value)} style={{ ...inputStyle, maxWidth: '110px' }}>{DEP_TYPES.map((x) => <option key={x} value={x}>{DEP_TYPE_AR[x]}</option>)}</select>
       <button disabled={!dep} onClick={() => { onAdd(dep, t); setDep('') }} style={btn(ACCENT)}>+</button>
     </div>
   )
@@ -416,8 +432,8 @@ function NewCapModal({ cats, onClose, onSaved }) {
       <Field label="المفتاح (snake_case)"><input value={f.key} onChange={set('key')} style={{ ...inputStyle, ...mono }} placeholder="online_orders" /></Field>
       <Field label="الاسم"><input value={f.name} onChange={set('name')} style={inputStyle} /></Field>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-        <Field label="النوع"><select value={f.type} onChange={set('type')} style={inputStyle}>{TYPES.map((t) => <option key={t} value={t}>{t}</option>)}</select></Field>
-        <Field label="النطاق"><select value={f.scope} onChange={set('scope')} style={inputStyle}>{SCOPES.map((s) => <option key={s} value={s}>{s}</option>)}</select></Field>
+        <Field label="النوع"><select value={f.type} onChange={set('type')} style={inputStyle}>{TYPES.map((t) => <option key={t} value={t}>{TYPE_AR[t]}</option>)}</select></Field>
+        <Field label="النطاق"><select value={f.scope} onChange={set('scope')} style={inputStyle}>{SCOPES.map((s) => <option key={s} value={s}>{SCOPE_AR[s]}</option>)}</select></Field>
       </div>
       <Field label="الفئة"><select value={f.category_key} onChange={set('category_key')} style={inputStyle}><option value="">—</option>{cats.map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}</select></Field>
       {f.type === 'feature' && <label style={{ display: 'flex', gap: '8px', color: MUTED, fontSize: '12.5px', marginBottom: '12px' }}><input type="checkbox" checked={f.enabled_global} onChange={set('enabled_global')} /> مفعّلة افتراضياً</label>}
