@@ -8,7 +8,7 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 // initial: { qty, note, options } لوضع التعديل من السلة (✎) — يعبّئ الحالة مسبقاً
 // submitLabel: نص زر التأكيد (الافتراضي «إضافة للسلة»)
 // products/recommendationsMap/onAddCompanion: اقتراحات مخصّصة لهذا الصنف تحديداً (قواعد المطعم اليدوية فقط، بلا خيارات إجبارية لإضافة فورية)
-export default function ProductModal({ product, brandColor, priceColor, isEn, t, onAdd, onClose, initial, submitLabel, products = [], recommendationsMap, onAddCompanion }) {
+export default function ProductModal({ product, brandColor, priceColor, isEn, t, onAdd, onClose, initial, submitLabel, products = [], recommendationsMap, onAddCompanion, ordering = true }) {
   const [qty, setQty] = useState(initial?.qty ?? 1)
   const [note, setNote] = useState(initial?.note ?? '')
   const [options, setOptions] = useState(initial?.options ?? {}) // { groupIdx: choiceIdx | [choiceIdx,...] }
@@ -183,7 +183,8 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
             </div>
           )}
 
-          {/* Quantity */}
+          {/* تذييل الطلب (عدّاد+ملاحظات+اقتراحات+زر الإضافة) — يُخفى كاملاً لو الطلبات أونلاين مُطفأة (PCR): المودال يصبح عرض تفاصيل فقط */}
+          {ordering && (<>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px' }}>
             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px' }}>{t('qty')}</span>
             <div style={{ display:'flex', alignItems:'center', gap:'0', border:'1.5px solid #E5E7EB', borderRadius:'12px', overflow:'hidden' }}>
@@ -249,6 +250,7 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
               {((product.price + resolveOptions().reduce((s,o)=>s+(o.price||0),0)) * qty).toFixed(2)} ﷼
             </span>
           </button>
+          </>)}
         </div>
         </div>
       </div>

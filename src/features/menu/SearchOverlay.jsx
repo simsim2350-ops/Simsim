@@ -19,7 +19,7 @@ const chipStyle = {
 export default function SearchOverlay({
   open, onClose, products, categories, bestSellers,
   cart, addToCart, removeFromCart, onOpenProduct,
-  brandColor, priceColor, descColor, isEn, t, tx, layout,
+  brandColor, priceColor, descColor, isEn, t, tx, layout, ordering = true,
 }) {
   const [query, setQuery] = useState('')
   const [recent, setRecent] = useState([])
@@ -54,7 +54,7 @@ export default function SearchOverlay({
     cart,
     onAdd: () => { commitSearch(query); onOpenProduct(prod) },
     onQtyChange: (delta) => delta > 0 ? addToCart(prod, 1) : removeFromCart(`${prod.id}____`),
-    brandColor, priceColor, descColor, isEn, layout,
+    brandColor, priceColor, descColor, isEn, layout, ordering,
   })
 
   return (
