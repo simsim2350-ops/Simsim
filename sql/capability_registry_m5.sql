@@ -78,9 +78,13 @@ create trigger users_limit_check before insert on public.restaurant_members
   for each row execute function public.trg_enforce_users_limit();
 
 -- ---------------------------------------------------------------------------
--- 3) أذونات دالة الفرض (تُستدعى داخلياً من triggers فقط — لا حاجة لمنح تنفيذ للعملاء)
+-- 3) الأذونات — دوال الفرض وdوال الـtrigger تُستدعى داخلياً فقط (تُطلَق الـtriggers
+--    بصلاحيات مالك الجدول بلا حاجة لمنح تنفيذ). إلغاء PUBLIC الافتراضي (دفاع في العمق).
 -- ---------------------------------------------------------------------------
 revoke execute on function public.enforce_capability_limit(uuid, text, bigint) from public, anon, authenticated;
+revoke execute on function public.trg_enforce_products_limit() from public, anon, authenticated;
+revoke execute on function public.trg_enforce_branches_limit() from public, anon, authenticated;
+revoke execute on function public.trg_enforce_users_limit()    from public, anon, authenticated;
 
 -- ============================================================================
 -- نهاية M5. ملاحظة أداء: count(*) لكل إدراج — مقبول بحجم البيانات الحالي؛ يستفيد
