@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
 import FeaturesLibrary from './screens/FeaturesLibrary'
+import Plans from './screens/Plans'
 import {
   listCategories, listCapabilities, capabilityDetail, listPlans, listRestaurants,
   upsertCapability, deleteCapability, upsertCategory,
@@ -360,6 +361,7 @@ export default function Catalog() {
         ))}
       </div>
       {screen === 'features' ? <FeaturesLibrary />
+        : screen === 'plans' ? <Plans />
         : screen === 'advanced' ? <AdvancedEditor />
         : <ComingSoon />}
     </AdminShell>

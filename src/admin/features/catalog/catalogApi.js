@@ -29,6 +29,7 @@ export const deleteDependency = (feature, dependsOn, type) =>
   call('admin_delete_capability_dependency', { p_feature: feature, p_depends_on: dependsOn, p_type: type })
 
 // ===== ربط الباقات =====
+export const listPlanFeatures  = (planId) => call('admin_list_plan_features', { p_plan_id: planId }).then((d) => d || [])
 export const setPlanFeature    = (planId, key, isIncluded, value) =>
   call('admin_set_plan_feature', { p_plan_id: planId, p_feature_key: key, p_is_included: isIncluded, p_value: value })
 export const deletePlanFeature = (planId, key) =>
