@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
+import { track } from '../lib/analytics'
 import ErrBoundary from '../features/menu/ErrBoundary'
 import { computeBranchOpenStatus, effectiveDeliverySettings, makeItemName, estimatedPrepTime } from '../features/menu/helpers'
 import { openWhatsAppAboutOrder } from '../features/menu/whatsapp'
@@ -44,7 +45,12 @@ function PublicMenuInner() {
   // تفاصيل المنتج (PCR): عند التعطيل لا تُفتح نافذة المنتج عند الضغط (منيو عرض بلا تفاصيل).
   const productDetails = capabilities?.product_details !== false
   const { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer } = useActiveOrders(slug, t)
-  const { cart, setCart, cartOpen, setCartOpen, addToCart, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount } = useCart(slug, t)
+  const { cart, setCart, cartOpen, setCartOpen, addToCart: addToCartRaw, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount } = useCart(slug, t)
+  // تغليف الإضافة للسلة لبثّ حدث تحليلات مركزياً (ADR-42/M2) — إطلاق-وانسَ، لا يغيّر السلوك.
+  const addToCart = (...args) => {
+    track('cart.item_added', { restaurantId: restaurant?.id, branchId: branch?.id, entityType: 'product', entityId: args?.[0]?.id, props: { qty: args?.[1] ?? 1 } })
+    return addToCartRaw(...args)
+  }
   const { couponInput, setCouponInput, appliedCoupon, applyCoupon, removeCoupon, applying: applyingCoupon, discountAmount } = useCoupon({ restaurant, branch, cartTotal })
   const {
     tableNumber, setTableNumber, orderType, setOrderType,
@@ -60,9 +66,30 @@ function PublicMenuInner() {
   // حالة عرض محلية للصفحة فقط
   const [selectedProduct, setSelectedProduct] = useState(null)
   // فتح نافذة المنتج — مُعطَّل تماماً لو قدرة «تفاصيل المنتج» مطفأة (الضغط لا يفتح شيئاً).
-  const openProduct = productDetails ? setSelectedProduct : () => {}
+  // يبثّ حدث تحليلات عند الفتح الفعلي فقط (ADR-42/M2).
+  const openProduct = (p) => {
+    if (!productDetails) return
+    track('menu.product_viewed', { restaurantId: restaurant?.id, branchId: branch?.id, entityType: 'product', entityId: p?.id })
+    setSelectedProduct(p)
+  }
   const [editingCartItem, setEditingCartItem] = useState(null) // { item, product, initialOptions } — تعديل صنف من السلة (✎)
   const [searchOpen, setSearchOpen] = useState(false)
+
+  // بثّ أحداث القمع مركزياً (ADR-42/M2) — إطلاق-وانسَ، fail-open، لا يغيّر السلوك.
+  const viewedRef = useRef(null)
+  useEffect(() => {
+    if (restaurant?.id && branch?.id && viewedRef.current !== branch.id) {
+      viewedRef.current = branch.id
+      track('menu.viewed', { restaurantId: restaurant.id, branchId: branch.id })
+    }
+  }, [restaurant?.id, branch?.id])
+  const orderTrackedRef = useRef(false)
+  useEffect(() => {
+    if (orderPlaced && !orderTrackedRef.current) {
+      orderTrackedRef.current = true
+      track('order.placed', { restaurantId: restaurant?.id, branchId: branch?.id })
+    }
+  }, [orderPlaced])
   const [showAllergensModal, setShowAllergensModal] = useState(false)
 
   // ===== مشتقات =====
