@@ -34,3 +34,13 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # فحص انحراف سجل القدرات: قاعدة البيانات مقابل الـManifest (النوع/الوجود).
+      # يفشل عند انحراف حقيقي، ويتسامح مع أعطال الشبكة (لا يكسر البناء).
+      # يستخدم المفتاح anon العلني (fallback في السكربت)؛ للتحكّم، مرّر متغيّري
+      # البيئة أدناه من إعدادات المستودع إن رغبت.
+      - name: Registry drift check
+        run: npm run check:registry
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
