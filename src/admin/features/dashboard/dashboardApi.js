@@ -13,3 +13,10 @@ export async function refreshMetrics() {
   if (error) throw error
   return data
 }
+
+// نظرة التحليلات (ADR-42/M3): قمع العميل (من التجميع) + تبنّي الميزات (من بيانات PCR).
+export async function analyticsOverview() {
+  const { data, error } = await supabase.rpc('admin_analytics_overview')
+  if (error) throw error
+  return data || {}
+}

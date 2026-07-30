@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
-import { dashboard, refreshMetrics } from './dashboardApi'
+import { dashboard, refreshMetrics, analyticsOverview } from './dashboardApi'
 import { PANEL as CARD, BORDER, MUTED, ACCENT } from '../../theme'
 import { ErrorState } from '../../components/ui/States'
 import { SkeletonTiles, SkeletonChart, SkeletonRows } from '../../components/ui/Skeleton'
@@ -35,11 +35,13 @@ export default function Overview() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [an, setAn] = useState(null) // نظرة التحليلات (ADR-42/M3) — fail-soft، لا تكسر اللوحة
 
   // إعادة ضبط error/loading في كل نداء — ضروري لأن onRetry يستدعي load() نفسها بعد فشل سابق.
   const load = () => {
     setLoading(true); setError(null)
     dashboard().then(setD).catch((e) => setError(e?.message || 'تعذّر التحميل')).finally(() => setLoading(false))
+    analyticsOverview().then(setAn).catch(() => setAn(null)) // قسم مستقل: فشله يُخفيه فقط
   }
   useEffect(() => { load() }, [])
 
@@ -134,6 +136,22 @@ export default function Overview() {
               <ListCard title="😴 الأقل نشاطاً (خطر Churn)" rows={d?.least_active} empty="لا بيانات"
                 render={(x) => [x.restaurant, <span style={{ color: HEALTH_C[x.health >= 70 ? 'green' : x.health >= 40 ? 'yellow' : 'red'], fontWeight: '800' }}>{fmt(x.orders)} طلب · صحّة {x.health}</span>]} />
             </div>
+
+            {/* 📊 التحليلات (ADR-42/M3) — قمع العميل + تبنّي الميزات. قسم مستقل fail-soft. */}
+            {an && <FunnelCard funnel={an.funnel} />}
+            {an && (
+              <div style={{ marginTop: '12px' }}>
+                <ListCard title="🧬 تبنّي الميزات (أكثر إدراجاً في الباقات/تخصيصاً)" rows={an.feature_adoption} empty="لا بيانات ميزات بعد"
+                  render={(x) => [
+                    x.name,
+                    <span style={{ color: MUTED, fontWeight: '700' }}>
+                      <span style={{ color: '#C4B5FD' }}>{fmt(x.plans_including)}</span> باقة
+                      {num(x.overrides_on) > 0 && <span style={{ color: '#6EE7B7' }}> · +{fmt(x.overrides_on)} تفعيل</span>}
+                      {num(x.overrides_off) > 0 && <span style={{ color: '#F87171' }}> · −{fmt(x.overrides_off)} تعطيل</span>}
+                    </span>,
+                  ]} />
+              </div>
+            )}
           </>
         )}
       </div>
@@ -147,6 +165,35 @@ function AlertRow({ color, text, onClick }) {
       <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: color, flexShrink: 0 }} />
       <span style={{ flex: 1 }}>{text}</span>
       <span style={{ color: MUTED, fontSize: '11px' }}>عرض ←</span>
+    </div>
+  )
+}
+
+function FunnelCard({ funnel }) {
+  const f = funnel || {}
+  const stages = [
+    { label: 'مشاهدات المنيو', val: num(f.menu_views), icon: '👁️' },
+    { label: 'مشاهدات المنتجات', val: num(f.product_views), icon: '🍽️' },
+    { label: 'إضافات للسلة', val: num(f.cart_adds), icon: '🛒' },
+    { label: 'طلبات مكتملة', val: num(f.orders_placed), icon: '✅' },
+  ]
+  const conv = num(f.menu_views) > 0 ? Math.round((num(f.orders_placed) / num(f.menu_views)) * 100) : null
+  const allZero = stages.every((s) => s.val === 0)
+  return (
+    <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '16px', marginTop: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Cairo,sans-serif' }}>📊 قمع العميل — آخر 30 يوماً</span>
+        {conv != null && <span style={{ marginInlineStart: 'auto', fontSize: '12px', fontWeight: '800', color: '#6EE7B7' }}>تحويل {conv}%</span>}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
+        {stages.map((s, i) => (
+          <div key={i} style={{ background: '#0B0D12', border: `1px solid ${BORDER}`, borderRadius: '12px', padding: '12px' }}>
+            <div style={{ fontSize: '11px', color: MUTED, fontWeight: '700', marginBottom: '4px' }}>{s.icon} {s.label}</div>
+            <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '20px', color: 'white' }}>{fmt(s.val)}</div>
+          </div>
+        ))}
+      </div>
+      {allZero && <div style={{ fontSize: '11px', color: MUTED, marginTop: '10px' }}>تبدأ الأرقام بالتراكم بعد نشر توصيل الأحداث وتفاعل العملاء.</div>}
     </div>
   )
 }
