@@ -12,7 +12,9 @@
 // المصادر (URL + مفتاح anon) علنية بتصميم Supabase (الحماية عبر RLS) ومُثبّتة في
 // src/config كـfallback؛ نعيد استخدامها هنا مع أولوية لمتغيّرات البيئة إن وُجدت.
 // ============================================================================
-import { createClient } from '@supabase/supabase-js'
+// نستخدم fetch مباشرةً لنقطة PostgREST (rpc) بدل @supabase/supabase-js: الأخير
+// يُنشئ عميل realtime يتطلّب WebSocket غير المتوفّر في Node 20 (نسخة CI). fetch
+// عالمي منذ Node 18، فيعمل بلا اعتماديات ولا WebSocket.
 import { CAPABILITIES } from '../src/registry/features.manifest.js'
 
 // نفس القيم العلنية في src/config (غير سرّية) — مع أولوية لمتغيّرات البيئة.
@@ -37,14 +39,29 @@ export function computeDrift(expected, actual) {
 // مصدر الحقيقة: النوع الافتراضي feature (نفس منطق buildSeedSQL/catalogApi).
 export const manifestExpected = () => new Map(CAPABILITIES.map((c) => [c.key, c.type ?? 'feature']))
 
+async function fetchSnapshot() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/registry_drift_snapshot`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: '{}',
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`)
+  return res.json()
+}
+
 async function main() {
   const expected = manifestExpected()
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  const { data, error } = await supabase.rpc('registry_drift_snapshot')
 
-  if (error) {
+  let data
+  try {
+    data = await fetchSnapshot()
+  } catch (e) {
     // عطل شبكة/قاعدة — لا نكسر CI لأسباب بنية تحتية.
-    warn(`تعذّر الوصول لقاعدة البيانات — تخطّي فحص الانحراف (لا يكسر البناء): ${error.message}`)
+    warn(`تعذّر الوصول لقاعدة البيانات — تخطّي فحص الانحراف (لا يكسر البناء): ${e?.message || e}`)
     return
   }
   if (!Array.isArray(data)) {
