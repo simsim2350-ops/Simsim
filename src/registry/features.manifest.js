@@ -63,6 +63,7 @@ export const CAPABILITIES = [
   { key: 'menu_search',          name: 'بحث المنيو',        kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 10 },
   { key: 'menu_categories',      name: 'الأقسام',           kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 20 },
   { key: 'menu_qr',              name: 'QR للمنيو',         kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 30 },
+  { key: 'menu_product_details', name: 'تفاصيل المنتج',    kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 35, description: 'فتح نافذة تفاصيل المنتج عند الضغط عليه (عند التعطيل: الضغط لا يفتح شيئاً)' },
   { key: 'menu_cart',            name: 'السلة',             kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 40 },
   { key: 'menu_checkout',        name: 'إتمام الطلب',       kind: 'action',    category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 50 },
   { key: 'menu_reviews',         name: 'التقييمات',         kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 60 },
