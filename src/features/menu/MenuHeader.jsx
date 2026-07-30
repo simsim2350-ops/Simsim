@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { SOCIAL_ICONS } from './SocialIcons'
 import { estimatedPrepTime } from './helpers'
 
-const HERO_HEIGHT = 128
-
+// أبعاد الهيرو تُدار الآن عبر Hero Design Tokens في PublicMenu (متغيّرات CSS --hero-*).
 const clamp01 = v => Math.min(1, Math.max(0, v))
 
 // هيدر المنيو — الهندسة الجديدة (مستلهمة من تطبيقات التوصيل):
@@ -93,10 +92,10 @@ export default function MenuHeader({
           فتبقى الهوية ملتصقة طوال منطقة البطاقة بدل أن تنفلت وتختفي بعد مسافة قصيرة. */}
 
       {/* ===== الهيرو: مثبّت على الشاشة (fixed) فلا يتحرك، والبطاقة تنزلق فوقه، ثم يتلاشى تدريجياً ===== */}
-      <div style={{ height:`${HERO_HEIGHT}px` }}/>
+      <div style={{ height:'var(--hero-image-h)' }}/>
       <div style={{
         position:'fixed', top:0, left:'50%', transform:'translateX(-50%)',
-        width:'100%', maxWidth:'480px', height:`${HERO_HEIGHT}px`, zIndex:5,
+        width:'100%', maxWidth:'480px', height:'var(--hero-image-h)', zIndex:5,
         overflow:'hidden', background:`linear-gradient(160deg, ${brandColor}, ${brandColor}88)`,
         opacity: heroOpacity,
         pointerEvents: heroOpacity < 0.5 ? 'none' : 'auto',
@@ -129,17 +128,17 @@ export default function MenuHeader({
       </div>
 
       {/* ===== البطاقة العائمة فوق الهيرو (هوامش جانبية + زوايا مدوّرة) — تدفّق طبيعي، تنزلق للأعلى ===== */}
-      <div style={{ position:'relative', zIndex:10, margin:'-76px 16px 0', background:'rgba(255,255,255,0.72)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
+      <div style={{ position:'relative', zIndex:10, margin:'calc(var(--hero-overlap) * -1) var(--hero-pad-x) 0', paddingBottom:'var(--hero-pad-bottom)', background:'rgba(255,255,255,0.72)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)', borderRadius:'var(--hero-radius)', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
 
-        {/* رأس البطاقة (شعار + اسم + تقييم + حالة الفتح) — تدفّق طبيعي ضمن البطاقة، ينزلق مع الصفحة.
-            التثبيت الدائم يتكفّل به «الهيدر المصغّر» المنفصل أدناه (لتفادي التعارض مع شريط الأقسام). */}
+        {/* ===== [HEADER] الشعار + الاسم + التقييم + الحالة — هندسته ثابتة (تُبقي عتبات الـMorph صحيحة) ===== */}
+        {/* التثبيت الدائم يتكفّل به «الهيدر المصغّر» المنفصل أدناه (لتفادي التعارض مع شريط الأقسام). */}
         <div style={{ paddingTop:'4px' }}>
           {/* مقبض السحب */}
           <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 4px' }}/>
 
           {/* الهوية: شعار + اسم + تقييم + حالة الفتح */}
           <div style={{ display:'flex', alignItems:'center', gap:'11px', padding:'0 16px 5px' }}>
-            <div style={{ width:'52px', height:'52px', borderRadius:'15px', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'25px', flexShrink:0, overflow:'hidden', boxShadow:'0 5px 14px rgba(15,17,23,0.18)' }}>
+            <div style={{ width:'var(--hero-logo)', height:'var(--hero-logo)', borderRadius:'15px', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'25px', flexShrink:0, overflow:'hidden', boxShadow:'0 5px 14px rgba(15,17,23,0.18)' }}>
               {restaurant.logo_url
                 ? <img src={restaurant.logo_url} alt={restaurant.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 : '🍕'}
@@ -162,10 +161,10 @@ export default function MenuHeader({
           </div>
         </div>
 
-        {/* ===== المحتوى الثانوي — تدفّق طبيعي، ينزلق للأعلى خلف صفّ الهوية ويختفي بالتمرير ===== */}
+        {/* ===== [CONTENT] الوصف + الموقع + التواصل — إيقاع رأسي موحّد عبر --hero-spacing ===== */}
         {/* وصف المطعم — يكتبه صاحب المطعم من الإعدادات (يدعم الترجمة)، يُعرض بسطرين مع «عرض المزيد» */}
         {(restaurant.show_description ?? true) && fullDesc && (
-          <div style={{ margin:'2px 16px 0' }}>
+          <div style={{ margin:'var(--hero-spacing) var(--hero-pad-x) 0' }}>
             <p ref={descRef} style={{
               fontSize:'12.5px', color:descColor, lineHeight:'1.45', margin:0,
               ...(descExpanded ? {} : { display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }),
@@ -184,7 +183,7 @@ export default function MenuHeader({
           const mapsUrl = branch?.maps_url || restaurant.maps_url
           if (!addr && !mapsUrl) return null
           return (
-            <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'1px 16px 0', flexWrap:'wrap' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'var(--hero-spacing) var(--hero-pad-x) 0', flexWrap:'wrap' }}>
               {addr && (
                 <span style={{ fontSize:'12px', color:'#6B7280', display:'inline-flex', alignItems:'center', gap:'4px' }}>📍 {addr}</span>
               )}
@@ -199,19 +198,19 @@ export default function MenuHeader({
 
         {/* روابط التواصل + زر المسبّبات */}
         {(socialKeys.length > 0 || ((restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0)) && (
-          <div style={{ display:'flex', alignItems:'center', gap:'6px', margin:'2px 16px 0', flexWrap:'nowrap', overflowX:'auto' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'6px', margin:'var(--hero-spacing) var(--hero-pad-x) 0', flexWrap:'nowrap', overflowX:'auto' }}>
             {shownSocialKeys.map(key => {
               const Icon = SOCIAL_ICONS[key]
               return (
                 <a key={key} href={restaurant.social_links[key]} target="_blank" rel="noopener noreferrer"
-                  style={{ width:'28px', height:'28px', flexShrink:0, borderRadius:'50%', background:'white', border:'1.5px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none', boxShadow:'0 2px 6px rgba(0,0,0,0.06)', overflow:'hidden' }}>
+                  style={{ width:'var(--hero-social)', height:'var(--hero-social)', flexShrink:0, borderRadius:'50%', background:'white', border:'1.5px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none', boxShadow:'0 2px 6px rgba(0,0,0,0.06)', overflow:'hidden' }}>
                   <Icon/>
                 </a>
               )
             })}
             {(hiddenSocialCount > 0 || socialExpanded) && socialKeys.length > 3 && (
               <button onClick={() => setSocialExpanded(v => !v)} aria-label={isEn ? 'More links' : 'روابط أكثر'}
-                style={{ width:'28px', height:'28px', flexShrink:0, borderRadius:'50%', background:'#F3F4F6', border:'1.5px solid #E5E7EB', color:'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'11px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                style={{ width:'var(--hero-social)', height:'var(--hero-social)', flexShrink:0, borderRadius:'50%', background:'#F3F4F6', border:'1.5px solid #E5E7EB', color:'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'11px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 {socialExpanded ? '−' : `+${hiddenSocialCount}`}
               </button>
             )}
@@ -223,8 +222,9 @@ export default function MenuHeader({
           </div>
         )}
 
+        {/* ===== [FOOTER] الإحصائيات + الترويج + الولاء ===== */}
         {/* بطاقة الإحصائيات: الحالة · التجهيز · التوصيل */}
-        <div style={{ display:'flex', margin:'2px 14px 2px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'13px', padding:'3px 4px' }}>
+        <div style={{ display:'flex', margin:'var(--hero-spacing) var(--hero-pad-x) 0', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'13px', padding:'var(--hero-stat-pad-y) 4px' }}>
           {statCells.map((c, i) => (
             <div key={i} style={{ flex:1, textAlign:'center', borderRight: i > 0 ? '1px solid #E9ECF1' : 'none', padding:'0 4px' }}>
               <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'12px', color:c.color, whiteSpace:'nowrap' }}>{c.value}</div>
@@ -235,7 +235,7 @@ export default function MenuHeader({
 
         {/* شريط ترويجي مضغوط — خانة واحدة فقط، بلا ازدحام، قابل للإغلاق لهذه الجلسة */}
         {!promoDismissed && activePromo && (
-          <div style={{ margin:'0 14px 4px' }}>
+          <div style={{ margin:'var(--hero-spacing) var(--hero-pad-x) 0' }}>
             {activePromo.type === 'banner' ? (
               <div style={{ display:'flex', alignItems:'center', gap:'8px', background:`linear-gradient(120deg, ${brandColor}, ${brandColor}CC)`, borderRadius:'13px', padding:'10px 10px 10px 12px', color:'white' }}>
                 <div style={{ flex:1, minWidth:0 }}>
@@ -269,7 +269,7 @@ export default function MenuHeader({
               ? (isEn ? `Your points: ${balance} — ${Math.max(0, threshold - balance)} pts to your reward` : `نقاطك: ${balance} — باقي ${Math.max(0, threshold - balance)} نقطة على مكافأتك`)
               : (isEn ? `Your points: ${balance}` : `نقاطك: ${balance}`)
           return (
-            <div onClick={onShowOrders} style={{ margin:'0 14px 3px', background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'12px', padding:'4px 10px', display:'flex', alignItems:'center', gap:'7px', cursor:'pointer' }}>
+            <div onClick={onShowOrders} style={{ margin:'var(--hero-spacing) var(--hero-pad-x) 0', background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'12px', padding:'4px 10px', display:'flex', alignItems:'center', gap:'7px', cursor:'pointer' }}>
               <span style={{ fontSize:'13px' }}>🎁</span>
               <span style={{ flex:1, fontSize:'11px', fontWeight:'800', color:'#0F1117', fontFamily:'Cairo,sans-serif' }}>{text}</span>
               <span style={{ fontSize:'9.5px', fontWeight:'800', color:brandColor, whiteSpace:'nowrap' }}>{isEn ? 'Details ›' : 'التفاصيل ›'}</span>
