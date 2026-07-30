@@ -37,6 +37,7 @@ export const deletePlanFeature = (planId, key) =>
 
 // ===== تخصيص المطعم =====
 export const listOverrides = (key) => call('admin_list_feature_overrides', { p_key: key }).then((d) => d || [])
+export const listRestaurantOverrides = (restaurantId) => call('admin_list_restaurant_overrides', { p_restaurant_id: restaurantId }).then((d) => d || [])
 export const setOverride   = (restaurantId, key, value) =>
   call('admin_set_capability_override', { p_restaurant_id: restaurantId, p_key: key, p_value: value })
 

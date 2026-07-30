@@ -3,6 +3,8 @@ import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
 import FeaturesLibrary from './screens/FeaturesLibrary'
 import Plans from './screens/Plans'
+import Limits from './screens/Limits'
+import RestaurantOverrides from './screens/RestaurantOverrides'
 import {
   listCategories, listCapabilities, capabilityDetail, listPlans, listRestaurants,
   upsertCapability, deleteCapability, upsertCategory,
@@ -362,17 +364,11 @@ export default function Catalog() {
       </div>
       {screen === 'features' ? <FeaturesLibrary />
         : screen === 'plans' ? <Plans />
+        : screen === 'limits' ? <Limits />
+        : screen === 'overrides' ? <RestaurantOverrides />
         : screen === 'advanced' ? <AdvancedEditor />
-        : <ComingSoon />}
+        : <AdvancedEditor />}
     </AdminShell>
-  )
-}
-
-function ComingSoon() {
-  return (
-    <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px', lineHeight: 1.8 }}>
-      🚧 هذه الشاشة قيد الإنشاء.<br />الوظيفة متاحة مؤقتاً في «⚙️ إعدادات متقدمة».
-    </div>
   )
 }
 
