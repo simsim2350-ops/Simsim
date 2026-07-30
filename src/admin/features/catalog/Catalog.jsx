@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
+import FeaturesLibrary from './screens/FeaturesLibrary'
+import Plans from './screens/Plans'
+import Limits from './screens/Limits'
+import RestaurantOverrides from './screens/RestaurantOverrides'
 import {
   listCategories, listCapabilities, capabilityDetail, listPlans, listRestaurants,
   upsertCapability, deleteCapability, upsertCategory,
@@ -79,7 +83,7 @@ const EMPTY_FORM = {
   default_value_text: '', allowed_values_text: '', metric: '', unit: '', required_permissions: [],
 }
 
-export default function Catalog() {
+function AdvancedEditor() {
   const [cats, setCats] = useState([])
   const [caps, setCaps] = useState([])
   const [plans, setPlans] = useState([])
@@ -195,17 +199,17 @@ export default function Catalog() {
 
   const capName = (k) => caps.find((c) => c.key === k)?.name || k
 
-  if (loading) return <AdminShell active="catalog" title="🧬 سجل القدرات"><Loading /></AdminShell>
+  if (loading) return <Loading />
 
   return (
-    <AdminShell active="catalog" title="🧬 سجل القدرات (Capability Registry)"
-      actions={canWrite && (
-        <div style={{ display: 'flex', gap: '8px' }}>
+    <>
+      {canWrite && (
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginBottom: '12px' }}>
           <button onClick={doSync} style={btn('#0E7490')}>⟳ مزامنة من Manifest</button>
           <button onClick={() => setNewCat(true)} style={btn('#374151')}>+ فئة</button>
           <button onClick={() => { setForm(EMPTY_FORM); setNewCap(true) }} style={btn(ACCENT)}>+ قدرة</button>
         </div>
-      )}>
+      )}
       {err && <ErrBox msg={err} />}
 
       {/* فلاتر */}
@@ -329,6 +333,41 @@ export default function Catalog() {
 
       {newCap && <NewCapModal cats={cats} onClose={() => setNewCap(false)} onSaved={async (k) => { setNewCap(false); await reload(); openDetail(k) }} />}
       {newCat && <NewCatModal onClose={() => setNewCat(false)} onSaved={async () => { setNewCat(false); await reload() }} />}
+    </>
+  )
+}
+
+// ============================================================================
+// غلاف «سجل القدرات» — قائمة داخلية بخمس شاشات، كل شاشة مسؤولية واحدة (Product Design).
+// نفس الخلفية وقاعدة البيانات — إعادة تنظيم عرض فقط.
+// ============================================================================
+const SCREENS = [
+  { key: 'features',  label: '📚 مكتبة الميزات' },
+  { key: 'plans',     label: '📦 الباقات' },
+  { key: 'limits',    label: '📏 الحدود' },
+  { key: 'overrides', label: '🏪 تخصيص المطاعم' },
+  { key: 'advanced',  label: '⚙️ إعدادات متقدمة' },
+]
+
+export default function Catalog() {
+  const [screen, setScreen] = useState('features')
+  return (
+    <AdminShell active="catalog" title="🧬 سجل القدرات">
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '18px', borderBottom: `1px solid ${BORDER}`, paddingBottom: '14px' }}>
+        {SCREENS.map((s) => (
+          <button key={s.key} onClick={() => setScreen(s.key)}
+            style={{ padding: '9px 15px', borderRadius: '10px', cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '13px', border: 'none',
+              background: screen === s.key ? ACCENT : '#12141C', color: screen === s.key ? 'white' : MUTED }}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+      {screen === 'features' ? <FeaturesLibrary />
+        : screen === 'plans' ? <Plans />
+        : screen === 'limits' ? <Limits />
+        : screen === 'overrides' ? <RestaurantOverrides />
+        : screen === 'advanced' ? <AdvancedEditor />
+        : <AdvancedEditor />}
     </AdminShell>
   )
 }
