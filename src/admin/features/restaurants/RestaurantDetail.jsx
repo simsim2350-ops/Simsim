@@ -65,7 +65,8 @@ export default function RestaurantDetail() {
       .then((data) => { if (!cancelled) { setOp(data); setOpState('done') } })
       .catch(() => { if (!cancelled) setOpState('error') })
     return () => { cancelled = true }
-  }, [tab, opState, id])
+    // ملاحظة: لا نضع opState في الاعتماديات — ضبطه إلى loading يعيد تشغيل التأثير فيُلغي طلبه (stuck loading).
+  }, [tab, id])
 
   // المزايا الفعّالة — نداء مستقل، عند أول فتح للتبويب فقط
   useEffect(() => {
@@ -76,7 +77,8 @@ export default function RestaurantDetail() {
       .then((data) => { if (!cancelled) { setFeat(data); setFeatState('done') } })
       .catch(() => { if (!cancelled) setFeatState('error') })
     return () => { cancelled = true }
-  }, [tab, featState, id])
+    // ملاحظة: لا نضع featState في الاعتماديات (نفس سبب opState أعلاه).
+  }, [tab, id])
 
   const runConfirm = async () => {
     if (!confirm) return
