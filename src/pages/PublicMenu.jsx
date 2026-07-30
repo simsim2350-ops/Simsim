@@ -41,6 +41,8 @@ function PublicMenuInner() {
   // قدرات منيو الزبون (PCR — ADR-40): الطلبات أونلاين والتقييمات. إخفاء تام عند الإطفاء.
   const ordering = capabilities?.online_orders !== false
   const reviewsEnabled = capabilities?.reviews !== false
+  // تفاصيل المنتج (PCR): عند التعطيل لا تُفتح نافذة المنتج عند الضغط (منيو عرض بلا تفاصيل).
+  const productDetails = capabilities?.product_details !== false
   const { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer } = useActiveOrders(slug, t)
   const { cart, setCart, cartOpen, setCartOpen, addToCart, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount } = useCart(slug, t)
   const { couponInput, setCouponInput, appliedCoupon, applyCoupon, removeCoupon, applying: applyingCoupon, discountAmount } = useCoupon({ restaurant, branch, cartTotal })
@@ -57,6 +59,8 @@ function PublicMenuInner() {
 
   // حالة عرض محلية للصفحة فقط
   const [selectedProduct, setSelectedProduct] = useState(null)
+  // فتح نافذة المنتج — مُعطَّل تماماً لو قدرة «تفاصيل المنتج» مطفأة (الضغط لا يفتح شيئاً).
+  const openProduct = productDetails ? setSelectedProduct : () => {}
   const [editingCartItem, setEditingCartItem] = useState(null) // { item, product, initialOptions } — تعديل صنف من السلة (✎)
   const [searchOpen, setSearchOpen] = useState(false)
   const [showAllergensModal, setShowAllergensModal] = useState(false)
@@ -209,7 +213,7 @@ function PublicMenuInner() {
         cart={cart}
         addToCart={addToCart}
         removeFromCart={removeFromCart}
-        onOpenProduct={setSelectedProduct}
+        onOpenProduct={openProduct}
         brandColor={brandColor}
         priceColor={priceColor}
         descColor={descColor}
@@ -230,7 +234,7 @@ function PublicMenuInner() {
         cart={cart}
         addToCart={addToCart}
         removeFromCart={removeFromCart}
-        onOpenProduct={setSelectedProduct}
+        onOpenProduct={openProduct}
         brandColor={brandColor}
         priceColor={priceColor}
         descColor={descColor}
@@ -292,7 +296,7 @@ function PublicMenuInner() {
           onClose={() => setCartOpen(false)}
           suggestions={cartSuggestions}
           onAddSuggestion={(p) => addToCart(p, 1)}
-          onOpenSuggestion={(p) => setSelectedProduct(p)}
+          onOpenSuggestion={(p) => openProduct(p)}
           loyalty={loyalty}
           couponInput={couponInput}
           setCouponInput={setCouponInput}
