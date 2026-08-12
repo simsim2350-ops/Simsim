@@ -201,8 +201,8 @@ function PublicMenuInner() {
         .sm-menu-frame {
           -webkit-text-size-adjust: 100%;   /* يوقف تضخيم الخط في بعض متصفّحات أندرويد → تجربة موحّدة */
           text-size-adjust: 100%;
-          --hero-image-h: 128px;                    /* ارتفاع شريط الصورة (م2 → clamp) */
-          --hero-overlap: 76px;                     /* تداخل البطاقة فوق الصورة (م2 → clamp) */
+          --hero-image-h: clamp(96px, 26vw, 132px); /* ارتفاع الشريط — Fluid (بلا vh، بحدّ أدنى/أقصى) */
+          --hero-overlap: calc(var(--hero-image-h) - 52px); /* يُبقي أعلى البطاقة عند 52px دائماً → عتبات الـMorph ثابتة */
           --hero-radius: 22px;                      /* حواف البطاقة (الهوية — لا تتغيّر) */
           --hero-pad-x: 16px;                       /* حشو أفقي للبطاقة */
           --hero-pad-bottom: clamp(3px, 1.2vw, 6px);/* حشو سفلي — يزيل الفراغ الأبيض */
