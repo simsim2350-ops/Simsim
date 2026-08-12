@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { SOCIAL_ICONS } from './SocialIcons'
 import { estimatedPrepTime } from './helpers'
 
-const HERO_HEIGHT = 128
-
+// أبعاد الهيرو تُدار الآن عبر Hero Design Tokens في PublicMenu (متغيّرات CSS --hero-*).
 const clamp01 = v => Math.min(1, Math.max(0, v))
 
 // هيدر المنيو — الهندسة الجديدة (مستلهمة من تطبيقات التوصيل):
@@ -64,27 +63,21 @@ export default function MenuHeader({
     : []
   const shownSocialKeys = socialExpanded ? socialKeys : socialKeys.slice(0, 3)
   const hiddenSocialCount = socialKeys.length - shownSocialKeys.length
-  // خلية إحصائيات واحدة (حالة الفتح / وقت التجهيز / التوصيل)
-  const statCells = [
-    ...((restaurant?.show_hours ?? true) ? [{
-      value: openStatus.open ? t('openNow') : t('closedNow'),
-      color: openStatus.open ? '#10B981' : '#EF4444',
-      sub: openStatus.open
-        ? (!openStatus.unknown && openStatus.todayText ? openStatus.todayText : '')
-        : (openStatus.nextText || ''),
-      ltr: openStatus.open,
-    }] : []),
-    ...((restaurant?.show_prep_time ?? true) ? [{
-      value: `${estimatedPrepTime(activeOrdersCount)} ${t('minShort')}`,
-      color: '#0F1117',
-      sub: isEn ? 'Prep time' : 'وقت التجهيز',
-    }] : []),
-    ...(deliveryEnabled ? [{
-      value: Number(deliveryFee) > 0 ? `${Number(deliveryFee).toFixed(0)} ﷼` : (isEn ? 'Free' : 'مجاني'),
-      color: '#0F1117',
-      sub: isEn ? 'Delivery' : 'رسوم التوصيل',
-    }] : []),
+  // [META · المستوى 2] الموقع · التجهيز · التوصيل · الساعات — صف واحد مضغوط بدل بطاقة الإحصائيات
+  const addr = branch?.address || restaurant.address
+  const mapsUrl = branch?.maps_url || restaurant.maps_url
+  const hoursDetail = (restaurant?.show_hours ?? true)
+    ? (openStatus.open ? (!openStatus.unknown && openStatus.todayText ? openStatus.todayText : '') : (openStatus.nextText || ''))
+    : ''
+  const metaItems = [
+    ...(addr ? [{ icon: '📍', text: addr, color: '#6B7280', grow: true }] : []),
+    ...((restaurant?.show_prep_time ?? true) ? [{ icon: '⏱️', text: `${estimatedPrepTime(activeOrdersCount)} ${t('minShort')}`, color: '#374151' }] : []),
+    ...(deliveryEnabled ? [{ icon: '🚚', text: Number(deliveryFee) > 0 ? `${Number(deliveryFee).toFixed(0)} ﷼` : (isEn ? 'Free' : 'مجاني'), color: '#374151' }] : []),
+    ...(hoursDetail ? [{ icon: '🕐', text: hoursDetail, color: openStatus.open ? '#10B981' : '#EF4444', ltr: openStatus.open }] : []),
   ]
+  // [المستوى 3] بطاقة ترويجية واحدة بالأولوية: الولاء ← الحملة/الكوبون ← لا شيء
+  const showLoyalty = !!loyalty
+  const showPromo = !showLoyalty && !promoDismissed && !!activePromo
 
   return (
     <>
@@ -93,10 +86,10 @@ export default function MenuHeader({
           فتبقى الهوية ملتصقة طوال منطقة البطاقة بدل أن تنفلت وتختفي بعد مسافة قصيرة. */}
 
       {/* ===== الهيرو: مثبّت على الشاشة (fixed) فلا يتحرك، والبطاقة تنزلق فوقه، ثم يتلاشى تدريجياً ===== */}
-      <div style={{ height:`${HERO_HEIGHT}px` }}/>
+      <div style={{ height:'var(--hero-image-h)' }}/>
       <div style={{
         position:'fixed', top:0, left:'50%', transform:'translateX(-50%)',
-        width:'100%', maxWidth:'480px', height:`${HERO_HEIGHT}px`, zIndex:5,
+        width:'100%', maxWidth:'480px', height:'var(--hero-image-h)', zIndex:5,
         overflow:'hidden', background:`linear-gradient(160deg, ${brandColor}, ${brandColor}88)`,
         opacity: heroOpacity,
         pointerEvents: heroOpacity < 0.5 ? 'none' : 'auto',
@@ -129,17 +122,17 @@ export default function MenuHeader({
       </div>
 
       {/* ===== البطاقة العائمة فوق الهيرو (هوامش جانبية + زوايا مدوّرة) — تدفّق طبيعي، تنزلق للأعلى ===== */}
-      <div style={{ position:'relative', zIndex:10, margin:'-76px 16px 0', background:'rgba(255,255,255,0.72)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)', borderRadius:'22px', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
+      <div style={{ position:'relative', zIndex:10, margin:'calc(var(--hero-overlap) * -1) var(--hero-pad-x) 0', paddingBottom:'var(--hero-pad-bottom)', background:'rgba(255,255,255,0.72)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)', borderRadius:'var(--hero-radius)', boxShadow:'0 10px 30px rgba(15,17,23,0.16)' }}>
 
-        {/* رأس البطاقة (شعار + اسم + تقييم + حالة الفتح) — تدفّق طبيعي ضمن البطاقة، ينزلق مع الصفحة.
-            التثبيت الدائم يتكفّل به «الهيدر المصغّر» المنفصل أدناه (لتفادي التعارض مع شريط الأقسام). */}
+        {/* ===== [HEADER] الشعار + الاسم + التقييم + الحالة — هندسته ثابتة (تُبقي عتبات الـMorph صحيحة) ===== */}
+        {/* التثبيت الدائم يتكفّل به «الهيدر المصغّر» المنفصل أدناه (لتفادي التعارض مع شريط الأقسام). */}
         <div style={{ paddingTop:'4px' }}>
           {/* مقبض السحب */}
           <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 4px' }}/>
 
           {/* الهوية: شعار + اسم + تقييم + حالة الفتح */}
           <div style={{ display:'flex', alignItems:'center', gap:'11px', padding:'0 16px 5px' }}>
-            <div style={{ width:'52px', height:'52px', borderRadius:'15px', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'25px', flexShrink:0, overflow:'hidden', boxShadow:'0 5px 14px rgba(15,17,23,0.18)' }}>
+            <div style={{ width:'var(--hero-logo)', height:'var(--hero-logo)', borderRadius:'15px', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'25px', flexShrink:0, overflow:'hidden', boxShadow:'0 5px 14px rgba(15,17,23,0.18)' }}>
               {restaurant.logo_url
                 ? <img src={restaurant.logo_url} alt={restaurant.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 : '🍕'}
@@ -162,82 +155,91 @@ export default function MenuHeader({
           </div>
         </div>
 
-        {/* ===== المحتوى الثانوي — تدفّق طبيعي، ينزلق للأعلى خلف صفّ الهوية ويختفي بالتمرير ===== */}
-        {/* وصف المطعم — يكتبه صاحب المطعم من الإعدادات (يدعم الترجمة)، يُعرض بسطرين مع «عرض المزيد» */}
-        {(restaurant.show_description ?? true) && fullDesc && (
-          <div style={{ margin:'2px 16px 0' }}>
-            <p ref={descRef} style={{
-              fontSize:'12.5px', color:descColor, lineHeight:'1.45', margin:0,
-              ...(descExpanded ? {} : { display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }),
-            }}>{fullDesc}</p>
-            {(descOverflows || descExpanded) && (
-              <button onClick={() => setDescExpanded(v => !v)} style={{ border:'none', background:'none', padding:'2px 0 0', color:brandColor, fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'11.5px', cursor:'pointer' }}>
-                {descExpanded ? (isEn ? 'Show less' : 'عرض أقل') : (isEn ? 'Show more' : 'عرض المزيد')}
-              </button>
-            )}
-          </div>
-        )}
+        {/* ===== [CONTENT + FOOTER] محتوى مرن (Dynamic) — كل قسم يظهر بمحتواه فقط؛ المسافات عبر gap تنطوي بلا فراغات ===== */}
+        <div style={{ display:'flex', flexDirection:'column', gap:'var(--hero-spacing)', padding:'0 var(--hero-pad-x)', marginTop:'var(--hero-spacing)' }}>
 
-        {/* الموقع + رابط الخريطة */}
-        {(() => {
-          const addr = branch?.address || restaurant.address
-          const mapsUrl = branch?.maps_url || restaurant.maps_url
-          if (!addr && !mapsUrl) return null
-          return (
-            <div style={{ display:'flex', alignItems:'center', gap:'8px', margin:'1px 16px 0', flexWrap:'wrap' }}>
-              {addr && (
-                <span style={{ fontSize:'12px', color:'#6B7280', display:'inline-flex', alignItems:'center', gap:'4px' }}>📍 {addr}</span>
-              )}
+          {/* [META · المستوى 2] الموقع · التجهيز · التوصيل · الساعات — صف واحد مضغوط */}
+          {(metaItems.length > 0 || mapsUrl) && (
+            <div style={{ display:'flex', alignItems:'center', gap:'4px 12px', flexWrap:'wrap' }}>
+              {metaItems.map((m, i) => (
+                <span key={i} style={{ display:'inline-flex', alignItems:'center', gap:'4px', minWidth:0, ...(m.grow ? { flex:'1 1 auto' } : {}), fontSize:'12px', fontWeight:'700', color:m.color, ...(m.ltr ? { direction:'ltr' } : {}) }}>
+                  <span>{m.icon}</span>
+                  <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'100%' }}>{m.text}</span>
+                </span>
+              ))}
               {mapsUrl && (
-                <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize:'11px', fontWeight:'700', color:brandColor, background:`${brandColor}14`, padding:'4px 10px', borderRadius:'100px', textDecoration:'none' }}>
+                <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink:0, fontSize:'11px', fontWeight:'700', color:brandColor, background:`${brandColor}14`, padding:'3px 10px', borderRadius:'100px', textDecoration:'none' }}>
                   {t('mapBtn')}
                 </a>
               )}
             </div>
-          )
-        })()}
+          )}
 
-        {/* روابط التواصل + زر المسبّبات */}
-        {(socialKeys.length > 0 || ((restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0)) && (
-          <div style={{ display:'flex', alignItems:'center', gap:'6px', margin:'2px 16px 0', flexWrap:'nowrap', overflowX:'auto' }}>
-            {shownSocialKeys.map(key => {
-              const Icon = SOCIAL_ICONS[key]
-              return (
-                <a key={key} href={restaurant.social_links[key]} target="_blank" rel="noopener noreferrer"
-                  style={{ width:'28px', height:'28px', flexShrink:0, borderRadius:'50%', background:'white', border:'1.5px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none', boxShadow:'0 2px 6px rgba(0,0,0,0.06)', overflow:'hidden' }}>
-                  <Icon/>
-                </a>
-              )
-            })}
-            {(hiddenSocialCount > 0 || socialExpanded) && socialKeys.length > 3 && (
-              <button onClick={() => setSocialExpanded(v => !v)} aria-label={isEn ? 'More links' : 'روابط أكثر'}
-                style={{ width:'28px', height:'28px', flexShrink:0, borderRadius:'50%', background:'#F3F4F6', border:'1.5px solid #E5E7EB', color:'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'11px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                {socialExpanded ? '−' : `+${hiddenSocialCount}`}
-              </button>
-            )}
-            {(restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0 && (
-              <button onClick={onShowAllergens} style={{ display:'flex', alignItems:'center', gap:'4px', flexShrink:0, whiteSpace:'nowrap', padding:'5px 9px', borderRadius:'100px', border:'1.5px solid #FDE68A', background:'#FFFBEB', color:'#92400E', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'10.5px', cursor:'pointer' }}>
-                ⚠️ {t('allergens')}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* بطاقة الإحصائيات: الحالة · التجهيز · التوصيل */}
-        <div style={{ display:'flex', margin:'2px 14px 2px', background:'#F8F9FB', border:'1px solid #EEF0F4', borderRadius:'13px', padding:'3px 4px' }}>
-          {statCells.map((c, i) => (
-            <div key={i} style={{ flex:1, textAlign:'center', borderRight: i > 0 ? '1px solid #E9ECF1' : 'none', padding:'0 4px' }}>
-              <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'12px', color:c.color, whiteSpace:'nowrap' }}>{c.value}</div>
-              {c.sub && <div style={{ fontSize:'9px', color:'#9CA3AF', fontWeight:'700', marginTop:'2px', direction: c.ltr ? 'ltr' : 'rtl' }}>{c.sub}</div>}
+          {/* [DESC · المستوى 2] وصف المطعم — سطران مع «عرض المزيد» */}
+          {(restaurant.show_description ?? true) && fullDesc && (
+            <div>
+              <p ref={descRef} style={{
+                fontSize:'12.5px', color:descColor, lineHeight:'1.45', margin:0,
+                ...(descExpanded ? {} : { display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }),
+              }}>{fullDesc}</p>
+              {(descOverflows || descExpanded) && (
+                <button onClick={() => setDescExpanded(v => !v)} style={{ border:'none', background:'none', padding:'2px 0 0', color:brandColor, fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'11.5px', cursor:'pointer' }}>
+                  {descExpanded ? (isEn ? 'Show less' : 'عرض أقل') : (isEn ? 'Show more' : 'عرض المزيد')}
+                </button>
+              )}
             </div>
-          ))}
-        </div>
+          )}
 
-        {/* شريط ترويجي مضغوط — خانة واحدة فقط، بلا ازدحام، قابل للإغلاق لهذه الجلسة */}
-        {!promoDismissed && activePromo && (
-          <div style={{ margin:'0 14px 4px' }}>
-            {activePromo.type === 'banner' ? (
-              <div style={{ display:'flex', alignItems:'center', gap:'8px', background:`linear-gradient(120deg, ${brandColor}, ${brandColor}CC)`, borderRadius:'13px', padding:'10px 10px 10px 12px', color:'white' }}>
+          {/* [ACTIONS · المستوى 3] اتصال · تواصل · مسبّبات — شريط أفقي واحد قابل للتمرير */}
+          {(restaurant.phone || socialKeys.length > 0 || ((restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0)) && (
+            <div className="sm-hero-actions" style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'nowrap', overflowX:'auto' }}>
+              {restaurant.phone && (
+                <a href={`tel:${restaurant.phone}`} aria-label={isEn ? 'Call' : 'اتصال'}
+                  style={{ width:'var(--hero-social)', height:'var(--hero-social)', flexShrink:0, borderRadius:'50%', background:'white', border:'1.5px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none', boxShadow:'0 2px 6px rgba(0,0,0,0.06)', fontSize:'13px' }}>📞</a>
+              )}
+              {shownSocialKeys.map(key => {
+                const Icon = SOCIAL_ICONS[key]
+                return (
+                  <a key={key} href={restaurant.social_links[key]} target="_blank" rel="noopener noreferrer"
+                    style={{ width:'var(--hero-social)', height:'var(--hero-social)', flexShrink:0, borderRadius:'50%', background:'white', border:'1.5px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none', boxShadow:'0 2px 6px rgba(0,0,0,0.06)', overflow:'hidden' }}>
+                    <Icon/>
+                  </a>
+                )
+              })}
+              {(hiddenSocialCount > 0 || socialExpanded) && socialKeys.length > 3 && (
+                <button onClick={() => setSocialExpanded(v => !v)} aria-label={isEn ? 'More links' : 'روابط أكثر'}
+                  style={{ width:'var(--hero-social)', height:'var(--hero-social)', flexShrink:0, borderRadius:'50%', background:'#F3F4F6', border:'1.5px solid #E5E7EB', color:'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'11px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  {socialExpanded ? '−' : `+${hiddenSocialCount}`}
+                </button>
+              )}
+              {(restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0 && (
+                <button onClick={onShowAllergens} style={{ display:'flex', alignItems:'center', gap:'4px', flexShrink:0, whiteSpace:'nowrap', padding:'5px 9px', borderRadius:'100px', border:'1.5px solid #FDE68A', background:'#FFFBEB', color:'#92400E', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'10.5px', cursor:'pointer' }}>
+                  ⚠️ {t('allergens')}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* [PROMO · المستوى 3] بطاقة ترويجية واحدة بالأولوية — الولاء ← الحملة/الكوبون */}
+          {showLoyalty ? (() => {
+            const threshold = loyalty.reward_threshold || 0
+            const balance = loyalty.balance || 0
+            const ready = threshold > 0 && balance >= threshold
+            const text = ready
+              ? (isEn ? `Your reward is ready: ${loyalty.reward_description || t('rewardDefault')} 🎉` : `مكافأتك جاهزة: ${loyalty.reward_description || t('rewardDefault')} 🎉`)
+              : threshold > 0
+                ? (isEn ? `Your points: ${balance} — ${Math.max(0, threshold - balance)} pts to your reward` : `نقاطك: ${balance} — باقي ${Math.max(0, threshold - balance)} نقطة على مكافأتك`)
+                : (isEn ? `Your points: ${balance}` : `نقاطك: ${balance}`)
+            return (
+              <div onClick={onShowOrders} style={{ background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'12px', padding:'6px 10px', display:'flex', alignItems:'center', gap:'7px', cursor:'pointer' }}>
+                <span style={{ fontSize:'13px' }}>🎁</span>
+                <span style={{ flex:1, fontSize:'11px', fontWeight:'800', color:'#0F1117', fontFamily:'Cairo,sans-serif' }}>{text}</span>
+                <span style={{ fontSize:'9.5px', fontWeight:'800', color:brandColor, whiteSpace:'nowrap' }}>{isEn ? 'Details ›' : 'التفاصيل ›'}</span>
+              </div>
+            )
+          })() : showPromo ? (
+            activePromo.type === 'banner' ? (
+              <div style={{ display:'flex', alignItems:'center', gap:'8px', background:`linear-gradient(120deg, ${brandColor}, ${brandColor}CC)`, borderRadius:'13px', padding:'9px 10px 9px 12px', color:'white' }}>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12.5px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activePromo.data.title}</div>
                   {activePromo.data.subtitle && <div style={{ fontSize:'11px', opacity:0.9, marginTop:'2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activePromo.data.subtitle}</div>}
@@ -254,28 +256,9 @@ export default function MenuHeader({
                 </span>
                 <button onClick={() => setPromoDismissed(true)} aria-label={isEn ? 'Dismiss' : 'إغلاق'} style={{ flexShrink:0, width:'22px', height:'22px', borderRadius:'50%', border:'none', background:'rgba(0,0,0,0.06)', color:'#6B7280', fontSize:'12px', cursor:'pointer' }}>✕</button>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* بانر نقاط الولاء — للزبون المعروف فقط ولو البرنامج مفعّل (الضغط يفتح التفاصيل في شاشة طلباتي) */}
-        {loyalty && (() => {
-          const threshold = loyalty.reward_threshold || 0
-          const balance = loyalty.balance || 0
-          const ready = threshold > 0 && balance >= threshold
-          const text = ready
-            ? (isEn ? `Your reward is ready: ${loyalty.reward_description || t('rewardDefault')} 🎉` : `مكافأتك جاهزة: ${loyalty.reward_description || t('rewardDefault')} 🎉`)
-            : threshold > 0
-              ? (isEn ? `Your points: ${balance} — ${Math.max(0, threshold - balance)} pts to your reward` : `نقاطك: ${balance} — باقي ${Math.max(0, threshold - balance)} نقطة على مكافأتك`)
-              : (isEn ? `Your points: ${balance}` : `نقاطك: ${balance}`)
-          return (
-            <div onClick={onShowOrders} style={{ margin:'0 14px 3px', background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'12px', padding:'4px 10px', display:'flex', alignItems:'center', gap:'7px', cursor:'pointer' }}>
-              <span style={{ fontSize:'13px' }}>🎁</span>
-              <span style={{ flex:1, fontSize:'11px', fontWeight:'800', color:'#0F1117', fontFamily:'Cairo,sans-serif' }}>{text}</span>
-              <span style={{ fontSize:'9.5px', fontWeight:'800', color:brandColor, whiteSpace:'nowrap' }}>{isEn ? 'Details ›' : 'التفاصيل ›'}</span>
-            </div>
-          )
-        })()}
+            )
+          ) : null}
+        </div>
 
       </div>
 

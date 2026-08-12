@@ -194,6 +194,23 @@ function PublicMenuInner() {
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
         * { box-sizing: border-box; }
         html, body { background: #E4E7EE; }
+        /* ===== Hero Design Tokens (ADR-43) — المصدر الوحيد لأبعاد الهيرو/البطاقة =====
+           عدّلها من هنا فقط. القيَم Fluid عبر clamp() (تتدرّج مع العرض بلا قفزات، بلا vh).
+           ملاحظة مرحلية: image-h/overlap/logo تبقى ثابتة في المرحلة 1 (مرتبطة بعتبات الـMorph)
+           وتتحوّل إلى clamp في المرحلة 2 مع إعادة معايرة العتبات. */
+        .sm-menu-frame {
+          -webkit-text-size-adjust: 100%;   /* يوقف تضخيم الخط في بعض متصفّحات أندرويد → تجربة موحّدة */
+          text-size-adjust: 100%;
+          --hero-image-h: clamp(96px, 26vw, 132px); /* ارتفاع الشريط — Fluid (بلا vh، بحدّ أدنى/أقصى) */
+          --hero-overlap: calc(var(--hero-image-h) - 52px); /* يُبقي أعلى البطاقة عند 52px دائماً → عتبات الـMorph ثابتة */
+          --hero-radius: 22px;                      /* حواف البطاقة (الهوية — لا تتغيّر) */
+          --hero-pad-x: 16px;                       /* حشو أفقي للبطاقة */
+          --hero-pad-bottom: clamp(3px, 1.2vw, 6px);/* حشو سفلي — يزيل الفراغ الأبيض */
+          --hero-spacing: clamp(2px, 0.7vw, 5px);   /* إيقاع رأسي موحّد بين صفوف المحتوى */
+          --hero-logo: clamp(44px, 12.5vw, 52px);   /* الشعار — Fluid، أصغر قليلاً على الشاشات الصغيرة */
+          --hero-social: clamp(26px, 7vw, 28px);    /* أيقونة تواصل (fluid) */
+          --hero-stat-pad-y: 3px;                   /* حشو رأسي لبطاقة الإحصائيات (مضغوط) */
+        }
         /* تابلت: إطار متمركز أنيق (اتجاه أ) */
         @media (min-width: 600px) and (max-width: 1023px) {
           .sm-menu-frame { box-shadow: 0 0 0 100vw #E4E7EE, 0 0 60px rgba(15,17,23,0.14); }
