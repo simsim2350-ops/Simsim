@@ -8,7 +8,8 @@
 ## 1) الـ Stack
 - **الواجهة:** React + Vite، عربية RTL، خطوط Cairo/Tajawal، هوية برتقالية (#FF6B35→#E85A24) / كحلي (#0F1117).
 - **الخلفية:** Supabase (Postgres + Auth + Realtime + Storage + Edge Functions) + RLS مفعّلة على كل الجداول.
-- **النشر:** Vercel (production: `sim50.vercel.app` / `simsim50.vercel.app`). **الدمج في main = النشر** (إنشاء PR وحده لا ينشر).
+- **النشر:** Vercel. **الدومين الرسمي الأساسي:** `https://simsimmenu.com` (و`www.simsimmenu.com` يُحوَّل إليه). الدومين القديم `simsim50.vercel.app` ما زال مرتبطاً بالمشروع (يُبقى حيّاً لأن رموز QR المطبوعة/المُشارَكة سابقاً تشير إليه). **الدمج في main = النشر** (إنشاء PR وحده لا ينشر).
+  - ملاحظة: التطبيق نسبيّ الروابط بالكامل (`window.location.origin`) فيعمل على أي دومين تلقائياً. إعداد خارجي يجب ضبطه في لوحة Supabase (خارج الكود): Authentication → URL Configuration → Site URL = `https://simsimmenu.com` + إضافة `https://simsimmenu.com/**` إلى Redirect URLs (لعمل روابط إعادة تعيين كلمة المرور/تأكيد الإيميل على الدومين الجديد).
 - **الحماية:** فرع `main` محمي — CI «Build (Vite)» إلزامي قبل الدمج + منع force push + منع الحذف.
 - **الحالة:** `authStore` (Zustand) — يوفّر `user`, `restaurant`, `fetchRestaurant`, `signOut`, `isOwner`, `membership`.
 
