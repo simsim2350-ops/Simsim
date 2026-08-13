@@ -1,4 +1,5 @@
 import { getCalorieBadge } from './helpers'
+import { TYPE } from './typography'
 
 // بطاقة صنف واحدة في المنيو — تدعم 4 تخطيطات: list (افتراضي) / grid / circles / showcase
 export default function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor, descColor, isEn, layout = 'list', ordering = true }) {
@@ -55,10 +56,10 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
             {qtyControl}
           </div>
         </div>
-        <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color:'#0F1117', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'100%' }}>{pName}</div>
+        <div style={{ ...TYPE.itemNameSm, color:'#0F1117', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'100%' }}>{pName}</div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
-          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color: _priceColor }}>{product.price} ﷼</span>
-          {product.compare_price && <span style={{ fontSize:'10px', color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
+          <span style={{ ...TYPE.priceSm, color: _priceColor }}>{product.price} ﷼</span>
+          {product.compare_price && <span style={{ ...TYPE.caption, color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
         </div>
       </div>
     )
@@ -79,10 +80,10 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
           {qtyControl}
         </div>
         <div onClick={onAdd} style={{ padding:'10px 12px', cursor:'pointer' }}>
-          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color:'#0F1117', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pName}</div>
+          <div style={{ ...TYPE.itemNameSm, color:'#0F1117', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pName}</div>
           <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap' }}>
-            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color: _priceColor }}>{product.price} ﷼</span>
-            {product.compare_price && <span style={{ fontSize:'10px', color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
+            <span style={{ ...TYPE.priceSm, color: _priceColor }}>{product.price} ﷼</span>
+            {product.compare_price && <span style={{ ...TYPE.caption, color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
           </div>
         </div>
       </div>
@@ -104,15 +105,15 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
           {qtyControl}
         </div>
         <div onClick={onAdd} style={{ padding:'12px 14px', cursor:'pointer' }}>
-          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', color:'#0F1117', marginBottom:'4px' }}>{pName}</div>
+          <div style={{ ...TYPE.itemName, color:'#0F1117', marginBottom:'4px' }}>{pName}</div>
           {pDesc && (
-            <div style={{ fontSize:'12px', color:_descColor, lineHeight:'1.5', marginBottom:'8px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+            <div style={{ ...TYPE.body, color:_descColor, marginBottom:'8px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
               {pDesc}
             </div>
           )}
           <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', color: _priceColor }}>{product.price} ﷼</span>
-            {product.compare_price && <span style={{ fontSize:'12px', color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
+            <span style={{ ...TYPE.price, color: _priceColor }}>{product.price} ﷼</span>
+            {product.compare_price && <span style={{ ...TYPE.caption, color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
           </div>
         </div>
       </div>
@@ -122,16 +123,16 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
   return (
     <div style={{ background:'white', padding:'12px 14px', display:'flex', gap:'12px', alignItems:'center' }}>
       <div onClick={onAdd} style={{ flex:1, minWidth:0, cursor:'pointer' }}>
-        <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', color:'#0F1117', marginBottom:'3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pName}</div>
+        <div style={{ ...TYPE.itemName, color:'#0F1117', marginBottom:'3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pName}</div>
         {pDesc && (
-          <div style={{ fontSize:'12px', color:'#9CA3AF', lineHeight:'1.35', marginBottom:'6px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+          <div style={{ ...TYPE.body, color:'#9CA3AF', marginBottom:'6px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
             {pDesc}
           </div>
         )}
         <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color: _priceColor, fontVariantNumeric:'tabular-nums' }}>{product.price} ﷼</span>
-          {product.compare_price && <span style={{ fontSize:'12px', color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
-          {product.calories && <span style={{ fontSize:'11px', color:'#9CA3AF' }}>{getCalorieBadge(product.calories)} {product.calories}</span>}
+          <span style={{ ...TYPE.price, color: _priceColor, fontVariantNumeric:'tabular-nums' }}>{product.price} ﷼</span>
+          {product.compare_price && <span style={{ ...TYPE.caption, color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
+          {product.calories && <span style={{ ...TYPE.meta, color:'#9CA3AF' }}>{getCalorieBadge(product.calories)} {product.calories}</span>}
         </div>
       </div>
 

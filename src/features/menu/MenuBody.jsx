@@ -1,3 +1,4 @@
+import { TYPE } from './typography'
 import { useEffect, useRef, useState } from 'react'
 import ProductItem from './ProductItem'
 import HProductCard from './HProductCard'
@@ -87,8 +88,8 @@ export default function MenuBody({
               onClick={() => goToCategory(cat.id)}
               style={{
                 padding:'11px 11px 9px', cursor:'pointer', flexShrink:0, whiteSpace:'nowrap',
-                fontSize:'13px', fontFamily:'Cairo,sans-serif',
-                fontWeight: activeCategory === cat.id ? '900' : '700',
+                ...TYPE.tab,
+                fontWeight: activeCategory === cat.id ? '800' : '700',
                 borderBottom: activeCategory === cat.id ? `2.5px solid ${brandColor}` : '2.5px solid transparent',
                 color: activeCategory === cat.id ? '#0F1117' : '#9CA3AF',
                 transition:'all 0.2s',
@@ -106,7 +107,7 @@ export default function MenuBody({
           <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', animation:'fadeIn 0.2s ease' }}/>
           <div onClick={e => e.stopPropagation()} style={{ position:'relative', background:'white', width:'100%', maxWidth:'480px', borderRadius:'24px 24px 0 0', padding:'12px 16px 24px', maxHeight:'70vh', overflowY:'auto', animation:'slideUp 0.25s ease' }}>
             <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 14px' }}/>
-            <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', margin:'0 0 12px', textAlign:'center' }}>{t('allCats')}</h3>
+            <h3 style={{ ...TYPE.sectionTitle, margin:'0 0 12px', textAlign:'center' }}>{t('allCats')}</h3>
             {categories.map(cat => {
               const count = products.filter(p => p.category_id === cat.id).length
               const isActive = activeCategory === cat.id
@@ -133,9 +134,9 @@ export default function MenuBody({
 
         {/* يعجب زبائننا — تلقائية من المبيعات، شريط أفقي منزلق بـ4 أصناف */}
         {bestSellers.length > 0 && (
-          <div style={{ marginBottom:'10px' }}>
-            <div style={{ padding:'16px 16px 10px' }}>
-              <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color:'#0F1117', margin:0 }}>{t('bestSellers')}</h2>
+          <div style={{ marginBottom:'6px' }}>
+            <div style={{ padding:'12px 16px 8px' }}>
+              <h2 style={{ ...TYPE.sectionTitle, color:'#0F1117', margin:0 }}>{t('bestSellers')}</h2>
             </div>
             <div style={{ display:'flex', gap:'10px', overflowX:'auto', padding:'0 16px 4px', WebkitOverflowScrolling:'touch' }}>
               {bestSellers.map(prod => (
@@ -155,9 +156,9 @@ export default function MenuBody({
 
         {/* الأكثر طلباً — اختيار صاحب المطعم (is_featured)، بطاقات مربعة دائماً (شبكة) بغضّ النظر عن تخطيط المطعم */}
         {mostOrdered.length > 0 && (
-          <div style={{ marginBottom:'8px' }}>
-            <div style={{ padding:'16px 16px 10px' }}>
-              <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color:'#0F1117', margin:0 }}>{t('mostOrdered')}</h2>
+          <div style={{ marginBottom:'6px' }}>
+            <div style={{ padding:'12px 16px 8px' }}>
+              <h2 style={{ ...TYPE.sectionTitle, color:'#0F1117', margin:0 }}>{t('mostOrdered')}</h2>
             </div>
             <div className="sm-products" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }}>
               {mostOrdered.map(prod => (
@@ -172,8 +173,8 @@ export default function MenuBody({
           const catProducts = filteredProducts(cat.id)
           if (catProducts.length === 0) return null
           return (
-            <div key={cat.id} id={`cat-${cat.id}`} style={{ marginBottom:'8px' }}>
-              <div style={{ padding:'16px 16px 10px', display:'flex', alignItems:'center', gap:'10px' }}>
+            <div key={cat.id} id={`cat-${cat.id}`} style={{ marginBottom:'6px' }}>
+              <div style={{ padding:'12px 16px 8px', display:'flex', alignItems:'center', gap:'10px' }}>
                 {cat.cover_url ? (
                   <div style={{ width:'36px', height:'36px', borderRadius:'10px', overflow:'hidden', flexShrink:0 }}>
                     <img loading="lazy" decoding="async" src={cat.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
@@ -181,8 +182,8 @@ export default function MenuBody({
                 ) : (
                   <span style={{ fontSize:'20px' }}>{cat.emoji}</span>
                 )}
-                <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color:'#0F1117' }}>{tx(cat,'name')}</h2>
-                <span style={{ fontSize:'12px', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 8px', borderRadius:'100px' }}>{catProducts.length}</span>
+                <h2 style={{ ...TYPE.sectionTitle, color:'#0F1117' }}>{tx(cat,'name')}</h2>
+                <span style={{ ...TYPE.meta, color:'#9CA3AF', background:'#F3F4F6', padding:'2px 8px', borderRadius:'100px' }}>{catProducts.length}</span>
               </div>
               <div className="sm-products" style={
                 ['grid','circles'].includes(layout) ? { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }
