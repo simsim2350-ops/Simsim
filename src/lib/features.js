@@ -54,4 +54,16 @@ export function state(features, key) {
   }
 }
 
-export default { has, value, state, getEntry, isRuntimeUsable }
+// حالة وصول موحّدة لعنصر واجهة (مصدر الحقيقة الوحيد للقفل/الترقية):
+//   'available'   : متاح ويعمل طبيعياً.
+//   'locked'      : غير متاح في باقة المطعم الحالية (يُفتح Upgrade Modal).
+//   'coming_soon' : غير متاح مؤقتاً في النظام بالكامل (runtime غير قابل للاستخدام).
+// fail-open: مفتاح غير مسجّل → 'available' (غير كاسر).
+export function accessStatus(features, key) {
+  const e = getEntry(features, key)
+  if (!e) return 'available'
+  if (!isRuntimeUsable(e.runtime_status)) return 'coming_soon'
+  return has(features, key) ? 'available' : 'locked'
+}
+
+export default { has, value, state, getEntry, isRuntimeUsable, accessStatus }

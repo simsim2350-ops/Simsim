@@ -1,6 +1,6 @@
 // اختبار طبقة Domain لسجل القدرات (features.js) — دوال حسم نقيّة (ADR-40 · M4)
 import { describe, it, expect } from 'vitest'
-import { has, value, state, isRuntimeUsable } from './features.js'
+import { has, value, state, isRuntimeUsable, accessStatus } from './features.js'
 
 const M = {
   menu:          { value: true,  type: 'feature', runtime_status: 'enabled', name: 'المنيو' },
@@ -43,6 +43,13 @@ describe('features.state', () => {
     expect(s.known).toBe(false)
     expect(s.usable).toBe(true)
   })
+})
+
+describe('features.accessStatus', () => {
+  it('قدرة مفعّلة = available', () => expect(accessStatus(M, 'menu')).toBe('available'))
+  it('قدرة غير ممنوحة في الباقة = locked', () => expect(accessStatus({ ...M, menu: { value: false, type: 'feature', runtime_status: 'enabled' } }, 'menu')).toBe('locked'))
+  it('قدرة runtime=preview = coming_soon', () => expect(accessStatus(M, 'orders_refund')).toBe('coming_soon'))
+  it('fail-open: مفتاح غير مسجّل = available', () => expect(accessStatus(M, 'ghost_key')).toBe('available'))
 })
 
 describe('isRuntimeUsable', () => {
