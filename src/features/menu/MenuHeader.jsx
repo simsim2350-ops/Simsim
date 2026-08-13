@@ -59,7 +59,7 @@ export default function MenuHeader({
   const [socialExpanded, setSocialExpanded] = useState(false)
   const showSocial = (restaurant.show_social_links ?? true) && restaurant.social_links
   const socialKeys = showSocial
-    ? ['instagram', 'whatsapp_social', 'snapchat', 'twitter', 'tiktok'].filter(key => restaurant.social_links[key])
+    ? ['instagram', 'whatsapp_social', 'snapchat'].filter(key => restaurant.social_links[key])
     : []
   const shownSocialKeys = socialExpanded ? socialKeys : socialKeys.slice(0, 3)
   const hiddenSocialCount = socialKeys.length - shownSocialKeys.length
@@ -190,8 +190,8 @@ export default function MenuHeader({
             </div>
           )}
 
-          {/* [ACTIONS · المستوى 3] اتصال + تواصل — شريط أفقي قابل للتمرير */}
-          {(restaurant.phone || socialKeys.length > 0) && (
+          {/* [ACTIONS · المستوى 3] اتصال + تواصل + مسبّبات — صف أفقي واحد قابل للتمرير */}
+          {(restaurant.phone || socialKeys.length > 0 || ((restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0)) && (
             <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'nowrap', overflowX:'auto' }}>
               {restaurant.phone && (
                 <a href={`tel:${restaurant.phone}`} aria-label={isEn ? 'Call' : 'اتصال'}
@@ -212,15 +212,12 @@ export default function MenuHeader({
                   {socialExpanded ? '−' : `+${hiddenSocialCount}`}
                 </button>
               )}
-            </div>
-          )}
-
-          {/* مسبّبات الحساسية — خارج المجموعة المخفية عمداً (سلامة غذائية): تبقى ظاهرة على كل الأحجام */}
-          {(restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0 && (
-            <div style={{ display:'flex' }}>
-              <button onClick={onShowAllergens} style={{ display:'flex', alignItems:'center', gap:'4px', flexShrink:0, whiteSpace:'nowrap', padding:'5px 9px', borderRadius:'100px', border:'1.5px solid #FDE68A', background:'#FFFBEB', color:'#92400E', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'10.5px', cursor:'pointer' }}>
-                ⚠️ {t('allergens')}
-              </button>
+              {/* المسبّبات — في نفس صف التواصل */}
+              {(restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0 && (
+                <button onClick={onShowAllergens} style={{ display:'flex', alignItems:'center', gap:'4px', flexShrink:0, whiteSpace:'nowrap', padding:'5px 9px', borderRadius:'100px', border:'1.5px solid #FDE68A', background:'#FFFBEB', color:'#92400E', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'10.5px', cursor:'pointer' }}>
+                  ⚠️ {t('allergens')}
+                </button>
+              )}
             </div>
           )}
 
