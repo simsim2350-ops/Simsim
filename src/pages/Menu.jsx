@@ -6,6 +6,8 @@ import { compressAndUploadImage } from '../lib/uploadImage'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import ConfirmDialog from '../components/ConfirmDialog'
+import UpgradeModal from '../components/UpgradeModal'
+import { useFeature } from '../hooks/useFeature'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { fetchRecommendationsForProduct, addRecommendation, removeRecommendation, updateRecommendationPriority, fetchCartWideList, addCartWideItem, removeCartWideItem, updateCartWidePriority, toggleCartWideActive } from '../lib/recommendationsApi'
 import { fetchBranches } from '../lib/branchesApi'
@@ -66,6 +68,9 @@ export default function Menu() {
   const location = useLocation()
   const { user, restaurant, fetchRestaurant } = useAuthStore()
   const [tab, setTab] = useState(location.state?.tab === 'products' ? 'products' : 'categories')
+  // قدرة الاقتراحات الذكية (PCR): مقفولة في الباقات التي لا تمنحها → تبويب «اقتراحات السلة» يظهر بقفل
+  const recsFeature = useFeature('menu_recommendations')
+  const [showRecsUpgrade, setShowRecsUpgrade] = useState(false)
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -572,15 +577,15 @@ export default function Menu() {
           {[
             { key:'categories', label:`📋 الأقسام (${categories.length})` },
             { key:'products', label:`🍽️ الأصناف (${products.length})` },
-            { key:'suggestions', label:`🍽️ اقتراحات السلة (${cartWideList.length})` },
+            { key:'suggestions', label:`🍽️ اقتراحات السلة (${cartWideList.length})`, locked: recsFeature.locked },
           ].map(t => (
-            <div key={t.key} onClick={() => setTab(t.key)} style={{
-              padding:'13px 16px', fontSize:'14px', fontWeight:'700',
-              color: tab === t.key ? '#FF6B35' : '#6B7280',
-              borderBottom: tab === t.key ? '2.5px solid #FF6B35' : '2.5px solid transparent',
+            <div key={t.key} onClick={() => t.locked ? setShowRecsUpgrade(true) : setTab(t.key)} title={t.locked ? 'غير متاح في باقتك — اضغط للترقية' : undefined} style={{
+              padding:'13px 16px', fontSize:'14px', fontWeight:'700', display:'flex', alignItems:'center', gap:'5px',
+              color: t.locked ? '#B8BCC4' : (tab === t.key ? '#FF6B35' : '#6B7280'),
+              borderBottom: tab === t.key && !t.locked ? '2.5px solid #FF6B35' : '2.5px solid transparent',
               cursor:'pointer', transition:'all 0.2s', whiteSpace:'nowrap',
             }}>
-              {t.label}
+              {t.label}{t.locked && <span style={{ fontSize:'12px' }}>🔒</span>}
             </div>
           ))}
         </div>
@@ -721,7 +726,8 @@ export default function Menu() {
           )}
 
           {/* SUGGESTIONS — قائمة اقتراحات السلة العامة، مستقلة عن قواعد الأصناف الفردية */}
-          {tab === 'suggestions' && (
+          {/* PCR: حماية إضافية — لا يُعرض المحتوى إن كانت القدرة مُطفأة (لا تجاوز حتى لو تغيّر tab) */}
+          {tab === 'suggestions' && !recsFeature.locked && (
             <div>
               {/* إعدادات الاقتراحات — نُقلت هنا من صفحة الإعدادات ليكون كل ما يخصّ الاقتراحات في مكان واحد */}
               <div style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding:'14px 16px', marginBottom:'16px' }}>
@@ -1124,6 +1130,16 @@ export default function Menu() {
         onCancel={() => setConfirmDeleteProd(null)}
         onConfirm={() => { deleteProd(confirmDeleteProd.id); setConfirmDeleteProd(null) }}
       />
+
+      {/* مودال الترقية — عند الضغط على تبويب «اقتراحات السلة» المقفول في الباقة */}
+      {showRecsUpgrade && (
+        <UpgradeModal
+          feature="menu_recommendations"
+          name={recsFeature.name || 'الاقتراحات الذكية'}
+          message={recsFeature.upgrade_message}
+          onClose={() => setShowRecsUpgrade(false)}
+        />
+      )}
     </AppShell>
   )
 }
