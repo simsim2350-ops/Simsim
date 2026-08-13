@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { TYPE } from './typography'
 import { toast } from 'react-hot-toast'
 import { getCalorieBadge } from './helpers'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
@@ -125,7 +126,7 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
         <div style={{ overflowY:'auto' }}>
         <div style={{ padding:'20px 20px 32px' }}>
           <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'22px', marginBottom:'6px' }}>{(isEn && product.name_en) ? product.name_en : product.name}</h2>
-          {((isEn && product.description_en) ? product.description_en : product.description) && <p style={{ fontSize:'14px', color:'#6B7280', lineHeight:'1.65', marginBottom:'16px' }}>{(isEn && product.description_en) ? product.description_en : product.description}</p>}
+          {((isEn && product.description_en) ? product.description_en : product.description) && <p style={{ ...TYPE.body, color:'#6B7280', marginBottom:'16px' }}>{(isEn && product.description_en) ? product.description_en : product.description}</p>}
 
           <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'20px' }}>
             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'24px', color:priceColor }}>{product.price} ﷼</span>

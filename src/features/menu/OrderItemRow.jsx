@@ -1,5 +1,7 @@
 // صف صنف داخل الطلب — صورة مصغّرة + شارة كمية + الاسم + الإضافات + الملاحظة + السعر
 // مشترك بين بطاقة الطلب النشط والطلب المنطوي (عند التوسيع)
+import { TYPE } from './typography'
+
 export default function OrderItemRow({ item, itemName, isEn, t }) {
   const opts = Array.isArray(item.selectedOptions) ? item.selectedOptions : []
   const optsText = opts.map(o => o.choiceName).filter(Boolean).join(isEn ? ', ' : '، ')
@@ -16,7 +18,7 @@ export default function OrderItemRow({ item, itemName, isEn, t }) {
 
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-          <span style={{ fontSize:'12.5px', fontWeight:'800', textDecoration: item.unavailable ? 'line-through' : 'none' }}>{itemName(item)}</span>
+          <span style={{ ...TYPE.itemNameSm, textDecoration: item.unavailable ? 'line-through' : 'none' }}>{itemName(item)}</span>
           {item.unavailable && <span style={{ fontSize:'8.5px', fontWeight:'700', color:'#E11D48', background:'#FEECEF', padding:'1px 6px', borderRadius:'100px' }}>{t('unavailable')}</span>}
         </div>
         {optsText && <div style={{ fontSize:'9.5px', color:'#9CA3AF', marginTop:'2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{optsText}</div>}
