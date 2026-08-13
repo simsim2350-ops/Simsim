@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
+import QRCode from 'qrcode'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
+import { ensurePrimaryBranch } from '../lib/branchesApi'
 
 // تحويل الاسم العربي إلى رابط لاتيني صالح
 const AR_MAP = {
@@ -75,16 +77,29 @@ const TYPES = [
 ]
 const getTemplate = (type) => TEMPLATES[type] || TEMPLATES.restaurant
 
+// خطوات الرحلة المعروضة في مؤشر التقدّم (welcome/create/done خارجها — مقدّمة/خاتمة)
+const STEPS = [
+  { key:'info',       label:'المعلومات' },
+  { key:'type',       label:'النوع' },
+  { key:'categories', label:'الأقسام' },
+  { key:'items',      label:'الأصناف' },
+  { key:'preview',    label:'المعاينة' },
+  { key:'share',      label:'النشر' },
+]
+// خريطة استئناف: قيمة onboarding_step المحفوظة → مرحلة العرض
+const RESUME_MAP = { welcome:'welcome', info:'info', type:'type', categories:'categories', items:'categories', preview:'preview', share:'share' }
+
 export default function Onboarding() {
   const navigate = useNavigate()
   const { user, restaurant, fetchRestaurant } = useAuthStore()
 
-  const [stage, setStage] = useState('loading') // loading | create | type | categories | items
+  const [stage, setStage] = useState('loading') // loading | welcome | create | info | type | categories | items | preview | share | done
   const [rest, setRest] = useState(restaurant || null)
   const [saving, setSaving] = useState(false)
   const isMobile = window.innerWidth <= 768
 
   const [cForm, setCForm] = useState({ name:'', slug:'', slugEdited:false })
+  const [info, setInfo] = useState({ description:'', phone:'', address:'' })
 
   // الأقسام المختارة = مصفوفة مرتّبة من {key, name, emoji, items}
   const [cats, setCats] = useState([])
@@ -92,6 +107,7 @@ export default function Onboarding() {
   const [showCustom, setShowCustom] = useState(false)
   const [selectedItems, setSelectedItems] = useState(new Set())
   const dragFrom = useRef(null)
+  const qrRef = useRef(null)
 
   useEffect(() => {
     const load = async () => {
@@ -101,14 +117,29 @@ export default function Onboarding() {
         r = data || null
       }
       setRest(r)
-      setStage(r ? 'type' : 'create')
+      if (!r) { setStage('create'); return }
+      // من أكمل الإعداد لا تُعاد عليه الرحلة
+      if (r.onboarding_completed) { navigate('/dashboard', { replace:true }); return }
+      // استئناف من آخر خطوة محفوظة (وإلا شاشة الترحيب)
+      setInfo({ description: r.description || '', phone: r.phone || '', address: r.address || '' })
+      const resumed = RESUME_MAP[r.onboarding_step] || 'welcome'
+      // عند الاستئناف لمرحلة الأقسام: نعيد اشتقاق القوالب من النوع المحفوظ
+      if ((resumed === 'categories') && r.type) setCats(getTemplate(r.type).slice(0, 5).map(c => ({ ...c })))
+      setStage(resumed)
     }
     load()
   }, []) // eslint-disable-line
 
   const template = getTemplate(rest?.type)
 
-  // ===== إنشاء المطعم (احتياطي) =====
+  // حفظ خطوة التقدّم في قاعدة البيانات (للاستئناف عند الإغلاق/التحديث) — صامت وغير كاسر
+  const saveStep = async (step) => {
+    if (!rest?.id) return
+    try { await supabase.from('restaurants').update({ onboarding_step: step }).eq('id', rest.id) } catch { /* غير كاسر */ }
+  }
+  const goStage = (step) => { setStage(step); saveStep(step) }
+
+  // ===== إنشاء المطعم (احتياطي: يُستخدم فقط لو وصل للأونبوردنغ بلا مطعم) =====
   const createRestaurant = async () => {
     if (!cForm.name.trim()) { toast.error('أدخل اسم المطعم'); return }
     let slug = cForm.slug || slugify(cForm.name)
@@ -118,13 +149,30 @@ export default function Onboarding() {
       const { data: taken } = await supabase.from('restaurants').select('id').eq('slug', slug).maybeSingle()
       if (taken) { toast.error('الرابط مستخدم، عدّله'); setSaving(false); return }
       const { data, error } = await supabase.from('restaurants').insert({
-        owner_id: user.id, name: cForm.name.trim(), slug, type:'restaurant', brand_color:'#FF6B35', is_active:true,
+        owner_id: user.id, name: cForm.name.trim(), slug, type:'restaurant', brand_color:'#FF6B35', is_active:true, onboarding_step:'info',
       }).select().single()
       if (error) throw error
       await fetchRestaurant(user.id)
       setRest(data)
-      setStage('type')
+      setStage('info')
     } catch (err) { toast.error(err.message || 'تعذّر إنشاء المطعم') } finally { setSaving(false) }
+  }
+
+  // ===== معلومات المطعم (اختيارية — قابلة للتخطّي) =====
+  const saveInfo = async (skip = false) => {
+    if (!skip) {
+      setSaving(true)
+      try {
+        await supabase.from('restaurants').update({
+          description: info.description.trim() || null,
+          phone: info.phone.trim() || null,
+          address: info.address.trim() || null,
+        }).eq('id', rest.id)
+        setRest(r => ({ ...r, ...info }))
+        await fetchRestaurant(user.id)
+      } catch (err) { toast.error('تعذّر حفظ المعلومات') } finally { setSaving(false) }
+    }
+    goStage('type')
   }
 
   // ===== اختيار النوع =====
@@ -138,7 +186,7 @@ export default function Onboarding() {
       await fetchRestaurant(user.id)
       // نبدأ بأقسام مقترحة جاهزة (أول 5) — يقدر يحذف/يضيف
       setCats(getTemplate(typeKey).slice(0, 5).map(c => ({ ...c })))
-      setStage('categories')
+      goStage('categories')
     } catch (err) { toast.error('تعذّر حفظ النوع') } finally { setSaving(false) }
   }
 
@@ -185,22 +233,24 @@ export default function Onboarding() {
     const s = new Set()
     cats.forEach(c => (c.items || []).forEach(it => s.add(`${c.key}::${it.name}`)))
     setSelectedItems(s)
-    // لو ما في أصناف مقترحة إطلاقاً، ننهي مباشرة
+    // لو ما في أصناف مقترحة إطلاقاً، ننشئ المنيو مباشرة
     const hasItems = cats.some(c => (c.items || []).length > 0)
     if (!hasItems) { finish(new Set()); return }
-    setStage('items')
+    goStage('items')
   }
 
   const toggleItem = (key) => setSelectedItems(prev => {
     const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n
   })
 
-  // ===== الإنهاء =====
+  // ===== إنشاء المنيو (يربط الأقسام/الأصناف بالفرع الرئيسي — إصلاح جوهري ليظهر المنيو للزبون) =====
   const finish = async (itemsSet = selectedItems) => {
     if (cats.length === 0) { toast.error('أضف قسماً واحداً على الأقل'); return }
     setSaving(true)
     try {
-      const catRows = cats.map((c, i) => ({ restaurant_id: rest.id, name:c.name, emoji:c.emoji, is_visible:true, sort_order:i }))
+      // منيو العميل يُقرأ عبر branch_id → لا بد من ربط كل شيء بالفرع الرئيسي
+      const branch = await ensurePrimaryBranch(rest.id)
+      const catRows = cats.map((c, i) => ({ restaurant_id: rest.id, branch_id: branch.id, name:c.name, emoji:c.emoji, is_visible:true, sort_order:i }))
       const { data: insertedCats, error: catErr } = await supabase.from('categories').insert(catRows).select()
       if (catErr) throw catErr
       const nameToId = {}
@@ -210,7 +260,7 @@ export default function Onboarding() {
       cats.forEach(c => {
         (c.items || []).forEach((it, idx) => {
           if (!itemsSet.has(`${c.key}::${it.name}`)) return
-          productRows.push({ restaurant_id: rest.id, category_id: nameToId[c.name] || null, name: it.name, price: it.price, emoji: it.emoji || '🍽️', is_available:true, sort_order: idx })
+          productRows.push({ restaurant_id: rest.id, branch_id: branch.id, category_id: nameToId[c.name] || null, name: it.name, price: it.price, emoji: it.emoji || '🍽️', is_available:true, sort_order: idx })
         })
       })
       if (productRows.length) {
@@ -218,11 +268,45 @@ export default function Onboarding() {
         if (prodErr) throw prodErr
       }
       toast.success(`🎉 تم إنشاء منيوك (${cats.length} أقسام، ${productRows.length} صنف)!`)
-      navigate('/dashboard')
+      goStage('preview')
     } catch (err) { toast.error(err.message || 'تعذّر إنشاء المنيو') } finally { setSaving(false) }
   }
 
-  const skip = () => navigate('/dashboard')
+  // تخطّي بناء المنيو: نضمن فرعاً رئيسياً ثم ننتقل لشاشة الرابط/QR (يبني منيوه لاحقاً من اللوحة)
+  const skipMenu = async () => {
+    setSaving(true)
+    try { await ensurePrimaryBranch(rest.id) } catch { /* غير كاسر */ } finally { setSaving(false) }
+    goStage('share')
+  }
+
+  // ===== إنهاء الرحلة: وسم الإعداد مكتملاً =====
+  const completeOnboarding = async (dest = '/dashboard') => {
+    try {
+      await supabase.from('restaurants').update({ onboarding_completed:true, onboarding_step:'done' }).eq('id', rest.id)
+      await fetchRestaurant(user.id)
+    } catch { /* غير كاسر */ }
+    navigate(dest, { replace:true })
+  }
+
+  // ===== الرابط + QR =====
+  const menuURL = rest ? `${window.location.origin}/menu/${rest.slug}` : ''
+  useEffect(() => {
+    if (stage === 'share' && qrRef.current && menuURL) {
+      QRCode.toCanvas(qrRef.current, menuURL, { width: 190, margin: 2, color:{ dark:'#0F1117', light:'#FFFFFF' }, errorCorrectionLevel:'H' }).catch(() => {})
+    }
+  }, [stage, menuURL])
+
+  const copyURL = async () => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(menuURL)
+      else {
+        const ta = document.createElement('textarea'); ta.value = menuURL; ta.style.position='fixed'; ta.style.opacity='0'
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta)
+      }
+      toast.success('تم نسخ الرابط! 📋')
+    } catch { toast.error('تعذّر النسخ، انسخ الرابط يدوياً') }
+  }
+  const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(`تفضل منيونا الرقمي 👇\n${menuURL}`)}`, '_blank')
 
   // ===== أنماط =====
   const bg = { minHeight:'100vh', background:'linear-gradient(135deg,#0F1117,#1a1a2e)', display:'flex', alignItems:'flex-start', justifyContent:'center', padding: isMobile ? '18px 12px' : '40px', direction:'rtl' }
@@ -230,7 +314,22 @@ export default function Onboarding() {
   const primaryBtn = { flex:1, padding:'14px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer' }
   const ghostBtn = { padding:'14px 18px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer', color:'#374151' }
   const inputStyle = { width:'100%', padding:'12px 14px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', outline:'none', textAlign:'right', boxSizing:'border-box' }
+  const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }
   const skipLink = { width:'100%', marginTop:'10px', background:'none', border:'none', color:'#9CA3AF', fontFamily:'Tajawal,sans-serif', fontSize:'13px', cursor:'pointer' }
+
+  // مؤشر التقدّم — يظهر في خطوات الرحلة فقط
+  const stepIndex = STEPS.findIndex(s => s.key === stage)
+  const Progress = () => stepIndex < 0 ? null : (
+    <div style={{ margin:'12px 0 18px' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'#9CA3AF', marginBottom:'7px' }}>
+        <span style={{ fontWeight:'800', color:'#FF6B35' }}>{STEPS[stepIndex].label}</span>
+        <span>الخطوة {stepIndex + 1} من {STEPS.length}</span>
+      </div>
+      <div style={{ height:'6px', borderRadius:'100px', background:'#F0F2F5', overflow:'hidden' }}>
+        <div style={{ height:'100%', width:`${((stepIndex + 1) / STEPS.length) * 100}%`, background:'linear-gradient(90deg,#FF6B35,#E85A24)', borderRadius:'100px', transition:'width 0.3s' }}/>
+      </div>
+    </div>
+  )
 
   if (stage === 'loading') {
     return (
@@ -249,12 +348,26 @@ export default function Onboarding() {
           <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px' }}>SIM<span style={{ color:'#FF6B35' }}>SIM</span></span>
         </div>
 
+        <Progress />
+
+        {/* شاشة الترحيب */}
+        {stage === 'welcome' && (
+          <div style={{ textAlign:'center', padding:'14px 4px 6px' }}>
+            <div style={{ fontSize:'60px', marginBottom:'10px' }}>👋</div>
+            <h2 style={{ fontSize:'23px', fontWeight:'900', marginBottom:'8px', fontFamily:'Cairo,sans-serif' }}>أهلاً بك في SIMSIM 🎉</h2>
+            <p style={{ fontSize:'14px', color:'#6B7280', lineHeight:'1.8', marginBottom:'22px' }}>
+              خلّينا نجهّز مطعمك خطوة بخطوة: نضيف منيوك، نعاينه، ونعطيك رابطاً وQR جاهزين للمشاركة — بدقائق.
+            </p>
+            <button onClick={() => goStage('info')} style={{ ...primaryBtn, width:'100%' }}>لنبدأ ←</button>
+          </div>
+        )}
+
         {/* إنشاء مطعم (احتياطي) */}
         {stage === 'create' && (
           <>
-            <h2 style={{ fontSize:'22px', fontWeight:'900', margin:'14px 0 4px', fontFamily:'Cairo,sans-serif' }}>لنُنشئ مطعمك 🏪</h2>
+            <h2 style={{ fontSize:'22px', fontWeight:'900', margin:'6px 0 4px', fontFamily:'Cairo,sans-serif' }}>لنُنشئ مطعمك 🏪</h2>
             <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'20px' }}>معلومة واحدة وننطلق</p>
-            <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>اسم المطعم</label>
+            <label style={labelStyle}>اسم المطعم</label>
             <input style={inputStyle} placeholder="مطعم البيت" value={cForm.name}
               onChange={e => setCForm(f => ({ ...f, name:e.target.value, slug: f.slugEdited ? f.slug : slugify(e.target.value) }))} />
             <div style={{ fontSize:'12px', color:'#9CA3AF', margin:'7px 0 18px', direction:'ltr' }}>🔗 {window.location.host}/menu/<b style={{ color:'#FF6B35' }}>{cForm.slug || slugify(cForm.name) || 'your-menu'}</b></div>
@@ -262,10 +375,36 @@ export default function Onboarding() {
           </>
         )}
 
+        {/* معلومات المطعم (اختيارية) */}
+        {stage === 'info' && (
+          <>
+            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Cairo,sans-serif' }}>عرّف بمطعمك ✨</h2>
+            <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'18px' }}>معلومات تظهر للزبون في منيوك. كلها اختيارية — تقدر تكمّلها لاحقاً.</p>
+
+            <div style={{ marginBottom:'14px' }}>
+              <label style={labelStyle}>نبذة قصيرة <span style={{ color:'#9CA3AF', fontWeight:'400' }}>(اختياري)</span></label>
+              <textarea style={{ ...inputStyle, minHeight:'70px', resize:'vertical' }} placeholder="ألذ المأكولات الطازجة يومياً..." value={info.description} onChange={e => setInfo(f => ({ ...f, description:e.target.value }))} />
+            </div>
+            <div style={{ marginBottom:'14px' }}>
+              <label style={labelStyle}>رقم التواصل <span style={{ color:'#9CA3AF', fontWeight:'400' }}>(اختياري)</span></label>
+              <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} type="tel" placeholder="05xxxxxxxx" value={info.phone} onChange={e => setInfo(f => ({ ...f, phone:e.target.value }))} />
+            </div>
+            <div style={{ marginBottom:'18px' }}>
+              <label style={labelStyle}>العنوان <span style={{ color:'#9CA3AF', fontWeight:'400' }}>(اختياري)</span></label>
+              <input style={inputStyle} placeholder="الرياض — حي..." value={info.address} onChange={e => setInfo(f => ({ ...f, address:e.target.value }))} />
+            </div>
+
+            <div style={{ display:'flex', gap:'10px' }}>
+              <button onClick={() => goStage('welcome')} style={ghostBtn}>→ رجوع</button>
+              <button onClick={() => saveInfo(false)} disabled={saving} style={{ ...primaryBtn, opacity: saving?0.7:1 }}>{saving ? 'جارٍ الحفظ...' : 'التالي ←'}</button>
+            </div>
+            <button onClick={() => saveInfo(true)} style={skipLink}>تخطّي الآن</button>
+          </>
+        )}
+
         {/* اختيار النوع */}
         {stage === 'type' && (
           <>
-            <div style={{ fontSize:'12px', color:'#9CA3AF', margin:'14px 0 2px' }}>الخطوة 1 من 3</div>
             <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Cairo,sans-serif' }}>شنو نوع نشاطك؟ 🏪</h2>
             <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'18px' }}>حنجهّز لك أقساماً وأصنافاً مناسبة حسب اختيارك.</p>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'11px' }}>
@@ -277,14 +416,13 @@ export default function Onboarding() {
                 </div>
               ))}
             </div>
-            <button onClick={skip} style={{ ...skipLink, marginTop:'16px' }}>تخطّي وإنشاء منيو فارغ</button>
+            <button onClick={skipMenu} style={{ ...skipLink, marginTop:'16px' }}>تخطّي بناء المنيو الآن</button>
           </>
         )}
 
         {/* اختيار الأقسام — نمط النموذج: قوالب تُضاف لقائمة كروت */}
         {stage === 'categories' && (
           <>
-            <div style={{ fontSize:'12px', color:'#9CA3AF', margin:'14px 0 2px' }}>الخطوة 2 من 3</div>
             <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Cairo,sans-serif' }}>أقسام منيوك 📋</h2>
             <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'16px' }}>أضف الأقسام الرئيسية لمنيوك. يمكنك تعديلها لاحقاً في أي وقت.</p>
 
@@ -342,17 +480,16 @@ export default function Onboarding() {
             <div style={{ fontSize:'12px', color:'#9CA3AF', marginBottom:'18px', lineHeight:'1.7' }}>💡 أضف من 3 إلى 8 أقسام للبداية. رتّبها بالأسهم أو بالسحب.</div>
 
             <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={() => setStage('type')} style={ghostBtn}>→ رجوع</button>
+              <button onClick={() => goStage('type')} style={ghostBtn}>→ رجوع</button>
               <button onClick={goToItems} style={primaryBtn}>التالي: الأصناف ←</button>
             </div>
-            <button onClick={skip} style={skipLink}>تخطّي وإنشاء منيو فارغ</button>
+            <button onClick={skipMenu} style={skipLink}>تخطّي بناء المنيو الآن</button>
           </>
         )}
 
         {/* اختيار الأصناف */}
         {stage === 'items' && (
           <>
-            <div style={{ fontSize:'12px', color:'#9CA3AF', margin:'14px 0 2px' }}>الخطوة 3 من 3</div>
             <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Cairo,sans-serif' }}>اختر أصنافك 🍽️</h2>
             <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'16px' }}>الأصناف والأسعار مقترحة — عدّلها لاحقاً من صفحة الأصناف.</p>
 
@@ -379,10 +516,67 @@ export default function Onboarding() {
             </div>
 
             <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={() => setStage('categories')} style={ghostBtn}>→ رجوع</button>
+              <button onClick={() => goStage('categories')} style={ghostBtn}>→ رجوع</button>
               <button onClick={() => finish()} disabled={saving} style={{ ...primaryBtn, opacity: saving?0.7:1 }}>{saving ? 'جارٍ الإنشاء...' : `🎉 إنشاء منيوي (${selectedItems.size})`}</button>
             </div>
           </>
+        )}
+
+        {/* معاينة المنيو الحقيقي داخل إطار جوال */}
+        {stage === 'preview' && (
+          <>
+            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Cairo,sans-serif' }}>هذا شكل منيوك 👀</h2>
+            <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'16px' }}>هكذا سيراه زبونك على جواله. تقدر تعدّله لاحقاً من صفحة المنيو.</p>
+
+            <div style={{ display:'flex', justifyContent:'center', marginBottom:'18px' }}>
+              <div style={{ width:'280px', height:'520px', borderRadius:'34px', border:'9px solid #0F1117', overflow:'hidden', boxShadow:'0 18px 50px rgba(0,0,0,0.28)', background:'white' }}>
+                <iframe title="معاينة المنيو" src={menuURL} style={{ width:'100%', height:'100%', border:'none' }} />
+              </div>
+            </div>
+
+            <div style={{ display:'flex', gap:'10px' }}>
+              <button onClick={() => window.open(menuURL, '_blank')} style={ghostBtn}>🌐 فتح</button>
+              <button onClick={() => goStage('share')} style={primaryBtn}>التالي: الرابط وQR ←</button>
+            </div>
+          </>
+        )}
+
+        {/* الرابط + QR */}
+        {stage === 'share' && (
+          <>
+            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Cairo,sans-serif' }}>رابط منيوك جاهز 🔗</h2>
+            <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'16px' }}>شارك الرابط أو اطبع رمز QR ليصل زبونك لمنيوك بمسحة واحدة.</p>
+
+            <div style={{ display:'flex', justifyContent:'center', marginBottom:'16px' }}>
+              <div style={{ padding:'14px', background:'white', border:'1.5px solid #E5E7EB', borderRadius:'18px' }}>
+                <canvas ref={qrRef} style={{ display:'block', borderRadius:'8px' }} />
+              </div>
+            </div>
+
+            <div style={{ display:'flex', gap:'8px', marginBottom:'12px' }}>
+              <input readOnly value={menuURL} style={{ flex:1, padding:'11px 12px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'12px', color:'#6B7280', background:'#F8F9FB', outline:'none', direction:'ltr', textAlign:'left' }} />
+              <button onClick={copyURL} style={{ padding:'11px 16px', borderRadius:'11px', border:'none', background:'#FF6B35', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}>نسخ</button>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'18px' }}>
+              <button onClick={shareWhatsApp} style={{ ...ghostBtn, display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>💬 واتساب</button>
+              <button onClick={() => window.open(menuURL, '_blank')} style={{ ...ghostBtn, display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>🌐 فتح المنيو</button>
+            </div>
+
+            <button onClick={() => goStage('done')} style={{ ...primaryBtn, width:'100%' }}>إنهاء ✓</button>
+          </>
+        )}
+
+        {/* شاشة النجاح النهائية */}
+        {stage === 'done' && (
+          <div style={{ textAlign:'center', padding:'18px 6px 8px' }}>
+            <div style={{ fontSize:'64px', marginBottom:'10px' }}>🎉</div>
+            <h2 style={{ fontSize:'24px', fontWeight:'900', marginBottom:'8px', fontFamily:'Cairo,sans-serif' }}>مطعمك أصبح جاهزاً!</h2>
+            <p style={{ fontSize:'14px', color:'#6B7280', lineHeight:'1.8', marginBottom:'22px' }}>
+              منيو <b>{rest?.name}</b> منشور الآن ومتاح لزبائنك عبر الرابط وQR. تقدر تديره بالكامل من لوحة التحكم.
+            </p>
+            <button onClick={() => completeOnboarding('/dashboard')} style={{ ...primaryBtn, width:'100%', marginBottom:'10px' }}>الذهاب للوحة التحكم ←</button>
+            <button onClick={() => window.open(menuURL, '_blank')} style={{ ...ghostBtn, width:'100%' }}>🌐 عرض منيوي</button>
+          </div>
         )}
       </div>
     </div>
