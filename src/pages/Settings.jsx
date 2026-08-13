@@ -806,23 +806,6 @@ export default function Settings() {
                   </div>
                 </div>
 
-                {/* Subscription */}
-                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
-                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>💳 الاشتراك</div>
-                  <div style={{ padding:'16px 18px' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'14px' }}>
-                      <div>
-                        <div style={{ fontSize:'15px', fontWeight:'800', marginBottom:'3px' }}>خطة Starter</div>
-                        <div style={{ fontSize:'12px', color:'#9CA3AF' }}>تجربة مجانية — 14 يوم</div>
-                      </div>
-                      <span style={{ padding:'4px 12px', background:'#D1FAE5', color:'#065F46', borderRadius:'100px', fontSize:'12px', fontWeight:'700' }}>نشط</span>
-                    </div>
-                    <button onClick={() => toast('ترقية الخطة قريباً! 🔧')} style={{ width:'100%', padding:'12px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}>
-                      ⬆️ ترقية الخطة
-                    </button>
-                  </div>
-                </div>
-
                 </>)}
 
                 {/* منطقة الخطر — تبويب الخطر فقط */}
