@@ -116,9 +116,14 @@ function FeatureUnavailable({ page, features }) {
 //  2) بوابة سجل القدرات (featureHas) — تُطبَّق على الجميع (بما فيهم المالك): القدرة المُطفأة
 //     تُحجب فعلياً. fail-open: قدرة غير مسجّلة/خريطة غير محمّلة = مسموح (غير كاسر).
 function RequirePage({ page, children }) {
-  const { user, loading, isOwner, membership, features } = useAuthStore()
+  const { user, loading, isOwner, membership, features, restaurant } = useAuthStore()
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
+  // بوابة الأونبوردنغ: صاحب مطعم لم يُكمل الإعداد يُوجَّه لإكماله (لا يُطبَّق على الموظفين).
+  // شرط صريح === false: لا نوجّه قبل تحميل بيانات المطعم أو للمطاعم القديمة (completed=true).
+  if (isOwner && restaurant && restaurant.onboarding_completed === false) {
+    return <Navigate to="/onboarding" replace />
+  }
   const perms = { isOwner, allowedPages: membership?.allowed_pages, branchScope: membership?.branch_scope, role: membership?.role, capabilities: features }
   if (!canAccess(page, perms)) {
     const dest = firstAllowedPath(perms)

@@ -12,6 +12,15 @@ export async function fetchBranches(restaurantId) {
   return data || []
 }
 
+// يضمن وجود فرع رئيسي للمطعم: يُعيده إن وُجد، وإلا ينشئه.
+// مهم لأن منيو العميل يُقرأ عبر branch_id — فأي منيو يُنشأ دون فرع لا يظهر للزبون.
+export async function ensurePrimaryBranch(restaurantId) {
+  const branches = await fetchBranches(restaurantId)
+  const existing = branches.find(b => b.is_primary) || branches[0]
+  if (existing) return existing
+  return createBranch(restaurantId, { is_primary: true, name: 'الفرع الرئيسي', name_en: 'Main Branch', sort_order: 0, is_active: true })
+}
+
 export async function createBranch(restaurantId, fields) {
   const { data, error } = await supabase
     .from('branches')

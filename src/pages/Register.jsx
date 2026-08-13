@@ -80,6 +80,7 @@ export default function Register() {
         type: 'restaurant',
         brand_color: '#FF6B35',
         is_active: true,
+        onboarding_step: 'welcome',
       })
       if (error) {
         if (error.code === '23505') {
