@@ -192,7 +192,7 @@ export default function MenuHeader({
 
           {/* [ACTIONS · المستوى 3] اتصال · تواصل · مسبّبات — شريط أفقي واحد قابل للتمرير */}
           {(restaurant.phone || socialKeys.length > 0 || ((restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0)) && (
-            <div className="sm-hero-actions" style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'nowrap', overflowX:'auto' }}>
+            <div className="sm-hero-l3" style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'nowrap', overflowX:'auto' }}>
               {restaurant.phone && (
                 <a href={`tel:${restaurant.phone}`} aria-label={isEn ? 'Call' : 'اتصال'}
                   style={{ width:'var(--hero-social)', height:'var(--hero-social)', flexShrink:0, borderRadius:'50%', background:'white', border:'1.5px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none', boxShadow:'0 2px 6px rgba(0,0,0,0.06)', fontSize:'13px' }}>📞</a>
@@ -231,7 +231,7 @@ export default function MenuHeader({
                 ? (isEn ? `Your points: ${balance} — ${Math.max(0, threshold - balance)} pts to your reward` : `نقاطك: ${balance} — باقي ${Math.max(0, threshold - balance)} نقطة على مكافأتك`)
                 : (isEn ? `Your points: ${balance}` : `نقاطك: ${balance}`)
             return (
-              <div onClick={onShowOrders} style={{ background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'12px', padding:'6px 10px', display:'flex', alignItems:'center', gap:'7px', cursor:'pointer' }}>
+              <div className="sm-hero-l3" onClick={onShowOrders} style={{ background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'12px', padding:'6px 10px', display:'flex', alignItems:'center', gap:'7px', cursor:'pointer' }}>
                 <span style={{ fontSize:'13px' }}>🎁</span>
                 <span style={{ flex:1, fontSize:'11px', fontWeight:'800', color:'#0F1117', fontFamily:'Cairo,sans-serif' }}>{text}</span>
                 <span style={{ fontSize:'9.5px', fontWeight:'800', color:brandColor, whiteSpace:'nowrap' }}>{isEn ? 'Details ›' : 'التفاصيل ›'}</span>
@@ -239,7 +239,7 @@ export default function MenuHeader({
             )
           })() : showPromo ? (
             activePromo.type === 'banner' ? (
-              <div style={{ display:'flex', alignItems:'center', gap:'8px', background:`linear-gradient(120deg, ${brandColor}, ${brandColor}CC)`, borderRadius:'13px', padding:'9px 10px 9px 12px', color:'white' }}>
+              <div className="sm-hero-l3" style={{ display:'flex', alignItems:'center', gap:'8px', background:`linear-gradient(120deg, ${brandColor}, ${brandColor}CC)`, borderRadius:'13px', padding:'9px 10px 9px 12px', color:'white' }}>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12.5px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activePromo.data.title}</div>
                   {activePromo.data.subtitle && <div style={{ fontSize:'11px', opacity:0.9, marginTop:'2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activePromo.data.subtitle}</div>}
@@ -247,7 +247,7 @@ export default function MenuHeader({
                 <button onClick={() => setPromoDismissed(true)} aria-label={isEn ? 'Dismiss' : 'إغلاق'} style={{ flexShrink:0, width:'22px', height:'22px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.25)', color:'white', fontSize:'12px', cursor:'pointer' }}>✕</button>
               </div>
             ) : (
-              <div style={{ display:'flex', alignItems:'center', gap:'8px', background:`${brandColor}12`, border:`1.5px dashed ${brandColor}`, borderRadius:'13px', padding:'9px 10px 9px 12px' }}>
+              <div className="sm-hero-l3" style={{ display:'flex', alignItems:'center', gap:'8px', background:`${brandColor}12`, border:`1.5px dashed ${brandColor}`, borderRadius:'13px', padding:'9px 10px 9px 12px' }}>
                 <span style={{ fontSize:'16px', flexShrink:0 }}>🎟️</span>
                 <span style={{ flex:1, fontSize:'12px', fontWeight:'700', color:'#0F1117', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                   {isEn
