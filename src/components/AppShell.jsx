@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
+import { toast } from 'react-hot-toast'
 import { NAV_GROUPS } from '../lib/nav'
 import { canAccess, navPage } from '../lib/permissions'
-import { has as featureHas } from '../lib/features'
+import { accessStatus, state as featureState } from '../lib/features'
+import UpgradeModal from './UpgradeModal'
 import NotificationsBell from './NotificationsBell'
 
 /**
@@ -25,14 +27,14 @@ export default function AppShell({ active, title, actions, badges = {}, children
 
   // فلترة روابط التنقل حسب صلاحيات المستخدم (الموظف يرى صفحاته المسموحة فقط)
   const perms = { isOwner, allowedPages: membership?.allowed_pages, branchScope: membership?.branch_scope, role: membership?.role, capabilities: features }
-  // فلترة عناصر كل مجموعة حسب الصلاحيات + سجل القدرات (PCR — ADR-40): الصفحة تظهر
-  // إذا سمحت بها الصلاحيات وكانت قدرتها متاحة. fail-open: قدرة غير مسجّلة/غير محمّلة → تظهر
-  // (كل الصفحات مفعّلة حالياً enabled_global=true → صفر تغيير مرئي؛ الربط حيّ للمستقبل).
+  // فلترة عناصر كل مجموعة حسب صلاحية الموظف فقط (canAccess): الكاشير لا يرى صفحات
+  // خارج دوره — تبقى مخفيّة. أما قدرة الباقة (PCR) فلا تُخفي: الصفحة المقفولة في الباقة
+  // تظهر بقفل 🔒 (accessStatus أدناه) مع فتح Upgrade Modal عند الضغط — لا إخفاء بصري.
   const visibleGroups = NAV_GROUPS
-    .map(g => ({ ...g, items: g.items.filter(item =>
-      canAccess(navPage(item.key), perms) && featureHas(features, navPage(item.key))) }))
+    .map(g => ({ ...g, items: g.items.filter(item => canAccess(navPage(item.key), perms)) }))
     .filter(g => g.items.length > 0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [upgrade, setUpgrade] = useState(null) // { key, name, message } للميزة المقفولة المضغوطة
   // قفل تمرير الصفحة خلف السايدبار المنزلق طول ما هو مفتوح على الجوال/التابلت
   useBodyScrollLock(sidebarOpen && !isDesktop)
 
@@ -77,12 +79,24 @@ export default function AppShell({ active, title, actions, badges = {}, children
                 {group.items.map(item => {
                   const isActive = item.key === active
                   const badge = badges[item.key]
+                  // حالة القدرة (SSOT): available تفتح الصفحة · locked تفتح مودال الترقية · coming_soon قريباً
+                  const status = accessStatus(features, navPage(item.key))
+                  const locked = status !== 'available'
+                  const handleClick = () => {
+                    if (status === 'available') { isActive ? setSidebarOpen(false) : go(item); return }
+                    if (status === 'coming_soon') { toast('هذه الميزة قريباً 🔜'); return }
+                    const st = featureState(features, navPage(item.key)) // locked → مودال الترقية
+                    setUpgrade({ key: navPage(item.key), name: st.name || item.label, message: st.upgrade_message })
+                    setSidebarOpen(false)
+                  }
                   return (
-                    <div key={item.key} onClick={() => isActive ? setSidebarOpen(false) : go(item)} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px', borderRadius:'10px', cursor:'pointer', background: isActive ? 'rgba(255,107,53,0.12)' : 'transparent', color: isActive ? '#FF6B35' : 'rgba(255,255,255,0.55)', fontSize:'13px', fontWeight:'600', marginBottom:'2px', position:'relative' }}>
+                    <div key={item.key} onClick={handleClick} title={locked ? (status === 'coming_soon' ? 'قريباً' : 'غير متاح في باقتك — اضغط للترقية') : undefined} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px', borderRadius:'10px', cursor:'pointer', background: isActive ? 'rgba(255,107,53,0.12)' : 'transparent', color: locked ? 'rgba(255,255,255,0.32)' : (isActive ? '#FF6B35' : 'rgba(255,255,255,0.55)'), fontSize:'13px', fontWeight:'600', marginBottom:'2px', position:'relative' }}>
                       {isActive && <div style={{ position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', width:'3px', height:'20px', background:'#FF6B35', borderRadius:'0 3px 3px 0' }}/>}
                       <span style={{ fontSize:'16px', width:'20px', textAlign:'center' }}>{item.icon}</span>
                       {item.label}
-                      {badge > 0 && <span style={{ marginRight:'auto', background:'#FF6B35', color:'white', fontSize:'10px', fontWeight:'800', padding:'2px 7px', borderRadius:'100px' }}>{badge}</span>}
+                      {locked
+                        ? <span style={{ marginRight:'auto', fontSize:'12px', opacity:0.85 }}>{status === 'coming_soon' ? '⏳' : '🔒'}</span>
+                        : (badge > 0 && <span style={{ marginRight:'auto', background:'#FF6B35', color:'white', fontSize:'10px', fontWeight:'800', padding:'2px 7px', borderRadius:'100px' }}>{badge}</span>)}
                     </div>
                   )
                 })}
@@ -118,6 +132,11 @@ export default function AppShell({ active, title, actions, badges = {}, children
           {children}
         </div>
       </main>
+
+      {/* مودال الترقية — يُفتح عند الضغط على ميزة مقفولة في الباقة (بلا انتقال) */}
+      {upgrade && (
+        <UpgradeModal feature={upgrade.key} name={upgrade.name} message={upgrade.message} onClose={() => setUpgrade(null)} />
+      )}
     </div>
   )
 }

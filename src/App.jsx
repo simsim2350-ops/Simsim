@@ -1,9 +1,9 @@
 import { useEffect, lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from './store/authStore'
 import { canAccess, firstAllowedPath } from './lib/permissions'
-import { has as featureHas, state as featureState } from './lib/features'
+import { has as featureHas, state as featureState, accessStatus } from './lib/features'
 import RootErrorBoundary from './components/RootErrorBoundary'
 import RequirePlatformAdmin from './admin/RequirePlatformAdmin'
 
@@ -97,15 +97,22 @@ function PublicRoute({ children }) {
 // رسالة بدل توجيه: تفادي حلقات التوجيه + وضوح للمستخدم (بما فيه المالك).
 function FeatureUnavailable({ page, features }) {
   const st = featureState(features, page)
+  const navigate = useNavigate()
+  const comingSoon = accessStatus(features, page) === 'coming_soon'
   return (
     <div dir="rtl" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F1117', padding: 24 }}>
       <div style={{ background: 'white', borderRadius: 18, padding: 28, maxWidth: 380, width: '100%', textAlign: 'center' }}>
-        <div style={{ fontSize: 42, marginBottom: 8 }}>🔒</div>
+        <div style={{ fontSize: 42, marginBottom: 8 }}>{comingSoon ? '⏳' : '🔒'}</div>
         <h2 style={{ fontFamily: 'Cairo,sans-serif', fontWeight: 900, fontSize: 19, margin: '0 0 8px' }}>{st.name || 'هذه الميزة غير متاحة'}</h2>
         <p style={{ color: '#6B7280', fontSize: 14, lineHeight: 1.7, margin: '0 0 18px' }}>
-          {st.upgrade_message || 'هذه الميزة غير مفعّلة في باقتك الحالية.'}
+          {comingSoon
+            ? 'هذه الميزة قيد التطوير وستتوفر قريباً.'
+            : (st.upgrade_message || 'هذه الميزة غير متاحة في باقتك الحالية. قم بالترقية للوصول إليها والاستفادة من إمكانيات SIMSIM بشكل أكبر.')}
         </p>
-        <a href="/dashboard" style={{ display: 'inline-block', background: 'linear-gradient(135deg,#FF6B35,#E85A24)', color: 'white', textDecoration: 'none', borderRadius: 12, padding: '11px 22px', fontFamily: 'Cairo,sans-serif', fontWeight: 800, fontSize: 14 }}>العودة للرئيسية</a>
+        {!comingSoon && (
+          <button onClick={() => navigate('/billing')} style={{ width: '100%', background: 'linear-gradient(135deg,#FF6B35,#E85A24)', color: 'white', border: 'none', borderRadius: 12, padding: '12px', fontFamily: 'Cairo,sans-serif', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>⬆️ ترقية الباقة</button>
+        )}
+        <button onClick={() => navigate('/dashboard')} style={{ width: '100%', background: 'transparent', color: '#9CA3AF', border: 'none', padding: '10px', fontFamily: 'Cairo,sans-serif', fontWeight: 700, fontSize: 14, cursor: 'pointer', marginTop: 4 }}>{comingSoon ? 'العودة للرئيسية' : 'ليس الآن'}</button>
       </div>
     </div>
   )
