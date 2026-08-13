@@ -211,10 +211,6 @@ function PublicMenuInner() {
           --hero-social: clamp(26px, 7vw, 28px);    /* أيقونة تواصل (fluid) */
           --hero-stat-pad-y: 3px;                   /* حشو رأسي لبطاقة الإحصائيات (مضغوط) */
         }
-        /* شاشات صغيرة جداً (≤360px): إخفاء المستوى الثالث (إجراءات + بطاقة ترويجية) لإبقاء المهمّ فقط */
-        @media (max-width: 360px) {
-          .sm-menu-frame .sm-hero-l3 { display: none !important; }
-        }
         /* تابلت: إطار متمركز أنيق (اتجاه أ) */
         @media (min-width: 600px) and (max-width: 1023px) {
           .sm-menu-frame { box-shadow: 0 0 0 100vw #E4E7EE, 0 0 60px rgba(15,17,23,0.14); }
