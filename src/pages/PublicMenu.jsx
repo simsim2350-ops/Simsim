@@ -57,7 +57,9 @@ function PublicMenuInner() {
     deliveryAddress, setDeliveryAddress, customerName, setCustomerName,
     customerPhone, setCustomerPhone, orderNote, setOrderNote, placeOrder, submitting,
   } = useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, appliedCoupon, discountAmount, removeCoupon })
-  const loyalty = useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone })
+  // PCR: شريط الولاء يظهر فقط إذا كانت قدرة الولاء مفعّلة في الباقة (loyaltyEnabled) — وإلا لا نمرّره
+  const loyaltyRaw = useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone })
+  const loyalty = loyaltyEnabled ? loyaltyRaw : null
   const { tables } = useTables(restaurant)
   const recommendationsMap = useRecommendationRules(restaurant)
   const cartWideIds = useCartWideIds(restaurant, branch)
@@ -162,7 +164,8 @@ function PublicMenuInner() {
   )
 
   // Order placed / tracking screen — يعرض كل الطلبات النشطة، الأحدث أولاً
-  if (orderPlaced) return (
+  // PCR: لا تُعرض شاشة الطلبات إن كانت الطلبات مُطفأة في الباقة (حماية من حالة مخزّنة قديمة)
+  if (orderPlaced && ordering) return (
     <OrdersScreen
       brandColor={brandColor}
       isEn={isEn}
@@ -236,7 +239,7 @@ function PublicMenuInner() {
         t={t}
         tx={tx}
         toggleLang={toggleLang}
-        hasOrders={activeOrders.length > 0}
+        hasOrders={ordering && activeOrders.length > 0}
         liveOrdersCount={liveOrdersCount}
         onShowOrders={() => setOrderPlaced(true)}
         onShowAllergens={() => setShowAllergensModal(true)}
