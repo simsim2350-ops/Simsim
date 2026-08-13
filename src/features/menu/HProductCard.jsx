@@ -1,6 +1,8 @@
 // بطاقة صنف أفقية مدمجة — للشريط المنزلق (قائمة "يعجب زبائننا")
 // صورة + اسم + سعر + زر إضافة. الضغط على الصورة/الاسم يفتح التفاصيل؛
 // زر + يضيف مباشرة لو بلا خيارات، أو يفتح المودال لو له خيارات إجبارية.
+import { TYPE } from './typography'
+
 export default function HProductCard({ product, onOpen, onQuickAdd, brandColor, priceColor, isEn }) {
   const pName = (isEn && product.name_en) ? product.name_en : product.name
   const hasOptions = Array.isArray(product.options) && product.options.length > 0
@@ -12,9 +14,9 @@ export default function HProductCard({ product, onOpen, onQuickAdd, brandColor, 
           : product.emoji}
       </div>
       <div style={{ padding:'8px 10px 10px' }}>
-        <div onClick={onOpen} style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', color:'#1D1923', marginBottom:'7px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', cursor:'pointer' }}>{pName}</div>
+        <div onClick={onOpen} style={{ ...TYPE.itemNameSm, color:'#1D1923', marginBottom:'7px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', cursor:'pointer' }}>{pName}</div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'12.5px', color:priceColor }}>{product.price} ﷼</span>
+          <span style={{ ...TYPE.priceSm, color:priceColor }}>{product.price} ﷼</span>
           {onQuickAdd && (
             <button
               onClick={() => hasOptions ? onOpen() : onQuickAdd()}
