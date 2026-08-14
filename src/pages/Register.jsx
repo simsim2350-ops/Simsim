@@ -165,7 +165,7 @@ export default function Register() {
       {!isMobile && (
         <div style={{ flex:1, background:'linear-gradient(135deg,#0F1117,#1a1a2e)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:'16px', padding:'40px' }}>
           <div style={{ fontSize:'80px' }}>🍕</div>
-          <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'28px', color:'white', textAlign:'center', lineHeight:'1.3' }}>انضم لـ +500 مطعم<br/><span style={{ color:'#FF6B35' }}>يثقون بـ SIMSIM</span></h2>
+          <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'28px', color:'white', textAlign:'center', lineHeight:'1.3' }}>منيو مطعمك الاحترافي<br/><span style={{ color:'#FF6B35' }}>يبدأ من هنا</span></h2>
           <p style={{ fontSize:'15px', color:'rgba(255,255,255,0.5)', textAlign:'center' }}>منيو رقمي وQR وطلبات — جاهزة في دقيقة</p>
         </div>
       )}
