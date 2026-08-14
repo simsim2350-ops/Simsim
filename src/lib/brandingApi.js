@@ -21,6 +21,14 @@ export async function getPlatformBranding() {
   return data
 }
 
+// (مالك المطعم) إخفاء/إظهار هوية سمسم بنفسه — فقط إن سمحت باقته (branding_hideable).
+// يكتب Override على مطعمه فقط عبر RPC آمن (لا يمسّ الإعداد المنصّي العام).
+export async function setMenuBrandingHidden(hidden) {
+  const { data, error } = await supabase.rpc('set_menu_branding_hidden', { p_hidden: !!hidden })
+  if (error) throw error
+  return data
+}
+
 // (سوبر أدمن) حفظ الإعداد المنصّي — RLS يمنع غير المشرف.
 export async function savePlatformBranding(fields) {
   const { data, error } = await supabase

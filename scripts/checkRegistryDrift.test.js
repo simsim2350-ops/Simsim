@@ -37,8 +37,9 @@ describe('computeDrift', () => {
 
   it('manifestExpected يغطّي كل قدرات الـManifest بالنوع الصحيح', () => {
     const m = manifestExpected()
-    expect(m.size).toBe(33)
+    expect(m.size).toBe(34)
     expect(m.get('branding_hidden')).toBe('feature')
+    expect(m.get('branding_hideable')).toBe('feature')
     expect(m.get('menu_cart')).toBe('feature')
     expect(m.get('menu_product_details')).toBe('feature')
     expect(m.get('branches_limit')).toBe('limit')

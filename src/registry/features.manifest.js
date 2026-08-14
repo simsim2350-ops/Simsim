@@ -69,6 +69,7 @@ export const CAPABILITIES = [
   { key: 'menu_reviews',         name: 'التقييمات',         kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 60 },
   { key: 'menu_recommendations', name: 'الاقتراحات الذكية', kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 70 },
   { key: 'branding_hidden',      name: 'إخفاء هوية سمسم',  kind: 'component', category: 'menu', module: 'branding', parent: 'menu', type: 'feature', default_enabled: false, sort_order: 80, icon: '🏷️', description: 'إخفاء عبارة «صمم بواسطة سمسم» من المنيو (ميزة الباقات المدفوعة / White-label)' },
+  { key: 'branding_hideable',    name: 'السماح للمطعم بإخفاء هوية سمسم', kind: 'component', category: 'menu', module: 'branding', parent: 'menu', type: 'feature', default_enabled: false, sort_order: 81, icon: '🎛️', description: 'يمنح المطعم حق إخفاء «صمم بواسطة سمسم» بنفسه من إعداداته (ميزة الباقات المدفوعة)' },
 
   // (2) الهيكل الهرمي — الطلبات (children of 'orders')
   { key: 'orders_create', name: 'إنشاء طلب',  kind: 'action', category: 'operations', module: 'orders', parent: 'orders', type: 'feature', default_enabled: true, sort_order: 10 },
