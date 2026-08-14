@@ -32,13 +32,28 @@ DROP POLICY IF EXISTS platform_branding_admin_all ON public.platform_branding;
 CREATE POLICY platform_branding_admin_all ON public.platform_branding
   FOR ALL USING (public.is_platform_admin()) WITH CHECK (public.is_platform_admin());
 
--- RPC آمن للزبون: يعيد هوية المنيو المحسومة (المرحلة 1 = العام؛ p_restaurant_id محجوز للمرحلة 2)
+-- ----------------------------------------------------------------------------
+-- المرحلة 2أ: قدرة PCR للتحكم بظهور هوية سمسم لكل باقة/مطعم (branding_hidden).
+-- branding_hidden = true → تُخفى العبارة (White-label للباقات المدفوعة / تخصيص مطعم).
+-- تُسجَّل أيضاً في features.manifest.js (وإلا يفشل فحص الانجراف).
+-- ----------------------------------------------------------------------------
+INSERT INTO public.feature_flags
+  (key, name, description, kind, module, parent_key, type, scope, category_id, enabled_global, lifecycle_status, runtime_status, sort_order, icon)
+VALUES
+  ('branding_hidden', 'إخفاء هوية سمسم',
+   'إخفاء عبارة «صمم بواسطة سمسم» من المنيو (ميزة الباقات المدفوعة / White-label)',
+   'component', 'branding', 'menu', 'feature', 'restaurant',
+   (SELECT category_id FROM public.feature_flags WHERE key = 'menu_recommendations'),
+   false, 'active', 'enabled', 80, '🏷️')
+ON CONFLICT (key) DO NOTHING;
+
+-- RPC آمن للزبون: يعيد هوية المنيو المحسومة. تُخفى إن كانت branding_hidden مفعّلة للمطعم.
 CREATE OR REPLACE FUNCTION public.menu_branding(p_restaurant_id uuid DEFAULT NULL)
 RETURNS jsonb
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
 AS $$
   SELECT jsonb_build_object(
-    'show',      b.enabled,
+    'show',      b.enabled AND (p_restaurant_id IS NULL OR public.has_feature(p_restaurant_id, 'branding_hidden') IS NOT TRUE),
     'text',      b.text,
     'url',       b.url,
     'placement', b.placement,
