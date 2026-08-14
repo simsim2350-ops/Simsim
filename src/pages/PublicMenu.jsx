@@ -20,6 +20,7 @@ import { useReviews } from '../features/menu/hooks/useReviews'
 import MenuSkeleton from '../features/menu/MenuSkeleton'
 import MenuHeader from '../features/menu/MenuHeader'
 import MenuBody from '../features/menu/MenuBody'
+import MenuBranding from '../features/menu/MenuBranding'
 import SearchOverlay from '../features/menu/SearchOverlay'
 import ProductModal from '../features/menu/ProductModal'
 import CartDrawer from '../features/menu/CartDrawer'
@@ -37,7 +38,7 @@ function PublicMenuInner() {
     restaurant, branch,
     categories, products, bestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
-    banners, coupons, capabilities,
+    banners, coupons, capabilities, branding,
   } = useMenuData(slug, branchId)
   // قدرات منيو الزبون (PCR — ADR-40): الطلبات أونلاين والتقييمات. إخفاء تام عند الإطفاء.
   const ordering = capabilities?.online_orders !== false
@@ -270,6 +271,9 @@ function PublicMenuInner() {
         layout={restaurant.menu_layout}
         ordering={ordering}
       />
+
+      {/* هوية المنيو «صمم بواسطة سمسم» — من الإعداد المركزي (يظهر أسفل المنيو حسب placement) */}
+      <MenuBranding branding={branding} />
 
       {/* شاشة البحث المستقلة — تفتح من أي زر بحث في الهيدر بغضّ النظر عن موضع التمرير */}
       <SearchOverlay
