@@ -28,16 +28,16 @@ export default function Hero() {
     <section className="ss-hero" id="hero">
       <div className="ss-container ss-hero__grid">
         <div className="ss-hero__copy ss-reveal">
-          <span className="ss-eyebrow ss-hero__badge">🚀 منصّة المطاعم الأسرع</span>
+          <span className="ss-eyebrow ss-hero__badge">🚀 منصّة منيو المطاعم</span>
           <h1>منيو مطعمك الاحترافي <span className="ss-grad-text">يبدأ من هنا</span></h1>
           <p className="ss-hero__sub">
-            أنشئ منيو إلكتروني لمطعمك في دقائق، شاركه برابط وQR&nbsp;Code،
-            وخلّي عملاءك يوصلون لقائمة مطعمك بسهولة.
+            سمسم ليس مجرد منيو — أنشئ منيوك الإلكتروني في دقائق، استقبل الطلبات،
+            وابنِ ولاء عملائك. كل ذلك من مكان واحد وبرابط وQR&nbsp;Code.
           </p>
 
           <div className="ss-hero__cta">
             <Link to="/register" className="ss-btn ss-btn--primary ss-btn--lg">أنشئ منيو مطعمك مجاناً</Link>
-            <a href="#menu-preview" className="ss-btn ss-btn--ghost ss-btn--lg">شاهد مثالاً</a>
+            <a href="#menu-preview" className="ss-btn ss-btn--ghost ss-btn--lg">جرّب المنيو التفاعلي</a>
           </div>
 
           <div className="ss-hero__trust">

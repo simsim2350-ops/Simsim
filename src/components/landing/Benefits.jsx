@@ -7,9 +7,9 @@ export default function Benefits() {
     <section className="ss-section" id="benefits">
       <div className="ss-container ss-value__wrap">
         <div className="ss-value__copy ss-reveal">
-          <span className="ss-eyebrow">💡 أكثر من منيو</span>
-          <h2 style={{ marginTop: 16 }}>سمسم مو مجرد منيو.</h2>
-          <p>كل ما يحتاجه مطعمك لعرض منيوه وإدارة تجربة العميل، في مكان واحد.</p>
+          <span className="ss-eyebrow">💡 الحل</span>
+          <h2 style={{ marginTop: 16 }}>سمسم ليس مجرد منيو.</h2>
+          <p>إنه منصّة تساعد مطعمك على عرض المنيو، استقبال الطلبات، وإدارة تجربة عميلك وولائه — من مكان واحد.</p>
           <ul className="ss-value__list">
             {VALUE_LIST.map((v) => (
               <li className="ss-value__row" key={v}>

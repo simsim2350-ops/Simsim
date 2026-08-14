@@ -32,6 +32,7 @@ export const Icon = ({ name, size = 22 }) => {
     case 'plus':    return <S size={size}><path d="M12 5v14M5 12h14"/></S>
     case 'star':    return <S size={size}><path d="M12 3l2.5 6 6.5.5-5 4.2 1.6 6.3L12 17l-5.6 3 1.6-6.3-5-4.2 6.5-.5z"/></S>
     case 'shield':  return <S size={size}><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></S>
+    case 'analytics': return <S size={size}><path d="M4 20V4"/><path d="M4 20h16"/><rect x="7" y="12" width="3" height="5"/><rect x="12" y="8" width="3" height="9"/><rect x="17" y="5" width="3" height="12"/></S>
     default: return null
   }
 }

@@ -22,7 +22,7 @@ export default function HowItWorks() {
         </div>
 
         <div className="ss-how__cta ss-reveal">
-          <Link to="/register" className="ss-btn ss-btn--primary ss-btn--lg">ابدأ الآن مجاناً</Link>
+          <Link to="/register" className="ss-btn ss-btn--primary ss-btn--lg">أنشئ منيو مطعمك مجاناً</Link>
         </div>
       </div>
     </section>
