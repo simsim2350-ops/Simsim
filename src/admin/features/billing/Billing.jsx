@@ -4,7 +4,7 @@ import AdminShell from '../../AdminShell'
 import { useAuthStore } from '../../../store/authStore'
 import { listRestaurants } from '../restaurants/restaurantsApi'
 import {
-  listPlans, upsertPlan, setPlanActive,
+  listPlans, upsertPlan, setPlanActive, deletePlan,
   listSubscriptions, upsertSubscription,
   listInvoices, createInvoice, markInvoicePaid, voidInvoice,
 } from './billingApi'
@@ -96,6 +96,12 @@ function PlansTab({ canManage }) {
     try { await setPlanActive(p.id, !p.is_active); load() }
     catch (e) { toast.error(e?.message || 'فشل') }
   }
+  // حذف نهائي — محميّ خادمياً (يُمنع لو للباقة اشتراكات). الزر يظهر فقط عند 0 مشترك.
+  const remove = async (p) => {
+    if (!window.confirm(`حذف باقة «${p.name}» نهائياً؟ لا يمكن التراجع.`)) return
+    try { await deletePlan(p.id); toast.success('حُذفت الباقة'); load() }
+    catch (e) { toast.error(e?.message || 'تعذّر الحذف') }
+  }
 
   if (loading) return <SkeletonRows count={4} />
   if (error) return <ErrorState msg={error} onRetry={load} />
@@ -120,6 +126,7 @@ function PlansTab({ canManage }) {
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <Button variant="neutral" onClick={() => setEdit(p)}>تعديل</Button>
                   <Button variant={p.is_active ? 'danger' : 'success'} onClick={() => toggle(p)}>{p.is_active ? 'تعطيل' : 'تفعيل'}</Button>
+                  {Number(p.subscribers_count || 0) === 0 && <Button variant="danger" onClick={() => remove(p)}>🗑 حذف</Button>}
                 </div>
               )}
             </div>

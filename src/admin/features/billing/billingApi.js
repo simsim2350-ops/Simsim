@@ -14,6 +14,8 @@ export const upsertPlan = (p) => call('admin_upsert_plan', {
   p_price: Number(p.price) || 0, p_features: p.features || null, p_sort_order: Number(p.sort_order) || 0,
 })
 export const setPlanActive = (id, active) => call('admin_set_plan_active', { p_id: id, p_active: active })
+// حذف باقة — محميّ خادمياً: يُمنع إن ارتبط بها أي اشتراك (يرمي خطأً واضحاً)
+export const deletePlan = (id) => call('admin_delete_plan', { p_id: id })
 
 // ===== الاشتراكات =====
 export const listSubscriptions = () => call('admin_list_subscriptions').then((d) => d || [])
