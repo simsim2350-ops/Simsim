@@ -4,6 +4,8 @@ import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { compressAndUploadImage } from '../lib/uploadImage'
 import { useAuthStore } from '../store/authStore'
+import { useFeature } from '../hooks/useFeature'
+import { setMenuBrandingHidden } from '../lib/brandingApi'
 import AppShell from '../components/AppShell'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { Accordion, AccordionItem } from '../components/Accordion'
@@ -30,7 +32,19 @@ const COMMON_ALLERGENS = [
 
 export default function Settings() {
   const navigate = useNavigate()
-  const { user, restaurant, fetchRestaurant } = useAuthStore()
+  const { user, restaurant, fetchRestaurant, loadFeatures } = useAuthStore()
+  // هوية المنيو: هل تسمح الباقة للمطعم بإخفاء «صمم بواسطة سمسم»؟ وهل هي مخفية حالياً؟
+  const brandingHideable = useFeature('branding_hideable')
+  const brandingHidden = useFeature('branding_hidden')
+  const [savingBrand, setSavingBrand] = useState(false)
+  const toggleBranding = async () => {
+    setSavingBrand(true)
+    try {
+      await setMenuBrandingHidden(!brandingHidden.usable)
+      await loadFeatures()
+      toast.success('تم التحديث ✅')
+    } catch (e) { toast.error(e.message || 'تعذّر التحديث') } finally { setSavingBrand(false) }
+  }
   const [activeTab, setActiveTab] = useState('restaurant')
   const [loading, setLoading] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
@@ -805,6 +819,22 @@ export default function Settings() {
                     </div>
                   </div>
                 </div>
+
+                {/* هوية المنيو — يظهر فقط إن سمحت الباقة للمطعم بإخفاء «صمم بواسطة سمسم» */}
+                {brandingHideable.usable && (
+                  <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                    <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🏷️ هوية المنيو</div>
+                    <div style={{ padding:'16px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px' }}>
+                      <div>
+                        <div style={{ fontSize:'13.5px', fontWeight:'700', color:'#0F1117' }}>إخفاء «صمم بواسطة سمسم» من منيوك</div>
+                        <div style={{ fontSize:'12px', color:'#9CA3AF', marginTop:'3px' }}>{brandingHidden.usable ? 'مخفية حالياً من منيوك' : 'ظاهرة حالياً في منيوك'}</div>
+                      </div>
+                      <button onClick={toggleBranding} disabled={savingBrand} aria-label="تبديل إخفاء هوية سمسم" style={{ width:'48px', height:'27px', borderRadius:'100px', border:'none', background: brandingHidden.usable ? '#FF6B35' : '#D1D5DB', position:'relative', cursor: savingBrand ? 'default' : 'pointer', flexShrink:0, opacity: savingBrand ? 0.6 : 1, transition:'background .15s' }}>
+                        <span style={{ position:'absolute', top:'3px', left: brandingHidden.usable ? '3px' : '24px', width:'21px', height:'21px', borderRadius:'50%', background:'white', transition:'left .15s' }} />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 </>)}
 

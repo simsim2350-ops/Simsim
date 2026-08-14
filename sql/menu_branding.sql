@@ -62,3 +62,38 @@ AS $$
   FROM public.platform_branding b WHERE b.id = 1;
 $$;
 GRANT EXECUTE ON FUNCTION public.menu_branding(uuid) TO anon, authenticated;
+
+-- ----------------------------------------------------------------------------
+-- المرحلة 2ب: السماح للمطعم بإخفاء هوية سمسم بنفسه (branding_hideable) + دالة كتابة آمنة.
+-- تُسجَّل branding_hideable أيضاً في features.manifest.js.
+-- ----------------------------------------------------------------------------
+INSERT INTO public.feature_flags
+  (key, name, description, kind, module, parent_key, type, scope, category_id, enabled_global, lifecycle_status, runtime_status, sort_order, icon)
+VALUES
+  ('branding_hideable', 'السماح للمطعم بإخفاء هوية سمسم',
+   'يمنح المطعم حق إخفاء «صمم بواسطة سمسم» بنفسه من إعداداته (ميزة الباقات المدفوعة)',
+   'component', 'branding', 'menu', 'feature', 'restaurant',
+   (SELECT category_id FROM public.feature_flags WHERE key = 'menu_recommendations'),
+   false, 'active', 'enabled', 81, '🎛️')
+ON CONFLICT (key) DO NOTHING;
+
+-- المطعم (المالك) يخفي/يُظهر هوية سمسم بنفسه — فقط إن سمحت باقته. يكتب Override على مطعمه
+-- فقط (لا يمسّ الإعداد المنصّي العام — البند 11: عزل إعدادات المنصّة عن المطعم).
+CREATE OR REPLACE FUNCTION public.set_menu_branding_hidden(p_hidden boolean)
+RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE v_rid uuid;
+BEGIN
+  SELECT id INTO v_rid FROM restaurants WHERE owner_id = auth.uid() LIMIT 1;
+  IF v_rid IS NULL THEN RAISE EXCEPTION 'ليس مالك مطعم'; END IF;
+  IF public.has_feature(v_rid, 'branding_hideable') IS NOT TRUE THEN
+    RAISE EXCEPTION 'هذه الميزة غير متاحة في باقتك';
+  END IF;
+  INSERT INTO public.restaurant_feature_overrides (restaurant_id, key, enabled, created_by, updated_by, updated_at)
+  VALUES (v_rid, 'branding_hidden', p_hidden, auth.uid(), auth.uid(), now())
+  ON CONFLICT (restaurant_id, key) DO UPDATE
+    SET enabled = EXCLUDED.enabled, updated_by = auth.uid(), updated_at = now();
+  RETURN p_hidden;
+END; $$;
+GRANT EXECUTE ON FUNCTION public.set_menu_branding_hidden(boolean) TO authenticated;
