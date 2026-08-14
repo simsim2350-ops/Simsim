@@ -158,7 +158,7 @@ export default function Register() {
           {loading ? 'جارٍ الإنشاء...' : '🎉 أنشئ مطعمي مجاناً'}
         </button>
 
-        <p style={{ textAlign:'center', fontSize:'12px', color:'#9CA3AF', marginBottom:'14px' }}>مجاناً 14 يوم — بدون بطاقة ائتمانية</p>
+        <p style={{ textAlign:'center', fontSize:'12px', color:'#9CA3AF', marginBottom:'14px' }}>سجّل وابدأ مجاناً — بدون بطاقة بنكية</p>
         <p style={{ textAlign:'center', fontSize:'14px', color:'#6B7280' }}>لديك حساب؟ <Link to="/login" style={{ color:'#FF6B35', fontWeight:'700' }}>سجّل دخولك</Link></p>
       </div>
 
