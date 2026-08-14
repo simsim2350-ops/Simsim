@@ -19,6 +19,7 @@ export function useMenuData(slug, branchId) {
   const [coupons, setCoupons] = useState([]) // الكوبونات النشطة (عامة + خاصة بهذا الفرع)
   // قدرات منيو الزبون من سجل القدرات (PCR — ADR-40) — الافتراضي كله مفعّل (fail-open، غير كاسر)
   const [capabilities, setCapabilities] = useState({ online_orders: true, reviews: true, loyalty: true, product_details: true })
+  const [branding, setBranding] = useState(null) // هوية المنيو «صمم بواسطة سمسم» — من الإعداد المركزي
   const restaurantLoadChannelRef = useRef(null)
 
   useEffect(() => {
@@ -85,6 +86,12 @@ export function useMenuData(slug, branchId) {
         if (c && typeof c === 'object') caps = { ...caps, ...c }
       } catch { /* تجاهل — fail-open */ }
       setCapabilities(caps)
+
+      // هوية المنيو «صمم بواسطة سمسم» — من الإعداد المركزي (RPC آمن). fail-safe: لا شيء عند الخطأ.
+      try {
+        const { data: brand } = await supabase.rpc('menu_branding', { p_restaurant_id: rest.id })
+        if (brand && typeof brand === 'object') setBranding(brand)
+      } catch { /* تجاهل — البراندينغ اختياري */ }
 
       // هل برنامج الولاء مفعّل؟ (إعداد المطعم) — ويُشترَط أيضاً أن قدرة الولاء مفعّلة في الباقة (PCR)
       try {
@@ -153,6 +160,6 @@ export function useMenuData(slug, branchId) {
     restaurant, branch, branchList,
     categories, products, bestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
-    banners, coupons, capabilities,
+    banners, coupons, capabilities, branding,
   }
 }

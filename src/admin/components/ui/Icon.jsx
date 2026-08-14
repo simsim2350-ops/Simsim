@@ -105,6 +105,12 @@ export const IconCatalog = svg(<>
   <path d="M3 16.5l9 5 9-5" />
 </>)
 
+// أيقونة هوية المنيو (وسم/علامة) — Menu Branding
+export const IconBranding = svg(<>
+  <path d="M4 4h9l7 7-9 9-7-7V4z" />
+  <circle cx="8.5" cy="8.5" r="1.5" />
+</>)
+
 // خريطة أيقونات التنقّل — مصدر واحد يستهلكه AdminShell وCommandPalette معاً.
 export const NAV_ICON_MAP = {
   overview: IconOverview,
@@ -113,6 +119,7 @@ export const NAV_ICON_MAP = {
   billing: IconBilling,
   flags: IconFlag,
   catalog: IconCatalog,
+  branding: IconBranding,
   announcements: IconAnnouncements,
   admins: IconAdmins,
   audit: IconAudit,
