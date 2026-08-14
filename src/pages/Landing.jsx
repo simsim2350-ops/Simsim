@@ -33,10 +33,10 @@ export default function Landing() {
       <main>
         <Hero />
         <ProblemSection />
+        <Benefits />{/* الحل: «سمسم ليس مجرد منيو» */}
         <HowItWorks />
+        <MenuPreview />{/* تجربة المنيو التفاعلية */}
         <Features />
-        <MenuPreview />
-        <Benefits />
         <Trust />
         <Pricing />
         <FAQ />
