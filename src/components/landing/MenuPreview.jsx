@@ -1,23 +1,26 @@
+import { useRef } from 'react'
 import { Link } from 'react-router-dom'
-import PhoneMockup from './PhoneMockup'
 import Icon from './Icons'
+import InteractiveDemo from './demo/InteractiveDemo'
 import { PREVIEW_POINTS } from '../../config/landingContent'
 
-// قسم المعاينة الحية — يشعر الزائر أنه يرى المنتج الحقيقي داخل الموقع.
+// قسم «جرّب بنفسك» — ديمو تفاعلي حقيقي للمنيو داخل الموقع (لا Screenshot).
 // CTA «شاهد مثالاً» في الـHero يمرّر إلى هنا (id=menu-preview).
 export default function MenuPreview() {
+  const demoRef = useRef(null)
+
   return (
     <section className="ss-section ss-preview" id="menu-preview">
       <div className="ss-container">
         <div className="ss-section-head ss-reveal">
-          <span className="ss-eyebrow">👀 معاينة حيّة</span>
-          <h2>شاهد كيف يرى عميلك المنيو</h2>
-          <p>هذه هي التجربة الحقيقية التي يحصل عليها عملاؤك على جوالهم.</p>
+          <span className="ss-eyebrow">👀 جرّب بنفسك</span>
+          <h2>جرّب منيو سمسم بنفسك</h2>
+          <p>تصفّح المنيو كما يراه عميلك، واكتشف كيف تجعل تجربة الطلب أسهل وأسرع.</p>
         </div>
 
         <div className="ss-preview__wrap">
           <div className="ss-preview__phone ss-reveal">
-            <div className="ss-float ss-float--slow"><PhoneMockup /></div>
+            <InteractiveDemo controllerRef={demoRef} />
           </div>
 
           <div className="ss-preview__points">
@@ -31,7 +34,10 @@ export default function MenuPreview() {
               </div>
             ))}
             <div className="ss-preview__cta ss-reveal">
-              <Link to="/register" className="ss-btn ss-btn--primary ss-btn--lg">أنشئ منيوك مثله مجاناً</Link>
+              <Link to="/register" className="ss-btn ss-btn--primary ss-btn--lg">أنشئ منيو مطعمك مجاناً 🚀</Link>
+              <button type="button" className="ss-btn ss-btn--onDark ss-btn--lg" onClick={() => demoRef.current?.openFull()}>
+                فتح المنيو كامل الشاشة
+              </button>
             </div>
           </div>
         </div>
