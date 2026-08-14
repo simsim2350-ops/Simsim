@@ -29,6 +29,7 @@ function lazyWithRetry(importer) {
 }
 
 // تحميل كسول لكل الصفحات: زبون المنيو لا يحمّل كود اللوحة، والعكس صحيح
+const Landing        = lazyWithRetry(() => import('./pages/Landing'))
 const Login          = lazyWithRetry(() => import('./pages/Login'))
 const Register       = lazyWithRetry(() => import('./pages/Register'))
 const ForgotPassword = lazyWithRetry(() => import('./pages/ForgotPassword'))
@@ -163,7 +164,7 @@ export default function App() {
       }}/>
       <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route path="/"                element={<Navigate to="/login" replace />} />
+        <Route path="/"                element={<Landing />} />
         <Route path="/login"           element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register"        element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
