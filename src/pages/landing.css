@@ -458,6 +458,8 @@
 
 /* =========================== PRICING =========================== */
 .ss-pricing__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 20px; max-width: 940px; margin-inline: auto; align-items: stretch; }
+.ss-pricing__grid--3 { grid-template-columns: repeat(3, 1fr); max-width: 1120px; align-items: stretch; }
+@media (max-width: 980px) { .ss-pricing__grid--3 { grid-template-columns: 1fr; max-width: 460px; } }
 .ss-plan {
   background: #fff; border: 1.5px solid var(--ss-border-2);
   border-radius: var(--ss-radius-lg); padding: 30px 26px;
@@ -467,6 +469,7 @@
 }
 .ss-plan:hover { transform: translateY(-4px); box-shadow: var(--ss-shadow); }
 .ss-plan--featured { border-color: var(--ss-primary); box-shadow: 0 16px 44px rgba(255,107,53,.16); }
+@media (min-width: 981px) { .ss-plan--featured { transform: scale(1.03); } .ss-plan--featured:hover { transform: scale(1.03) translateY(-4px); } }
 .ss-plan__tag {
   position: absolute; top: -13px; inset-inline-start: 26px;
   background: linear-gradient(135deg, var(--ss-primary), var(--ss-primary-dark)); color: #fff;
@@ -474,17 +477,44 @@
   padding: 6px 14px; border-radius: 999px; box-shadow: var(--ss-shadow-primary);
 }
 .ss-plan__name { font-family: 'Cairo', sans-serif; font-weight: 900; font-size: 20px; color: var(--ss-ink); }
-.ss-plan__desc { color: var(--ss-muted); font-size: 13.5px; margin-top: 5px; min-height: 20px; }
-.ss-plan__price { display: flex; align-items: baseline; gap: 6px; margin: 18px 0 4px; }
+.ss-plan__desc { color: var(--ss-muted); font-size: 13.5px; margin-top: 5px; min-height: 38px; }
+.ss-plan__price { display: flex; align-items: baseline; gap: 6px; margin: 18px 0 4px; flex-wrap: wrap; }
 .ss-plan__price .amt { font-family: 'Cairo', sans-serif; font-weight: 900; font-size: clamp(30px, 5vw, 40px); color: var(--ss-ink); line-height: 1; }
+.ss-plan__price .cur { font-family: 'Cairo', sans-serif; font-weight: 800; font-size: 18px; color: var(--ss-ink); }
 .ss-plan__price .per { color: var(--ss-muted); font-size: 14px; font-weight: 600; }
-.ss-plan__feats { margin: 22px 0; display: grid; gap: 11px; }
+.ss-plan__launch {
+  min-height: 30px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 8px; font-size: 12.5px;
+}
+.ss-plan__launch--empty { min-height: 30px; }
+.ss-plan__launch-amt {
+  background: var(--ss-primary-soft); color: var(--ss-primary-dark);
+  font-family: 'Cairo', sans-serif; font-weight: 800;
+  padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+}
+.ss-plan__launch-note { color: var(--ss-muted); font-weight: 600; }
+.ss-plan__meta { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--ss-border-2); color: var(--ss-text); font-weight: 700; font-size: 13.5px; }
+.ss-plan__includes { margin-top: 16px; color: var(--ss-muted); font-weight: 700; font-size: 13px; }
+.ss-plan__feats { margin: 14px 0 22px; display: grid; gap: 11px; }
 .ss-plan__feat { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--ss-text); }
 .ss-plan__feat svg { flex-shrink: 0; margin-top: 2px; }
-.ss-plan__feat--locked { color: var(--ss-muted-2); }
-.ss-plan__feat .lock { color: var(--ss-muted-2); }
+.ss-plan__check { color: var(--ss-success); display: inline-flex; }
 .ss-plan__cta { margin-top: auto; }
-.ss-pricing__note { text-align: center; margin-top: 22px; color: var(--ss-muted); font-size: 13.5px; }
+.ss-pricing__note { text-align: center; margin-top: 26px; color: var(--ss-muted); font-size: 13.5px; }
+
+/* الباقة الاحترافية — بطاقة داكنة مميّزة (أعلى الباقات) */
+.ss-plan--pro { background: linear-gradient(160deg, var(--ss-ink-2), var(--ss-ink)); border-color: var(--ss-ink-2); }
+.ss-plan--pro .ss-plan__name,
+.ss-plan--pro .ss-plan__price .amt,
+.ss-plan--pro .ss-plan__price .cur { color: #fff; }
+.ss-plan--pro .ss-plan__desc,
+.ss-plan--pro .ss-plan__price .per,
+.ss-plan--pro .ss-plan__includes,
+.ss-plan--pro .ss-plan__launch-note { color: var(--ss-muted-2); }
+.ss-plan--pro .ss-plan__meta { color: #fff; border-top-color: rgba(255,255,255,.16); }
+.ss-plan--pro .ss-plan__feat { color: #E7E9EE; }
+.ss-plan--pro .ss-plan__check { color: #34D399; }
+.ss-plan--pro .ss-plan__launch-amt { background: rgba(255,107,53,.18); color: #FFB596; }
 
 /* رسالة الميزة المقفلة (toast صغير أعلى الصفحة) */
 .ss-locktip {
