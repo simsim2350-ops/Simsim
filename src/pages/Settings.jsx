@@ -43,7 +43,7 @@ export default function Settings() {
       await setMenuBrandingHidden(!brandingHidden.usable)
       await loadFeatures()
       toast.success('تم التحديث ✅')
-    } catch (e) { toast.error(e.message || 'تعذّر التحديث') } finally { setSavingBrand(false) }
+    } catch (e) { toast.error(e.message || 'تعذّر التحديث، جرّب ثانية') } finally { setSavingBrand(false) }
   }
   const [activeTab, setActiveTab] = useState('restaurant')
   const [loading, setLoading] = useState(false)

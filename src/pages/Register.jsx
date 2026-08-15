@@ -96,7 +96,7 @@ export default function Register() {
       toast.success('🎉 تم إنشاء مطعمك! خلينا نجهّز المنيو')
       navigate('/onboarding')
     } catch (err) {
-      toast.error(err.message || 'حدث خطأ، حاول مجدداً')
+      toast.error(err.message || 'حصل خطأ، جرّب مرة ثانية')
     } finally {
       setLoading(false)
     }

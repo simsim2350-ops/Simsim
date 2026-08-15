@@ -194,7 +194,7 @@ export default function Analytics() {
 
   const Card = ({ children, style }) => <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden', ...style }}>{children}</div>
   const CardHead = ({ children }) => <div style={{ padding:'14px 16px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>{children}</div>
-  const Empty = ({ text='لا توجد بيانات بعد' }) => <div style={{ padding:'28px', textAlign:'center', color:'#9CA3AF', fontSize:'13px' }}>{text}</div>
+  const Empty = ({ text='ما في بيانات بعد' }) => <div style={{ padding:'28px', textAlign:'center', color:'#9CA3AF', fontSize:'13px' }}>{text}</div>
 
   if (loading) return (
     <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Tajawal,sans-serif' }}>

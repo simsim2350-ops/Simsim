@@ -109,7 +109,7 @@ export default function Dashboard() {
     try {
       if (navigator.share && isMobile) { await navigator.share({ title: restaurant?.name, url }); return }
       await navigator.clipboard.writeText(url); toast.success('تم نسخ رابط المنيو! 📋')
-    } catch { toast.error('تعذّر النسخ') }
+    } catch { toast.error('تعذّر النسخ، انسخه يدوياً') }
   }
 
   // ===== الحسابات =====

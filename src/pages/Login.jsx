@@ -22,7 +22,7 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault()
     if (!email || !password) {
-      toast.error('يرجى إدخال البريد وكلمة المرور')
+      toast.error('أدخل بريدك وكلمة المرور')
       return
     }
     setLoading(true)

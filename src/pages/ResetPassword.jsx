@@ -44,7 +44,7 @@ export default function ResetPassword() {
       setDone(true)
       toast.success('تم تغيير كلمة المرور ✅')
     } catch (err) {
-      toast.error(err.message || 'حدث خطأ، حاول مجدداً')
+      toast.error(err.message || 'حصل خطأ، جرّب مرة ثانية')
     } finally {
       setLoading(false)
     }

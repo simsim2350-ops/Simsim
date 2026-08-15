@@ -443,7 +443,7 @@ function CustomersInner() {
             <div style={{ textAlign:'center', padding:'60px 16px', color:'#9CA3AF' }}>
               <div style={{ fontSize:'48px', opacity:0.3, marginBottom:'12px' }}>👥</div>
               <div style={{ fontSize:'16px', fontWeight:'700', color:'#374151', marginBottom:'8px' }}>
-                {customersFull.length === 0 ? 'لا يوجد عملاء بعد' : 'لا توجد نتائج مطابقة'}
+                {customersFull.length === 0 ? 'ما في عملاء بعد' : 'ما لقينا نتائج مطابقة'}
               </div>
               <div style={{ fontSize:'13px' }}>
                 {customersFull.length === 0 ? 'سيظهر العملاء هنا تلقائياً مع أول طلب يدخل رقم جواله' : 'جرّب كلمة بحث أو فلتر مختلف'}

@@ -165,7 +165,7 @@ export default function Staff() {
       setModalOpen(false)
       fetchAll()
     } catch (err) {
-      toast.error(err.message || 'حدث خطأ')
+      toast.error(err.message || 'حصل خطأ، جرّب مرة ثانية')
     } finally {
       setSaving(false)
     }
@@ -197,7 +197,7 @@ export default function Staff() {
       else toast.success('تم حذف الموظف نهائياً')
       fetchAll()
     } catch (err) {
-      toast.error(err.message || 'حدث خطأ')
+      toast.error(err.message || 'حصل خطأ، جرّب مرة ثانية')
     }
   }
 
@@ -217,7 +217,7 @@ export default function Staff() {
     const link = `${window.location.origin}/staff-login/${restaurant.slug}`
     navigator.clipboard?.writeText(link).then(
       () => toast.success('تم نسخ رابط دخول الموظفين 📋'),
-      () => toast.error('تعذّر النسخ')
+      () => toast.error('تعذّر النسخ، انسخه يدوياً')
     )
   }
 

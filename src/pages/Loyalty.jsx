@@ -184,7 +184,7 @@ export default function Loyalty() {
       setTierForm(null)
       await fetchAll()
     } catch (err) {
-      toast.error(err.message || 'تعذّر الحفظ')
+      toast.error(err.message || 'تعذّر الحفظ، جرّب ثانية')
     }
   }
 
@@ -194,7 +194,7 @@ export default function Loyalty() {
       await recomputeTiers(restaurant.id)
       toast.success('تم حذف المستوى')
       await fetchAll()
-    } catch { toast.error('تعذّر الحذف') }
+    } catch { toast.error('تعذّر الحذف، جرّب ثانية') }
   }
 
   // عدد العملاء في كل مستوى (للعرض)
@@ -216,7 +216,7 @@ export default function Loyalty() {
       await saveLoyaltyProgram(restaurant.id, buildProgram())
       toast.success('تم حفظ إعدادات الولاء ✅')
     } catch (err) {
-      toast.error(err.message || 'تعذّر الحفظ')
+      toast.error(err.message || 'تعذّر الحفظ، جرّب ثانية')
     } finally {
       setSaving(false)
     }
@@ -228,7 +228,7 @@ export default function Loyalty() {
       await saveLoyaltyProgram(restaurant.id, buildProgram())
       toast.success('تم حفظ قواعد الكسب ✅')
     } catch (err) {
-      toast.error(err.message || 'تعذّر الحفظ')
+      toast.error(err.message || 'تعذّر الحفظ، جرّب ثانية')
     } finally {
       setSavingRules(false)
     }
@@ -248,7 +248,7 @@ export default function Loyalty() {
       toast.success(f.id ? 'تم تعديل الحملة ✅' : 'تمت إضافة الحملة ✅')
       setCampaignForm(null)
       await fetchAll()
-    } catch (err) { toast.error(err.message || 'تعذّر الحفظ') }
+    } catch (err) { toast.error(err.message || 'تعذّر الحفظ، جرّب ثانية') }
   }
 
   const onDeleteCampaign = async (c) => {
@@ -256,7 +256,7 @@ export default function Loyalty() {
       await deleteCampaign(c.id)
       toast.success('تم حذف الحملة')
       setCampaigns(prev => prev.filter(x => x.id !== c.id))
-    } catch { toast.error('تعذّر الحذف') }
+    } catch { toast.error('تعذّر الحذف، جرّب ثانية') }
   }
 
   const campaignState = (c) => {
@@ -316,7 +316,7 @@ export default function Loyalty() {
       setRewardForm(null)
       await fetchAll()
     } catch (err) {
-      toast.error(err.message || 'تعذّر الحفظ')
+      toast.error(err.message || 'تعذّر الحفظ، جرّب ثانية')
     }
   }
 
@@ -324,7 +324,7 @@ export default function Loyalty() {
     try {
       await toggleReward(r.id, !r.is_active)
       setRewards(prev => prev.map(x => x.id === r.id ? { ...x, is_active: !r.is_active } : x))
-    } catch { toast.error('تعذّر التحديث') }
+    } catch { toast.error('تعذّر التحديث، جرّب ثانية') }
   }
 
   const onDeleteReward = async (r) => {
@@ -332,7 +332,7 @@ export default function Loyalty() {
       await deleteReward(r.id)
       toast.success('تم حذف المكافأة')
       setRewards(prev => prev.filter(x => x.id !== r.id))
-    } catch { toast.error('تعذّر الحذف') }
+    } catch { toast.error('تعذّر الحذف، جرّب ثانية') }
   }
 
   const branchName = (bid) => {
@@ -899,7 +899,7 @@ export default function Loyalty() {
                 {filteredReviews.length === 0 ? (
                   <div style={{ padding:'40px 16px', textAlign:'center', color:'#9CA3AF' }}>
                     <div style={{ fontSize:'40px', opacity:0.3, marginBottom:'10px' }}>💬</div>
-                    <div style={{ fontSize:'13px' }}>{total === 0 ? 'لا توجد تقييمات بعد' : 'لا نتائج مطابقة للفلاتر'}</div>
+                    <div style={{ fontSize:'13px' }}>{total === 0 ? 'ما في تقييمات بعد' : 'ما لقينا نتائج مطابقة للفلاتر'}</div>
                   </div>
                 ) : (
                   filteredReviews.map(r => {
