@@ -104,7 +104,7 @@ export default function Register() {
 
   const inputStyle = { width:'100%', padding:'12px 14px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', background:'#F8F9FB', outline:'none', textAlign:'right', direction:'rtl', boxSizing:'border-box' }
   const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }
-  const btnStyle = { width:'100%', padding:'14px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', boxShadow:'0 6px 20px rgba(255,106,0,0.35)', marginTop:'8px', marginBottom:'10px' }
+  const btnStyle = { width:'100%', padding:'14px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', boxShadow:'0 6px 20px rgba(255,106,0,0.35)', marginTop:'8px', marginBottom:'10px' }
 
   const previewSlug = form.slug || slugify(form.restaurantName) || 'your-menu'
 
@@ -116,7 +116,7 @@ export default function Register() {
           <span style={{ fontFamily:'Poppins,sans-serif', fontWeight:'700', fontSize:'20px' }}>sim<span style={{ color:'#FF6A00' }}>sim</span></span>
         </div>
 
-        <h2 style={{ fontSize:'24px', fontWeight:'900', marginBottom:'4px', fontFamily:'Cairo,sans-serif' }}>أنشئ مطعمك في دقيقة 🚀</h2>
+        <h2 style={{ fontSize:'24px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>أنشئ مطعمك في دقيقة 🚀</h2>
         <p style={{ fontSize:'14px', color:'#6B7280', marginBottom:'24px' }}>معلومة واحدة تكفي للبدء — الباقي تكمّله لاحقاً</p>
 
         <div style={{ marginBottom:'14px' }}>
@@ -165,7 +165,7 @@ export default function Register() {
       {!isMobile && (
         <div style={{ flex:1, background:'linear-gradient(135deg,#0B0B0F,#1a1a2e)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:'16px', padding:'40px' }}>
           <div style={{ fontSize:'80px' }}>🍕</div>
-          <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'28px', color:'white', textAlign:'center', lineHeight:'1.3' }}>منيو مطعمك الاحترافي<br/><span style={{ color:'#FF6A00' }}>يبدأ من هنا</span></h2>
+          <h2 style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'28px', color:'white', textAlign:'center', lineHeight:'1.3' }}>منيو مطعمك الاحترافي<br/><span style={{ color:'#FF6A00' }}>يبدأ من هنا</span></h2>
           <p style={{ fontSize:'15px', color:'rgba(255,255,255,0.5)', textAlign:'center' }}>منيو رقمي وQR وطلبات — جاهزة في دقيقة</p>
         </div>
       )}

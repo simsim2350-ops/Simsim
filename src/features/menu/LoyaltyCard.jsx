@@ -29,7 +29,7 @@ export default function LoyaltyCard({ loyalty, brandColor, isEn, t }) {
         )}
       </div>
 
-      <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'27px', lineHeight:1, marginTop:'12px', position:'relative' }}>
+      <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'27px', lineHeight:1, marginTop:'12px', position:'relative' }}>
         {balance}<span style={{ fontSize:'12px', fontWeight:'700', opacity:0.8 }}> {t('ptsUnit')}</span>
       </div>
 

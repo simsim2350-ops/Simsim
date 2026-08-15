@@ -204,8 +204,8 @@ export default function QRCodePage() {
       active="qr"
       title="📱 QR Code"
       actions={<>
-        <button onClick={() => navigate('/dashboard')} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'600', fontSize:'12px', cursor:'pointer', color:'#374151' }}>← الرئيسية</button>
-        <button onClick={downloadQR} style={{ padding:'7px 14px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>⬇️ تحميل</button>
+        <button onClick={() => navigate('/dashboard')} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'600', fontSize:'12px', cursor:'pointer', color:'#374151' }}>← الرئيسية</button>
+        <button onClick={downloadQR} style={{ padding:'7px 14px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>⬇️ تحميل</button>
       </>}
     >
 
@@ -231,7 +231,7 @@ export default function QRCodePage() {
                       <div style={{ width:'52px', height:'52px', borderRadius:'14px', background: restaurant?.logo_url ? 'transparent' : style.logoBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'26px', overflow:'hidden' }}>
                         {restaurant?.logo_url ? <img src={restaurant.logo_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : '🍕'}
                       </div>
-                      <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'17px', color: style.textColor, textAlign:'center' }}>
+                      <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'17px', color: style.textColor, textAlign:'center' }}>
                         {restaurant?.name || 'مطعمك'}
                       </div>
                       <div style={{ fontSize:'11px', color: style.textColor, opacity:0.7, textAlign:'center' }}>
@@ -258,11 +258,11 @@ export default function QRCodePage() {
 
                 {/* Actions */}
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px 16px' }}>
-                  <button onClick={downloadQR} style={{ padding:'12px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'5px', color:'#374151' }}>
+                  <button onClick={downloadQR} style={{ padding:'12px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'5px', color:'#374151' }}>
                     <span style={{ fontSize:'22px' }}>🖼️</span>
                     تحميل PNG
                   </button>
-                  <button onClick={downloadCardImage} style={{ padding:'12px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'5px', color:'#374151' }}>
+                  <button onClick={downloadCardImage} style={{ padding:'12px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'5px', color:'#374151' }}>
                     <span style={{ fontSize:'22px' }}>🎴</span>
                     تحميل الكارت
                   </button>
@@ -319,7 +319,7 @@ export default function QRCodePage() {
                 <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>📐 الحجم</div>
                 <div style={{ padding:'14px 16px', display:'flex', alignItems:'center', gap:'12px' }}>
                   <input type="range" min="140" max="260" value={qrSize} onChange={e => setQrSize(parseInt(e.target.value))} style={{ flex:1, accentColor:'#FF6A00' }}/>
-                  <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', color:'#FF6A00', minWidth:'50px', textAlign:'center' }}>{qrSize}px</span>
+                  <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px', color:'#FF6A00', minWidth:'50px', textAlign:'center' }}>{qrSize}px</span>
                 </div>
               </div>
 
@@ -329,7 +329,7 @@ export default function QRCodePage() {
                 <div style={{ padding:'14px 16px' }}>
                   <div style={{ display:'flex', gap:'8px', marginBottom:'12px' }}>
                     <input readOnly value={menuURL} style={{ flex:1, padding:'10px 12px', border:'1.5px solid #E5E7EB', borderRadius:'10px', fontFamily:'Tajawal,sans-serif', fontSize:'12px', color:'#9CA3AF', background:'#F8F9FB', outline:'none', direction:'ltr', textAlign:'left' }}/>
-                    <button onClick={copyURL} style={{ padding:'10px 14px', borderRadius:'10px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>نسخ</button>
+                    <button onClick={copyURL} style={{ padding:'10px 14px', borderRadius:'10px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>نسخ</button>
                   </div>
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
                     {[
@@ -338,7 +338,7 @@ export default function QRCodePage() {
                       { icon:'📧', label:'إيميل',      action: () => window.open(`mailto:?subject=منيو ${restaurant?.name}&body=${menuURL}`) },
                       { icon:'🌐', label:'فتح المنيو', action: () => window.open(menuURL, '_blank') },
                     ].map(s => (
-                      <button key={s.label} onClick={s.action} style={{ padding:'11px 12px', borderRadius:'11px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', gap:'8px', color:'#374151' }}>
+                      <button key={s.label} onClick={s.action} style={{ padding:'11px 12px', borderRadius:'11px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', gap:'8px', color:'#374151' }}>
                         <span style={{ fontSize:'18px' }}>{s.icon}</span>{s.label}
                       </button>
                     ))}

@@ -215,7 +215,7 @@ const styles = {
     background: 'linear-gradient(135deg, #FF6A00, #E05D00)',
     borderRadius: '12px',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontFamily: 'Cairo, sans-serif', fontWeight: '900', fontSize: '18px',
+    fontFamily: 'Tajawal, sans-serif', fontWeight: '900', fontSize: '18px',
     color: 'white', boxShadow: '0 4px 16px rgba(255,106,0,0.4)',
   },
   logoText: {
@@ -223,7 +223,7 @@ const styles = {
     fontSize: '24px', color: 'white',
   },
   visualTitle: {
-    fontFamily: 'Cairo, sans-serif', fontWeight: '900',
+    fontFamily: 'Tajawal, sans-serif', fontWeight: '900',
     fontSize: '40px', color: 'white',
     lineHeight: '1.15', letterSpacing: '-1px',
     marginBottom: '16px',
@@ -244,7 +244,7 @@ const styles = {
   statsRow: { display: 'flex', gap: '32px' },
   stat: { display: 'flex', flexDirection: 'column', gap: '4px' },
   statVal: {
-    fontFamily: 'Cairo, sans-serif', fontWeight: '900',
+    fontFamily: 'Tajawal, sans-serif', fontWeight: '900',
     fontSize: '26px', color: '#FF6A00',
   },
   statLabel: { fontSize: '12px', color: 'rgba(255,255,255,0.4)' },
@@ -302,7 +302,7 @@ const styles = {
     borderRadius: '13px', border: 'none',
     background: 'linear-gradient(135deg, #FF6A00, #E05D00)',
     color: 'white',
-    fontFamily: 'Cairo, sans-serif', fontWeight: '800', fontSize: '15px',
+    fontFamily: 'Tajawal, sans-serif', fontWeight: '800', fontSize: '15px',
     cursor: 'pointer',
     boxShadow: '0 8px 24px rgba(255,106,0,0.35)',
     marginTop: '8px', marginBottom: '24px',

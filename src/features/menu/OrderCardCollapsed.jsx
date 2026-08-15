@@ -51,7 +51,7 @@ export default function OrderCardCollapsed({
         {/* الوسط */}
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:'7px' }}>
-            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px' }}>{order.orderNumber}</span>
+            <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'13px' }}>{order.orderNumber}</span>
             <span style={{ fontSize:'10px', fontWeight:'800', padding:'3px 9px', borderRadius:'100px', color: isCancelled ? '#E11D48' : '#0E9F6E', background: isCancelled ? '#FEECEF' : '#E6F6EF' }}>
               {isCancelled ? (order.cancelledBy === 'customer' ? t('stCancYou') : t('stCancShop')) : t('stCompleted')}
             </span>
@@ -78,7 +78,7 @@ export default function OrderCardCollapsed({
           {items.map((item, i) => (
             <OrderItemRow key={i} item={item} itemName={itemName} isEn={isEn} t={t} />
           ))}
-          <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13.5px', paddingTop:'8px', marginTop:'4px', borderTop:'1px solid #F3F4F6' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'13.5px', paddingTop:'8px', marginTop:'4px', borderTop:'1px solid #F3F4F6' }}>
             <span>{t('total')}</span>
             <span style={{ color:brandColor }}>{(Number(order.total) || 0).toFixed(2)} ﷼</span>
           </div>
@@ -109,7 +109,7 @@ export default function OrderCardCollapsed({
                 <button
                   onClick={() => submitReview(order)}
                   disabled={submittingReview}
-                  style={{ width:'100%', padding:'10px', borderRadius:'11px', border:'none', background:brandColor, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12.5px', cursor:'pointer', opacity: submittingReview ? 0.7 : 1 }}
+                  style={{ width:'100%', padding:'10px', borderRadius:'11px', border:'none', background:brandColor, color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12.5px', cursor:'pointer', opacity: submittingReview ? 0.7 : 1 }}
                 >
                   {submittingReview ? t('sendingRev') : t('sendReview')}
                 </button>

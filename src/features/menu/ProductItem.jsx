@@ -29,7 +29,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
     ) : (
       <div style={{ position:'absolute', bottom:`${edge-1}px`, left:`${edge-2}px`, display:'flex', alignItems:'center', background:'#0B0B0F', borderRadius:'100px', overflow:'hidden', boxShadow:'0 4px 12px rgba(0,0,0,0.3)', ...ring }}>
         <button onClick={() => onQtyChange(-1)} style={{ width:'26px', height:'26px', background:'none', border:'none', color:'white', fontSize:'17px', cursor:'pointer', fontWeight:'300', display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
-        <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color:'white', minWidth:'20px', textAlign:'center' }}>{qty}</span>
+        <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'13px', color:'white', minWidth:'20px', textAlign:'center' }}>{qty}</span>
         <button onClick={quickAdd} style={{ width:'26px', height:'26px', background:'none', border:'none', color:'white', fontSize:'17px', cursor:'pointer', fontWeight:'300', display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
       </div>
     )

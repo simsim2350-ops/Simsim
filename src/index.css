@@ -29,7 +29,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1,h2,h3,h4,h5 { font-family: 'Cairo', sans-serif; font-weight: 800; }
+h1,h2,h3,h4,h5 { font-family: 'Tajawal', sans-serif; font-weight: 800; }
 button { cursor: pointer; font-family: inherit; }
 input, textarea, select { font-family: 'Tajawal', sans-serif; direction: rtl; }
 a { text-decoration: none; color: inherit; }

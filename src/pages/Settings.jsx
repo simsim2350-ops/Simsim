@@ -263,7 +263,7 @@ export default function Settings() {
       active="settings"
       title="⚙️ الإعدادات"
       actions={
-        <button onClick={() => navigate('/dashboard')} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'600', fontSize:'12px', cursor:'pointer', color:'#374151' }}>← الرئيسية</button>
+        <button onClick={() => navigate('/dashboard')} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'600', fontSize:'12px', cursor:'pointer', color:'#374151' }}>← الرئيسية</button>
       }
     >
         {/* Tabs */}
@@ -297,7 +297,7 @@ export default function Settings() {
                           : '🍕'}
                       </div>
                       <div style={{ flex:1 }}>
-                        <label style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'9px 16px', borderRadius:'10px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer', color:'#374151' }}>
+                        <label style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'9px 16px', borderRadius:'10px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer', color:'#374151' }}>
                           {uploadingLogo ? 'جارٍ الرفع...' : '📷 تغيير الشعار'}
                           <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploadingLogo} style={{ display:'none' }} />
                         </label>
@@ -313,7 +313,7 @@ export default function Settings() {
                         )}
                       </div>
                       <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-                        <label style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'9px 16px', borderRadius:'10px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer', color:'#374151' }}>
+                        <label style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'9px 16px', borderRadius:'10px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer', color:'#374151' }}>
                           {uploadingCover ? 'جارٍ الرفع...' : '🖼️ صورة الغلاف'}
                           <input type="file" accept="image/*" onChange={handleCoverUpload} disabled={uploadingCover} style={{ display:'none' }} />
                         </label>
@@ -510,7 +510,7 @@ export default function Settings() {
                             input.value = ''
                           }
                         }}
-                        style={{ padding:'0 16px', borderRadius:'11px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}
+                        style={{ padding:'0 16px', borderRadius:'11px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}
                       >
                         إضافة
                       </button>
@@ -591,7 +591,7 @@ export default function Settings() {
                             ))}
                           </div>
                         )}
-                        <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color: restForm.menu_layout===opt.key ? '#FF6A00' : '#374151', marginBottom:'2px' }}>{opt.label}</div>
+                        <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', color: restForm.menu_layout===opt.key ? '#FF6A00' : '#374151', marginBottom:'2px' }}>{opt.label}</div>
                         <div style={{ fontSize:'10px', color:'#9CA3AF' }}>{opt.desc}</div>
                       </div>
                     ))}
@@ -614,7 +614,7 @@ export default function Settings() {
                     <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 14px', background:'#F8F9FB', borderRadius:'10px' }}>
                       <div style={{ width:'32px', height:'32px', borderRadius:'8px', background:restForm.brand_color }}/>
                       <span style={{ fontSize:'13px', color:'#6B7280' }}>اللون الحالي:</span>
-                      <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'700', color:restForm.brand_color }}>{restForm.brand_color}</span>
+                      <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'700', color:restForm.brand_color }}>{restForm.brand_color}</span>
                     </div>
                   </div>
                 </div>
@@ -637,7 +637,7 @@ export default function Settings() {
                           <div style={{ width:'100%', height:'100%', background: restForm.price_color || restForm.brand_color }}/>
                           <input type="color" value={restForm.price_color || restForm.brand_color} onChange={e => setRestForm(f=>({...f,price_color:e.target.value}))} style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer', width:'100%', height:'100%' }}/>
                         </div>
-                        <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', color: restForm.price_color || restForm.brand_color }}>25 ﷼</span>
+                        <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'15px', color: restForm.price_color || restForm.brand_color }}>25 ﷼</span>
                         <span style={{ fontSize:'11px', color:'#9CA3AF', marginRight:'auto' }}>{restForm.price_color || 'افتراضي (لون المطعم)'}</span>
                       </div>
                     </div>
@@ -689,7 +689,7 @@ export default function Settings() {
 
                 )}
 
-                <button onClick={saveRestaurant} disabled={loading} style={{ padding:'14px', borderRadius:'13px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', boxShadow:'0 6px 20px rgba(255,106,0,0.35)', opacity:loading?0.8:1 }}>
+                <button onClick={saveRestaurant} disabled={loading} style={{ padding:'14px', borderRadius:'13px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', boxShadow:'0 6px 20px rgba(255,106,0,0.35)', opacity:loading?0.8:1 }}>
                   {loading ? 'جارٍ الحفظ...' : '💾 حفظ إعدادات المطعم'}
                 </button>
 
@@ -715,7 +715,7 @@ export default function Settings() {
 
                     {/* Avatar */}
                     <div style={{ display:'flex', alignItems:'center', gap:'14px', padding:'14px', background:'#F8F9FB', borderRadius:'12px' }}>
-                      <div style={{ width:'56px', height:'56px', borderRadius:'50%', background:'linear-gradient(135deg,#667eea,#764ba2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px', fontWeight:'700', color:'white', fontFamily:'Cairo,sans-serif', flexShrink:0 }}>
+                      <div style={{ width:'56px', height:'56px', borderRadius:'50%', background:'linear-gradient(135deg,#667eea,#764ba2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px', fontWeight:'700', color:'white', fontFamily:'Tajawal,sans-serif', flexShrink:0 }}>
                         {profileForm.full_name?.charAt(0) || 'م'}
                       </div>
                       <div>
@@ -740,7 +740,7 @@ export default function Settings() {
                       <span style={{ fontSize:'13px', color:'#9CA3AF', direction:'ltr' }}>{user?.email}</span>
                     </div>
 
-                    <button onClick={saveProfile} disabled={loading} style={{ padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity:loading?0.8:1 }}>
+                    <button onClick={saveProfile} disabled={loading} style={{ padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity:loading?0.8:1 }}>
                       {loading ? 'جارٍ الحفظ...' : '💾 حفظ الملف الشخصي'}
                     </button>
                   </div>
@@ -772,7 +772,7 @@ export default function Settings() {
                     </div>
                   )}
 
-                  <button onClick={changePassword} disabled={loading} style={{ padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity:loading?0.8:1 }}>
+                  <button onClick={changePassword} disabled={loading} style={{ padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity:loading?0.8:1 }}>
                     {loading ? 'جارٍ التغيير...' : '🔒 تغيير كلمة المرور'}
                   </button>
                 </div>
@@ -813,7 +813,7 @@ export default function Settings() {
                           console.error('Copy failed:', err)
                           toast.error('تعذّر نسخ الرابط')
                         }
-                      }} style={{ padding:'11px 14px', borderRadius:'11px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', whiteSpace:'nowrap' }}>
+                      }} style={{ padding:'11px 14px', borderRadius:'11px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', whiteSpace:'nowrap' }}>
                         نسخ
                       </button>
                     </div>
@@ -848,7 +848,7 @@ export default function Settings() {
                     </div>
                     <button
                       onClick={() => setConfirmDeleteAll(true)}
-                      style={{ padding:'12px', borderRadius:'12px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', color:'#EF4444', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}
+                      style={{ padding:'12px', borderRadius:'12px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', color:'#EF4444', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}
                     >
                       🗑️ حذف بيانات المطعم
                     </button>

@@ -67,7 +67,7 @@ const AdminBranding = lazyWithRetry(() => import('./admin/features/branding/Bran
 // نفس شاشة التحميل المعتمدة في ProtectedRoute — تُعرض أثناء جلب chunk الصفحة
 function PageLoader() {
   return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Tajawal,sans-serif' }}>
       <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       جارٍ التحميل...
@@ -78,7 +78,7 @@ function PageLoader() {
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore()
   if (loading) return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Tajawal,sans-serif' }}>
       <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       جارٍ التحميل...
@@ -105,16 +105,16 @@ function FeatureUnavailable({ page, features }) {
     <div dir="rtl" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0B0B0F', padding: 24 }}>
       <div style={{ background: 'white', borderRadius: 18, padding: 28, maxWidth: 380, width: '100%', textAlign: 'center' }}>
         <div style={{ fontSize: 42, marginBottom: 8 }}>{comingSoon ? '⏳' : '🔒'}</div>
-        <h2 style={{ fontFamily: 'Cairo,sans-serif', fontWeight: 900, fontSize: 19, margin: '0 0 8px' }}>{st.name || 'هذه الميزة غير متاحة'}</h2>
+        <h2 style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: 900, fontSize: 19, margin: '0 0 8px' }}>{st.name || 'هذه الميزة غير متاحة'}</h2>
         <p style={{ color: '#6B7280', fontSize: 14, lineHeight: 1.7, margin: '0 0 18px' }}>
           {comingSoon
             ? 'هذه الميزة قيد التطوير وستتوفر قريباً.'
             : (st.upgrade_message || 'هذه الميزة غير متاحة في باقتك الحالية. قم بالترقية للوصول إليها والاستفادة من إمكانيات SIMSIM بشكل أكبر.')}
         </p>
         {!comingSoon && (
-          <button onClick={() => navigate('/billing')} style={{ width: '100%', background: 'linear-gradient(135deg,#FF6A00,#E05D00)', color: 'white', border: 'none', borderRadius: 12, padding: '12px', fontFamily: 'Cairo,sans-serif', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>⬆️ ترقية الباقة</button>
+          <button onClick={() => navigate('/billing')} style={{ width: '100%', background: 'linear-gradient(135deg,#FF6A00,#E05D00)', color: 'white', border: 'none', borderRadius: 12, padding: '12px', fontFamily: 'Tajawal,sans-serif', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>⬆️ ترقية الباقة</button>
         )}
-        <button onClick={() => navigate('/dashboard')} style={{ width: '100%', background: 'transparent', color: '#9CA3AF', border: 'none', padding: '10px', fontFamily: 'Cairo,sans-serif', fontWeight: 700, fontSize: 14, cursor: 'pointer', marginTop: 4 }}>{comingSoon ? 'العودة للرئيسية' : 'ليس الآن'}</button>
+        <button onClick={() => navigate('/dashboard')} style={{ width: '100%', background: 'transparent', color: '#9CA3AF', border: 'none', padding: '10px', fontFamily: 'Tajawal,sans-serif', fontWeight: 700, fontSize: 14, cursor: 'pointer', marginTop: 4 }}>{comingSoon ? 'العودة للرئيسية' : 'ليس الآن'}</button>
       </div>
     </div>
   )

@@ -120,7 +120,7 @@ export default function MenuBody({
                   ) : (
                     <span style={{ fontSize:'20px', width:'36px', textAlign:'center' }}>{cat.emoji}</span>
                   )}
-                  <span style={{ flex:1, fontSize:'14px', fontWeight: isActive ? '900' : '700', fontFamily:'Cairo,sans-serif', color: isActive ? brandColor : '#0B0B0F' }}>{tx(cat,'name')}</span>
+                  <span style={{ flex:1, fontSize:'14px', fontWeight: isActive ? '900' : '700', fontFamily:'Tajawal,sans-serif', color: isActive ? brandColor : '#0B0B0F' }}>{tx(cat,'name')}</span>
                   <span style={{ fontSize:'11px', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 9px', borderRadius:'100px' }}>{count}</span>
                 </div>
               )

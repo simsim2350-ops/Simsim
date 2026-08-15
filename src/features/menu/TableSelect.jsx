@@ -49,7 +49,7 @@ export default function TableSelect({ tables, value, onChange, brandColor, t }) 
           <div onClick={() => setOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', animation:'fadeIn 0.2s ease' }}/>
           <div className="simsim-table-sheet" style={{ borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', maxHeight:'70vh', display:'flex', flexDirection:'column', animation:'slideUp 0.25s ease', position:'relative', overflow:'hidden' }}>
             <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'2px', margin:'12px auto' }}/>
-            <div style={{ padding:'0 18px 12px', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', flexShrink:0 }}>{t('tableReq')}</div>
+            <div style={{ padding:'0 18px 12px', fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'16px', flexShrink:0 }}>{t('tableReq')}</div>
 
             {tables.length > 30 && (
               <div style={{ padding:'0 18px 12px', flexShrink:0 }}>

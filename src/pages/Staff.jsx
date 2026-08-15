@@ -30,7 +30,7 @@ const PAGES = [
 
 function Spinner() {
   return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Tajawal,sans-serif' }}>
       <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       جارٍ التحميل...
@@ -225,15 +225,15 @@ export default function Staff() {
 
   return (
     <AppShell title="الموظفون" active="staff"
-      actions={<button onClick={openAdd} style={{ padding:'10px 16px', borderRadius:'11px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>+ إضافة موظف</button>}
+      actions={<button onClick={openAdd} style={{ padding:'10px 16px', borderRadius:'11px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>+ إضافة موظف</button>}
     >
       <div style={{ maxWidth:'760px' }}>
         <div style={{ background:'#0B0B0F', borderRadius:'14px', padding:'14px 16px', marginBottom:'14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', flexWrap:'wrap' }}>
           <div style={{ color:'white' }}>
-            <div style={{ fontWeight:'800', fontSize:'14px', fontFamily:'Cairo,sans-serif' }}>🔗 رابط دخول الموظفين</div>
+            <div style={{ fontWeight:'800', fontSize:'14px', fontFamily:'Tajawal,sans-serif' }}>🔗 رابط دخول الموظفين</div>
             <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.6)', direction:'ltr', textAlign:'left', marginTop:'2px' }}>/staff-login/{restaurant.slug}</div>
           </div>
-          <button onClick={copyLoginLink} style={{ padding:'9px 16px', borderRadius:'10px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer' }}>نسخ الرابط</button>
+          <button onClick={copyLoginLink} style={{ padding:'9px 16px', borderRadius:'10px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer' }}>نسخ الرابط</button>
         </div>
 
         {members.length === 0 ? (
@@ -251,7 +251,7 @@ export default function Staff() {
                     <div style={{ width:'40px', height:'40px', borderRadius:'10px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>👤</div>
                     <div>
                       <div style={{ display:'flex', alignItems:'center', gap:'7px' }}>
-                        <span style={{ fontWeight:'800', fontSize:'15px', fontFamily:'Cairo,sans-serif' }}>{m.username}</span>
+                        <span style={{ fontWeight:'800', fontSize:'15px', fontFamily:'Tajawal,sans-serif' }}>{m.username}</span>
                         <span style={{ fontSize:'11px', fontWeight:'800', color:'#7C3AED', background:'#F5F3FF', border:'1px solid #DDD6FE', borderRadius:'6px', padding:'1px 7px' }}>{ROLE_LABELS[m.role] || ROLE_LABELS.staff}</span>
                       </div>
                       <div style={{ fontSize:'12px', color:'#6B7280' }}>
@@ -276,7 +276,7 @@ export default function Staff() {
       {modalOpen && (
         <div onClick={() => setModalOpen(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:'16px' }}>
           <div onClick={e => e.stopPropagation()} style={{ background:'white', borderRadius:'18px', padding:'22px', width:'100%', maxWidth:'440px', maxHeight:'88vh', overflowY:'auto', direction:'rtl' }}>
-            <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', marginBottom:'16px' }}>
+            <h2 style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'18px', marginBottom:'16px' }}>
               {editing ? `تعديل: ${editing.username}` : 'إضافة موظف'}
             </h2>
 
@@ -298,7 +298,7 @@ export default function Staff() {
               <div style={{ display:'flex', gap:'8px' }}>
                 {MEMBER_ROLES.map(r => (
                   <button key={r} type="button" onClick={() => applyRole(r)}
-                    style={{ flex:1, padding:'10px', borderRadius:'10px', cursor:'pointer', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px',
+                    style={{ flex:1, padding:'10px', borderRadius:'10px', cursor:'pointer', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px',
                       border:`1.5px solid ${form.role === r ? '#FED7AA' : '#E5E7EB'}`,
                       background: form.role === r ? '#FFF7ED' : 'white', color: form.role === r ? '#C2410C' : '#374151' }}>
                     {ROLE_LABELS[r]}
@@ -336,8 +336,8 @@ export default function Staff() {
             </div>
 
             <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={() => setModalOpen(false)} style={{ flex:1, padding:'12px', borderRadius:'11px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', cursor:'pointer' }}>إلغاء</button>
-              <button onClick={handleSave} disabled={saving} style={{ flex:2, padding:'12px', borderRadius:'11px', border:'none', background: saving ? '#9CA3AF' : 'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', cursor: saving ? 'default' : 'pointer' }}>
+              <button onClick={() => setModalOpen(false)} style={{ flex:1, padding:'12px', borderRadius:'11px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', cursor:'pointer' }}>إلغاء</button>
+              <button onClick={handleSave} disabled={saving} style={{ flex:2, padding:'12px', borderRadius:'11px', border:'none', background: saving ? '#9CA3AF' : 'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', cursor: saving ? 'default' : 'pointer' }}>
                 {saving ? 'جارٍ الحفظ...' : (editing ? 'حفظ التعديلات' : 'إنشاء الموظف')}
               </button>
             </div>

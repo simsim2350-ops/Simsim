@@ -146,11 +146,11 @@ const styles = {
     background: 'linear-gradient(135deg, #FF6A00, #E05D00)',
     borderRadius: '10px',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontFamily: 'Cairo, sans-serif', fontWeight: '900', fontSize: '15px', color: 'white',
+    fontFamily: 'Tajawal, sans-serif', fontWeight: '900', fontSize: '15px', color: 'white',
   },
   logoText: { fontFamily: 'Poppins, sans-serif', fontWeight: '700', fontSize: '20px', color: '#0B0B0F' },
   title: {
-    fontFamily: 'Cairo, sans-serif', fontWeight: '900',
+    fontFamily: 'Tajawal, sans-serif', fontWeight: '900',
     fontSize: '24px', color: '#0B0B0F',
     textAlign: 'center', marginBottom: '8px',
   },
@@ -175,7 +175,7 @@ const styles = {
     borderRadius: '12px', border: 'none',
     background: 'linear-gradient(135deg, #FF6A00, #E05D00)',
     color: 'white',
-    fontFamily: 'Cairo, sans-serif', fontWeight: '800', fontSize: '15px',
+    fontFamily: 'Tajawal, sans-serif', fontWeight: '800', fontSize: '15px',
     cursor: 'pointer', boxShadow: '0 6px 20px rgba(255,106,0,0.35)',
   },
 }
