@@ -56,8 +56,8 @@ export default function Login() {
 
         <div style={styles.visualContent}>
           <div style={styles.logoWrap}>
-            <div style={styles.logoMark}>S</div>
-            <span style={styles.logoText}>SIM<span style={{ color: '#FF6A00' }}>SIM</span></span>
+            <img src="/simsim-s.svg" alt="" style={{ height:'40px', width:'auto', display:'block' }} />
+            <span style={styles.logoText}>sim<span style={{ color: '#FF6A00' }}>sim</span></span>
           </div>
 
           <h1 style={styles.visualTitle}>
@@ -219,7 +219,7 @@ const styles = {
     color: 'white', boxShadow: '0 4px 16px rgba(255,106,0,0.4)',
   },
   logoText: {
-    fontFamily: 'Cairo, sans-serif', fontWeight: '900',
+    fontFamily: 'Poppins, sans-serif', fontWeight: '700',
     fontSize: '24px', color: 'white',
   },
   visualTitle: {

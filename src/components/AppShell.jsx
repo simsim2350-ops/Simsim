@@ -56,8 +56,8 @@ export default function AppShell({ active, title, actions, badges = {}, children
       <div style={{ position:'fixed', right:0, top:0, transform: isDesktop ? 'none' : sidebarOpen ? 'translateX(0)' : 'translateX(100%)', transition:'transform 0.3s ease', zIndex:50, height:'100vh' }}>
         <aside style={{ width:'240px', background:'#0B0B0F', height:'100dvh', display:'flex', flexDirection:'column', borderLeft:'1px solid rgba(255,255,255,0.06)', overflowY:'auto' }}>
           <div style={{ padding:'20px 18px', display:'flex', alignItems:'center', gap:'10px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ width:'34px', height:'34px', background:'linear-gradient(135deg,#FF6A00,#E05D00)', borderRadius:'9px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', color:'white' }}>S</div>
-            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', color:'white' }}>SIM<span style={{ color:'#FF6A00' }}>SIM</span></span>
+            <img src="/simsim-s.svg" alt="" style={{ height:'30px', width:'auto', display:'block' }} />
+            <span style={{ fontFamily:'Poppins,sans-serif', fontWeight:'700', fontSize:'18px', color:'white' }}>sim<span style={{ color:'#FF6A00' }}>sim</span></span>
           </div>
 
           {restaurant && (

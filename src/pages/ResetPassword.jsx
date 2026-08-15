@@ -54,8 +54,8 @@ export default function ResetPassword() {
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.logoWrap}>
-          <div style={styles.logoMark}>S</div>
-          <span style={styles.logoText}>SIM<span style={{ color: '#FF6A00' }}>SIM</span></span>
+          <img src="/simsim-s.svg" alt="" style={{ height:'32px', width:'auto', display:'block' }} />
+          <span style={styles.logoText}>sim<span style={{ color: '#FF6A00' }}>sim</span></span>
         </div>
 
         {done ? (
@@ -148,7 +148,7 @@ const styles = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontFamily: 'Cairo, sans-serif', fontWeight: '900', fontSize: '15px', color: 'white',
   },
-  logoText: { fontFamily: 'Cairo, sans-serif', fontWeight: '900', fontSize: '20px', color: '#0B0B0F' },
+  logoText: { fontFamily: 'Poppins, sans-serif', fontWeight: '700', fontSize: '20px', color: '#0B0B0F' },
   title: {
     fontFamily: 'Cairo, sans-serif', fontWeight: '900',
     fontSize: '24px', color: '#0B0B0F',

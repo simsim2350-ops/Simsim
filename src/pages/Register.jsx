@@ -112,8 +112,8 @@ export default function Register() {
     <div style={{ display:'flex', minHeight:'100vh', direction:'rtl' }}>
       <div style={{ width: isMobile ? '100%' : '520px', background:'white', padding: isMobile ? '28px 20px' : '48px', overflowY:'auto' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'24px' }}>
-          <div style={{ width:'36px', height:'36px', background:'linear-gradient(135deg,#FF6A00,#E05D00)', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cairo,sans-serif', fontWeight:'900', color:'white' }}>S</div>
-          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'20px' }}>SIM<span style={{ color:'#FF6A00' }}>SIM</span></span>
+          <img src="/simsim-s.svg" alt="" style={{ height:'32px', width:'auto', display:'block' }} />
+          <span style={{ fontFamily:'Poppins,sans-serif', fontWeight:'700', fontSize:'20px' }}>sim<span style={{ color:'#FF6A00' }}>sim</span></span>
         </div>
 
         <h2 style={{ fontSize:'24px', fontWeight:'900', marginBottom:'4px', fontFamily:'Cairo,sans-serif' }}>أنشئ مطعمك في دقيقة 🚀</h2>

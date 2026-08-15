@@ -344,8 +344,8 @@ export default function Onboarding() {
     <div style={bg}>
       <div style={card}>
         <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'6px' }}>
-          <div style={{ width:'32px', height:'32px', background:'linear-gradient(135deg,#FF6A00,#E05D00)', borderRadius:'9px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cairo,sans-serif', fontWeight:'900', color:'white', fontSize:'14px' }}>S</div>
-          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px' }}>SIM<span style={{ color:'#FF6A00' }}>SIM</span></span>
+          <img src="/simsim-s.svg" alt="" style={{ height:'28px', width:'auto', display:'block' }} />
+          <span style={{ fontFamily:'Poppins,sans-serif', fontWeight:'700', fontSize:'18px' }}>sim<span style={{ color:'#FF6A00' }}>sim</span></span>
         </div>
 
         <Progress />

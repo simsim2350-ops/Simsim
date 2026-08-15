@@ -26,8 +26,8 @@ export default function ForgotPassword() {
     <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'linear-gradient(135deg,#0B0B0F,#1a1a2e)', padding:'24px', direction:'rtl' }}>
       <div style={{ background:'white', borderRadius:'24px', padding:'48px 40px', width:'100%', maxWidth:'440px', boxShadow:'0 24px 64px rgba(0,0,0,0.3)' }}>
         <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:'10px', marginBottom:'32px' }}>
-          <div style={{ width:'36px', height:'36px', background:'linear-gradient(135deg,#FF6A00,#E05D00)', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cairo,sans-serif', fontWeight:'900', color:'white' }}>S</div>
-          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'20px' }}>SIM<span style={{ color:'#FF6A00' }}>SIM</span></span>
+          <img src="/simsim-s.svg" alt="" style={{ height:'32px', width:'auto', display:'block' }} />
+          <span style={{ fontFamily:'Poppins,sans-serif', fontWeight:'700', fontSize:'20px' }}>sim<span style={{ color:'#FF6A00' }}>sim</span></span>
         </div>
 
         {!sent ? <>
