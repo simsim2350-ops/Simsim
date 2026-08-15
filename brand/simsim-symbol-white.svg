@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 64 64" role="img" aria-label="SIMSIM">
+  <path d="M45 21 C45 15.5 39.5 12.5 32.5 12.5 C24 12.5 19.5 17 19.5 22 C19.5 27.5 25 30 32.5 31.5 C40 33 45 35.5 45 41.5 C45 47 40 51.5 32 51.5 C25 51.5 19.5 48.5 19.5 43" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <ellipse cx="48" cy="13.5" rx="4.6" ry="2.2" fill="#ffffff" transform="rotate(-33 48 13.5)"/>
+  <ellipse cx="16" cy="50.5" rx="4.6" ry="2.2" fill="#ffffff" transform="rotate(-33 16 50.5)"/>
+</svg>

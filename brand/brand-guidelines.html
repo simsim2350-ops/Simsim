@@ -1,0 +1,506 @@
+<title>هوية سمسم SIMSIM</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+  --bg:#FBFAF8; --surface:#FFFFFF; --surface-2:#F5F3EF;
+  --ink:#0F1117; --muted:#6B6F76; --faint:#9AA0A6;
+  --border:#ECE9E4; --border-strong:#DED9D1;
+  --orange:#FF6B35; --orange-deep:#E85A24; --orange-tint:#FFF1EA;
+  --ok:#1F9D6B; --no:#D8443B;
+  --radius:18px; --maxw:1080px;
+  --sans:"Cairo","Tajawal",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans Arabic",sans-serif;
+  --mono:ui-monospace,"SFMono-Regular","Menlo","Consolas",monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0C0E13; --surface:#151922; --surface-2:#1B2029;
+  --ink:#F4F2EF; --muted:#A2A8B2; --faint:#727884;
+  --border:rgba(255,255,255,.09); --border-strong:rgba(255,255,255,.16);
+  --orange:#FF7A45; --orange-deep:#FF6B35; --orange-tint:#241A15;
+  --ok:#3CBE88; --no:#F0655B;
+}}
+:root[data-theme="dark"]{
+  --bg:#0C0E13; --surface:#151922; --surface-2:#1B2029;
+  --ink:#F4F2EF; --muted:#A2A8B2; --faint:#727884;
+  --border:rgba(255,255,255,.09); --border-strong:rgba(255,255,255,.16);
+  --orange:#FF7A45; --orange-deep:#FF6B35; --orange-tint:#241A15;
+  --ok:#3CBE88; --no:#F0655B;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  line-height:1.7;direction:rtl;text-align:right;
+  -webkit-font-smoothing:antialiased;font-feature-settings:"kern";}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+section{padding:64px 0;border-top:1px solid var(--border)}
+h1,h2,h3{line-height:1.2;text-wrap:balance;margin:0}
+.ltr{direction:ltr;unicode-bidi:isolate;display:inline-block}
+code,.hex{font-family:var(--mono);direction:ltr;unicode-bidi:isolate}
+
+/* ---- eyebrow / labels ---- */
+.eyebrow{font-size:12.5px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--orange);margin-bottom:14px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.lead{font-size:19px;color:var(--muted);max-width:60ch}
+
+/* ---- HERO ---- */
+.hero{background:#0C0E13;color:#F4F2EF;border-top:none;position:relative;overflow:hidden;padding:0}
+.hero-inner{max-width:var(--maxw);margin:0 auto;padding:84px 22px 76px;position:relative;z-index:2}
+.hero .glow{position:absolute;inset:0;z-index:1;background:
+  radial-gradient(60% 90% at 82% 8%, rgba(255,107,53,.30), transparent 60%),
+  radial-gradient(50% 70% at 10% 100%, rgba(232,90,36,.18), transparent 60%);}
+.hero .eyebrow{color:#FF9A6B}
+.hero h1{font-size:clamp(44px,9vw,96px);font-weight:800;letter-spacing:-.01em;margin:.1em 0 .15em}
+.hero h1 .o{color:var(--orange)}
+.hero-sub{font-size:clamp(17px,2.4vw,22px);color:#C9CDD4;max-width:52ch}
+.hero-marks{display:flex;align-items:center;gap:26px;flex-wrap:wrap;margin-bottom:40px}
+.hero-tile{width:132px;height:132px;filter:drop-shadow(0 22px 40px rgba(232,90,36,.35))}
+.hero-ar{font-size:clamp(40px,8vw,78px);font-weight:800;color:#fff;line-height:1}
+.hero-div{width:1px;height:70px;background:rgba(255,255,255,.16)}
+
+/* ---- generic ---- */
+.grid{display:grid;gap:20px}
+.cols-2{grid-template-columns:repeat(2,1fr)}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-4{grid-template-columns:repeat(4,1fr)}
+.cols-5{grid-template-columns:repeat(5,1fr)}
+@media(max-width:860px){.cols-3,.cols-4,.cols-5{grid-template-columns:repeat(2,1fr)}.cols-2{grid-template-columns:1fr}}
+@media(max-width:520px){.cols-4,.cols-5{grid-template-columns:1fr 1fr}}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
+.swatchbox{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.stage{display:flex;align-items:center;justify-content:center;padding:34px;min-height:150px}
+/* specimen grounds are FIXED (not theme-reactive) so logos read correctly in any viewer theme */
+.stage.light{background:#FFFFFF}
+.stage.tint{background:#FFF1EA}
+.stage.dark{background:#0C0E13}
+.stage.check{background:
+  linear-gradient(45deg,#e7e3dc 25%,transparent 25%),linear-gradient(-45deg,#e7e3dc 25%,transparent 25%),
+  linear-gradient(45deg,transparent 75%,#e7e3dc 75%),linear-gradient(-45deg,transparent 75%,#e7e3dc 75%);
+  background-size:18px 18px;background-position:0 0,0 9px,9px -9px,-9px 0;background-color:#fbfaf8}
+.cap{padding:13px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.cap b{font-size:13.5px;font-weight:700}
+.cap span{font-size:12px;color:var(--muted)}
+
+h2.sec{font-size:clamp(26px,4.4vw,38px);font-weight:800;letter-spacing:-.01em}
+.sec-lead{margin-top:14px}
+.sub{font-size:20px;font-weight:800;margin:34px 0 16px}
+
+/* concept cards */
+.concept .stage{min-height:180px}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;letter-spacing:.04em;
+  padding:4px 10px;border-radius:100px;background:var(--surface-2);color:var(--muted)}
+.badge.win{background:var(--orange);color:#fff}
+
+/* eval table */
+.tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:14px}
+th,td{padding:13px 16px;text-align:right;border-bottom:1px solid var(--border)}
+thead th{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:700;background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:none}
+td.n{font-variant-numeric:tabular-nums;font-weight:700}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-inline-start:2px}
+.win-row td{background:color-mix(in srgb,var(--orange) 8%,var(--surface))}
+
+/* palette */
+.pal{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+@media(max-width:760px){.pal{grid-template-columns:repeat(2,1fr)}}
+.chip{border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.chip .col{height:96px}
+.chip .meta{padding:12px 14px}
+.chip .meta b{display:block;font-size:14px}
+.chip .meta .hex{font-size:12.5px;color:var(--muted);margin-top:3px}
+.chip .meta small{display:block;font-size:11.5px;color:var(--faint);margin-top:6px}
+
+/* type specimen */
+.type-row{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding:16px 0;border-bottom:1px solid var(--border)}
+.type-row:last-child{border-bottom:none}
+.type-row .lbl{width:120px;flex:none;font-size:12px;color:var(--muted);font-weight:700}
+.tw-900{font-weight:800}.tw-700{font-weight:700}.tw-400{font-weight:400}
+
+/* clearspace / minsize */
+.spec{display:flex;gap:26px;flex-wrap:wrap}
+.spec .card{flex:1;min-width:260px}
+.minrow{display:flex;align-items:flex-end;gap:26px;flex-wrap:wrap;margin-top:8px}
+.minrow .u{text-align:center}
+.minrow .u span{display:block;font-size:11.5px;color:var(--muted);margin-top:8px}
+
+/* do / dont */
+.rule{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface)}
+.rule .stage{min-height:132px}
+.rule .tag{padding:11px 14px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;border-top:1px solid var(--border)}
+.rule.ok .tag{color:var(--ok)}.rule.no .tag{color:var(--no)}
+.ic{width:17px;height:17px;flex:none}
+
+footer{padding:44px 0 66px;color:var(--muted);font-size:13.5px}
+.mark-inline{vertical-align:middle}
+.note{font-size:13px;color:var(--faint);margin-top:10px}
+</style>
+
+<!-- shared defs -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="og" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#FF7A45"/><stop offset="1" stop-color="#E85A24"/>
+  </linearGradient>
+  <g id="art">
+    <path d="M45 21 C45 15.5 39.5 12.5 32.5 12.5 C24 12.5 19.5 17 19.5 22 C19.5 27.5 25 30 32.5 31.5 C40 33 45 35.5 45 41.5 C45 47 40 51.5 32 51.5 C25 51.5 19.5 48.5 19.5 43" fill="none" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <ellipse cx="48" cy="13.5" rx="4.6" ry="2.2" transform="rotate(-33 48 13.5)"/>
+    <ellipse cx="16" cy="50.5" rx="4.6" ry="2.2" transform="rotate(-33 16 50.5)"/>
+  </g>
+</defs></svg>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="glow"></div>
+  <div class="hero-inner">
+    <div class="eyebrow">نظام الهوية البصرية · Brand Identity</div>
+    <div class="hero-marks">
+      <svg class="hero-tile" viewBox="0 0 64 64" aria-label="شعار سمسم">
+        <rect width="64" height="64" rx="15" fill="url(#og)"/>
+        <g stroke="#fff" fill="#fff"><use href="#art"/></g>
+      </svg>
+      <div class="hero-div"></div>
+      <div class="hero-ar">سمسم</div>
+    </div>
+    <h1>SIM<span class="o">SIM</span></h1>
+    <p class="hero-sub">منصة المنيو الرقمي للمطاعم والكافيهات. هوية علامة SaaS بسيطة وذكية وقابلة للنمو — مبنية على فكرة واحدة يمكن تذكّرها: <strong style="color:#fff">«افتح يا سمسم»</strong>.</p>
+  </div>
+</header>
+
+<!-- ============ THE IDEA ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">الفكرة</div>
+    <h2 class="sec">اسم واحد يحمل ثلاث معانٍ</h2>
+    <p class="lead sec-lead">بدل الرموز المستهلكة (شوكة، طبق، قبعة شيف، QR)، تنطلق الهوية من الاسم نفسه — وهو أقوى أصل تملكه العلامة.</p>
+    <div class="grid cols-3" style="margin-top:30px">
+      <div class="card">
+        <div class="kicker">المعنى ١</div>
+        <h3 style="font-size:20px;margin:10px 0 8px">افتح يا سمسم</h3>
+        <p style="color:var(--muted);margin:0;font-size:15px">الكلمة السحرية التي «تفتح». إشارة غير مباشرة إلى فتح المنيو الرقمي وبدء تجربة الطلب — رابط ثقافي عربي وعالمي في آنٍ واحد.</p>
+      </div>
+      <div class="card">
+        <div class="kicker">المعنى ٢</div>
+        <h3 style="font-size:20px;margin:10px 0 8px">حبّة السمسم</h3>
+        <p style="color:var(--muted);margin:0;font-size:15px">حبّتا سمسم مجرّدتان تتحوّلان إلى عنصر بصري مميّز داخل الرمز — طابع دافئ ومطعمي بلا صور طعام حرفية.</p>
+      </div>
+      <div class="card">
+        <div class="kicker">المعنى ٣</div>
+        <h3 style="font-size:20px;margin:10px 0 8px">تكرار SIM · SIM</h3>
+        <p style="color:var(--muted);margin:0;font-size:15px">الاسم مبني من مقطعين متطابقين. حبّتان متماثلتان + حرف <span class="ltr">S</span> = ترميز بصري ذكي لهذا التكرار.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONCEPTS ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">الاستكشاف</div>
+    <h2 class="sec">ثلاثة اتجاهات إبداعية</h2>
+    <p class="lead sec-lead">لم يُنفَّذ أول اقتراح مباشرة. استُكشفت ثلاثة مسارات مختلفة قبل الاختيار.</p>
+    <div class="grid cols-3 concept" style="margin-top:30px">
+
+      <div class="swatchbox">
+        <div class="stage light">
+          <svg width="104" height="104" viewBox="0 0 64 64" aria-label="Concept A">
+            <rect width="64" height="64" rx="15" fill="url(#og)"/>
+            <g stroke="#fff" fill="#fff"><use href="#art"/></g>
+          </svg>
+        </div>
+        <div style="padding:18px 18px 20px">
+          <span class="badge win">✦ المختار</span>
+          <h3 style="font-size:18px;margin:12px 0 6px">Concept A — سمسم‑S</h3>
+          <p style="color:var(--muted);margin:0;font-size:14px">حرف <span class="ltr">S</span> نظيف تحفّه حبّتا سمسم في زاويتين متقابلتين. يجمع الاسم + البذرة + التكرار في رمز واحد.</p>
+        </div>
+      </div>
+
+      <div class="swatchbox">
+        <div class="stage light">
+          <svg width="104" height="104" viewBox="0 0 64 64" aria-label="Concept B">
+            <rect width="64" height="64" rx="15" fill="#0F1117"/>
+            <g transform="rotate(-13 20 20)"><rect x="15" y="16" width="25" height="6" rx="3" fill="#FF6B35"/></g>
+            <rect x="15" y="29" width="34" height="6" rx="3" fill="#fff"/>
+            <rect x="15" y="40" width="34" height="6" rx="3" fill="#fff" opacity="0.5"/>
+            <ellipse cx="49" cy="14" rx="4" ry="2" fill="#FF6B35" transform="rotate(-30 49 14)"/>
+          </svg>
+        </div>
+        <div style="padding:18px 18px 20px">
+          <span class="badge">مسار</span>
+          <h3 style="font-size:18px;margin:12px 0 6px">Concept B — المنيو يُفتَح</h3>
+          <p style="color:var(--muted);margin:0;font-size:14px">صفوف منيو مجرّدة يرتفع أعلاها كأنه يُفتَح. يعبّر عن المنيو الرقمي والتفاعل — لكنه أقرب لأيقونة «قائمة» عامة.</p>
+        </div>
+      </div>
+
+      <div class="swatchbox">
+        <div class="stage tint">
+          <svg width="104" height="104" viewBox="0 0 64 64" aria-label="Concept C">
+            <path d="M40 22 C40 17 35 15 30 15 C22 15 19 19 19 23 C19 30 30 30 30 30" fill="none" stroke="#0F1117" stroke-width="7" stroke-linecap="round"/>
+            <path d="M24 42 C24 47 29 49 34 49 C42 49 45 45 45 41 C45 34 34 34 34 34" fill="none" stroke="#FF6B35" stroke-width="7" stroke-linecap="round"/>
+            <ellipse cx="32" cy="32" rx="5" ry="2.4" fill="#0F1117" transform="rotate(-33 32 32)"/>
+          </svg>
+        </div>
+        <div style="padding:18px 18px 20px">
+          <span class="badge">مسار</span>
+          <h3 style="font-size:18px;margin:12px 0 6px">Concept C — مونوغرام مرآتي</h3>
+          <p style="color:var(--muted);margin:0;font-size:14px">تلاعب طباعي يعتمد تماثل <span class="ltr">SIM · SIM</span> مع بذرة في نقطة الالتقاء. أنيق لكنه أقلّ وضوحًا في الأحجام الصغيرة.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EVALUATION ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">التقييم</div>
+    <h2 class="sec">لماذا فاز الاتجاه A</h2>
+    <p class="lead sec-lead">قُيِّمت الاتجاهات على المعايير التي تهمّ منصة SaaS للمطاعm. المقياس من ٥.</p>
+    <div class="tablewrap" style="margin-top:26px">
+      <table>
+        <thead><tr><th>المعيار</th><th>A — سمسم‑S</th><th>B — المنيو</th><th>C — مونوغرام</th></tr></thead>
+        <tbody>
+          <tr class="win-row"><td>قوة العلامة والتميّز</td><td class="n">5</td><td class="n">3</td><td class="n">4</td></tr>
+          <tr class="win-row"><td>سهولة التذكّر</td><td class="n">5</td><td class="n">3</td><td class="n">3</td></tr>
+          <tr class="win-row"><td>وضوح الرمز بلا نص</td><td class="n">4</td><td class="n">3</td><td class="n">2</td></tr>
+          <tr class="win-row"><td>الأحجام الصغيرة و<span class="ltr">Favicon</span></td><td class="n">5</td><td class="n">2</td><td class="n">2</td></tr>
+          <tr class="win-row"><td>الاستخدام على <span class="ltr">QR</span> والموبايل</td><td class="n">5</td><td class="n">3</td><td class="n">3</td></tr>
+          <tr class="win-row"><td>قابلية بناء هوية حوله</td><td class="n">5</td><td class="n">3</td><td class="n">4</td></tr>
+          <tr class="win-row"><td>ارتباطه بالاسم «سمسم»</td><td class="n">5</td><td class="n">2</td><td class="n">4</td></tr>
+          <tr style="border-top:2px solid var(--border-strong)"><td style="font-weight:800">المجموع</td><td class="n" style="color:var(--orange);font-size:16px">34</td><td class="n">19</td><td class="n">22</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">A يتفوّق تحديدًا في النقاط الأهم للمنصّة: البقاء واضحًا عند الأحجام الدقيقة (فافيكون، ستيكر <span class="ltr">QR</span>) وارتباطه المباشر بالاسم.</p>
+  </div>
+</section>
+
+<!-- ============ LOGO SYSTEM ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">النظام</div>
+    <h2 class="sec">نظام شعار متكامل</h2>
+    <p class="lead sec-lead">قفل شعار مرن يخدم كل السياقات — من لافتة الموقع إلى ستيكر الطاولة.</p>
+
+    <div class="sub">الشعار الأساسي · Primary</div>
+    <div class="swatchbox">
+      <div class="stage light" style="padding:48px">
+        <svg width="330" height="80" viewBox="0 0 290 72" aria-label="SIMSIM">
+          <g transform="translate(4 4)"><rect width="64" height="64" rx="15" fill="url(#og)"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></g>
+          <text x="84" y="49" font-family="Cairo, system-ui, Arial, sans-serif" font-size="37" font-weight="800" letter-spacing=".5"><tspan fill="#0F1117">SIM</tspan><tspan fill="#FF6B35">SIM</tspan></text>
+        </svg>
+      </div>
+      <div class="cap"><b>الرمز + <span class="ltr">SIMSIM</span></b><span>أفقي · الاستخدام الافتراضي</span></div>
+    </div>
+
+    <div class="grid cols-2" style="margin-top:20px">
+      <div class="swatchbox">
+        <div class="stage light">
+          <svg width="240" height="72" viewBox="0 0 230 72" aria-label="سمسم">
+            <g transform="translate(162 4)"><rect width="64" height="64" rx="15" fill="url(#og)"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></g>
+            <text x="150" y="50" text-anchor="end" direction="rtl" font-family="Cairo, Tajawal, sans-serif" font-size="40" font-weight="800" fill="#0F1117">سمسم</text>
+          </svg>
+        </div>
+        <div class="cap"><b>الرمز + سمسم</b><span>ثانوي · <span class="ltr">RTL</span></span></div>
+      </div>
+      <div class="swatchbox">
+        <div class="stage light">
+          <svg width="128" height="112" viewBox="0 0 140 118" aria-label="SIMSIM stacked">
+            <g transform="translate(38 0)"><rect width="64" height="64" rx="15" fill="url(#og)"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></g>
+            <text x="70" y="108" text-anchor="middle" font-family="Cairo, system-ui, Arial, sans-serif" font-size="30" font-weight="800" letter-spacing=".5"><tspan fill="#0F1117">SIM</tspan><tspan fill="#FF6B35">SIM</tspan></text>
+          </svg>
+        </div>
+        <div class="cap"><b>مكدّس · Stacked</b><span>مساحات مربّعة</span></div>
+      </div>
+    </div>
+
+    <div class="grid cols-2" style="margin-top:20px">
+      <div class="swatchbox">
+        <div class="stage light">
+          <svg width="200" height="46" viewBox="0 0 220 52" aria-label="SIMSIM wordmark">
+            <text x="4" y="40" font-family="Cairo, system-ui, Arial, sans-serif" font-size="40" font-weight="800" letter-spacing=".5"><tspan fill="#0F1117">SIM</tspan><tspan fill="#FF6B35">SIM</tspan></text>
+          </svg>
+        </div>
+        <div class="cap"><b>Wordmark</b><span>SIM كحلي · SIM برتقالي</span></div>
+      </div>
+      <div class="swatchbox">
+        <div class="stage light">
+          <div style="font-size:46px;font-weight:800;color:#0F1117">سمسم</div>
+        </div>
+        <div class="cap"><b>الكلمة العربية</b><span>خط ثقيل متناسق</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COLOR VERSIONS ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">النُّسخ اللونية</div>
+    <h2 class="sec">يعمل ممتازًا حتى بلا لون</h2>
+    <p class="lead sec-lead">خمس نسخ رسمية للرمز تغطّي كل خلفية وكل طريقة طباعة.</p>
+    <div class="grid cols-5" style="margin-top:26px">
+      <div class="swatchbox">
+        <div class="stage light"><svg width="82" height="82" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="url(#og)"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></svg></div>
+        <div class="cap"><b>Full Color</b></div>
+      </div>
+      <div class="swatchbox">
+        <div class="stage light"><svg width="82" height="82" viewBox="0 0 64 64"><g stroke="#FF6B35" fill="#0F1117"><use href="#art"/></g></svg></div>
+        <div class="cap"><b>Two‑tone</b></div>
+      </div>
+      <div class="swatchbox">
+        <div class="stage light"><svg width="82" height="82" viewBox="0 0 64 64"><g stroke="#FF6B35" fill="#FF6B35"><use href="#art"/></g></svg></div>
+        <div class="cap"><b>Orange</b></div>
+      </div>
+      <div class="swatchbox">
+        <div class="stage light"><svg width="82" height="82" viewBox="0 0 64 64"><g stroke="#0F1117" fill="#0F1117"><use href="#art"/></g></svg></div>
+        <div class="cap"><b>Black</b></div>
+      </div>
+      <div class="swatchbox">
+        <div class="stage dark"><svg width="82" height="82" viewBox="0 0 64 64"><g stroke="#fff" fill="#fff"><use href="#art"/></g></svg></div>
+        <div class="cap"><b>White</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PALETTE ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">الألوان</div>
+    <h2 class="sec">لوحة مقيّدة ومقصودة</h2>
+    <p class="lead sec-lead">برتقالي سمسم بطلاً واحدًا، والباقي محايدات دافئة. لا ألوان كثيرة.</p>
+    <div class="pal" style="margin-top:26px">
+      <div class="chip"><div class="col" style="background:#FF6B35"></div><div class="meta"><b>SIMSIM Orange</b><div class="hex">#FF6B35</div><small>اللون الأساسي — الأزرار والتمييز</small></div></div>
+      <div class="chip"><div class="col" style="background:#E85A24"></div><div class="meta"><b>Orange Deep</b><div class="hex">#E85A24</div><small>نهاية التدرّج · الضغط/التحويم</small></div></div>
+      <div class="chip"><div class="col" style="background:#0F1117"></div><div class="meta"><b>Ink</b><div class="hex">#0F1117</div><small>الكحلي — النصوص والخلفيات الداكنة</small></div></div>
+      <div class="chip"><div class="col" style="background:#FFF1EA"></div><div class="meta"><b>Orange Tint</b><div class="hex">#FFF1EA</div><small>أسطح دافئة خفيفة</small></div></div>
+      <div class="chip"><div class="col" style="background:#FFFFFF;box-shadow:inset 0 0 0 1px var(--border)"></div><div class="meta"><b>White</b><div class="hex">#FFFFFF</div><small>الأساس والمساحات السالبة</small></div></div>
+    </div>
+    <p class="note">التدرّج الرسمي: من <span class="hex">#FF7A45</span> إلى <span class="hex">#E85A24</span> (زاوية 135°). يُستخدم للرمز داخل المربّع فقط — لا تُبالغ في التدرّجات على النصوص.</p>
+  </div>
+</section>
+
+<!-- ============ TYPOGRAPHY ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">الطباعة</div>
+    <h2 class="sec">Cairo · Tajawal</h2>
+    <p class="lead sec-lead">نفس عائلة خطوط المنصّة الحالية — تناسق كامل بين الهوية والمنتج، ودعم عربي/لاتيني ممتاز.</p>
+    <div class="card" style="margin-top:26px">
+      <div class="type-row"><div class="lbl">Wordmark · 800</div><div class="tw-900" style="font-size:40px"><span style="color:var(--ink)">SIM</span><span style="color:var(--orange)">SIM</span> · <span style="color:var(--ink)">سمسم</span></div></div>
+      <div class="type-row"><div class="lbl">عنوان · 800</div><div class="tw-900" style="font-size:30px">منيو رقمي احترافي بلمسة</div></div>
+      <div class="type-row"><div class="lbl">فرعي · 700</div><div class="tw-700" style="font-size:21px">تجربة طلب سلسة لعملائك</div></div>
+      <div class="type-row"><div class="lbl">نص · 400</div><div class="tw-400" style="font-size:16px">أنشئ وأدر منيو مطعمك الرقمي في دقائق، وشاركه عبر رمز <span class="ltr">QR</span>.</div></div>
+      <div class="type-row"><div class="lbl">Label · 700</div><div class="tw-700" style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">DIGITAL MENU PLATFORM</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CLEAR SPACE + MIN SIZE ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">القياسات</div>
+    <h2 class="sec">مساحة آمنة وحدّ أدنى</h2>
+    <div class="spec" style="margin-top:26px">
+      <div class="card">
+        <div class="kicker">المساحة الآمنة</div>
+        <h3 style="font-size:19px;margin:10px 0 14px">مقدار «نصف الرمز» فراغ حول الشعار</h3>
+        <div style="display:flex;justify-content:center;padding:10px">
+          <div style="position:relative;padding:33px;border:1px dashed var(--border-strong);border-radius:12px">
+            <div style="position:absolute;inset:0;border-radius:12px;background:var(--orange-tint);opacity:.5"></div>
+            <svg style="position:relative" width="72" height="72" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="url(#og)"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></svg>
+          </div>
+        </div>
+        <p class="note" style="text-align:center">الهامش الأدنى = ½ عرض الرمز على كل الجهات.</p>
+      </div>
+      <div class="card">
+        <div class="kicker">الحدّ الأدنى للحجم</div>
+        <h3 style="font-size:19px;margin:10px 0 14px">يبقى واضحًا حتى ٱلأحجام الدقيقة</h3>
+        <div class="minrow" style="justify-content:center">
+          <div class="u"><svg width="24" height="24" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="url(#og)"/><path d="M45 21 C45 15.5 39.5 12.5 32.5 12.5 C24 12.5 19.5 17 19.5 22 C19.5 27.5 25 30 32.5 31.5 C40 33 45 35.5 45 41.5 C45 47 40 51.5 32 51.5 C25 51.5 19.5 48.5 19.5 43" fill="none" stroke="#fff" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>16px<br>Favicon</span></div>
+          <div class="u"><svg width="40" height="40" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="url(#og)"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></svg><span>24px<br>موبايل</span></div>
+          <div class="u"><svg width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="url(#og)"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></svg><span>≥40px<br>شاشة</span></div>
+        </div>
+        <p class="note" style="text-align:center">الرمز الأساسي ≥ <b>24px</b> · الشعار الأفقي ≥ <b>96px</b> عرضًا · الفافيكون يسقط الحبّتين.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAVICON / APP ICON ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">الأيقونات</div>
+    <h2 class="sec">Favicon · App Icon</h2>
+    <div class="grid cols-4" style="margin-top:26px">
+      <div class="swatchbox">
+        <div class="stage check"><svg width="60" height="60" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="url(#og)"/><path d="M45 21 C45 15.5 39.5 12.5 32.5 12.5 C24 12.5 19.5 17 19.5 22 C19.5 27.5 25 30 32.5 31.5 C40 33 45 35.5 45 41.5 C45 47 40 51.5 32 51.5 C25 51.5 19.5 48.5 19.5 43" fill="none" stroke="#fff" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="cap"><b>Favicon</b><span>S مبسّط</span></div>
+      </div>
+      <div class="swatchbox">
+        <div class="stage light"><svg width="84" height="84" viewBox="0 0 512 512"><rect width="512" height="512" rx="114" fill="url(#og)"/><g transform="translate(256 256) scale(5) translate(-32 -32)" stroke="#fff" fill="#fff"><use href="#art"/></g></svg></div>
+        <div class="cap"><b>App Icon</b><span>مربّع بهوامش</span></div>
+      </div>
+      <div class="swatchbox">
+        <div class="stage light"><svg width="84" height="84" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="url(#og)"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></svg></div>
+        <div class="cap"><b>Circular</b><span>Google/بروفايل</span></div>
+      </div>
+      <div class="swatchbox">
+        <div class="stage dark"><svg width="84" height="84" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#151922" stroke="rgba(255,255,255,.08)"/><g stroke="#FF7A45" fill="#FF7A45"><use href="#art"/></g></svg></div>
+        <div class="cap"><b>Dark</b><span>وضع داكن</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DO / DONT ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">الاستخدام</div>
+    <h2 class="sec">صحيح · خاطئ</h2>
+    <div class="grid cols-4" style="margin-top:26px">
+      <div class="rule ok">
+        <div class="stage light"><svg width="66" height="66" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="url(#og)"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></svg></div>
+        <div class="tag"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>ألوان الهوية</div>
+      </div>
+      <div class="rule ok">
+        <div class="stage dark"><svg width="66" height="66" viewBox="0 0 64 64"><g stroke="#fff" fill="#fff"><use href="#art"/></g></svg></div>
+        <div class="tag"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>تباين كافٍ</div>
+      </div>
+      <div class="rule no">
+        <div class="stage light"><svg width="98" height="60" viewBox="0 0 64 64" preserveAspectRatio="none"><rect width="64" height="64" rx="15" fill="url(#og)"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></svg></div>
+        <div class="tag"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>لا تمطّط</div>
+      </div>
+      <div class="rule no">
+        <div class="stage light"><svg width="66" height="66" viewBox="0 0 64 64" style="transform:rotate(18deg)"><rect width="64" height="64" rx="15" fill="url(#og)"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></svg></div>
+        <div class="tag"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>لا تُدِر</div>
+      </div>
+      <div class="rule no">
+        <div class="stage light"><svg width="66" height="66" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#22C55E"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></svg></div>
+        <div class="tag"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>لا تغيّر اللون</div>
+      </div>
+      <div class="rule no">
+        <div class="stage tint"><svg width="66" height="66" viewBox="0 0 64 64" style="filter:drop-shadow(3px 5px 3px rgba(0,0,0,.5))"><rect width="64" height="64" rx="15" fill="url(#og)"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></svg></div>
+        <div class="tag"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>لا ظلّ ثقيل</div>
+      </div>
+      <div class="rule no">
+        <div class="stage" style="background:#FF8A5C"><svg width="66" height="66" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="url(#og)"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></svg></div>
+        <div class="tag"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>تباين ضعيف</div>
+      </div>
+      <div class="rule no">
+        <div class="stage light"><svg width="66" height="66" viewBox="0 0 64 64"><rect width="64" height="64" rx="6" fill="url(#og)"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></svg></div>
+        <div class="tag"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>لا تغيّر الزوايا</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <svg width="34" height="34" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="url(#og)"/><g stroke="#fff" fill="#fff"><use href="#art"/></g></svg>
+      <strong style="color:var(--ink);font-size:16px"><span class="ltr">SIMSIM</span> · سمسم</strong>
+    </div>
+    نظام هوية بصرية — مسوّدة أولى للمراجعة والموافقة. الأصول <span class="ltr">SVG</span> في مجلد <code>brand/</code>.
+  </div>
+</footer>

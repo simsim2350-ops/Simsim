@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="140" height="118" viewBox="0 0 140 118" role="img" aria-label="SIMSIM">
+  <defs>
+    <linearGradient id="simsimO" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF7A45"/>
+      <stop offset="1" stop-color="#E85A24"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(38 0)">
+    <rect width="64" height="64" rx="15" fill="url(#simsimO)"/>
+    <path d="M45 21 C45 15.5 39.5 12.5 32.5 12.5 C24 12.5 19.5 17 19.5 22 C19.5 27.5 25 30 32.5 31.5 C40 33 45 35.5 45 41.5 C45 47 40 51.5 32 51.5 C25 51.5 19.5 48.5 19.5 43" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <ellipse cx="48" cy="13.5" rx="4.6" ry="2.2" fill="#ffffff" transform="rotate(-33 48 13.5)"/>
+    <ellipse cx="16" cy="50.5" rx="4.6" ry="2.2" fill="#ffffff" transform="rotate(-33 16 50.5)"/>
+  </g>
+  <text x="70" y="108" text-anchor="middle" font-family="Cairo, 'Segoe UI', system-ui, Arial, sans-serif" font-size="30" font-weight="800" letter-spacing="0.5">
+    <tspan fill="#0F1117">SIM</tspan><tspan fill="#FF6B35">SIM</tspan>
+  </text>
+</svg>
