@@ -6,7 +6,7 @@ import { NAV_LINKS } from '../../config/landingContent'
 export function Logo() {
   return (
     <a href="#hero" className="ss-logo" aria-label="سمسم — الصفحة الرئيسية">
-      <span className="ss-logo__mark">S</span>
+      <span className="ss-logo__mark"><img src="/simsim-s.svg" alt="" width="24" height="34" /></span>
       <span className="ss-logo__text">SIM<b>SIM</b></span>
     </a>
   )

@@ -178,15 +178,10 @@
 }
 .ss-logo { display: inline-flex; align-items: center; gap: 10px; }
 .ss-logo__mark {
-  width: 38px; height: 38px;
-  border-radius: 11px;
-  background: linear-gradient(135deg, var(--ss-primary), var(--ss-primary-dark));
-  color: #fff;
-  display: grid; place-items: center;
-  font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 19px;
-  box-shadow: var(--ss-shadow-primary);
+  display: inline-flex; align-items: center;
   flex-shrink: 0;
 }
+.ss-logo__mark img { height: 34px; width: auto; display: block; }
 .ss-logo__text { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 21px; color: var(--ss-ink); letter-spacing: .5px; }
 .ss-logo__text b { color: var(--ss-primary); font-weight: 900; }
 
