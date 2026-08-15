@@ -15,7 +15,7 @@ function Bars({ data, valKey, height = 130 }) {
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height, overflowX: 'auto' }}>
       {data.map((x, i) => (
         <div key={i} title={`${x.d}: ${fmt(x[valKey])}`} style={{ flex: '1 0 6px', display: 'flex', alignItems: 'flex-end', height: '100%' }}>
-          <div style={{ width: '100%', borderRadius: '3px 3px 0 0', background: i === data.length - 1 ? ACCENT : 'rgba(124,58,237,0.4)', height: `${Math.max((num(x[valKey]) / max) * 92, num(x[valKey]) > 0 ? 3 : 0)}%` }} />
+          <div style={{ width: '100%', borderRadius: '3px 3px 0 0', background: i === data.length - 1 ? ACCENT : 'rgba(255,106,0,0.4)', height: `${Math.max((num(x[valKey]) / max) * 92, num(x[valKey]) > 0 ? 3 : 0)}%` }} />
         </div>
       ))}
     </div>
@@ -64,19 +64,19 @@ export default function Growth() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '12px', marginBottom: '16px' }}>
               {tiles.map((t) => (
                 <div key={t.label} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '14px' }}>
-                  <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '18px', color: t.c || 'white', marginBottom: '3px' }}>{t.val}</div>
+                  <div style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '18px', color: t.c || 'white', marginBottom: '3px' }}>{t.val}</div>
                   <div style={{ fontSize: '12px', color: '#D1D5DB', fontWeight: '700' }}>{t.label}</div>
                 </div>
               ))}
             </div>
 
             <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '16px', marginBottom: '12px' }}>
-              <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Cairo,sans-serif', marginBottom: '14px' }}>💰 MRR — آخر 90 يوماً</div>
+              <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Tajawal,sans-serif', marginBottom: '14px' }}>💰 MRR — آخر 90 يوماً</div>
               {(d?.mrr_series?.length || 0) === 0 ? <div style={{ color: MUTED, fontSize: '12px' }}>لا بيانات كافية بعد</div> : <Bars data={d.mrr_series} valKey="mrr" />}
             </div>
 
             <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '16px' }}>
-              <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Cairo,sans-serif', marginBottom: '14px' }}>📅 التفصيل الشهري</div>
+              <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Tajawal,sans-serif', marginBottom: '14px' }}>📅 التفصيل الشهري</div>
               {(d?.monthly?.length || 0) === 0 ? <div style={{ color: MUTED, fontSize: '12px' }}>لا حركة اشتراكات بعد — ستظهر هنا فور بدء الاشتراكات الفعلية.</div> : (
                 <div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 90px 90px', gap: '8px', padding: '0 0 8px', borderBottom: `1px solid ${BORDER}`, fontSize: '11px', color: MUTED, fontWeight: '800' }}>

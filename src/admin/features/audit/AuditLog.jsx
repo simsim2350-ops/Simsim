@@ -103,16 +103,16 @@ export default function AuditLog() {
                       <button onClick={() => setOpenId(open ? null : r.id)} aria-expanded={open} aria-controls={panelId}
                         style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', width: '100%', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', textAlign: 'right' }}>
                         <div style={{ flex: 1, minWidth: '180px' }}>
-                          <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Cairo,sans-serif' }}>{label(r.action)}</div>
+                          <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Tajawal,sans-serif' }}>{label(r.action)}</div>
                           <div style={{ fontSize: '11.5px', color: MUTED, direction: 'ltr', textAlign: 'right' }}>{r.admin_email || '—'} · {r.role || '—'}</div>
                         </div>
-                        <span style={{ fontSize: '11px', color: '#C4B5FD' }}>{open ? '▲ إخفاء التغيير' : '▼ عرض التغيير'}</span>
+                        <span style={{ fontSize: '11px', color: '#FFB27F' }}>{open ? '▲ إخفاء التغيير' : '▼ عرض التغيير'}</span>
                         <div style={{ fontSize: '11px', color: MUTED, minWidth: '110px', textAlign: 'left', direction: 'ltr' }}>{fmtTime(r.created_at)}</div>
                       </button>
                     ) : (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                         <div style={{ flex: 1, minWidth: '180px' }}>
-                          <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Cairo,sans-serif' }}>{label(r.action)}</div>
+                          <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Tajawal,sans-serif' }}>{label(r.action)}</div>
                           <div style={{ fontSize: '11.5px', color: MUTED, direction: 'ltr', textAlign: 'right' }}>{r.admin_email || '—'} · {r.role || '—'}</div>
                         </div>
                         <div style={{ fontSize: '11px', color: MUTED, minWidth: '110px', textAlign: 'left', direction: 'ltr' }}>{fmtTime(r.created_at)}</div>
@@ -138,7 +138,7 @@ export default function AuditLog() {
         )}
         {!error && !loading && rows.length > 0 && canLoadMore && (
           <button onClick={() => fetchPage({ search: q, action }, rows.length)} disabled={loadingMore}
-            style={{ marginTop: '8px', width: '100%', background: CARD, border: `1px solid ${ACCENT}55`, borderRadius: '12px', padding: '12px', color: '#C4B5FD', fontFamily: 'Cairo,sans-serif', fontSize: '12.5px', fontWeight: '800', cursor: loadingMore ? 'default' : 'pointer', opacity: loadingMore ? 0.6 : 1 }}>
+            style={{ marginTop: '8px', width: '100%', background: CARD, border: `1px solid ${ACCENT}55`, borderRadius: '12px', padding: '12px', color: '#FFB27F', fontFamily: 'Tajawal,sans-serif', fontSize: '12.5px', fontWeight: '800', cursor: loadingMore ? 'default' : 'pointer', opacity: loadingMore ? 0.6 : 1 }}>
             {loadingMore ? 'جارٍ…' : `تحميل المزيد (${total - rows.length})`}
           </button>
         )}

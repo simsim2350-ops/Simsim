@@ -81,10 +81,10 @@ export default function Announcements() {
                 <div key={a.id} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: '200px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                      <span style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '14px', color: 'white' }}>{a.title}</span>
+                      <span style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '14px', color: 'white' }}>{a.title}</span>
                       <span style={{ fontSize: '10px', fontWeight: '800', color: tColor }}>{tLabel}</span>
                       {!a.is_active && <span style={{ fontSize: '10px', fontWeight: '800', color: '#F87171', background: 'rgba(239,68,68,0.12)', borderRadius: '100px', padding: '2px 9px' }}>معطّل</span>}
-                      <span style={{ fontSize: '10px', fontWeight: '800', color: '#C4B5FD', background: 'rgba(124,58,237,0.15)', borderRadius: '100px', padding: '2px 9px' }}>
+                      <span style={{ fontSize: '10px', fontWeight: '800', color: '#FFB27F', background: 'rgba(255,106,0,0.15)', borderRadius: '100px', padding: '2px 9px' }}>
                         {a.target_scope === 'all' ? 'كل المطاعم' : (a.target_plans || []).join('، ') || 'بلا خطة'}
                       </span>
                     </div>
@@ -115,7 +115,7 @@ export default function Announcements() {
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {TYPES.map(([k, label, color]) => (
                 <button key={k} onClick={() => setEdit({ ...edit, type: k })} style={{
-                  padding: '7px 12px', borderRadius: '9px', cursor: 'pointer', fontSize: '12px', fontWeight: '800', fontFamily: 'Cairo,sans-serif',
+                  padding: '7px 12px', borderRadius: '9px', cursor: 'pointer', fontSize: '12px', fontWeight: '800', fontFamily: 'Tajawal,sans-serif',
                   border: `1px solid ${edit.type === k ? color : BORDER}`, background: edit.type === k ? `${color}22` : 'transparent', color: edit.type === k ? color : MUTED,
                 }}>{label}</button>
               ))}
@@ -125,8 +125,8 @@ export default function Announcements() {
             <div style={{ display: 'flex', gap: '8px', marginBottom: edit.target_scope === 'plan' ? '10px' : 0 }}>
               {[['all', 'كل المطاعم'], ['plan', 'حسب الخطة']].map(([k, label]) => (
                 <button key={k} onClick={() => setEdit({ ...edit, target_scope: k })} style={{
-                  padding: '7px 12px', borderRadius: '9px', cursor: 'pointer', fontSize: '12px', fontWeight: '800', fontFamily: 'Cairo,sans-serif',
-                  border: `1px solid ${edit.target_scope === k ? ACCENT : BORDER}`, background: edit.target_scope === k ? 'rgba(124,58,237,0.18)' : 'transparent', color: edit.target_scope === k ? '#C4B5FD' : MUTED,
+                  padding: '7px 12px', borderRadius: '9px', cursor: 'pointer', fontSize: '12px', fontWeight: '800', fontFamily: 'Tajawal,sans-serif',
+                  border: `1px solid ${edit.target_scope === k ? ACCENT : BORDER}`, background: edit.target_scope === k ? 'rgba(255,106,0,0.18)' : 'transparent', color: edit.target_scope === k ? '#FFB27F' : MUTED,
                 }}>{label}</button>
               ))}
             </div>

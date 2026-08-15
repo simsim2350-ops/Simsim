@@ -80,7 +80,7 @@ export default function Flags() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
                     <span style={{ ...mono, fontWeight: '800', fontSize: '13.5px', color: 'white' }}>{f.key}</span>
                     {Number(f.overrides_count) > 0 && (
-                      <span style={{ fontSize: '10px', fontWeight: '800', color: '#C4B5FD', background: 'rgba(124,58,237,0.15)', borderRadius: '100px', padding: '2px 9px' }}>
+                      <span style={{ fontSize: '10px', fontWeight: '800', color: '#FFB27F', background: 'rgba(255,106,0,0.15)', borderRadius: '100px', padding: '2px 9px' }}>
                         {f.overrides_count} تخصيص
                       </span>
                     )}

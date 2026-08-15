@@ -9,9 +9,9 @@ import {
 // 📏 الحدود — الشاشة الثالثة. مسؤولية واحدة: أرقام كل باقة (كم منتج/فرع/مستخدم…).
 // اختر باقة → اضبط الرقم لكل حدّ. فارغ = بلا حد (يرِث الافتراضي). يعرض النوع limit فقط.
 // ============================================================================
-const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED'
+const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#FF6A00'
 const inputStyle = { background: '#0B0D12', border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '9px 12px', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '13px', outline: 'none' }
-const btn = (bg) => ({ padding: '8px 13px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '12px', color: 'white', background: bg })
+const btn = (bg) => ({ padding: '8px 13px', borderRadius: '9px', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '12px', color: 'white', background: bg })
 const Loading = () => <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>جارٍ التحميل…</div>
 
 export default function Limits() {

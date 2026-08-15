@@ -10,7 +10,7 @@ import {
 // اختر باقة → شغّل/أطفئ ضمّ كل ميزة إليها. القيَم الرقمية (الحدود) في شاشة «الحدود».
 // يعرض ميزات النوع feature فقط (الميزات القابلة للتشغيل/الإطفاء).
 // ============================================================================
-const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED', GREEN = '#22C55E'
+const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#FF6A00', GREEN = '#22C55E'
 const inputStyle = { background: '#0B0D12', border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '9px 12px', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '13px', outline: 'none' }
 const Loading = () => <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>جارٍ التحميل…</div>
 

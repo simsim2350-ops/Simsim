@@ -4,7 +4,7 @@
    :hover / :focus-visible / :disabled — وهو ما كان غائباً تماماً قبل هذا التعديل. */
 
 .admin-root :focus-visible {
-  outline: 2px solid #A78BFA;
+  outline: 2px solid #FF8A3D;
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -22,7 +22,7 @@
   box-sizing: border-box;
 }
 .admin-input:focus, .admin-select:focus, .admin-textarea:focus {
-  border-color: #A78BFA;
+  border-color: #FF8A3D;
 }
 
 .admin-btn {
@@ -30,7 +30,7 @@
   border-radius: 10px;
   border: none;
   cursor: pointer;
-  font-family: 'Cairo', sans-serif;
+  font-family: 'Tajawal', sans-serif;
   font-weight: 800;
   font-size: 12.5px;
   color: white;
@@ -39,11 +39,11 @@
 }
 .admin-btn:hover:not(:disabled) { filter: brightness(1.12); }
 .admin-btn:disabled { opacity: .6; cursor: default; }
-.admin-btn--primary { background: #7C3AED; }
+.admin-btn--primary { background: #FF6A00; }
 .admin-btn--neutral { background: #374151; }
 .admin-btn--danger { background: #7F1D1D; }
 .admin-btn--success { background: #065F46; }
-.admin-btn--ghost { background: transparent; border: 1px solid #7C3AED; color: #C4B5FD; }
+.admin-btn--ghost { background: transparent; border: 1px solid #FF6A00; color: #FFB27F; }
 
 .admin-modal-overlay {
   position: fixed;
@@ -70,7 +70,7 @@
   font-size: 15px;
   font-weight: 900;
   color: white;
-  font-family: 'Cairo', sans-serif;
+  font-family: 'Tajawal', sans-serif;
   margin-bottom: 16px;
 }
 

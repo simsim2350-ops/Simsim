@@ -19,7 +19,7 @@ const fmtDateTime = (v) => v ? new Date(v).toLocaleString('ar', { day: 'numeric'
 
 const Section = ({ title, children }) => (
   <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '16px', marginBottom: '12px' }}>
-    {title && <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Cairo,sans-serif', marginBottom: '12px' }}>{title}</div>}
+    {title && <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Tajawal,sans-serif', marginBottom: '12px' }}>{title}</div>}
     {children}
   </div>
 )
@@ -117,13 +117,13 @@ export default function RestaurantDetail() {
           <div style={{ marginTop: '14px' }}>
             {/* رأس */}
             <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '18px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-              <div style={{ width: '52px', height: '52px', borderRadius: '13px', background: 'rgba(124,58,237,0.15)', border: `1px solid ${ACCENT}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🏪</div>
+              <div style={{ width: '52px', height: '52px', borderRadius: '13px', background: 'rgba(255,106,0,0.15)', border: `1px solid ${ACCENT}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🏪</div>
               <div style={{ flex: 1, minWidth: '180px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                  <span style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '18px', color: 'white' }}>{d.name}</span>
+                  <span style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '18px', color: 'white' }}>{d.name}</span>
                   {st.health_band && <span style={{ fontSize: '11px', fontWeight: '800', color: HEALTH_C[st.health_band] }}>● صحّة {num(st.health_score)}</span>}
                   {d.platform_suspended && <span style={{ fontSize: '10px', fontWeight: '800', color: '#FCA5A5', background: 'rgba(239,68,68,0.18)', border: '1px solid #B91C1C', borderRadius: '100px', padding: '2px 9px' }}>🚫 معلّق</span>}
-                  <span style={{ fontSize: '10px', fontWeight: '800', color: '#C4B5FD', background: 'rgba(124,58,237,0.12)', borderRadius: '100px', padding: '2px 9px' }}>{d.subscription_plan || '—'}</span>
+                  <span style={{ fontSize: '10px', fontWeight: '800', color: '#FFB27F', background: 'rgba(255,106,0,0.12)', borderRadius: '100px', padding: '2px 9px' }}>{d.subscription_plan || '—'}</span>
                 </div>
                 <div style={{ fontSize: '12px', color: MUTED, display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                   <span style={{ direction: 'ltr' }}>/{d.slug}</span>
@@ -136,7 +136,7 @@ export default function RestaurantDetail() {
             {/* تبويبات */}
             <div style={{ display: 'flex', gap: '4px', marginBottom: '14px', borderBottom: `1px solid ${BORDER}`, flexWrap: 'wrap' }}>
               {TABS.map(([k, l]) => (
-                <button key={k} onClick={() => setTab(k)} style={{ padding: '9px 14px', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '12.5px', color: tab === k ? 'white' : MUTED, borderBottom: tab === k ? `2px solid ${ACCENT}` : '2px solid transparent' }}>{l}</button>
+                <button key={k} onClick={() => setTab(k)} style={{ padding: '9px 14px', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '12.5px', color: tab === k ? 'white' : MUTED, borderBottom: tab === k ? `2px solid ${ACCENT}` : '2px solid transparent' }}>{l}</button>
               ))}
             </div>
 
@@ -153,7 +153,7 @@ export default function RestaurantDetail() {
                     { label: 'مستحقّ مفتوح', val: `${fmt(st.outstanding_amount)} ﷼` },
                   ].map(k => (
                     <div key={k.label} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '14px' }}>
-                      <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '18px', color: 'white', marginBottom: '2px' }}>{k.val}</div>
+                      <div style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '18px', color: 'white', marginBottom: '2px' }}>{k.val}</div>
                       <div style={{ fontSize: '12px', color: '#D1D5DB', fontWeight: '700' }}>{k.label}</div>
                       {k.sub && <div style={{ fontSize: '10.5px', color: MUTED, marginTop: '3px' }}>{k.sub}</div>}
                     </div>
@@ -207,7 +207,7 @@ export default function RestaurantDetail() {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(110px,1fr))', gap: '10px' }}>
                         {menuTiles.map(t => (
                           <div key={t.label} style={{ background: '#0B0D12', border: `1px solid ${BORDER}`, borderRadius: '12px', padding: '12px' }}>
-                            <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '20px', color: warn(t.bad) }}>{fmt(t.val)}</div>
+                            <div style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '20px', color: warn(t.bad) }}>{fmt(t.val)}</div>
                             <div style={{ fontSize: '11.5px', color: '#D1D5DB', fontWeight: '700', marginTop: '2px' }}>{t.label}</div>
                           </div>
                         ))}
@@ -225,7 +225,7 @@ export default function RestaurantDetail() {
                       {menuUrl && (
                         <div style={{ fontSize: '12px', color: MUTED, borderTop: `1px solid ${BORDER}`, paddingTop: '12px' }}>
                           الرابط العام:{' '}
-                          <a href={menuUrl} target="_blank" rel="noreferrer" style={{ color: '#C4B5FD', direction: 'ltr', display: 'inline-block' }}>{menuUrl}</a>
+                          <a href={menuUrl} target="_blank" rel="noreferrer" style={{ color: '#FFB27F', direction: 'ltr', display: 'inline-block' }}>{menuUrl}</a>
                           <span style={{ marginInlineStart: '8px' }}>· الفروع النشطة {fmt(c.branches_active)}/{fmt(c.branches_total)}</span>
                         </div>
                       )}
@@ -242,7 +242,7 @@ export default function RestaurantDetail() {
                                 <span style={{ fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', direction: 'ltr', fontSize: '12.5px', color: 'white', fontWeight: '700' }}>{fx.key}</span>
                                 {fx.description && <span style={{ fontSize: '11px', color: MUTED, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fx.description}</span>}
                                 <span style={{ marginInlineStart: 'auto', fontSize: '10px', fontWeight: '800', color: fx.effective ? '#6EE7B7' : '#F87171' }}>{fx.effective ? 'مفعّلة' : 'معطّلة'}</span>
-                                {fx.overridden && <span style={{ fontSize: '10px', fontWeight: '800', color: '#C4B5FD', background: 'rgba(124,58,237,0.15)', borderRadius: '100px', padding: '2px 9px' }}>مُخصّص</span>}
+                                {fx.overridden && <span style={{ fontSize: '10px', fontWeight: '800', color: '#FFB27F', background: 'rgba(255,106,0,0.15)', borderRadius: '100px', padding: '2px 9px' }}>مُخصّص</span>}
                               </div>
                             ))}
                           </div>
@@ -262,7 +262,7 @@ export default function RestaurantDetail() {
                       {daily.map((x, i) => (
                         <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', height: '100%', justifyContent: 'flex-end' }}>
                           <div style={{ fontSize: '9px', color: MUTED }}>{num(x.orders) || ''}</div>
-                          <div title={x.d} style={{ width: '100%', borderRadius: '4px 4px 0 0', background: i === daily.length - 1 ? ACCENT : 'rgba(124,58,237,0.4)', height: `${Math.max((num(x.orders) / maxOrders) * 88, num(x.orders) > 0 ? 6 : 0)}%` }} />
+                          <div title={x.d} style={{ width: '100%', borderRadius: '4px 4px 0 0', background: i === daily.length - 1 ? ACCENT : 'rgba(255,106,0,0.4)', height: `${Math.max((num(x.orders) / maxOrders) * 88, num(x.orders) > 0 ? 6 : 0)}%` }} />
                         </div>
                       ))}
                     </div>
@@ -274,7 +274,7 @@ export default function RestaurantDetail() {
                       {d.top_products.map((p, i) => (
                         <div key={p.name + i} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
                           <span style={{ fontSize: '12.5px', color: '#D1D5DB', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-                          <span style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', color: 'white', fontSize: '13px' }}>{fmt(p.count)}</span>
+                          <span style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '900', color: 'white', fontSize: '13px' }}>{fmt(p.count)}</span>
                         </div>
                       ))}
                     </div>

@@ -12,7 +12,7 @@ import {
 // عند التعديل: نجلب القدرة كاملة وندمج تغييرات الهوية فوقها — فلا تُمَس الحقول التقنية
 // (الحفظ في الخلفية يستبدل الكل، فالدمج ضروري للحفاظ عليها).
 // ============================================================================
-const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED'
+const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#FF6A00'
 const TYPE_AR = { feature: 'ميزة', limit: 'حد', option: 'خيار', mode: 'وضع' }
 const TYPES = ['feature', 'limit', 'option', 'mode']
 
@@ -20,7 +20,7 @@ const inputStyle = {
   background: '#0B0D12', border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '9px 12px',
   color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '13px', outline: 'none', width: '100%',
 }
-const btn = (bg) => ({ padding: '9px 15px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '12.5px', color: 'white', background: bg })
+const btn = (bg) => ({ padding: '9px 15px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '12.5px', color: 'white', background: bg })
 const mono = { fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', direction: 'ltr', fontSize: '12px' }
 const Loading = () => <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>جارٍ التحميل…</div>
 
@@ -109,7 +109,7 @@ export default function FeaturesLibrary() {
                   <div style={{ fontSize: '13.5px', color: 'white', fontWeight: '700' }}>{c.name}</div>
                   <div style={{ ...mono, color: MUTED, fontSize: '10.5px' }}>{c.key}</div>
                 </div>
-                <span style={{ fontSize: '11px', color: '#C4B5FD', background: 'rgba(124,58,237,0.15)', borderRadius: '6px', padding: '2px 8px' }}>{TYPE_AR[c.type] || c.type}</span>
+                <span style={{ fontSize: '11px', color: '#FFB27F', background: 'rgba(255,106,0,0.15)', borderRadius: '6px', padding: '2px 8px' }}>{TYPE_AR[c.type] || c.type}</span>
                 {canWrite && <button onClick={() => openEdit(c.key)} style={btn('#374151')}>تعديل</button>}
                 {canWrite && <button onClick={() => remove(c.key)} style={btn('#7F1D1D')}>حذف</button>}
               </div>
@@ -122,7 +122,7 @@ export default function FeaturesLibrary() {
       {modal && (
         <div onClick={() => setModal(null)} style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.65)' }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px', width: '100%', maxWidth: '440px', maxHeight: '88vh', overflowY: 'auto' }}>
-            <div style={{ fontSize: '15px', fontWeight: '900', color: 'white', fontFamily: 'Cairo,sans-serif', marginBottom: '16px' }}>
+            <div style={{ fontSize: '15px', fontWeight: '900', color: 'white', fontFamily: 'Tajawal,sans-serif', marginBottom: '16px' }}>
               {modal.mode === 'new' ? '+ ميزة جديدة' : `تعديل: ${form.name}`}
             </div>
             {modal.mode === 'new' && (
