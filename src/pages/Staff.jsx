@@ -30,8 +30,8 @@ const PAGES = [
 
 function Spinner() {
   return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0F1117', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
-      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,107,53,0.3)', borderTopColor:'#FF6B35', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
+      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       جارٍ التحميل...
     </div>
@@ -225,15 +225,15 @@ export default function Staff() {
 
   return (
     <AppShell title="الموظفون" active="staff"
-      actions={<button onClick={openAdd} style={{ padding:'10px 16px', borderRadius:'11px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>+ إضافة موظف</button>}
+      actions={<button onClick={openAdd} style={{ padding:'10px 16px', borderRadius:'11px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>+ إضافة موظف</button>}
     >
       <div style={{ maxWidth:'760px' }}>
-        <div style={{ background:'#0F1117', borderRadius:'14px', padding:'14px 16px', marginBottom:'14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', flexWrap:'wrap' }}>
+        <div style={{ background:'#0B0B0F', borderRadius:'14px', padding:'14px 16px', marginBottom:'14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', flexWrap:'wrap' }}>
           <div style={{ color:'white' }}>
             <div style={{ fontWeight:'800', fontSize:'14px', fontFamily:'Cairo,sans-serif' }}>🔗 رابط دخول الموظفين</div>
             <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.6)', direction:'ltr', textAlign:'left', marginTop:'2px' }}>/staff-login/{restaurant.slug}</div>
           </div>
-          <button onClick={copyLoginLink} style={{ padding:'9px 16px', borderRadius:'10px', border:'none', background:'#FF6B35', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer' }}>نسخ الرابط</button>
+          <button onClick={copyLoginLink} style={{ padding:'9px 16px', borderRadius:'10px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer' }}>نسخ الرابط</button>
         </div>
 
         {members.length === 0 ? (
@@ -337,7 +337,7 @@ export default function Staff() {
 
             <div style={{ display:'flex', gap:'10px' }}>
               <button onClick={() => setModalOpen(false)} style={{ flex:1, padding:'12px', borderRadius:'11px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', cursor:'pointer' }}>إلغاء</button>
-              <button onClick={handleSave} disabled={saving} style={{ flex:2, padding:'12px', borderRadius:'11px', border:'none', background: saving ? '#9CA3AF' : 'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', cursor: saving ? 'default' : 'pointer' }}>
+              <button onClick={handleSave} disabled={saving} style={{ flex:2, padding:'12px', borderRadius:'11px', border:'none', background: saving ? '#9CA3AF' : 'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', cursor: saving ? 'default' : 'pointer' }}>
                 {saving ? 'جارٍ الحفظ...' : (editing ? 'حفظ التعديلات' : 'إنشاء الموظف')}
               </button>
             </div>

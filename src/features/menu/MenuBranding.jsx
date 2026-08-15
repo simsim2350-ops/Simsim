@@ -9,7 +9,7 @@ function SimsimMark() {
   return (
     <span style={{
       width: '18px', height: '18px', flexShrink: 0, borderRadius: '5px',
-      background: 'linear-gradient(135deg,#FF6B35,#E85A24)', color: 'white',
+      background: 'linear-gradient(135deg,#FF6A00,#E05D00)', color: 'white',
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '11px', lineHeight: 1,
     }}>S</span>

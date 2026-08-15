@@ -35,8 +35,8 @@ const typeChip = (t) => TYPE_META[t] || TYPE_META.dine_in
 
 function Spinner() {
   return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0F1117', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
-      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,107,53,0.3)', borderTopColor:'#FF6B35', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
+      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       جارٍ التحميل...
     </div>
@@ -432,7 +432,7 @@ export default function Orders() {
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'6px' }}>
           <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
             <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px' }}>{order.order_number}</span>
-            {fresh && <span style={{ fontSize:'9px', fontWeight:'800', color:'#FF6B35', background:'rgba(255,107,53,0.12)', padding:'1px 6px', borderRadius:'100px', animation:'blink 1.5s infinite' }}>جديد</span>}
+            {fresh && <span style={{ fontSize:'9px', fontWeight:'800', color:'#FF6A00', background:'rgba(255,106,0,0.12)', padding:'1px 6px', borderRadius:'100px', animation:'blink 1.5s infinite' }}>جديد</span>}
             {isVIP(order) && <span title="عميل VIP" style={{ fontSize:'11px' }}>⭐</span>}
             {order.coupon_code && <span title="يحتوي كوبون" style={{ fontSize:'11px' }}>🎁</span>}
             {order.notes && <span title="ملاحظة من الزبون" style={{ fontSize:'11px' }}>📝</span>}
@@ -462,11 +462,11 @@ export default function Orders() {
         </div>
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px' }}>
-          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6B35' }}>{Number(order.total || 0).toFixed(0)} ﷼</span>
+          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6A00' }}>{Number(order.total || 0).toFixed(0)} ﷼</span>
           {STATUS[order.status]?.next && (
             <button
               onClick={(e) => { e.stopPropagation(); advanceOrder(order) }}
-              style={{ padding:'7px 12px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'11px', cursor:'pointer', whiteSpace:'nowrap' }}
+              style={{ padding:'7px 12px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'11px', cursor:'pointer', whiteSpace:'nowrap' }}
             >{STATUS[order.status].nextLabel}</button>
           )}
         </div>
@@ -479,7 +479,7 @@ export default function Orders() {
       active="orders"
       badges={{ orders: activeCount }}
       title={<>الطلبات
-        {activeCount > 0 && <span style={{ background:'#FF6B35', color:'white', fontSize:'11px', fontWeight:'800', padding:'3px 10px', borderRadius:'100px', marginRight:'6px' }}>{activeCount} نشط</span>}
+        {activeCount > 0 && <span style={{ background:'#FF6A00', color:'white', fontSize:'11px', fontWeight:'800', padding:'3px 10px', borderRadius:'100px', marginRight:'6px' }}>{activeCount} نشط</span>}
         {lateCount > 0 && <span style={{ background:'#FEE2E2', color:'#DC2626', fontSize:'11px', fontWeight:'800', padding:'3px 10px', borderRadius:'100px', marginRight:'6px' }}>⚠️ {lateCount} متأخر</span>}
       </>}
       actions={<>
@@ -491,7 +491,7 @@ export default function Orders() {
         </div>
         <div style={{ display:'flex', background:'#F3F4F6', borderRadius:'10px', padding:'3px' }}>
           {[['kanban','▦ كانبان'], ['table','☰ جدول']].map(([k, l]) => (
-            <button key={k} onClick={() => setView(k)} style={{ padding:'6px 11px', borderRadius:'8px', border:'none', cursor:'pointer', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'11px', background: view===k ? 'white' : 'transparent', color: view===k ? '#FF6B35' : '#9CA3AF', boxShadow: view===k ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>{l}</button>
+            <button key={k} onClick={() => setView(k)} style={{ padding:'6px 11px', borderRadius:'8px', border:'none', cursor:'pointer', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'11px', background: view===k ? 'white' : 'transparent', color: view===k ? '#FF6A00' : '#9CA3AF', boxShadow: view===k ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}>{l}</button>
           ))}
         </div>
       </>}
@@ -513,11 +513,11 @@ export default function Orders() {
         {queue.length > 0 && (() => {
           const o = queue[0]
           return (
-            <div style={{ background:'#0F1117', color:'white', padding:'11px 14px', display:'flex', alignItems:'center', gap:'10px', flexShrink:0, flexWrap:'wrap', animation:'slideDown .25s ease' }}>
-              <div style={{ width:'40px', height:'40px', borderRadius:'11px', background:'rgba(255,107,53,0.22)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', flexShrink:0, animation:'ring 1.2s infinite' }}>🔔</div>
+            <div style={{ background:'#0B0B0F', color:'white', padding:'11px 14px', display:'flex', alignItems:'center', gap:'10px', flexShrink:0, flexWrap:'wrap', animation:'slideDown .25s ease' }}>
+              <div style={{ width:'40px', height:'40px', borderRadius:'11px', background:'rgba(255,106,0,0.22)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', flexShrink:0, animation:'ring 1.2s infinite' }}>🔔</div>
               <div style={{ flex:1, minWidth:'160px' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap' }}>
-                  <span style={{ fontSize:'10px', fontWeight:'800', background:'#FF6B35', color:'white', padding:'1px 7px', borderRadius:'100px' }}>جديد</span>
+                  <span style={{ fontSize:'10px', fontWeight:'800', background:'#FF6A00', color:'white', padding:'1px 7px', borderRadius:'100px' }}>جديد</span>
                   <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px' }}>{o.order_number}</span>
                   <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.6)' }}>{TYPE_LABEL[o.type] || '🪑 محلي'}{o.type === 'dine_in' && o.table_number ? ` · طاولة ${o.table_number}` : ''}</span>
                 </div>
@@ -527,7 +527,7 @@ export default function Orders() {
                 {queue.length > 1 && (
                   <button onClick={acceptAllNew} style={{ padding:'9px 12px', borderRadius:'10px', border:'1.5px solid rgba(255,255,255,0.25)', background:'transparent', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer', whiteSpace:'nowrap' }}>قبول الكل ({queue.length})</button>
                 )}
-                <button onClick={() => acceptFromBanner(o)} style={{ padding:'9px 16px', borderRadius:'10px', border:'none', background:'#FF6B35', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer', whiteSpace:'nowrap' }}>قبول ✓</button>
+                <button onClick={() => acceptFromBanner(o)} style={{ padding:'9px 16px', borderRadius:'10px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer', whiteSpace:'nowrap' }}>قبول ✓</button>
                 <button onClick={() => dismissFromQueue(o.id)} title="تجاهل" style={{ width:'36px', height:'36px', borderRadius:'10px', border:'none', background:'rgba(255,255,255,0.1)', color:'white', fontSize:'15px', cursor:'pointer', flexShrink:0 }}>✕</button>
               </div>
             </div>
@@ -569,10 +569,10 @@ export default function Orders() {
           )}
           <div style={{ display:'flex', gap:'5px' }}>
             {[['dine_in','🪑 محلي'], ['takeaway','🥡 سفري'], ['delivery','🛵 توصيل']].map(([k,l]) => (
-              <button key={k} onClick={() => toggleType(k)} style={{ padding:'6px 11px', borderRadius:'9px', border:`1.5px solid ${typeFilter.has(k) ? '#FF6B35' : '#E5E7EB'}`, background: typeFilter.has(k) ? '#FFF0EB' : 'white', color: typeFilter.has(k) ? '#FF6B35' : '#6B7280', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer', whiteSpace:'nowrap' }}>{l}</button>
+              <button key={k} onClick={() => toggleType(k)} style={{ padding:'6px 11px', borderRadius:'9px', border:`1.5px solid ${typeFilter.has(k) ? '#FF6A00' : '#E5E7EB'}`, background: typeFilter.has(k) ? '#FFF0EB' : 'white', color: typeFilter.has(k) ? '#FF6A00' : '#6B7280', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer', whiteSpace:'nowrap' }}>{l}</button>
             ))}
           </div>
-          <button onClick={() => togglePriority('attention')} style={{ padding:'6px 11px', borderRadius:'9px', border:`1.5px solid ${priorityFilter==='attention' ? '#FF6B35' : '#E5E7EB'}`, background: priorityFilter==='attention' ? '#FFF0EB' : 'white', color: priorityFilter==='attention' ? '#FF6B35' : '#6B7280', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer', whiteSpace:'nowrap' }}>⚡ يحتاج تدخل</button>
+          <button onClick={() => togglePriority('attention')} style={{ padding:'6px 11px', borderRadius:'9px', border:`1.5px solid ${priorityFilter==='attention' ? '#FF6A00' : '#E5E7EB'}`, background: priorityFilter==='attention' ? '#FFF0EB' : 'white', color: priorityFilter==='attention' ? '#FF6A00' : '#6B7280', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer', whiteSpace:'nowrap' }}>⚡ يحتاج تدخل</button>
         </div>
 
         {/* Filter tabs — تتحكم بأعمدة الكانبان الظاهرة وبفلترة الجدول معاً، دائمة الظهور في العرضين */}
@@ -583,7 +583,7 @@ export default function Orders() {
             { key:'completed', label:'✅ المكتملة' },
             { key:'cancelled', label:'🚫 الملغية' },
           ].map(t => (
-            <div key={t.key} onClick={() => setFilter(t.key)} style={{ padding:'12px 14px', fontSize:'13px', fontWeight:'700', color: filter === t.key ? '#FF6B35' : '#6B7280', borderBottom: filter === t.key ? '2.5px solid #FF6B35' : '2.5px solid transparent', cursor:'pointer', whiteSpace:'nowrap' }}>{t.label}</div>
+            <div key={t.key} onClick={() => setFilter(t.key)} style={{ padding:'12px 14px', fontSize:'13px', fontWeight:'700', color: filter === t.key ? '#FF6A00' : '#6B7280', borderBottom: filter === t.key ? '2.5px solid #FF6A00' : '2.5px solid transparent', cursor:'pointer', whiteSpace:'nowrap' }}>{t.label}</div>
           ))}
         </div>
 
@@ -641,7 +641,7 @@ export default function Orders() {
                       <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{o.customer_name || '—'} · <span style={{ color:'#9CA3AF' }}>{TYPE_LABEL[o.type] || 'محلي'}</span></span>
                       <span><span style={{ padding:'2px 8px', borderRadius:'100px', background:s.bg, color:s.color, fontSize:'10px', fontWeight:'800' }}>{s.label}</span></span>
                       <span style={{ color: isActive(o.status) ? ts.c : '#9CA3AF', fontWeight:'700' }}>{isActive(o.status) ? fmtElapsed(m) : new Date(o.created_at).toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'})}</span>
-                      <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', color:'#FF6B35' }}>{Number(o.total||0).toFixed(0)} ﷼</span>
+                      <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', color:'#FF6A00' }}>{Number(o.total||0).toFixed(0)} ﷼</span>
                     </div>
                   )
                 })}
@@ -691,7 +691,7 @@ export default function Orders() {
                           <div style={{ width:'32px', height:'32px', borderRadius:'8px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', flexShrink:0, overflow:'hidden' }}>{item.image_url ? <img src={item.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : (item.emoji || '🍽️')}</div>
                           <div>
                             <div style={{ fontSize:'13px', fontWeight:'700', textDecoration: item.unavailable ? 'line-through' : 'none' }}>{item.name}{item.unavailable && <span style={{ fontSize:'10px', fontWeight:'700', color:'#EF4444', background:'#FEF2F2', padding:'2px 6px', borderRadius:'100px', marginRight:'6px' }}>غير متوفر</span>}</div>
-                            {Array.isArray(item.selectedOptions) && item.selectedOptions.length > 0 && <div style={{ fontSize:'11px', color:'#FF6B35', fontWeight:'600' }}>{item.selectedOptions.map(o => o.choiceName).join(' + ')}</div>}
+                            {Array.isArray(item.selectedOptions) && item.selectedOptions.length > 0 && <div style={{ fontSize:'11px', color:'#FF6A00', fontWeight:'600' }}>{item.selectedOptions.map(o => o.choiceName).join(' + ')}</div>}
                             {item.notes && <div style={{ fontSize:'11px', color:'#9CA3AF' }}>📝 {item.notes}</div>}
                           </div>
                         </div>
@@ -719,7 +719,7 @@ export default function Orders() {
                         <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#9CA3AF', marginBottom:'4px' }}><span>الصافي (قبل الضريبة)</span><span>{net.toFixed(2)} ﷼</span></div>
                         <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#9CA3AF', marginBottom: deliv > 0 ? '4px' : '6px' }}><span>ض.ق.م 15%</span><span>{taxAmt.toFixed(2)} ﷼</span></div>
                         {deliv > 0 && <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#9CA3AF', marginBottom:'6px' }}><span>🛵 رسوم التوصيل</span><span>{deliv.toFixed(2)} ﷼</span></div>}
-                        <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', paddingTop:'6px', borderTop:'1px solid #E5E7EB' }}><span>الإجمالي <span style={{ fontSize:'10px', color:'#9CA3AF', fontWeight:'600' }}>(شامل الضريبة)</span></span><span style={{ color:'#FF6B35' }}>{Number(order.total ?? 0).toFixed(2)} ﷼</span></div>
+                        <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', paddingTop:'6px', borderTop:'1px solid #E5E7EB' }}><span>الإجمالي <span style={{ fontSize:'10px', color:'#9CA3AF', fontWeight:'600' }}>(شامل الضريبة)</span></span><span style={{ color:'#FF6A00' }}>{Number(order.total ?? 0).toFixed(2)} ﷼</span></div>
                       </>
                     )
                   })()}
@@ -727,7 +727,7 @@ export default function Orders() {
 
                 <div style={{ display:'flex', gap:'8px' }}>
                   {STATUS[order.status]?.next && (
-                    <button onClick={() => advanceOrder(order)} style={{ flex:2, padding:'12px', borderRadius:'11px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer' }}>{STATUS[order.status].nextLabel}</button>
+                    <button onClick={() => advanceOrder(order)} style={{ flex:2, padding:'12px', borderRadius:'11px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer' }}>{STATUS[order.status].nextLabel}</button>
                   )}
                   {order.status === 'pending' && (
                     <button onClick={() => cancelOrder(order)} style={{ flex:1, padding:'12px', borderRadius:'11px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', color:'#EF4444', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}>إلغاء</button>

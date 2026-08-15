@@ -111,7 +111,7 @@ export default function OrdersScreen({
                 value={q}
                 onChange={e => setQ(e.target.value)}
                 placeholder={t('searchOrder')}
-                style={{ flex:1, border:'none', outline:'none', background:'transparent', fontFamily:'Tajawal,sans-serif', fontSize:'13px', color:'#0F1117', textAlign:'right' }}
+                style={{ flex:1, border:'none', outline:'none', background:'transparent', fontFamily:'Tajawal,sans-serif', fontSize:'13px', color:'#0B0B0F', textAlign:'right' }}
               />
               {q && <button onClick={() => setQ('')} style={{ border:'none', background:'none', fontSize:'14px', cursor:'pointer', color:'#9CA3AF' }}>✕</button>}
             </div>

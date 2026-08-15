@@ -138,7 +138,7 @@ export default function MenuHeader({
                 : '🍕'}
             </div>
             <div style={{ flex:1, minWidth:0 }}>
-              <h1 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'19px', color:'#0F1117', margin:0 }}>{restaurant.name}</h1>
+              <h1 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'19px', color:'#0B0B0F', margin:0 }}>{restaurant.name}</h1>
               {rating && (
                 <div style={{ fontSize:'11.5px', fontWeight:'800', color:'#B08A2E', marginTop:'2px' }}>
                   ★ {rating.avg} <span style={{ color:'#9CA3AF', fontWeight:'700' }}>({rating.count} {isEn ? 'reviews' : 'تقييم'})</span>
@@ -234,7 +234,7 @@ export default function MenuHeader({
             return (
               <div onClick={onShowOrders} style={{ background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'12px', padding:'6px 10px', display:'flex', alignItems:'center', gap:'7px', cursor:'pointer' }}>
                 <span style={{ fontSize:'13px' }}>🎁</span>
-                <span style={{ flex:1, fontSize:'11px', fontWeight:'800', color:'#0F1117', fontFamily:'Cairo,sans-serif' }}>{text}</span>
+                <span style={{ flex:1, fontSize:'11px', fontWeight:'800', color:'#0B0B0F', fontFamily:'Cairo,sans-serif' }}>{text}</span>
                 <span style={{ fontSize:'9.5px', fontWeight:'800', color:brandColor, whiteSpace:'nowrap' }}>{isEn ? 'Details ›' : 'التفاصيل ›'}</span>
               </div>
             )
@@ -250,7 +250,7 @@ export default function MenuHeader({
             ) : (
               <div style={{ display:'flex', alignItems:'center', gap:'8px', background:`${brandColor}12`, border:`1.5px dashed ${brandColor}`, borderRadius:'13px', padding:'9px 10px 9px 12px' }}>
                 <span style={{ fontSize:'16px', flexShrink:0 }}>🎟️</span>
-                <span style={{ flex:1, fontSize:'12px', fontWeight:'700', color:'#0F1117', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                <span style={{ flex:1, fontSize:'12px', fontWeight:'700', color:'#0B0B0F', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                   {isEn
                     ? `Code ${activePromo.data.code}: ${activePromo.data.discount_type === 'percent' ? activePromo.data.discount_value + '% off' : activePromo.data.discount_value + ' SAR off'}`
                     : `كود ${activePromo.data.code}: خصم ${activePromo.data.discount_type === 'percent' ? activePromo.data.discount_value + '%' : activePromo.data.discount_value + ' ﷼'}`}
@@ -280,7 +280,7 @@ export default function MenuHeader({
             : '🍕'}
         </div>
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', color:'#0F1117', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{restaurant.name}</div>
+          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', color:'#0B0B0F', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{restaurant.name}</div>
           <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'1px' }}>
             {rating && (
               <span style={{ fontSize:'10.5px', fontWeight:'800', color:'#B08A2E', whiteSpace:'nowrap' }}>★ {rating.avg}</span>

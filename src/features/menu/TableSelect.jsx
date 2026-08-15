@@ -22,10 +22,10 @@ export default function TableSelect({ tables, value, onChange, brandColor, t }) 
   return (
     <>
       <style>{`
-        .simsim-table-trigger { background:white; color:#0F1117; border-color:#E5E7EB; }
-        .simsim-table-sheet { background:white; color:#0F1117; }
-        .simsim-table-search { background:white; color:#0F1117; border-color:#E5E7EB; }
-        .simsim-table-row { color:#0F1117; border-color:#F3F4F6; }
+        .simsim-table-trigger { background:white; color:#0B0B0F; border-color:#E5E7EB; }
+        .simsim-table-sheet { background:white; color:#0B0B0F; }
+        .simsim-table-search { background:white; color:#0B0B0F; border-color:#E5E7EB; }
+        .simsim-table-row { color:#0B0B0F; border-color:#F3F4F6; }
         @media (prefers-color-scheme: dark) {
           .simsim-table-trigger { background:#1A1B22; color:#F3F4F6; border-color:#2E2F38; }
           .simsim-table-sheet { background:#1A1B22; color:#F3F4F6; }

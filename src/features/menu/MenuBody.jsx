@@ -91,7 +91,7 @@ export default function MenuBody({
                 ...TYPE.tab,
                 fontWeight: activeCategory === cat.id ? '800' : '700',
                 borderBottom: activeCategory === cat.id ? `2.5px solid ${brandColor}` : '2.5px solid transparent',
-                color: activeCategory === cat.id ? '#0F1117' : '#9CA3AF',
+                color: activeCategory === cat.id ? '#0B0B0F' : '#9CA3AF',
                 transition:'all 0.2s',
               }}
             >
@@ -120,7 +120,7 @@ export default function MenuBody({
                   ) : (
                     <span style={{ fontSize:'20px', width:'36px', textAlign:'center' }}>{cat.emoji}</span>
                   )}
-                  <span style={{ flex:1, fontSize:'14px', fontWeight: isActive ? '900' : '700', fontFamily:'Cairo,sans-serif', color: isActive ? brandColor : '#0F1117' }}>{tx(cat,'name')}</span>
+                  <span style={{ flex:1, fontSize:'14px', fontWeight: isActive ? '900' : '700', fontFamily:'Cairo,sans-serif', color: isActive ? brandColor : '#0B0B0F' }}>{tx(cat,'name')}</span>
                   <span style={{ fontSize:'11px', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 9px', borderRadius:'100px' }}>{count}</span>
                 </div>
               )
@@ -136,7 +136,7 @@ export default function MenuBody({
         {bestSellers.length > 0 && (
           <div style={{ marginBottom:'6px' }}>
             <div style={{ padding:'12px 16px 8px' }}>
-              <h2 style={{ ...TYPE.sectionTitle, color:'#0F1117', margin:0 }}>{t('bestSellers')}</h2>
+              <h2 style={{ ...TYPE.sectionTitle, color:'#0B0B0F', margin:0 }}>{t('bestSellers')}</h2>
             </div>
             <div style={{ display:'flex', gap:'10px', overflowX:'auto', padding:'0 16px 4px', WebkitOverflowScrolling:'touch' }}>
               {bestSellers.map(prod => (
@@ -158,7 +158,7 @@ export default function MenuBody({
         {mostOrdered.length > 0 && (
           <div style={{ marginBottom:'6px' }}>
             <div style={{ padding:'12px 16px 8px' }}>
-              <h2 style={{ ...TYPE.sectionTitle, color:'#0F1117', margin:0 }}>{t('mostOrdered')}</h2>
+              <h2 style={{ ...TYPE.sectionTitle, color:'#0B0B0F', margin:0 }}>{t('mostOrdered')}</h2>
             </div>
             <div className="sm-products" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }}>
               {mostOrdered.map(prod => (
@@ -182,7 +182,7 @@ export default function MenuBody({
                 ) : (
                   <span style={{ fontSize:'20px' }}>{cat.emoji}</span>
                 )}
-                <h2 style={{ ...TYPE.sectionTitle, color:'#0F1117' }}>{tx(cat,'name')}</h2>
+                <h2 style={{ ...TYPE.sectionTitle, color:'#0B0B0F' }}>{tx(cat,'name')}</h2>
                 <span style={{ ...TYPE.meta, color:'#9CA3AF', background:'#F3F4F6', padding:'2px 8px', borderRadius:'100px' }}>{catProducts.length}</span>
               </div>
               <div className="sm-products" style={

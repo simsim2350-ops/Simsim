@@ -78,7 +78,7 @@ export default function Register() {
         name: form.restaurantName.trim(),
         slug,
         type: 'restaurant',
-        brand_color: '#FF6B35',
+        brand_color: '#FF6A00',
         is_active: true,
         onboarding_step: 'welcome',
       })
@@ -104,7 +104,7 @@ export default function Register() {
 
   const inputStyle = { width:'100%', padding:'12px 14px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', background:'#F8F9FB', outline:'none', textAlign:'right', direction:'rtl', boxSizing:'border-box' }
   const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }
-  const btnStyle = { width:'100%', padding:'14px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', boxShadow:'0 6px 20px rgba(255,107,53,0.35)', marginTop:'8px', marginBottom:'10px' }
+  const btnStyle = { width:'100%', padding:'14px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', boxShadow:'0 6px 20px rgba(255,106,0,0.35)', marginTop:'8px', marginBottom:'10px' }
 
   const previewSlug = form.slug || slugify(form.restaurantName) || 'your-menu'
 
@@ -112,8 +112,8 @@ export default function Register() {
     <div style={{ display:'flex', minHeight:'100vh', direction:'rtl' }}>
       <div style={{ width: isMobile ? '100%' : '520px', background:'white', padding: isMobile ? '28px 20px' : '48px', overflowY:'auto' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'24px' }}>
-          <div style={{ width:'36px', height:'36px', background:'linear-gradient(135deg,#FF6B35,#E85A24)', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cairo,sans-serif', fontWeight:'900', color:'white' }}>S</div>
-          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'20px' }}>SIM<span style={{ color:'#FF6B35' }}>SIM</span></span>
+          <div style={{ width:'36px', height:'36px', background:'linear-gradient(135deg,#FF6A00,#E05D00)', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cairo,sans-serif', fontWeight:'900', color:'white' }}>S</div>
+          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'20px' }}>SIM<span style={{ color:'#FF6A00' }}>SIM</span></span>
         </div>
 
         <h2 style={{ fontSize:'24px', fontWeight:'900', marginBottom:'4px', fontFamily:'Cairo,sans-serif' }}>أنشئ مطعمك في دقيقة 🚀</h2>
@@ -124,8 +124,8 @@ export default function Register() {
           <input style={inputStyle} placeholder="مطعم البيت" value={form.restaurantName} onChange={e => onNameChange(e.target.value)} />
           {/* معاينة الرابط + تعديله */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'7px', gap:'8px', flexWrap:'wrap' }}>
-            <span style={{ fontSize:'12px', color:'#9CA3AF', direction:'ltr' }}>🔗 {window.location.host}/menu/<b style={{ color:'#FF6B35' }}>{previewSlug}</b></span>
-            <button type="button" onClick={() => setShowSlugEdit(s => !s)} style={{ background:'none', border:'none', color:'#FF6B35', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', padding:0 }}>
+            <span style={{ fontSize:'12px', color:'#9CA3AF', direction:'ltr' }}>🔗 {window.location.host}/menu/<b style={{ color:'#FF6A00' }}>{previewSlug}</b></span>
+            <button type="button" onClick={() => setShowSlugEdit(s => !s)} style={{ background:'none', border:'none', color:'#FF6A00', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', padding:0 }}>
               {showSlugEdit ? 'إخفاء' : 'تعديل الرابط'}
             </button>
           </div>
@@ -159,13 +159,13 @@ export default function Register() {
         </button>
 
         <p style={{ textAlign:'center', fontSize:'12px', color:'#9CA3AF', marginBottom:'14px' }}>سجّل وابدأ مجاناً — بدون بطاقة بنكية</p>
-        <p style={{ textAlign:'center', fontSize:'14px', color:'#6B7280' }}>لديك حساب؟ <Link to="/login" style={{ color:'#FF6B35', fontWeight:'700' }}>سجّل دخولك</Link></p>
+        <p style={{ textAlign:'center', fontSize:'14px', color:'#6B7280' }}>لديك حساب؟ <Link to="/login" style={{ color:'#FF6A00', fontWeight:'700' }}>سجّل دخولك</Link></p>
       </div>
 
       {!isMobile && (
-        <div style={{ flex:1, background:'linear-gradient(135deg,#0F1117,#1a1a2e)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:'16px', padding:'40px' }}>
+        <div style={{ flex:1, background:'linear-gradient(135deg,#0B0B0F,#1a1a2e)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:'16px', padding:'40px' }}>
           <div style={{ fontSize:'80px' }}>🍕</div>
-          <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'28px', color:'white', textAlign:'center', lineHeight:'1.3' }}>منيو مطعمك الاحترافي<br/><span style={{ color:'#FF6B35' }}>يبدأ من هنا</span></h2>
+          <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'28px', color:'white', textAlign:'center', lineHeight:'1.3' }}>منيو مطعمك الاحترافي<br/><span style={{ color:'#FF6A00' }}>يبدأ من هنا</span></h2>
           <p style={{ fontSize:'15px', color:'rgba(255,255,255,0.5)', textAlign:'center' }}>منيو رقمي وQR وطلبات — جاهزة في دقيقة</p>
         </div>
       )}

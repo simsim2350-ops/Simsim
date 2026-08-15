@@ -11,7 +11,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import { Accordion, AccordionItem } from '../components/Accordion'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 
-const BRAND_COLORS = ['#FF6B35','#E85A24','#10B981','#3B82F6','#8B5CF6','#EC4899','#F59E0B','#0F1117']
+const BRAND_COLORS = ['#FF6A00','#E05D00','#10B981','#3B82F6','#8B5CF6','#EC4899','#F59E0B','#0B0B0F']
 const CURRENCIES = ['SAR - ريال سعودي','AED - درهم إماراتي','KWD - دينار كويتي','BHD - دينار بحريني','QAR - ريال قطري','OMR - ريال عماني','EGP - جنيه مصري']
 const COMMON_ALLERGENS = [
   { icon:'🐟', label:'الأسماك ومنتجاتها', label_en:'Fish & products' },
@@ -62,7 +62,7 @@ export default function Settings() {
     menu_layout: 'list',
     logo_url: '',
     cover_url: '',
-    brand_color: '#FF6B35', type: 'restaurant',
+    brand_color: '#FF6A00', type: 'restaurant',
     price_color: '', description_color: '',
   })
 
@@ -109,7 +109,7 @@ export default function Settings() {
         address: restaurant.address || '',
         maps_url: restaurant.maps_url || '',
         currency: restaurant.currency || 'SAR - ريال سعودي',
-        brand_color: restaurant.brand_color || '#FF6B35',
+        brand_color: restaurant.brand_color || '#FF6A00',
         price_color: restaurant.price_color || '',
         description_color: restaurant.description_color || '',
         type: restaurant.type || 'restaurant',
@@ -247,8 +247,8 @@ export default function Settings() {
     toast.success(restaurant.is_active ? 'تم إيقاف المطعم مؤقتاً' : 'تم تفعيل المطعم ✅')
   }
 
-  const inputStyle = { width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'#F8F9FB', outline:'none', textAlign:'right', direction:'rtl', boxSizing:'border-box' }
-  const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', color:'#0F1117', marginBottom:'6px' }
+  const inputStyle = { width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'#F8F9FB', outline:'none', textAlign:'right', direction:'rtl', boxSizing:'border-box' }
+  const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', color:'#0B0B0F', marginBottom:'6px' }
 
   const TABS = [
     { key:'restaurant', label:'🏪 المطعم' },
@@ -269,7 +269,7 @@ export default function Settings() {
         {/* Tabs */}
         <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', padding:'0 16px', overflowX:'auto', flexShrink:0, scrollbarWidth:'none' }}>
           {TABS.map(t => (
-            <div key={t.key} onClick={() => setActiveTab(t.key)} style={{ padding:'12px 14px', fontSize:'13px', fontWeight:'700', color: activeTab === t.key ? '#FF6B35' : '#6B7280', borderBottom: activeTab === t.key ? '2.5px solid #FF6B35' : '2.5px solid transparent', cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.2s' }}>
+            <div key={t.key} onClick={() => setActiveTab(t.key)} style={{ padding:'12px 14px', fontSize:'13px', fontWeight:'700', color: activeTab === t.key ? '#FF6A00' : '#6B7280', borderBottom: activeTab === t.key ? '2.5px solid #FF6A00' : '2.5px solid transparent', cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.2s' }}>
               {t.label}
             </div>
           ))}
@@ -468,7 +468,7 @@ export default function Settings() {
                                     : f.allergens.filter(x => x.label !== a.label),
                                 }))
                               }}
-                              style={{ width:'17px', height:'17px', accentColor:'#FF6B35', flexShrink:0 }}
+                              style={{ width:'17px', height:'17px', accentColor:'#FF6A00', flexShrink:0 }}
                             />
                             <span style={{ fontSize:'16px' }}>{a.icon}</span>
                             <span style={{ fontSize:'13px', fontWeight:'600' }}>{a.label}</span>
@@ -510,7 +510,7 @@ export default function Settings() {
                             input.value = ''
                           }
                         }}
-                        style={{ padding:'0 16px', borderRadius:'11px', border:'none', background:'#FF6B35', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}
+                        style={{ padding:'0 16px', borderRadius:'11px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}
                       >
                         إضافة
                       </button>
@@ -550,7 +550,7 @@ export default function Settings() {
                         onClick={() => setRestForm(f => ({ ...f, menu_layout: opt.key }))}
                         style={{
                           padding:'12px 8px', borderRadius:'14px', cursor:'pointer', textAlign:'center',
-                          border: `2px solid ${restForm.menu_layout === opt.key ? '#FF6B35' : '#E5E7EB'}`,
+                          border: `2px solid ${restForm.menu_layout === opt.key ? '#FF6A00' : '#E5E7EB'}`,
                           background: restForm.menu_layout === opt.key ? '#FFF7F2' : 'white',
                         }}
                       >
@@ -591,7 +591,7 @@ export default function Settings() {
                             ))}
                           </div>
                         )}
-                        <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color: restForm.menu_layout===opt.key ? '#FF6B35' : '#374151', marginBottom:'2px' }}>{opt.label}</div>
+                        <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color: restForm.menu_layout===opt.key ? '#FF6A00' : '#374151', marginBottom:'2px' }}>{opt.label}</div>
                         <div style={{ fontSize:'10px', color:'#9CA3AF' }}>{opt.desc}</div>
                       </div>
                     ))}
@@ -604,7 +604,7 @@ export default function Settings() {
                   <div style={{ padding:'16px 18px' }}>
                     <div style={{ display:'flex', gap:'10px', flexWrap:'wrap', marginBottom:'12px' }}>
                       {BRAND_COLORS.map(c => (
-                        <div key={c} onClick={() => setRestForm(f=>({...f,brand_color:c}))} style={{ width:'38px', height:'38px', borderRadius:'50%', background:c, cursor:'pointer', border:`3px solid ${restForm.brand_color===c?'#0F1117':'transparent'}`, boxShadow:restForm.brand_color===c?'0 0 0 2px white inset':'none', transition:'all 0.2s', transform:restForm.brand_color===c?'scale(1.1)':'scale(1)' }}/>
+                        <div key={c} onClick={() => setRestForm(f=>({...f,brand_color:c}))} style={{ width:'38px', height:'38px', borderRadius:'50%', background:c, cursor:'pointer', border:`3px solid ${restForm.brand_color===c?'#0B0B0F':'transparent'}`, boxShadow:restForm.brand_color===c?'0 0 0 2px white inset':'none', transition:'all 0.2s', transform:restForm.brand_color===c?'scale(1.1)':'scale(1)' }}/>
                       ))}
                       <div style={{ position:'relative', width:'38px', height:'38px', borderRadius:'50%', border:'2px dashed #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', cursor:'pointer' }}>
                         🎨
@@ -689,7 +689,7 @@ export default function Settings() {
 
                 )}
 
-                <button onClick={saveRestaurant} disabled={loading} style={{ padding:'14px', borderRadius:'13px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', boxShadow:'0 6px 20px rgba(255,107,53,0.35)', opacity:loading?0.8:1 }}>
+                <button onClick={saveRestaurant} disabled={loading} style={{ padding:'14px', borderRadius:'13px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', boxShadow:'0 6px 20px rgba(255,106,0,0.35)', opacity:loading?0.8:1 }}>
                   {loading ? 'جارٍ الحفظ...' : '💾 حفظ إعدادات المطعم'}
                 </button>
 
@@ -698,7 +698,7 @@ export default function Settings() {
                 <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
                   <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🕐 أوقات العمل</div>
                   <div style={{ padding:'16px 18px', fontSize:'13px', color:'#6B7280', lineHeight:'1.7' }}>
-                    كل فرع له أوقات عمل مستقلة الآن — تُدار من صفحة <a href="/branches" style={{ color:'#FF6B35', fontWeight:'700' }}>🏢 الفروع</a> (اضغط على أي فرع لضبط أيامه وساعاته).
+                    كل فرع له أوقات عمل مستقلة الآن — تُدار من صفحة <a href="/branches" style={{ color:'#FF6A00', fontWeight:'700' }}>🏢 الفروع</a> (اضغط على أي فرع لضبط أيامه وساعاته).
                   </div>
                 </div>
                 )}
@@ -740,7 +740,7 @@ export default function Settings() {
                       <span style={{ fontSize:'13px', color:'#9CA3AF', direction:'ltr' }}>{user?.email}</span>
                     </div>
 
-                    <button onClick={saveProfile} disabled={loading} style={{ padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity:loading?0.8:1 }}>
+                    <button onClick={saveProfile} disabled={loading} style={{ padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity:loading?0.8:1 }}>
                       {loading ? 'جارٍ الحفظ...' : '💾 حفظ الملف الشخصي'}
                     </button>
                   </div>
@@ -754,7 +754,7 @@ export default function Settings() {
                 <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🔒 تغيير كلمة المرور</div>
                 <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:'14px' }}>
 
-                  <div style={{ padding:'12px 14px', background:'#FFF0EB', border:'1px solid rgba(255,107,53,0.2)', borderRadius:'10px', fontSize:'13px', color:'#E85A24' }}>
+                  <div style={{ padding:'12px 14px', background:'#FFF0EB', border:'1px solid rgba(255,106,0,0.2)', borderRadius:'10px', fontSize:'13px', color:'#E05D00' }}>
                     💡 اختر كلمة مرور قوية لا تشاركها مع أحد
                   </div>
 
@@ -772,7 +772,7 @@ export default function Settings() {
                     </div>
                   )}
 
-                  <button onClick={changePassword} disabled={loading} style={{ padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity:loading?0.8:1 }}>
+                  <button onClick={changePassword} disabled={loading} style={{ padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity:loading?0.8:1 }}>
                     {loading ? 'جارٍ التغيير...' : '🔒 تغيير كلمة المرور'}
                   </button>
                 </div>
@@ -813,7 +813,7 @@ export default function Settings() {
                           console.error('Copy failed:', err)
                           toast.error('تعذّر نسخ الرابط')
                         }
-                      }} style={{ padding:'11px 14px', borderRadius:'11px', border:'none', background:'#FF6B35', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', whiteSpace:'nowrap' }}>
+                      }} style={{ padding:'11px 14px', borderRadius:'11px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', whiteSpace:'nowrap' }}>
                         نسخ
                       </button>
                     </div>
@@ -826,10 +826,10 @@ export default function Settings() {
                     <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🏷️ هوية المنيو</div>
                     <div style={{ padding:'16px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px' }}>
                       <div>
-                        <div style={{ fontSize:'13.5px', fontWeight:'700', color:'#0F1117' }}>إخفاء «صمم بواسطة سمسم» من منيوك</div>
+                        <div style={{ fontSize:'13.5px', fontWeight:'700', color:'#0B0B0F' }}>إخفاء «صمم بواسطة سمسم» من منيوك</div>
                         <div style={{ fontSize:'12px', color:'#9CA3AF', marginTop:'3px' }}>{brandingHidden.usable ? 'مخفية حالياً من منيوك' : 'ظاهرة حالياً في منيوك'}</div>
                       </div>
-                      <button onClick={toggleBranding} disabled={savingBrand} aria-label="تبديل إخفاء هوية سمسم" style={{ width:'48px', height:'27px', borderRadius:'100px', border:'none', background: brandingHidden.usable ? '#FF6B35' : '#D1D5DB', position:'relative', cursor: savingBrand ? 'default' : 'pointer', flexShrink:0, opacity: savingBrand ? 0.6 : 1, transition:'background .15s' }}>
+                      <button onClick={toggleBranding} disabled={savingBrand} aria-label="تبديل إخفاء هوية سمسم" style={{ width:'48px', height:'27px', borderRadius:'100px', border:'none', background: brandingHidden.usable ? '#FF6A00' : '#D1D5DB', position:'relative', cursor: savingBrand ? 'default' : 'pointer', flexShrink:0, opacity: savingBrand ? 0.6 : 1, transition:'background .15s' }}>
                         <span style={{ position:'absolute', top:'3px', left: brandingHidden.usable ? '3px' : '24px', width:'21px', height:'21px', borderRadius:'50%', background:'white', transition:'left .15s' }} />
                       </button>
                     </div>

@@ -97,7 +97,7 @@ function PublicMenuInner() {
 
   // ===== مشتقات =====
   const itemName = makeItemName(isEn, products)
-  const brandColor = restaurant?.brand_color || '#FF6B35'
+  const brandColor = restaurant?.brand_color || '#FF6A00'
   const priceColor = restaurant?.price_color || brandColor
   const descColor = restaurant?.description_color || '#9CA3AF'
 
@@ -159,7 +159,7 @@ function PublicMenuInner() {
   if (notFound) return (
     <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F8F9FB', flexDirection:'column', gap:'16px', fontFamily:'Cairo,sans-serif', direction:'rtl', textAlign:'center', padding:'24px' }}>
       <div style={{ fontSize:'64px' }}>🔍</div>
-      <h2 style={{ fontSize:'22px', fontWeight:'900', color:'#0F1117' }}>{t('notFound')}</h2>
+      <h2 style={{ fontSize:'22px', fontWeight:'900', color:'#0B0B0F' }}>{t('notFound')}</h2>
       <p style={{ color:'#9CA3AF', fontSize:'14px' }}>{t('notFoundSub')}</p>
     </div>
   )

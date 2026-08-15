@@ -75,17 +75,17 @@ export function printReport({ title, subtitle, sections = [] }) {
 <html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${esc(title)}</title>
 <style>
   * { box-sizing: border-box; }
-  body { font-family: Tajawal, Cairo, system-ui, sans-serif; direction: rtl; color: #0F1117; margin: 24px; }
+  body { font-family: Tajawal, Cairo, system-ui, sans-serif; direction: rtl; color: #0B0B0F; margin: 24px; }
   h1 { font-size: 20px; margin: 0 0 4px; }
   .sub { color: #6B7280; font-size: 12px; margin-bottom: 18px; }
-  h2 { font-size: 14px; margin: 20px 0 8px; padding-bottom: 6px; border-bottom: 2px solid #FF6B35; }
+  h2 { font-size: 14px; margin: 20px 0 8px; padding-bottom: 6px; border-bottom: 2px solid #FF6A00; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px; }
   th, td { border: 1px solid #E5E7EB; padding: 6px 8px; text-align: right; }
   th { background: #F8F9FB; font-weight: 700; }
   tr:nth-child(even) td { background: #FCFCFD; }
   .kv { display: flex; flex-wrap: wrap; gap: 8px; }
   .kv div { border: 1px solid #E5E7EB; border-radius: 8px; padding: 8px 12px; font-size: 12px; }
-  .kv b { display: block; font-size: 15px; color: #FF6B35; margin-top: 2px; }
+  .kv b { display: block; font-size: 15px; color: #FF6A00; margin-top: 2px; }
   @page { margin: 14mm; }
 </style></head>
 <body>

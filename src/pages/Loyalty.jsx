@@ -47,8 +47,8 @@ const rewardTypeLabel = (t) => (REWARD_TYPES.find(x => x.key === t)?.label || t)
 
 function Spinner() {
   return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0F1117', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
-      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,107,53,0.3)', borderTopColor:'#FF6B35', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
+      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
       جارٍ التحميل...
     </div>
@@ -445,8 +445,8 @@ export default function Loyalty() {
               style={{
                 padding:'12px 14px', border:'none', background:'none', cursor:'pointer',
                 fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', whiteSpace:'nowrap',
-                color: activeTab===t.key ? '#FF6B35' : '#9CA3AF',
-                borderBottom: activeTab===t.key ? '2.5px solid #FF6B35' : '2.5px solid transparent',
+                color: activeTab===t.key ? '#FF6A00' : '#9CA3AF',
+                borderBottom: activeTab===t.key ? '2.5px solid #FF6A00' : '2.5px solid transparent',
               }}
             >{t.label}</button>
           ))}
@@ -473,7 +473,7 @@ export default function Loyalty() {
                       { icon:'⌛', val:dashboard.points_expired, label:'نقاط منتهية', color:'#6B7280', bg:'rgba(107,114,128,0.1)' },
                       { icon:'👥', val:dashboard.total_customers, label:'إجمالي العملاء', color:'#6D28D9', bg:'rgba(109,40,217,0.1)' },
                       { icon:'🔥', val:dashboard.active_customers, label:'نشطون (30 يوم)', color:'#059669', bg:'rgba(5,150,105,0.1)' },
-                      { icon:'📊', val:`${dashboard.redemption_rate}٪`, label:'معدل الاستبدال', color:'#E85A24', bg:'rgba(232,90,36,0.1)' },
+                      { icon:'📊', val:`${dashboard.redemption_rate}٪`, label:'معدل الاستبدال', color:'#E05D00', bg:'rgba(232,90,36,0.1)' },
                       { icon:'🔁', val:`${dashboard.retention_rate}٪`, label:'معدل الاحتفاظ', color:'#0891B2', bg:'rgba(8,145,178,0.1)' },
                     ].map(s => (
                       <div key={s.label} style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding:'14px' }}>
@@ -515,7 +515,7 @@ export default function Loyalty() {
                         <div key={c.phone} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'8px 0', borderBottom: i < dashboard.top_customers.length-1 ? '1px solid #F3F4F6' : 'none' }}>
                           <span style={{ width:'20px', fontSize:'12px', fontWeight:'800', color:'#9CA3AF', flexShrink:0 }}>{i+1}</span>
                           <span style={{ flex:1, fontSize:'12.5px', fontWeight:'700', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.name || 'عميل'} {c.tier_icon || ''}</span>
-                          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color:'#FF6B35', flexShrink:0 }}>{c.balance}</span>
+                          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color:'#FF6A00', flexShrink:0 }}>{c.balance}</span>
                         </div>
                       ))}
                     </div>
@@ -569,7 +569,7 @@ export default function Loyalty() {
                   <input value={rewardDescription} onChange={e => setRewardDescription(e.target.value)} placeholder="مثال: خصم 10 ﷼ أو مشروب مجاني" style={inputStyle} />
                 </div>
 
-                <button onClick={saveProgram} disabled={saving} style={{ width:'100%', padding:'12px', borderRadius:'11px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity: saving?0.7:1 }}>
+                <button onClick={saveProgram} disabled={saving} style={{ width:'100%', padding:'12px', borderRadius:'11px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity: saving?0.7:1 }}>
                   💾 حفظ الإعدادات
                 </button>
 
@@ -598,7 +598,7 @@ export default function Loyalty() {
                       {branches.map(b => {
                         const on = earningBranches.includes(b.id)
                         return (
-                          <button key={b.id} onClick={() => setEarningBranches(prev => toggleInArray(prev, b.id))} style={{ padding:'6px 12px', borderRadius:'100px', border:`1.5px solid ${on ? '#FF6B35' : '#E5E7EB'}`, background: on ? '#FFF7ED' : 'white', color: on ? '#C2410C' : '#6B7280', fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>
+                          <button key={b.id} onClick={() => setEarningBranches(prev => toggleInArray(prev, b.id))} style={{ padding:'6px 12px', borderRadius:'100px', border:`1.5px solid ${on ? '#FF6A00' : '#E5E7EB'}`, background: on ? '#FFF7ED' : 'white', color: on ? '#C2410C' : '#6B7280', fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>
                             {b.is_primary ? '🏠' : '🏢'} {b.name}
                           </button>
                         )
@@ -632,7 +632,7 @@ export default function Loyalty() {
                   <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>0 = لا تنتهي. تنتهي نقاط العميل كاملةً لو لم يطلب/يستبدل خلال هذه المدة. أول انتهاء يبدأ بعد مدة كاملة من التفعيل (سماح).</div>
                 </div>
 
-                <button onClick={saveRules} disabled={savingRules} style={{ width:'100%', padding:'12px', borderRadius:'11px', border:'none', background:'#0F1117', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity: savingRules?0.7:1 }}>
+                <button onClick={saveRules} disabled={savingRules} style={{ width:'100%', padding:'12px', borderRadius:'11px', border:'none', background:'#0B0B0F', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', opacity: savingRules?0.7:1 }}>
                   💾 حفظ قواعد الكسب
                 </button>
               </div>
@@ -641,7 +641,7 @@ export default function Loyalty() {
               <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', padding:'18px', marginBottom:'16px', maxWidth:'640px' }}>
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', marginBottom:'4px', flexWrap:'wrap' }}>
                   <div style={{ fontSize:'15px', fontWeight:'800' }}>🎉 الحملات الموسمية</div>
-                  <button onClick={() => setCampaignForm({ name:'', multiplier:'2', starts_at:'', ends_at:'', is_active:true })} style={{ background:'#FFF7ED', color:'#C2410C', border:'1.5px dashed #FF6B35', borderRadius:'9px', padding:'6px 12px', fontSize:'12px', fontWeight:'800', cursor:'pointer' }}>
+                  <button onClick={() => setCampaignForm({ name:'', multiplier:'2', starts_at:'', ends_at:'', is_active:true })} style={{ background:'#FFF7ED', color:'#C2410C', border:'1.5px dashed #FF6A00', borderRadius:'9px', padding:'6px 12px', fontSize:'12px', fontWeight:'800', cursor:'pointer' }}>
                     ➕ حملة جديدة
                   </button>
                 </div>
@@ -676,7 +676,7 @@ export default function Loyalty() {
                                 { l:'عملاء', v:im.customers },
                               ].map(x => (
                                 <span key={x.l} style={{ background:'#F8F9FB', borderRadius:'8px', padding:'4px 10px', fontSize:'11px', color:'#374151', fontWeight:'700' }}>
-                                  {x.l}: <b style={{ color:'#FF6B35' }}>{x.v}</b>
+                                  {x.l}: <b style={{ color:'#FF6A00' }}>{x.v}</b>
                                 </span>
                               ))}
                             </div>
@@ -721,7 +721,7 @@ export default function Loyalty() {
                           <div style={{ fontSize:'11px', color:'#9CA3AF', direction:'ltr', textAlign:'right' }}>{c.customer_phone}</div>
                         </div>
                         <div style={{ textAlign:'center', flexShrink:0 }}>
-                          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', color:'#FF6B35', lineHeight:1 }}>{c.current_balance}</div>
+                          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', color:'#FF6A00', lineHeight:1 }}>{c.current_balance}</div>
                           <div style={{ fontSize:'10px', color:'#9CA3AF' }}>نقطة</div>
                         </div>
                         <span style={{ fontSize:'16px', color:'#D1D5DB', flexShrink:0 }}>‹</span>
@@ -739,7 +739,7 @@ export default function Loyalty() {
           {/* ========== تبويب المكافآت ========== */}
           {activeTab === 'rewards' && (
             <div style={{ maxWidth:'640px' }}>
-              <button onClick={() => setRewardForm({ type:'gift', is_active:true, points_cost:'', name:'', value:'', per_customer_limit:'', period:'none' })} style={{ width:'100%', padding:'12px', borderRadius:'11px', border:'1.5px dashed #FF6B35', background:'#FFF7ED', color:'#C2410C', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', marginBottom:'14px' }}>
+              <button onClick={() => setRewardForm({ type:'gift', is_active:true, points_cost:'', name:'', value:'', per_customer_limit:'', period:'none' })} style={{ width:'100%', padding:'12px', borderRadius:'11px', border:'1.5px dashed #FF6A00', background:'#FFF7ED', color:'#C2410C', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', marginBottom:'14px' }}>
                 ➕ مكافأة جديدة
               </button>
 
@@ -762,7 +762,7 @@ export default function Loyalty() {
                           </div>
                         </div>
                         <div style={{ textAlign:'center', flexShrink:0 }}>
-                          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', color:'#FF6B35', lineHeight:1 }}>{r.points_cost}</div>
+                          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', color:'#FF6A00', lineHeight:1 }}>{r.points_cost}</div>
                           <div style={{ fontSize:'10px', color:'#9CA3AF' }}>نقطة</div>
                         </div>
                       </div>
@@ -785,7 +785,7 @@ export default function Loyalty() {
                 يترقّى العميل تلقائياً حسب <b>إجمالي نقاطه المكتسبة</b>. مضاعف الكسب يمنح نقاطاً أكثر لأصحاب المستويات الأعلى (×1 = بلا مضاعفة).
               </div>
 
-              <button onClick={() => setTierForm({ name:'', min_points:'', earn_multiplier:'1', color:'#9CA3AF', icon:'🏅', sort_order: tiers.length + 1 })} style={{ width:'100%', padding:'12px', borderRadius:'11px', border:'1.5px dashed #FF6B35', background:'#FFF7ED', color:'#C2410C', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', marginBottom:'14px' }}>
+              <button onClick={() => setTierForm({ name:'', min_points:'', earn_multiplier:'1', color:'#9CA3AF', icon:'🏅', sort_order: tiers.length + 1 })} style={{ width:'100%', padding:'12px', borderRadius:'11px', border:'1.5px dashed #FF6A00', background:'#FFF7ED', color:'#C2410C', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer', marginBottom:'14px' }}>
                 ➕ مستوى جديد
               </button>
 
@@ -920,7 +920,7 @@ export default function Loyalty() {
                         </div>
 
                         {r.comment && (
-                          <div style={{ fontSize:'13px', color:'#0F1117', lineHeight:'1.7', background:'#F8F9FB', borderRadius:'10px', padding:'9px 12px' }}>{r.comment}</div>
+                          <div style={{ fontSize:'13px', color:'#0B0B0F', lineHeight:'1.7', background:'#F8F9FB', borderRadius:'10px', padding:'9px 12px' }}>{r.comment}</div>
                         )}
 
                         {r.customer_phone && (
@@ -949,7 +949,7 @@ export default function Loyalty() {
                         <div style={{ marginTop:'10px' }}>
                           <textarea value={draft} onChange={e => setReplyDraft(prev => ({ ...prev, [r.id]: e.target.value }))} placeholder="رد داخلي / ملاحظة على هذا التقييم..." rows={2} style={{ ...inputStyle, resize:'vertical', fontSize:'12.5px' }} />
                           <div style={{ display:'flex', gap:'6px', marginTop:'8px', flexWrap:'wrap', alignItems:'center' }}>
-                            <button onClick={() => doReply(r)} style={{ background:'#FF6B35', color:'white', border:'none', borderRadius:'8px', padding:'6px 12px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>💾 حفظ الرد</button>
+                            <button onClick={() => doReply(r)} style={{ background:'#FF6A00', color:'white', border:'none', borderRadius:'8px', padding:'6px 12px', fontSize:'11.5px', fontWeight:'700', cursor:'pointer' }}>💾 حفظ الرد</button>
                             {r.reply_at && <span style={{ fontSize:'10.5px', color:'#9CA3AF' }}>آخر رد: {new Date(r.reply_at).toLocaleDateString('ar', { day:'numeric', month:'short' })}</span>}
                             <div style={{ flex:1 }}/>
                             {REVIEW_STATUSES.map(s => (
@@ -986,9 +986,9 @@ export default function Loyalty() {
                 </div>
                 <button onClick={() => setDetailCustomer(null)} style={{ background:'none', border:'none', fontSize:'20px', color:'#9CA3AF', cursor:'pointer', flexShrink:0 }}>✕</button>
               </div>
-              <div style={{ marginTop:'12px', background:'linear-gradient(120deg,#FF6B3516,#FF6B3508)', border:'1px solid #FF6B3530', borderRadius:'14px', padding:'14px 16px' }}>
+              <div style={{ marginTop:'12px', background:'linear-gradient(120deg,#FF6A0016,#FF6A0008)', border:'1px solid #FF6A0030', borderRadius:'14px', padding:'14px 16px' }}>
                 <div style={{ fontSize:'12px', color:'#9CA3AF', fontWeight:'700', marginBottom:'2px' }}>الرصيد الحالي</div>
-                <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'28px', color:'#FF6B35', lineHeight:1 }}>{detailCustomer.current_balance} <span style={{ fontSize:'13px', fontWeight:'700' }}>نقطة</span></div>
+                <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'28px', color:'#FF6A00', lineHeight:1 }}>{detailCustomer.current_balance} <span style={{ fontSize:'13px', fontWeight:'700' }}>نقطة</span></div>
                 <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>مكتسبة: {detailCustomer.lifetime_earned} · مستبدَلة: {detailCustomer.lifetime_redeemed}</div>
               </div>
             </div>
@@ -1034,7 +1034,7 @@ export default function Loyalty() {
                     return (
                       <div key={t.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', padding:'10px 12px', background:'#F8F9FB', borderRadius:'10px' }}>
                         <div style={{ minWidth:0 }}>
-                          <div style={{ fontSize:'12.5px', fontWeight:'600', color:'#0F1117' }}>{t.reason || t.type}</div>
+                          <div style={{ fontSize:'12.5px', fontWeight:'600', color:'#0B0B0F' }}>{t.reason || t.type}</div>
                           <div style={{ fontSize:'10.5px', color:'#9CA3AF' }}>{new Date(t.created_at).toLocaleDateString('ar', { day:'numeric', month:'short' })} · رصيد: {t.balance_after}</div>
                         </div>
                         <div style={{ flexShrink:0, fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', color: pos ? '#10B981' : '#EF4444' }}>{pos ? '+' : ''}{t.points}</div>
@@ -1097,7 +1097,7 @@ export default function Loyalty() {
                 مفعّلة (متاحة للاستبدال)
               </label>
 
-              <button onClick={submitReward} style={{ width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
+              <button onClick={submitReward} style={{ width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
                 💾 حفظ
               </button>
             </div>
@@ -1138,7 +1138,7 @@ export default function Loyalty() {
               </div>
             </div>
 
-            <button onClick={submitTier} style={{ width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
+            <button onClick={submitTier} style={{ width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
               💾 حفظ
             </button>
           </div>
@@ -1175,7 +1175,7 @@ export default function Loyalty() {
               مفعّلة
             </label>
 
-            <button onClick={submitCampaign} style={{ width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
+            <button onClick={submitCampaign} style={{ width:'100%', padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
               💾 حفظ
             </button>
           </div>

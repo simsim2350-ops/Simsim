@@ -62,7 +62,7 @@ export default function NotificationsBell() {
           background: 'white', border: '1px solid #E5E7EB', borderRadius: '14px', boxShadow: '0 12px 34px rgba(0,0,0,0.14)',
           zIndex: 60, overflow: 'hidden', direction: 'rtl',
         }}>
-          <div style={{ padding: '12px 14px', borderBottom: '1px solid #F3F4F6', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '13.5px', color: '#0F1117' }}>
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid #F3F4F6', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '13.5px', color: '#0B0B0F' }}>
             الإشعارات
           </div>
           <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
@@ -72,7 +72,7 @@ export default function NotificationsBell() {
                 <div key={a.id} style={{ display: 'flex', gap: '10px', padding: '12px 14px', borderBottom: '1px solid #F3F4F6' }}>
                   <span style={{ fontSize: '16px', flexShrink: 0 }}>{meta.icon}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '700', fontSize: '13px', color: '#0F1117', marginBottom: '2px' }}>{a.title}</div>
+                    <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '700', fontSize: '13px', color: '#0B0B0F', marginBottom: '2px' }}>{a.title}</div>
                     {a.body && <div style={{ fontSize: '12px', color: '#6B7280', lineHeight: 1.6, marginBottom: '3px' }}>{a.body}</div>}
                     <div style={{ fontSize: '10.5px', color: '#9CA3AF' }}>{fmtDate(a.created_at)}</div>
                   </div>

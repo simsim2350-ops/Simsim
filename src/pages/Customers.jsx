@@ -11,8 +11,8 @@ import { exportRows, printReport, buildTable, stampName } from '../lib/exportUti
 
 function Spinner() {
   return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0F1117', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
-      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,107,53,0.3)', borderTopColor:'#FF6B35', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
+      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
       جارٍ التحميل...
     </div>
@@ -368,7 +368,7 @@ function CustomersInner() {
             ))}
           </div>
 
-          <button onClick={() => setShowMoreStats(o => !o)} style={{ width:'100%', padding:'8px', marginBottom:'14px', background:'none', border:'none', color:'#FF6B35', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12.5px', cursor:'pointer' }}>
+          <button onClick={() => setShowMoreStats(o => !o)} style={{ width:'100%', padding:'8px', marginBottom:'14px', background:'none', border:'none', color:'#FF6A00', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12.5px', cursor:'pointer' }}>
             {showMoreStats ? 'إخفاء الإحصائيات الإضافية ▲' : 'عرض المزيد من الإحصائيات ▼'}
           </button>
           {showMoreStats && (
@@ -472,7 +472,7 @@ function CustomersInner() {
                         </div>
                       </div>
                       <div style={{ textAlign:'left', flexShrink:0 }}>
-                        <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', color:'#FF6B35' }}>{c.totalSpent.toFixed(0)} ﷼</div>
+                        <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', color:'#FF6A00' }}>{c.totalSpent.toFixed(0)} ﷼</div>
                         <div style={{ fontSize:'11px', color:'#9CA3AF' }}>{c.orderCount} طلب</div>
                       </div>
                     </div>
@@ -512,7 +512,7 @@ function CustomersInner() {
                 style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', outline:'none', direction:'ltr', textAlign:'left', boxSizing:'border-box' }}
               />
               <button onClick={() => { setMinSpent(''); }} style={{ marginTop:'10px', background:'none', border:'none', color:'#9CA3AF', fontSize:'12px', fontWeight:'700', cursor:'pointer', textDecoration:'underline' }}>مسح الفلتر</button>
-              <button onClick={() => setMoreFiltersOpen(false)} style={{ width:'100%', marginTop:'18px', padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
+              <button onClick={() => setMoreFiltersOpen(false)} style={{ width:'100%', marginTop:'18px', padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
                 تطبيق
               </button>
             </div>
@@ -558,7 +558,7 @@ function CustomersInner() {
 
                 <div style={{ display:'flex', borderBottom:'1px solid #E5E7EB', padding:'0 18px', flexShrink:0, overflowX:'auto' }}>
                   {tabs.map(t => (
-                    <div key={t.key} onClick={() => setDetailTab(t.key)} style={{ padding:'10px 12px', fontSize:'12.5px', fontWeight:'700', color: detailTab === t.key ? '#FF6B35' : '#6B7280', borderBottom: detailTab === t.key ? '2.5px solid #FF6B35' : '2.5px solid transparent', cursor:'pointer', whiteSpace:'nowrap' }}>
+                    <div key={t.key} onClick={() => setDetailTab(t.key)} style={{ padding:'10px 12px', fontSize:'12.5px', fontWeight:'700', color: detailTab === t.key ? '#FF6A00' : '#6B7280', borderBottom: detailTab === t.key ? '2.5px solid #FF6A00' : '2.5px solid transparent', cursor:'pointer', whiteSpace:'nowrap' }}>
                       {t.label}
                     </div>
                   ))}
@@ -575,7 +575,7 @@ function CustomersInner() {
                           { label:'آخر طلب', val: c.lastOrderAt ? new Date(c.lastOrderAt).toLocaleDateString('ar', { day:'numeric', month:'short' }) : '—' },
                         ].map(s => (
                           <div key={s.label} style={{ background:'#F8F9FB', borderRadius:'12px', padding:'12px' }}>
-                            <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', color:'#0F1117' }}>{s.val}</div>
+                            <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', color:'#0B0B0F' }}>{s.val}</div>
                             <div style={{ fontSize:'11px', color:'#9CA3AF', fontWeight:'700', marginTop:'2px' }}>{s.label}</div>
                           </div>
                         ))}
@@ -616,7 +616,7 @@ function CustomersInner() {
                             {o.branch_id && <span style={{ fontSize:'10px', color:'#9CA3AF', marginRight:'6px' }}>· {branchName(o.branch_id)}</span>}
                             {o.status === 'cancelled' && <span style={{ fontSize:'10px', color:'#EF4444', fontWeight:'700', marginRight:'6px' }}>ملغى</span>}
                           </div>
-                          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color: o.status === 'cancelled' ? '#9CA3AF' : '#FF6B35' }}>{Number(o.total).toFixed(0)} ﷼</span>
+                          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color: o.status === 'cancelled' ? '#9CA3AF' : '#FF6A00' }}>{Number(o.total).toFixed(0)} ﷼</span>
                         </div>
                       ))}
                     </div>
@@ -627,13 +627,13 @@ function CustomersInner() {
                     const pct = threshold > 0 ? Math.min(100, (c.loyaltyBalance / threshold) * 100) : 0
                     return (
                       <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
-                        <div style={{ background:'linear-gradient(120deg,#FF6B3516,#FF6B3508)', border:'1px solid #FF6B3530', borderRadius:'14px', padding:'16px' }}>
+                        <div style={{ background:'linear-gradient(120deg,#FF6A0016,#FF6A0008)', border:'1px solid #FF6A0030', borderRadius:'14px', padding:'16px' }}>
                           <div style={{ fontSize:'12px', color:'#9CA3AF', fontWeight:'700', marginBottom:'4px' }}>رصيد النقاط</div>
-                          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'26px', color:'#FF6B35' }}>{c.loyaltyBalance}</div>
+                          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'26px', color:'#FF6A00' }}>{c.loyaltyBalance}</div>
                           {threshold > 0 && (
                             <>
                               <div style={{ height:'8px', background:'#E5E7EB', borderRadius:'100px', marginTop:'10px', overflow:'hidden' }}>
-                                <div style={{ height:'100%', width:`${pct}%`, background:'#FF6B35', borderRadius:'100px' }}/>
+                                <div style={{ height:'100%', width:`${pct}%`, background:'#FF6A00', borderRadius:'100px' }}/>
                               </div>
                               <div style={{ fontSize:'11.5px', color:'#9CA3AF', marginTop:'6px' }}>
                                 {c.loyaltyBalance >= threshold ? 'مؤهّل للمكافأة 🎉' : `باقي ${threshold - c.loyaltyBalance} نقطة على المكافأة`}
@@ -690,9 +690,9 @@ function CustomersInner() {
                             <span style={{ fontSize:'13px', fontWeight:'800', color:'#F59E0B' }}>{'⭐'.repeat(r.rating || 0)}</span>
                             <span style={{ fontSize:'11px', color:'#9CA3AF' }}>{new Date(r.created_at).toLocaleDateString('ar', { day:'numeric', month:'short' })}</span>
                           </div>
-                          {r.comment && <div style={{ fontSize:'12.5px', color:'#0F1117', lineHeight:'1.6' }}>{r.comment}</div>}
+                          {r.comment && <div style={{ fontSize:'12.5px', color:'#0B0B0F', lineHeight:'1.6' }}>{r.comment}</div>}
                           {r.reply && (
-                            <div style={{ marginTop:'8px', paddingRight:'10px', borderRight:'2px solid #FF6B3540', fontSize:'11.5px', color:'#6B7280' }}>
+                            <div style={{ marginTop:'8px', paddingRight:'10px', borderRight:'2px solid #FF6A0040', fontSize:'11.5px', color:'#6B7280' }}>
                               <b style={{ color:'#C2410C' }}>ردّ داخلي:</b> {r.reply}
                             </div>
                           )}

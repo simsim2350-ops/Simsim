@@ -43,7 +43,7 @@ export function AccordionItem({ title, desc, toggle, expandable = true, defaultO
           </span>
         )}
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontSize:'13.5px', fontWeight:'700', color:'#0F1117' }}>{title}</div>
+          <div style={{ fontSize:'13.5px', fontWeight:'700', color:'#0B0B0F' }}>{title}</div>
           {desc && <div style={{ fontSize:'11.5px', color:'#9CA3AF', marginTop:'2px', lineHeight:'1.4' }}>{desc}</div>}
         </div>
         {toggle && (

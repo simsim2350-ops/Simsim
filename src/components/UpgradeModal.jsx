@@ -36,7 +36,7 @@ export default function UpgradeModal({ feature, name, message, onClose }) {
                  boxShadow: '0 20px 60px rgba(0,0,0,0.3)', textAlign: 'center' }}
       >
         <div style={{ fontSize: 40, marginBottom: 8 }}>🔒</div>
-        <h3 style={{ margin: '0 0 8px', fontSize: 20, color: '#0F1117' }}>{name || 'ميزة غير متاحة'}</h3>
+        <h3 style={{ margin: '0 0 8px', fontSize: 20, color: '#0B0B0F' }}>{name || 'ميزة غير متاحة'}</h3>
         <p style={{ margin: '0 0 16px', color: '#555', fontSize: 15, lineHeight: 1.6 }}>
           {message || 'هذه الميزة غير متاحة في باقتك الحالية. رقِّ باقتك للاستفادة منها.'}
         </p>
@@ -49,8 +49,8 @@ export default function UpgradeModal({ feature, name, message, onClose }) {
               <div key={o.plan_id}
                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                             border: '1px solid #eee', borderRadius: 12, padding: '10px 14px' }}>
-                <span style={{ fontWeight: 600, color: '#0F1117' }}>{o.plan_name}</span>
-                <span style={{ color: '#E85A24', fontWeight: 700 }}>
+                <span style={{ fontWeight: 600, color: '#0B0B0F' }}>{o.plan_name}</span>
+                <span style={{ color: '#E05D00', fontWeight: 700 }}>
                   {o.price} ﷼ / {o.billing_cycle === 'yearly' ? 'سنة' : 'شهر'}
                 </span>
               </div>
@@ -62,7 +62,7 @@ export default function UpgradeModal({ feature, name, message, onClose }) {
 
         <button
           onClick={() => { onClose?.(); navigate('/billing') }}
-          style={{ width: '100%', background: 'linear-gradient(135deg,#FF6B35,#E85A24)', color: '#fff',
+          style={{ width: '100%', background: 'linear-gradient(135deg,#FF6A00,#E05D00)', color: '#fff',
                    border: 'none', borderRadius: 12, padding: '12px', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
         >
           الانتقال إلى الاشتراك

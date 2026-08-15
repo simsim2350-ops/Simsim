@@ -3,7 +3,7 @@ export default function EmptyOrders({ brandColor, t, onBack }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'46px 30px 40px' }}>
       <div style={{ fontSize:'64px', marginBottom:'14px' }}>🧾</div>
-      <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', margin:'0 0 8px', color:'#0F1117' }}>{t('emptyTitle')}</h3>
+      <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', margin:'0 0 8px', color:'#0B0B0F' }}>{t('emptyTitle')}</h3>
       <p style={{ fontSize:'13px', color:'#9CA3AF', lineHeight:'1.8', margin:'0 0 22px', maxWidth:'260px' }}>{t('emptySub')}</p>
       <button
         onClick={onBack}

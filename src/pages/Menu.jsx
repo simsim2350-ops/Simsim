@@ -29,15 +29,15 @@ const inputStyle = {
   width:'100%', padding:'11px 13px',
   border:'1.5px solid #E5E7EB', borderRadius:'11px',
   fontFamily:'Tajawal,sans-serif', fontSize:'14px',
-  color:'#0F1117', background:'#F8F9FB',
+  color:'#0B0B0F', background:'#F8F9FB',
   outline:'none', textAlign:'right', direction:'rtl',
   marginTop:'4px', boxSizing:'border-box',
 }
 
 function Spinner() {
   return (
-    <div style={{ height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0F1117', color:'white', flexDirection:'column', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
-      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,107,53,0.3)', borderTopColor:'#FF6B35', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+    <div style={{ height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', flexDirection:'column', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
+      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       جارٍ التحميل...
     </div>
@@ -567,7 +567,7 @@ export default function Menu() {
       actions={<>
         <button onClick={() => navigate('/dashboard')} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'600', fontSize:'12px', cursor:'pointer', color:'#374151' }}>← الرئيسية</button>
         {tab !== 'suggestions' && (
-          <button onClick={() => tab === 'categories' ? openAddCat() : openAddProd()} style={{ padding:'7px 14px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>＋ {tab === 'categories' ? 'قسم' : 'صنف'}</button>
+          <button onClick={() => tab === 'categories' ? openAddCat() : openAddProd()} style={{ padding:'7px 14px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>＋ {tab === 'categories' ? 'قسم' : 'صنف'}</button>
         )}
       </>}
     >
@@ -581,8 +581,8 @@ export default function Menu() {
           ].map(t => (
             <div key={t.key} onClick={() => t.locked ? setShowRecsUpgrade(true) : setTab(t.key)} title={t.locked ? 'غير متاح في باقتك — اضغط للترقية' : undefined} style={{
               padding:'13px 16px', fontSize:'14px', fontWeight:'700', display:'flex', alignItems:'center', gap:'5px',
-              color: t.locked ? '#B8BCC4' : (tab === t.key ? '#FF6B35' : '#6B7280'),
-              borderBottom: tab === t.key && !t.locked ? '2.5px solid #FF6B35' : '2.5px solid transparent',
+              color: t.locked ? '#B8BCC4' : (tab === t.key ? '#FF6A00' : '#6B7280'),
+              borderBottom: tab === t.key && !t.locked ? '2.5px solid #FF6A00' : '2.5px solid transparent',
               cursor:'pointer', transition:'all 0.2s', whiteSpace:'nowrap',
             }}>
               {t.label}{t.locked && <span style={{ fontSize:'12px' }}>🔒</span>}
@@ -610,7 +610,7 @@ export default function Menu() {
                   <div style={{ fontSize:'48px', opacity:0.3, marginBottom:'12px' }}>📋</div>
                   <div style={{ fontSize:'16px', fontWeight:'700', color:'#374151', marginBottom:'8px' }}>لا توجد أقسام بعد</div>
                   <div style={{ fontSize:'13px', marginBottom:'20px' }}>أضف أقسام لتنظيم منيوك</div>
-                  <button onClick={openAddCat} style={{ padding:'12px 24px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer' }}>
+                  <button onClick={openAddCat} style={{ padding:'12px 24px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer' }}>
                     ＋ إضافة أول قسم
                   </button>
                 </div>
@@ -662,7 +662,7 @@ export default function Menu() {
                   <div style={{ fontSize:'48px', opacity:0.3, marginBottom:'12px' }}>🍽️</div>
                   <div style={{ fontSize:'16px', fontWeight:'700', color:'#374151', marginBottom:'8px' }}>لا توجد أصناف بعد</div>
                   <div style={{ fontSize:'13px', marginBottom:'20px' }}>أضف أصنافاً لتملأ منيوك</div>
-                  <button onClick={openAddProd} style={{ padding:'12px 24px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer' }}>
+                  <button onClick={openAddProd} style={{ padding:'12px 24px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer' }}>
                     ＋ إضافة أول صنف
                   </button>
                 </div>
@@ -693,7 +693,7 @@ export default function Menu() {
                                       <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', marginBottom:'3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{prod.name}</div>
                                       {prod.description && <div style={{ fontSize:'12px', color:'#9CA3AF', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{prod.description}</div>}
                                       <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap' }}>
-                                        <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6B35' }}>{prod.price} ﷼</span>
+                                        <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6A00' }}>{prod.price} ﷼</span>
                                         {prod.compare_price && <span style={{ fontSize:'12px', color:'#9CA3AF', textDecoration:'line-through' }}>{prod.compare_price} ﷼</span>}
                                         {prod.calories && <span style={{ fontSize:'11px', color:'#9CA3AF' }}>{getCalorieBadge(prod.calories)} {prod.calories} كالوري</span>}
                                         {prod.is_featured && <span style={{ fontSize:'10px', background:'#FEF3C7', padding:'2px 6px', borderRadius:'100px' }}>🔥</span>}
@@ -842,7 +842,7 @@ export default function Menu() {
               <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px' }}>أيقونة القسم (تظهر إن لم توجد صورة)</label>
               <div style={{ display:'flex', gap:'7px', flexWrap:'wrap' }}>
                 {EMOJIS.map(e => (
-                  <div key={e} onClick={() => setCatForm(f=>({...f,emoji:e}))} style={{ width:'36px', height:'36px', borderRadius:'9px', border:`2px solid ${catForm.emoji===e?'#FF6B35':'#E5E7EB'}`, background: catForm.emoji===e?'#FFF0EB':'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', cursor:'pointer', transition:'all 0.15s' }}>
+                  <div key={e} onClick={() => setCatForm(f=>({...f,emoji:e}))} style={{ width:'36px', height:'36px', borderRadius:'9px', border:`2px solid ${catForm.emoji===e?'#FF6A00':'#E5E7EB'}`, background: catForm.emoji===e?'#FFF0EB':'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', cursor:'pointer', transition:'all 0.15s' }}>
                     {e}
                   </div>
                 ))}
@@ -860,13 +860,13 @@ export default function Menu() {
             </div>
 
             <label style={{ display:'flex', alignItems:'center', gap:'10px', cursor:'pointer', marginBottom:'20px' }}>
-              <input type="checkbox" checked={catForm.is_visible} onChange={e => setCatForm(f=>({...f,is_visible:e.target.checked}))} style={{ width:'18px', height:'18px', accentColor:'#FF6B35' }}/>
+              <input type="checkbox" checked={catForm.is_visible} onChange={e => setCatForm(f=>({...f,is_visible:e.target.checked}))} style={{ width:'18px', height:'18px', accentColor:'#FF6A00' }}/>
               <span style={{ fontSize:'14px', fontWeight:'600' }}>إظهار القسم في المنيو</span>
             </label>
 
             <div style={{ display:'flex', gap:'10px' }}>
               <button onClick={() => setCatModal(false)} style={{ flex:1, padding:'13px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'600', fontSize:'14px', cursor:'pointer', color:'#6B7280' }}>إلغاء</button>
-              <button onClick={saveCat} style={{ flex:2, padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
+              <button onClick={saveCat} style={{ flex:2, padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
                 💾 {editingCat ? 'تحديث القسم' : 'إضافة القسم'}
               </button>
             </div>
@@ -905,7 +905,7 @@ export default function Menu() {
               <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px' }}>أيقونة الصنف (تظهر إن لم توجد صورة)</label>
               <div style={{ display:'flex', gap:'7px', flexWrap:'wrap' }}>
                 {EMOJIS.map(e => (
-                  <div key={e} onClick={() => setProdForm(f=>({...f,emoji:e}))} style={{ width:'36px', height:'36px', borderRadius:'9px', border:`2px solid ${prodForm.emoji===e?'#FF6B35':'#E5E7EB'}`, background: prodForm.emoji===e?'#FFF0EB':'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', cursor:'pointer', transition:'all 0.15s' }}>
+                  <div key={e} onClick={() => setProdForm(f=>({...f,emoji:e}))} style={{ width:'36px', height:'36px', borderRadius:'9px', border:`2px solid ${prodForm.emoji===e?'#FF6A00':'#E5E7EB'}`, background: prodForm.emoji===e?'#FFF0EB':'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', cursor:'pointer', transition:'all 0.15s' }}>
                     {e}
                   </div>
                 ))}
@@ -960,11 +960,11 @@ export default function Menu() {
 
             <div style={{ display:'flex', gap:'20px', marginBottom:'20px' }}>
               <label style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
-                <input type="checkbox" checked={prodForm.is_available} onChange={e => setProdForm(f=>({...f,is_available:e.target.checked}))} style={{ width:'17px', height:'17px', accentColor:'#FF6B35' }}/>
+                <input type="checkbox" checked={prodForm.is_available} onChange={e => setProdForm(f=>({...f,is_available:e.target.checked}))} style={{ width:'17px', height:'17px', accentColor:'#FF6A00' }}/>
                 <span style={{ fontSize:'13px', fontWeight:'600' }}>✅ متاح للطلب</span>
               </label>
               <label style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
-                <input type="checkbox" checked={prodForm.is_featured} onChange={e => setProdForm(f=>({...f,is_featured:e.target.checked}))} style={{ width:'17px', height:'17px', accentColor:'#FF6B35' }}/>
+                <input type="checkbox" checked={prodForm.is_featured} onChange={e => setProdForm(f=>({...f,is_featured:e.target.checked}))} style={{ width:'17px', height:'17px', accentColor:'#FF6A00' }}/>
                 <span style={{ fontSize:'13px', fontWeight:'600' }}>🔥 الأكثر طلباً</span>
               </label>
             </div>
@@ -973,7 +973,7 @@ export default function Menu() {
             <div style={{ marginBottom:'20px', border:'1.5px solid #E5E7EB', borderRadius:'14px', overflow:'hidden' }}>
               <div style={{ padding:'12px 14px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                 <span style={{ fontSize:'13px', fontWeight:'800' }}>🧩 خيارات الصنف (الحجم، الإضافات...)</span>
-                <button type="button" onClick={addOptionGroup} style={{ padding:'5px 10px', borderRadius:'8px', border:'1.5px solid #FF6B35', background:'white', color:'#FF6B35', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer' }}>
+                <button type="button" onClick={addOptionGroup} style={{ padding:'5px 10px', borderRadius:'8px', border:'1.5px solid #FF6A00', background:'white', color:'#FF6A00', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer' }}>
                   ＋ مجموعة
                 </button>
               </div>
@@ -1003,7 +1003,7 @@ export default function Menu() {
                             name={`group-type-${gi}`}
                             checked={group.type !== 'multiple'}
                             onChange={() => updateOptionGroup(gi, 'type', 'single')}
-                            style={{ accentColor:'#FF6B35' }}
+                            style={{ accentColor:'#FF6A00' }}
                           />
                           اختيار واحد
                         </label>
@@ -1013,7 +1013,7 @@ export default function Menu() {
                             name={`group-type-${gi}`}
                             checked={group.type === 'multiple'}
                             onChange={() => updateOptionGroup(gi, 'type', 'multiple')}
-                            style={{ accentColor:'#FF6B35' }}
+                            style={{ accentColor:'#FF6A00' }}
                           />
                           اختيار متعدد
                         </label>
@@ -1022,7 +1022,7 @@ export default function Menu() {
                             type="checkbox"
                             checked={!!group.required}
                             onChange={e => updateOptionGroup(gi, 'required', e.target.checked)}
-                            style={{ accentColor:'#FF6B35' }}
+                            style={{ accentColor:'#FF6A00' }}
                           />
                           إجباري
                         </label>
@@ -1106,7 +1106,7 @@ export default function Menu() {
 
             <div style={{ display:'flex', gap:'10px' }}>
               <button onClick={() => setProdModal(false)} style={{ flex:1, padding:'13px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'600', fontSize:'14px', cursor:'pointer', color:'#6B7280' }}>إلغاء</button>
-              <button onClick={saveProd} style={{ flex:2, padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
+              <button onClick={saveProd} style={{ flex:2, padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
                 💾 {editingProd ? 'تحديث الصنف' : 'إضافة الصنف'}
               </button>
             </div>

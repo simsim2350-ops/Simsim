@@ -55,7 +55,7 @@ export default function ResetPassword() {
       <div style={styles.card}>
         <div style={styles.logoWrap}>
           <div style={styles.logoMark}>S</div>
-          <span style={styles.logoText}>SIM<span style={{ color: '#FF6B35' }}>SIM</span></span>
+          <span style={styles.logoText}>SIM<span style={{ color: '#FF6A00' }}>SIM</span></span>
         </div>
 
         {done ? (
@@ -129,7 +129,7 @@ const styles = {
   container: {
     minHeight: '100vh',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: 'linear-gradient(135deg, #0F1117, #1a1a2e)',
+    background: 'linear-gradient(135deg, #0B0B0F, #1a1a2e)',
     padding: '24px', direction: 'rtl',
   },
   card: {
@@ -143,15 +143,15 @@ const styles = {
   },
   logoMark: {
     width: '36px', height: '36px',
-    background: 'linear-gradient(135deg, #FF6B35, #E85A24)',
+    background: 'linear-gradient(135deg, #FF6A00, #E05D00)',
     borderRadius: '10px',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontFamily: 'Cairo, sans-serif', fontWeight: '900', fontSize: '15px', color: 'white',
   },
-  logoText: { fontFamily: 'Cairo, sans-serif', fontWeight: '900', fontSize: '20px', color: '#0F1117' },
+  logoText: { fontFamily: 'Cairo, sans-serif', fontWeight: '900', fontSize: '20px', color: '#0B0B0F' },
   title: {
     fontFamily: 'Cairo, sans-serif', fontWeight: '900',
-    fontSize: '24px', color: '#0F1117',
+    fontSize: '24px', color: '#0B0B0F',
     textAlign: 'center', marginBottom: '8px',
   },
   sub: {
@@ -161,21 +161,21 @@ const styles = {
   formGroup: { marginBottom: '16px' },
   label: {
     display: 'block', fontSize: '13px', fontWeight: '700',
-    color: '#0F1117', marginBottom: '7px',
+    color: '#0B0B0F', marginBottom: '7px',
   },
   input: {
     width: '100%', padding: '13px 14px',
     border: '1.5px solid #E5E7EB', borderRadius: '12px',
     fontFamily: 'Tajawal, sans-serif', fontSize: '14px',
-    color: '#0F1117', background: '#F8F9FB',
+    color: '#0B0B0F', background: '#F8F9FB',
     outline: 'none', textAlign: 'right', direction: 'rtl',
   },
   btn: {
     width: '100%', padding: '14px',
     borderRadius: '12px', border: 'none',
-    background: 'linear-gradient(135deg, #FF6B35, #E85A24)',
+    background: 'linear-gradient(135deg, #FF6A00, #E05D00)',
     color: 'white',
     fontFamily: 'Cairo, sans-serif', fontWeight: '800', fontSize: '15px',
-    cursor: 'pointer', boxShadow: '0 6px 20px rgba(255,107,53,0.35)',
+    cursor: 'pointer', boxShadow: '0 6px 20px rgba(255,106,0,0.35)',
   },
 }

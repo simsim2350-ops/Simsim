@@ -21,7 +21,7 @@ export default function ConfirmDialog({
           >{cancelLabel}</button>
           <button
             onClick={onConfirm}
-            style={{ flex:1, padding:'12px', borderRadius:'12px', border:'none', background: danger ? '#E11D48' : '#FF6B35', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer' }}
+            style={{ flex:1, padding:'12px', borderRadius:'12px', border:'none', background: danger ? '#E11D48' : '#FF6A00', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer' }}
           >{confirmLabel}</button>
         </div>
       </div>

@@ -203,7 +203,7 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
               value={note}
               onChange={e => setNote(e.target.value)}
               rows={2}
-              style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'#F8F9FB', outline:'none', textAlign:'right', direction:'rtl', resize:'none' }}
+              style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'#F8F9FB', outline:'none', textAlign:'right', direction:'rtl', resize:'none' }}
             />
           </div>
 

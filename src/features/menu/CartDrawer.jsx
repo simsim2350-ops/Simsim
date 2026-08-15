@@ -184,7 +184,7 @@ export default function CartDrawer({
               placeholder={t('namePh2')}
               value={customerName}
               onChange={e => setCustomerName(e.target.value)}
-              style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', marginBottom:'10px' }}
+              style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'white', outline:'none', textAlign:'right', marginBottom:'10px' }}
             />
             <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>{t('phoneReq')} *</label>
             <div style={{ display:'flex', alignItems:'center', gap:'8px', direction:'ltr' }}>
@@ -202,7 +202,7 @@ export default function CartDrawer({
                   if (digits && digits[0] !== '5') return // الجوال السعودي يبدأ دائماً بـ5
                   setCustomerPhone(digits)
                 }}
-                style={{ flex:1, minWidth:0, padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right' }}
+                style={{ flex:1, minWidth:0, padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'white', outline:'none', textAlign:'right' }}
               />
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function CartDrawer({
                   placeholder={t('tablePh')}
                   value={tableNumber}
                   onChange={e => setTableNumber(e.target.value)}
-                  style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right' }}
+                  style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'white', outline:'none', textAlign:'right' }}
                 />
               )}
             </div>
@@ -234,7 +234,7 @@ export default function CartDrawer({
                 placeholder={t('addrPh2')}
                 value={deliveryAddress}
                 onChange={e => setDeliveryAddress(e.target.value)}
-                style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', minHeight:'72px', resize:'vertical' }}
+                style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'white', outline:'none', textAlign:'right', minHeight:'72px', resize:'vertical' }}
               />
             </div>
           )}
@@ -247,7 +247,7 @@ export default function CartDrawer({
               value={orderNote}
               onChange={e => setOrderNote(e.target.value)}
               maxLength={200}
-              style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', minHeight:'60px', resize:'vertical' }}
+              style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'white', outline:'none', textAlign:'right', minHeight:'60px', resize:'vertical' }}
             />
           </div>
 
@@ -267,7 +267,7 @@ export default function CartDrawer({
                     value={couponInput}
                     onChange={e => setCouponInput(e.target.value.toUpperCase())}
                     placeholder={isEn ? 'Enter code' : 'أدخل الكود'}
-                    style={{ flex:1, padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', direction:'ltr' }}
+                    style={{ flex:1, padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'white', outline:'none', textAlign:'right', direction:'ltr' }}
                   />
                   <button
                     type="button"

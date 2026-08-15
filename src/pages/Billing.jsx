@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 
 // صفحة اشتراك المطعم وفواتيره (قراءة فقط) — M4.2.
 // تقرأ صفوف المطعم عبر RLS (سياسات المالك)، والإدارة تبقى لدى المشرف.
-const ORANGE = '#FF6B35', BORDER = '#E5E7EB', MUTED = '#6B7280', TEXT = '#111827'
+const ORANGE = '#FF6A00', BORDER = '#E5E7EB', MUTED = '#6B7280', TEXT = '#111827'
 const num = (v) => Number(v) || 0
 const fmt = (v) => num(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const fmtDate = (v) => v ? new Date(v).toLocaleDateString('ar-SA', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
