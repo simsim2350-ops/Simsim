@@ -1,17 +1,17 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800&family=Tajawal:wght@300;400;500;700;800;900&display=swap');
 
 :root {
-  --primary: #FF6B35;
-  --primary-dark: #E85A24;
+  --primary: #FF6A00;
+  --primary-dark: #E05D00;
   --primary-light: #FFF0EB;
-  --primary-glow: rgba(255, 107, 53, 0.15);
-  --sidebar-bg: #0F1117;
+  --primary-glow: rgba(255, 106, 0, 0.15);
+  --sidebar-bg: #0B0B0F;
   --surface: #FFFFFF;
-  --surface-2: #F8F9FB;
-  --text: #0F1117;
-  --text-muted: #6B7280;
-  --border: #E5E7EB;
+  --surface-2: #F5F5F8;
+  --text: #0B0B0F;
+  --text-muted: #6B6F76;
+  --border: #E6E9EE;
   --success: #10B981;
   --error: #EF4444;
   --radius: 14px;
@@ -29,7 +29,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1,h2,h3,h4,h5 { font-family: 'Cairo', sans-serif; font-weight: 800; }
+h1,h2,h3,h4,h5 { font-family: 'Tajawal', sans-serif; font-weight: 800; }
 button { cursor: pointer; font-family: inherit; }
 input, textarea, select { font-family: 'Tajawal', sans-serif; direction: rtl; }
 a { text-decoration: none; color: inherit; }

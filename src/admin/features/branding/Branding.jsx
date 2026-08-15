@@ -8,7 +8,7 @@ import { getPlatformBranding, savePlatformBranding } from '../../../lib/branding
 // 🎨 هوية المنيو (Menu Branding) — تحكّم منصّي مركزي بعبارة «صمم بواسطة سمسم».
 // المصدر الوحيد: جدول platform_branding (RLS: سوبر أدمن فقط). مع Preview حيّ.
 // ============================================================================
-const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED', GREEN = '#22C55E'
+const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#FF6A00', GREEN = '#22C55E'
 const inputStyle = { background: '#0B0D12', border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '10px 12px', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '13px', outline: 'none', width: '100%', boxSizing: 'border-box' }
 const PLACEMENTS = [{ v: 'bottom', l: 'أسفل المنيو' }, { v: 'footer', l: 'التذييل (Footer)' }]
 const VARIANTS = [{ v: 'text', l: 'نص فقط' }, { v: 'text_logo', l: 'نص + شعار' }, { v: 'logo', l: 'شعار فقط' }]
@@ -87,17 +87,17 @@ export default function Branding() {
               <Field label="الشكل"><select value={form.variant} onChange={set('variant')} style={inputStyle}>{VARIANTS.map((v) => <option key={v.v} value={v.v}>{v.l}</option>)}</select></Field>
             </div>
 
-            <button onClick={save} disabled={saving} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '13px', color: 'white', background: ACCENT, opacity: saving ? 0.7 : 1, marginTop: '4px' }}>
+            <button onClick={save} disabled={saving} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '13px', color: 'white', background: ACCENT, opacity: saving ? 0.7 : 1, marginTop: '4px' }}>
               {saving ? 'جارٍ الحفظ…' : '💾 حفظ'}
             </button>
           </div>
 
           {/* المعاينة الحيّة */}
           <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '18px' }}>
-            <div style={{ fontSize: '12.5px', color: 'white', fontWeight: '800', marginBottom: '4px', fontFamily: 'Cairo,sans-serif' }}>👁️ معاينة</div>
+            <div style={{ fontSize: '12.5px', color: 'white', fontWeight: '800', marginBottom: '4px', fontFamily: 'Tajawal,sans-serif' }}>👁️ معاينة</div>
             <div style={{ fontSize: '11px', color: MUTED, marginBottom: '12px' }}>هكذا ستظهر أسفل منيو الزبون{form.enabled ? '' : ' (مخفية حالياً — المعاينة توضح الشكل فقط)'}.</div>
             <div style={{ background: 'white', borderRadius: '14px', overflow: 'hidden', border: `1px solid ${BORDER}` }}>
-              <div style={{ height: '10px', background: 'linear-gradient(135deg,#FF6B35,#E85A24)' }} />
+              <div style={{ height: '10px', background: 'linear-gradient(135deg,#FF6A00,#E05D00)' }} />
               <div style={{ padding: '6px 0' }}>
                 {/* نعرض دائماً بالمعاينة (show:true) ليرى المشرف الشكل حتى لو الإظهار مُطفأ */}
                 <MenuBranding branding={{ show: true, text: form.text, url: form.url, variant: form.variant, placement: form.placement }} />

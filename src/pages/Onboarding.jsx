@@ -149,7 +149,7 @@ export default function Onboarding() {
       const { data: taken } = await supabase.from('restaurants').select('id').eq('slug', slug).maybeSingle()
       if (taken) { toast.error('الرابط مستخدم، عدّله'); setSaving(false); return }
       const { data, error } = await supabase.from('restaurants').insert({
-        owner_id: user.id, name: cForm.name.trim(), slug, type:'restaurant', brand_color:'#FF6B35', is_active:true, onboarding_step:'info',
+        owner_id: user.id, name: cForm.name.trim(), slug, type:'restaurant', brand_color:'#FF6A00', is_active:true, onboarding_step:'info',
       }).select().single()
       if (error) throw error
       await fetchRestaurant(user.id)
@@ -292,7 +292,7 @@ export default function Onboarding() {
   const menuURL = rest ? `${window.location.origin}/menu/${rest.slug}` : ''
   useEffect(() => {
     if (stage === 'share' && qrRef.current && menuURL) {
-      QRCode.toCanvas(qrRef.current, menuURL, { width: 190, margin: 2, color:{ dark:'#0F1117', light:'#FFFFFF' }, errorCorrectionLevel:'H' }).catch(() => {})
+      QRCode.toCanvas(qrRef.current, menuURL, { width: 190, margin: 2, color:{ dark:'#0B0B0F', light:'#FFFFFF' }, errorCorrectionLevel:'H' }).catch(() => {})
     }
   }, [stage, menuURL])
 
@@ -309,10 +309,10 @@ export default function Onboarding() {
   const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(`تفضل منيونا الرقمي 👇\n${menuURL}`)}`, '_blank')
 
   // ===== أنماط =====
-  const bg = { minHeight:'100vh', background:'linear-gradient(135deg,#0F1117,#1a1a2e)', display:'flex', alignItems:'flex-start', justifyContent:'center', padding: isMobile ? '18px 12px' : '40px', direction:'rtl' }
+  const bg = { minHeight:'100vh', background:'linear-gradient(135deg,#0B0B0F,#1a1a2e)', display:'flex', alignItems:'flex-start', justifyContent:'center', padding: isMobile ? '18px 12px' : '40px', direction:'rtl' }
   const card = { width:'100%', maxWidth:'560px', background:'white', borderRadius:'20px', padding: isMobile ? '20px' : '30px', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }
-  const primaryBtn = { flex:1, padding:'14px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer' }
-  const ghostBtn = { padding:'14px 18px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer', color:'#374151' }
+  const primaryBtn = { flex:1, padding:'14px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer' }
+  const ghostBtn = { padding:'14px 18px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer', color:'#374151' }
   const inputStyle = { width:'100%', padding:'12px 14px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', outline:'none', textAlign:'right', boxSizing:'border-box' }
   const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }
   const skipLink = { width:'100%', marginTop:'10px', background:'none', border:'none', color:'#9CA3AF', fontFamily:'Tajawal,sans-serif', fontSize:'13px', cursor:'pointer' }
@@ -322,11 +322,11 @@ export default function Onboarding() {
   const Progress = () => stepIndex < 0 ? null : (
     <div style={{ margin:'12px 0 18px' }}>
       <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'#9CA3AF', marginBottom:'7px' }}>
-        <span style={{ fontWeight:'800', color:'#FF6B35' }}>{STEPS[stepIndex].label}</span>
+        <span style={{ fontWeight:'800', color:'#FF6A00' }}>{STEPS[stepIndex].label}</span>
         <span>الخطوة {stepIndex + 1} من {STEPS.length}</span>
       </div>
       <div style={{ height:'6px', borderRadius:'100px', background:'#F0F2F5', overflow:'hidden' }}>
-        <div style={{ height:'100%', width:`${((stepIndex + 1) / STEPS.length) * 100}%`, background:'linear-gradient(90deg,#FF6B35,#E85A24)', borderRadius:'100px', transition:'width 0.3s' }}/>
+        <div style={{ height:'100%', width:`${((stepIndex + 1) / STEPS.length) * 100}%`, background:'linear-gradient(90deg,#FF6A00,#E05D00)', borderRadius:'100px', transition:'width 0.3s' }}/>
       </div>
     </div>
   )
@@ -334,7 +334,7 @@ export default function Onboarding() {
   if (stage === 'loading') {
     return (
       <div style={{ ...bg, alignItems:'center' }}>
-        <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,107,53,0.3)', borderTopColor:'#FF6B35', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+        <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     )
@@ -344,8 +344,8 @@ export default function Onboarding() {
     <div style={bg}>
       <div style={card}>
         <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'6px' }}>
-          <div style={{ width:'32px', height:'32px', background:'linear-gradient(135deg,#FF6B35,#E85A24)', borderRadius:'9px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cairo,sans-serif', fontWeight:'900', color:'white', fontSize:'14px' }}>S</div>
-          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px' }}>SIM<span style={{ color:'#FF6B35' }}>SIM</span></span>
+          <img src="/simsim-s.svg" alt="" style={{ height:'28px', width:'auto', display:'block' }} />
+          <span style={{ fontFamily:'Poppins,sans-serif', fontWeight:'700', fontSize:'18px' }}>sim<span style={{ color:'#FF6A00' }}>sim</span></span>
         </div>
 
         <Progress />
@@ -354,7 +354,7 @@ export default function Onboarding() {
         {stage === 'welcome' && (
           <div style={{ textAlign:'center', padding:'14px 4px 6px' }}>
             <div style={{ fontSize:'60px', marginBottom:'10px' }}>👋</div>
-            <h2 style={{ fontSize:'23px', fontWeight:'900', marginBottom:'8px', fontFamily:'Cairo,sans-serif' }}>أهلاً بك في SIMSIM 🎉</h2>
+            <h2 style={{ fontSize:'23px', fontWeight:'900', marginBottom:'8px', fontFamily:'Tajawal,sans-serif' }}>أهلاً بك في SIMSIM 🎉</h2>
             <p style={{ fontSize:'14px', color:'#6B7280', lineHeight:'1.8', marginBottom:'22px' }}>
               خلّينا نجهّز مطعمك خطوة بخطوة: نضيف منيوك، نعاينه، ونعطيك رابطاً وQR جاهزين للمشاركة — بدقائق.
             </p>
@@ -365,12 +365,12 @@ export default function Onboarding() {
         {/* إنشاء مطعم (احتياطي) */}
         {stage === 'create' && (
           <>
-            <h2 style={{ fontSize:'22px', fontWeight:'900', margin:'6px 0 4px', fontFamily:'Cairo,sans-serif' }}>لنُنشئ مطعمك 🏪</h2>
+            <h2 style={{ fontSize:'22px', fontWeight:'900', margin:'6px 0 4px', fontFamily:'Tajawal,sans-serif' }}>لنُنشئ مطعمك 🏪</h2>
             <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'20px' }}>معلومة واحدة وننطلق</p>
             <label style={labelStyle}>اسم المطعم</label>
             <input style={inputStyle} placeholder="مطعم البيت" value={cForm.name}
               onChange={e => setCForm(f => ({ ...f, name:e.target.value, slug: f.slugEdited ? f.slug : slugify(e.target.value) }))} />
-            <div style={{ fontSize:'12px', color:'#9CA3AF', margin:'7px 0 18px', direction:'ltr' }}>🔗 {window.location.host}/menu/<b style={{ color:'#FF6B35' }}>{cForm.slug || slugify(cForm.name) || 'your-menu'}</b></div>
+            <div style={{ fontSize:'12px', color:'#9CA3AF', margin:'7px 0 18px', direction:'ltr' }}>🔗 {window.location.host}/menu/<b style={{ color:'#FF6A00' }}>{cForm.slug || slugify(cForm.name) || 'your-menu'}</b></div>
             <button onClick={createRestaurant} disabled={saving} style={{ ...primaryBtn, width:'100%', opacity: saving?0.7:1 }}>{saving ? 'جارٍ الإنشاء...' : 'التالي ←'}</button>
           </>
         )}
@@ -378,7 +378,7 @@ export default function Onboarding() {
         {/* معلومات المطعم (اختيارية) */}
         {stage === 'info' && (
           <>
-            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Cairo,sans-serif' }}>عرّف بمطعمك ✨</h2>
+            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>عرّف بمطعمك ✨</h2>
             <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'18px' }}>معلومات تظهر للزبون في منيوك. كلها اختيارية — تقدر تكمّلها لاحقاً.</p>
 
             <div style={{ marginBottom:'14px' }}>
@@ -405,13 +405,13 @@ export default function Onboarding() {
         {/* اختيار النوع */}
         {stage === 'type' && (
           <>
-            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Cairo,sans-serif' }}>شنو نوع نشاطك؟ 🏪</h2>
+            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>شنو نوع نشاطك؟ 🏪</h2>
             <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'18px' }}>حنجهّز لك أقساماً وأصنافاً مناسبة حسب اختيارك.</p>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'11px' }}>
               {TYPES.map(t => (
                 <div key={t.key} onClick={() => !saving && chooseType(t.key)} style={{ padding:'18px 14px', borderRadius:'15px', border:'2px solid #E5E7EB', cursor: saving?'default':'pointer', textAlign:'center', opacity: saving?0.6:1, background:'white' }}>
                   <div style={{ fontSize:'34px', marginBottom:'8px' }}>{t.emoji}</div>
-                  <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', marginBottom:'3px' }}>{t.label}</div>
+                  <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'15px', marginBottom:'3px' }}>{t.label}</div>
                   <div style={{ fontSize:'11px', color:'#9CA3AF' }}>{t.desc}</div>
                 </div>
               ))}
@@ -423,7 +423,7 @@ export default function Onboarding() {
         {/* اختيار الأقسام — نمط النموذج: قوالب تُضاف لقائمة كروت */}
         {stage === 'categories' && (
           <>
-            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Cairo,sans-serif' }}>أقسام منيوك 📋</h2>
+            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>أقسام منيوك 📋</h2>
             <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'16px' }}>أضف الأقسام الرئيسية لمنيوك. يمكنك تعديلها لاحقاً في أي وقت.</p>
 
             {/* قوالب جاهزة */}
@@ -455,7 +455,7 @@ export default function Onboarding() {
                   style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', borderRadius:'14px', border:'1.5px solid #E5E7EB', background:'#F8F9FB' }}>
                   <div style={{ display:'flex', flexDirection:'column', color:'#C4C7CE', cursor:'grab', lineHeight:'0.6', fontSize:'15px' }}>⋮⋮</div>
                   <div style={{ width:'40px', height:'40px', borderRadius:'11px', background:'white', border:'1px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', flexShrink:0 }}>{c.emoji}</div>
-                  <div style={{ flex:1, fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px' }}>{c.name}</div>
+                  <div style={{ flex:1, fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px' }}>{c.name}</div>
                   {/* أسهم ترتيب (بديل موثوق للسحب على الجوال) */}
                   <button onClick={() => move(i, -1)} disabled={i===0} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'15px', color: i===0?'#E5E7EB':'#9CA3AF', padding:'2px' }}>▲</button>
                   <button onClick={() => move(i, 1)} disabled={i===cats.length-1} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'15px', color: i===cats.length-1?'#E5E7EB':'#9CA3AF', padding:'2px' }}>▼</button>
@@ -472,7 +472,7 @@ export default function Onboarding() {
                 <button onClick={addCustomCat} style={{ ...primaryBtn, flex:'none', padding:'0 18px' }}>إضافة</button>
               </div>
             ) : (
-              <button onClick={() => setShowCustom(true)} style={{ width:'100%', padding:'13px', borderRadius:'13px', border:'2px dashed #D1D5DB', background:'white', color:'#6B7280', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer', marginBottom:'12px' }}>
+              <button onClick={() => setShowCustom(true)} style={{ width:'100%', padding:'13px', borderRadius:'13px', border:'2px dashed #D1D5DB', background:'white', color:'#6B7280', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer', marginBottom:'12px' }}>
                 ＋ إضافة قسم جديد
               </button>
             )}
@@ -490,7 +490,7 @@ export default function Onboarding() {
         {/* اختيار الأصناف */}
         {stage === 'items' && (
           <>
-            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Cairo,sans-serif' }}>اختر أصنافك 🍽️</h2>
+            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>اختر أصنافك 🍽️</h2>
             <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'16px' }}>الأصناف والأسعار مقترحة — عدّلها لاحقاً من صفحة الأصناف.</p>
 
             <div style={{ maxHeight: isMobile ? '46vh' : '50vh', overflowY:'auto', marginBottom:'16px', paddingLeft:'4px' }}>
@@ -502,8 +502,8 @@ export default function Onboarding() {
                       const key = `${c.key}::${it.name}`
                       const on = selectedItems.has(key)
                       return (
-                        <div key={key} onClick={() => toggleItem(key)} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', borderRadius:'12px', border:`1.5px solid ${on ? '#FF6B35' : '#E5E7EB'}`, background: on ? 'rgba(255,107,53,0.06)' : 'white', cursor:'pointer' }}>
-                          <span style={{ width:'20px', height:'20px', borderRadius:'6px', border:`1.5px solid ${on ? '#FF6B35' : '#D1D5DB'}`, background: on ? '#FF6B35' : 'white', color:'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', flexShrink:0 }}>{on ? '✓' : ''}</span>
+                        <div key={key} onClick={() => toggleItem(key)} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', borderRadius:'12px', border:`1.5px solid ${on ? '#FF6A00' : '#E5E7EB'}`, background: on ? 'rgba(255,106,0,0.06)' : 'white', cursor:'pointer' }}>
+                          <span style={{ width:'20px', height:'20px', borderRadius:'6px', border:`1.5px solid ${on ? '#FF6A00' : '#D1D5DB'}`, background: on ? '#FF6A00' : 'white', color:'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', flexShrink:0 }}>{on ? '✓' : ''}</span>
                           <span style={{ fontSize:'18px' }}>{it.emoji}</span>
                           <span style={{ flex:1, fontSize:'13px', fontWeight:'700' }}>{it.name}</span>
                           <span style={{ fontSize:'13px', fontWeight:'800', color:'#6B7280', direction:'ltr' }}>{it.price} ﷼</span>
@@ -525,11 +525,11 @@ export default function Onboarding() {
         {/* معاينة المنيو الحقيقي داخل إطار جوال */}
         {stage === 'preview' && (
           <>
-            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Cairo,sans-serif' }}>هذا شكل منيوك 👀</h2>
+            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>هذا شكل منيوك 👀</h2>
             <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'16px' }}>هكذا سيراه زبونك على جواله. تقدر تعدّله لاحقاً من صفحة المنيو.</p>
 
             <div style={{ display:'flex', justifyContent:'center', marginBottom:'18px' }}>
-              <div style={{ width:'280px', height:'520px', borderRadius:'34px', border:'9px solid #0F1117', overflow:'hidden', boxShadow:'0 18px 50px rgba(0,0,0,0.28)', background:'white' }}>
+              <div style={{ width:'280px', height:'520px', borderRadius:'34px', border:'9px solid #0B0B0F', overflow:'hidden', boxShadow:'0 18px 50px rgba(0,0,0,0.28)', background:'white' }}>
                 <iframe title="معاينة المنيو" src={menuURL} style={{ width:'100%', height:'100%', border:'none' }} />
               </div>
             </div>
@@ -544,7 +544,7 @@ export default function Onboarding() {
         {/* الرابط + QR */}
         {stage === 'share' && (
           <>
-            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Cairo,sans-serif' }}>رابط منيوك جاهز 🔗</h2>
+            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>رابط منيوك جاهز 🔗</h2>
             <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'16px' }}>شارك الرابط أو اطبع رمز QR ليصل زبونك لمنيوك بمسحة واحدة.</p>
 
             <div style={{ display:'flex', justifyContent:'center', marginBottom:'16px' }}>
@@ -555,7 +555,7 @@ export default function Onboarding() {
 
             <div style={{ display:'flex', gap:'8px', marginBottom:'12px' }}>
               <input readOnly value={menuURL} style={{ flex:1, padding:'11px 12px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'12px', color:'#6B7280', background:'#F8F9FB', outline:'none', direction:'ltr', textAlign:'left' }} />
-              <button onClick={copyURL} style={{ padding:'11px 16px', borderRadius:'11px', border:'none', background:'#FF6B35', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}>نسخ</button>
+              <button onClick={copyURL} style={{ padding:'11px 16px', borderRadius:'11px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}>نسخ</button>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'18px' }}>
               <button onClick={shareWhatsApp} style={{ ...ghostBtn, display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>💬 واتساب</button>
@@ -570,7 +570,7 @@ export default function Onboarding() {
         {stage === 'done' && (
           <div style={{ textAlign:'center', padding:'18px 6px 8px' }}>
             <div style={{ fontSize:'64px', marginBottom:'10px' }}>🎉</div>
-            <h2 style={{ fontSize:'24px', fontWeight:'900', marginBottom:'8px', fontFamily:'Cairo,sans-serif' }}>مطعمك أصبح جاهزاً!</h2>
+            <h2 style={{ fontSize:'24px', fontWeight:'900', marginBottom:'8px', fontFamily:'Tajawal,sans-serif' }}>مطعمك أصبح جاهزاً!</h2>
             <p style={{ fontSize:'14px', color:'#6B7280', lineHeight:'1.8', marginBottom:'22px' }}>
               منيو <b>{rest?.name}</b> منشور الآن ومتاح لزبائنك عبر الرابط وQR. تقدر تديره بالكامل من لوحة التحكم.
             </p>

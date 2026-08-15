@@ -85,7 +85,7 @@ export default function StaffLogin() {
     )
   }
 
-  const brand = restaurant?.brand_color || '#FF6B35'
+  const brand = restaurant?.brand_color || '#FF6A00'
 
   return (
     <div style={s.wrap}>
@@ -127,14 +127,14 @@ export default function StaffLogin() {
 }
 
 const s = {
-  wrap: { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0F1117', padding:'20px', direction:'rtl', fontFamily:'Tajawal,sans-serif' },
+  wrap: { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0B0B0F', padding:'20px', direction:'rtl', fontFamily:'Tajawal,sans-serif' },
   card: { background:'white', borderRadius:'22px', padding:'32px 26px', width:'100%', maxWidth:'400px', textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,0.4)' },
   logo: { width:'72px', height:'72px', borderRadius:'18px', margin:'0 auto 16px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'34px', overflow:'hidden', boxShadow:'0 8px 24px rgba(0,0,0,0.2)' },
-  eyebrow: { fontSize:'12px', fontWeight:'700', color:'#FF6B35', letterSpacing:'1px', marginBottom:'6px' },
-  title: { fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'22px', color:'#0F1117', marginBottom:'4px' },
+  eyebrow: { fontSize:'12px', fontWeight:'700', color:'#FF6A00', letterSpacing:'1px', marginBottom:'6px' },
+  title: { fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'22px', color:'#0B0B0F', marginBottom:'4px' },
   sub: { fontSize:'14px', color:'#6B7280' },
   group: { marginBottom:'16px', textAlign:'right' },
-  label: { display:'block', fontSize:'13px', fontWeight:'700', color:'#0F1117', marginBottom:'8px' },
+  label: { display:'block', fontSize:'13px', fontWeight:'700', color:'#0B0B0F', marginBottom:'8px' },
   input: { width:'100%', padding:'13px 16px', border:'1.5px solid #E5E7EB', borderRadius:'12px', fontFamily:'Tajawal,sans-serif', fontSize:'15px', background:'#F8F9FB', outline:'none', boxSizing:'border-box' },
-  btn: { width:'100%', padding:'15px', borderRadius:'13px', border:'none', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', marginTop:'8px' },
+  btn: { width:'100%', padding:'15px', borderRadius:'13px', border:'none', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer', marginTop:'8px' },
 }

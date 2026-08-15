@@ -27,9 +27,9 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
         +
       </button>
     ) : (
-      <div style={{ position:'absolute', bottom:`${edge-1}px`, left:`${edge-2}px`, display:'flex', alignItems:'center', background:'#0F1117', borderRadius:'100px', overflow:'hidden', boxShadow:'0 4px 12px rgba(0,0,0,0.3)', ...ring }}>
+      <div style={{ position:'absolute', bottom:`${edge-1}px`, left:`${edge-2}px`, display:'flex', alignItems:'center', background:'#0B0B0F', borderRadius:'100px', overflow:'hidden', boxShadow:'0 4px 12px rgba(0,0,0,0.3)', ...ring }}>
         <button onClick={() => onQtyChange(-1)} style={{ width:'26px', height:'26px', background:'none', border:'none', color:'white', fontSize:'17px', cursor:'pointer', fontWeight:'300', display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
-        <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color:'white', minWidth:'20px', textAlign:'center' }}>{qty}</span>
+        <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'13px', color:'white', minWidth:'20px', textAlign:'center' }}>{qty}</span>
         <button onClick={quickAdd} style={{ width:'26px', height:'26px', background:'none', border:'none', color:'white', fontSize:'17px', cursor:'pointer', fontWeight:'300', display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
       </div>
     )
@@ -56,7 +56,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
             {qtyControl}
           </div>
         </div>
-        <div style={{ ...TYPE.itemNameSm, color:'#0F1117', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'100%' }}>{pName}</div>
+        <div style={{ ...TYPE.itemNameSm, color:'#0B0B0F', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'100%' }}>{pName}</div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
           <span style={{ ...TYPE.priceSm, color: _priceColor }}>{product.price} ﷼</span>
           {product.compare_price && <span style={{ ...TYPE.caption, color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
@@ -80,7 +80,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
           {qtyControl}
         </div>
         <div onClick={onAdd} style={{ padding:'10px 12px', cursor:'pointer' }}>
-          <div style={{ ...TYPE.itemNameSm, color:'#0F1117', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pName}</div>
+          <div style={{ ...TYPE.itemNameSm, color:'#0B0B0F', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pName}</div>
           <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap' }}>
             <span style={{ ...TYPE.priceSm, color: _priceColor }}>{product.price} ﷼</span>
             {product.compare_price && <span style={{ ...TYPE.caption, color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
@@ -105,7 +105,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
           {qtyControl}
         </div>
         <div onClick={onAdd} style={{ padding:'12px 14px', cursor:'pointer' }}>
-          <div style={{ ...TYPE.itemName, color:'#0F1117', marginBottom:'4px' }}>{pName}</div>
+          <div style={{ ...TYPE.itemName, color:'#0B0B0F', marginBottom:'4px' }}>{pName}</div>
           {pDesc && (
             <div style={{ ...TYPE.body, color:_descColor, marginBottom:'8px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
               {pDesc}
@@ -123,7 +123,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
   return (
     <div style={{ background:'white', padding:'12px 14px', display:'flex', gap:'12px', alignItems:'center' }}>
       <div onClick={onAdd} style={{ flex:1, minWidth:0, cursor:'pointer' }}>
-        <div style={{ ...TYPE.itemName, color:'#0F1117', marginBottom:'3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pName}</div>
+        <div style={{ ...TYPE.itemName, color:'#0B0B0F', marginBottom:'3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pName}</div>
         {pDesc && (
           <div style={{ ...TYPE.body, color:'#9CA3AF', marginBottom:'6px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
             {pDesc}

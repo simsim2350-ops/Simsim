@@ -39,7 +39,7 @@ export default function OrderCardActive({
       <div style={{ padding:'14px 15px 12px' }}>
         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between' }}>
           <div>
-            <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px' }}>{order.orderNumber}</div>
+            <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'15px' }}>{order.orderNumber}</div>
             {timeStr && <div style={{ fontSize:'10.5px', color:'#9CA3AF', marginTop:'3px' }}>{t('today')} · {timeStr}</div>}
           </div>
           <span style={{ display:'inline-flex', alignItems:'center', gap:'5px', fontSize:'10.5px', fontWeight:'800', color:'#1E5FBF', background:'#EAF3FF', padding:'4px 11px', borderRadius:'100px' }}>
@@ -93,7 +93,7 @@ export default function OrderCardActive({
           {items.map((item, i) => (
             <OrderItemRow key={i} item={item} itemName={itemName} isEn={isEn} t={t} />
           ))}
-          <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', paddingTop:'8px', marginTop:'4px', borderTop:'1px solid #F3F4F6' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', paddingTop:'8px', marginTop:'4px', borderTop:'1px solid #F3F4F6' }}>
             <span>{t('total')}</span>
             <span style={{ color:brandColor }}>{(Number(order.total) || 0).toFixed(2)} ﷼</span>
           </div>
@@ -104,12 +104,12 @@ export default function OrderCardActive({
       <div style={{ display:'flex', gap:'8px', padding:'0 15px 15px' }}>
         <button
           onClick={() => onMessage(order)}
-          style={{ flex:1, padding:'11px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer' }}
+          style={{ flex:1, padding:'11px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer' }}
         >{t('msgRest')}</button>
         {order.status === 'pending' && (
           <button
             onClick={() => setConfirmOpen(true)}
-            style={{ flex:1, padding:'11px', borderRadius:'12px', border:'none', background:'#FEECEF', color:'#E11D48', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer' }}
+            style={{ flex:1, padding:'11px', borderRadius:'12px', border:'none', background:'#FEECEF', color:'#E11D48', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer' }}
           >✕ {t('cancelOrder')}</button>
         )}
       </div>

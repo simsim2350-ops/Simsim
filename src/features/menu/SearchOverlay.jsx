@@ -11,7 +11,7 @@ const saveRecent = (list) => { try { localStorage.setItem(RECENT_KEY, JSON.strin
 
 const chipStyle = {
   fontSize: '12.5px', fontWeight: '700', padding: '7px 13px', borderRadius: '100px',
-  border: '1px solid #E5E7EB', background: '#F8F9FB', color: '#0F1117', cursor: 'pointer',
+  border: '1px solid #E5E7EB', background: '#F8F9FB', color: '#0B0B0F', cursor: 'pointer',
 }
 
 // شاشة بحث مستقلة (Overlay) — تفتح من زر البحث في الهيرو أو الهيدر المصغّر الدائم، بغضّ النظر عن موضع التمرير.
@@ -72,7 +72,7 @@ export default function SearchOverlay({
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') commitSearch(query) }}
             placeholder={t('search')}
-            style={{ flex: 1, padding: '9px 4px', border: 'none', outline: 'none', fontFamily: 'Tajawal,sans-serif', fontSize: '14px', color: '#0F1117', background: 'transparent', textAlign: 'right' }}
+            style={{ flex: 1, padding: '9px 4px', border: 'none', outline: 'none', fontFamily: 'Tajawal,sans-serif', fontSize: '14px', color: '#0B0B0F', background: 'transparent', textAlign: 'right' }}
           />
           {query && (
             <button onClick={() => { setQuery(''); inputRef.current?.focus() }} style={{ padding: '9px 12px', background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#9CA3AF' }}>✕</button>

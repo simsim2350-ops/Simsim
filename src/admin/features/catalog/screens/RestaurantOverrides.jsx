@@ -10,9 +10,9 @@ import {
 // اختر مطعماً → لكل قدرة: وراثة (الافتراضي) / تفعيل / تعطيل (للميزات) أو قيمة (للحدود).
 // التخصيص يتجاوز الباقة والافتراضي لهذا المطعم فقط.
 // ============================================================================
-const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED', GREEN = '#22C55E', RED = '#EF4444'
+const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#FF6A00', GREEN = '#22C55E', RED = '#EF4444'
 const inputStyle = { background: '#0B0D12', border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '9px 12px', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '13px', outline: 'none' }
-const seg = (active, color) => ({ padding: '6px 11px', borderRadius: '8px', border: `1.5px solid ${active ? color : BORDER}`, background: active ? color : 'transparent', color: active ? 'white' : MUTED, cursor: 'pointer', fontSize: '11.5px', fontWeight: '700', fontFamily: 'Cairo,sans-serif' })
+const seg = (active, color) => ({ padding: '6px 11px', borderRadius: '8px', border: `1.5px solid ${active ? color : BORDER}`, background: active ? color : 'transparent', color: active ? 'white' : MUTED, cursor: 'pointer', fontSize: '11.5px', fontWeight: '700', fontFamily: 'Tajawal,sans-serif' })
 const TYPE_AR = { feature: 'ميزة', limit: 'حد', option: 'خيار', mode: 'وضع' }
 const Loading = () => <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>جارٍ التحميل…</div>
 
@@ -71,7 +71,7 @@ export default function RestaurantOverrides() {
           {rests.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
         </select>
         <input placeholder="🔍 بحث في القدرات…" value={q} onChange={(e) => setQ(e.target.value)} style={{ ...inputStyle, maxWidth: '200px' }} />
-        <span style={{ marginRight: 'auto', color: MUTED, fontSize: '12px' }}>تخصيصات هذا المطعم: <b style={{ color: '#C4B5FD' }}>{overrideCount}</b></span>
+        <span style={{ marginRight: 'auto', color: MUTED, fontSize: '12px' }}>تخصيصات هذا المطعم: <b style={{ color: '#FFB27F' }}>{overrideCount}</b></span>
       </div>
       <div style={{ fontSize: '11.5px', color: MUTED, marginBottom: '14px' }}>«وراثة» = يتبع الباقة/الافتراضي. أي تخصيص هنا يخصّ هذا المطعم وحده.</div>
 

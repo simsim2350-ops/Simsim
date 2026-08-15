@@ -20,7 +20,7 @@ function Bars({ data, valKey, height = 130 }) {
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height, overflowX: 'auto' }}>
       {data.map((x, i) => (
         <div key={i} title={`${x.d}: ${fmt(x[valKey])}`} style={{ flex: '1 0 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
-          <div style={{ width: '100%', borderRadius: '3px 3px 0 0', background: i === data.length - 1 ? ACCENT : 'rgba(124,58,237,0.4)', height: `${Math.max((num(x[valKey]) / max) * 92, num(x[valKey]) > 0 ? 4 : 0)}%` }} />
+          <div style={{ width: '100%', borderRadius: '3px 3px 0 0', background: i === data.length - 1 ? ACCENT : 'rgba(255,106,0,0.4)', height: `${Math.max((num(x[valKey]) / max) * 92, num(x[valKey]) > 0 ? 4 : 0)}%` }} />
         </div>
       ))}
     </div>
@@ -71,7 +71,7 @@ export default function Overview() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
           <div style={{ flex: 1 }} />
           <span style={{ fontSize: '11px', color: MUTED }}>آخر تحديث {fmtTime(d?.updated_at)}</span>
-          <button onClick={doRefresh} disabled={refreshing} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: CARD, border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '8px 13px', color: '#C4B5FD', fontFamily: 'Cairo,sans-serif', fontWeight: '700', fontSize: '12px', cursor: 'pointer', opacity: refreshing ? 0.6 : 1 }}><IconRefresh size={13} /> تحديث</button>
+          <button onClick={doRefresh} disabled={refreshing} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: CARD, border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '8px 13px', color: '#FFB27F', fontFamily: 'Tajawal,sans-serif', fontWeight: '700', fontSize: '12px', cursor: 'pointer', opacity: refreshing ? 0.6 : 1 }}><IconRefresh size={13} /> تحديث</button>
         </div>
 
         {error ? (
@@ -92,7 +92,7 @@ export default function Overview() {
             {/* 🔔 يحتاج تدخّلك */}
             {alertCount > 0 && (
               <div style={{ background: CARD, border: '1px solid rgba(251,191,36,0.35)', borderRadius: '14px', padding: '14px 16px', marginBottom: '16px' }}>
-                <div style={{ fontSize: '13px', fontWeight: '800', color: '#FBBF24', fontFamily: 'Cairo,sans-serif', marginBottom: '10px' }}>🔔 يحتاج تدخّلك ({alertCount})</div>
+                <div style={{ fontSize: '13px', fontWeight: '800', color: '#FBBF24', fontFamily: 'Tajawal,sans-serif', marginBottom: '10px' }}>🔔 يحتاج تدخّلك ({alertCount})</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
                   {(a.overdue || []).map((x, i) => (
                     <AlertRow key={`o${i}`} color="#F87171" text={`فاتورة متأخّرة: ${x.restaurant} — ${money(x.amount)} منذ ${x.days} يوم`} onClick={() => navigate('/admin/billing')} />
@@ -112,7 +112,7 @@ export default function Overview() {
               {tiles.map((t) => (
                 <div key={t.label} style={{ background: CARD, border: `1px solid ${t.warn ? 'rgba(251,191,36,0.35)' : BORDER}`, borderRadius: '14px', padding: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
-                    <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '22px', color: 'white' }}>{t.val}</div>
+                    <div style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '22px', color: 'white' }}>{t.val}</div>
                     {t.delta != null && (
                       <span style={{ fontSize: '12px', fontWeight: '800', color: t.delta >= 0 ? '#6EE7B7' : '#F87171' }}>{t.delta >= 0 ? '▲' : '▼'} {Math.abs(t.delta)}%</span>
                     )}
@@ -125,7 +125,7 @@ export default function Overview() {
 
             {/* الطلبات 30 يوم */}
             <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '16px', marginBottom: '12px' }}>
-              <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Cairo,sans-serif', marginBottom: '14px' }}>📈 الطلبات — آخر 30 يوماً</div>
+              <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Tajawal,sans-serif', marginBottom: '14px' }}>📈 الطلبات — آخر 30 يوماً</div>
               {(d?.series?.length || 0) === 0 ? <div style={{ color: MUTED, fontSize: '12px' }}>لا بيانات كافية بعد</div> : <Bars data={d.series} valKey="orders" />}
             </div>
 
@@ -145,7 +145,7 @@ export default function Overview() {
                   render={(x) => [
                     x.name,
                     <span style={{ color: MUTED, fontWeight: '700' }}>
-                      <span style={{ color: '#C4B5FD' }}>{fmt(x.plans_including)}</span> باقة
+                      <span style={{ color: '#FFB27F' }}>{fmt(x.plans_including)}</span> باقة
                       {num(x.overrides_on) > 0 && <span style={{ color: '#6EE7B7' }}> · +{fmt(x.overrides_on)} تفعيل</span>}
                       {num(x.overrides_off) > 0 && <span style={{ color: '#F87171' }}> · −{fmt(x.overrides_off)} تعطيل</span>}
                     </span>,
@@ -182,14 +182,14 @@ function FunnelCard({ funnel }) {
   return (
     <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '16px', marginTop: '12px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Cairo,sans-serif' }}>📊 قمع العميل — آخر 30 يوماً</span>
+        <span style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Tajawal,sans-serif' }}>📊 قمع العميل — آخر 30 يوماً</span>
         {conv != null && <span style={{ marginInlineStart: 'auto', fontSize: '12px', fontWeight: '800', color: '#6EE7B7' }}>تحويل {conv}%</span>}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
         {stages.map((s, i) => (
           <div key={i} style={{ background: '#0B0D12', border: `1px solid ${BORDER}`, borderRadius: '12px', padding: '12px' }}>
             <div style={{ fontSize: '11px', color: MUTED, fontWeight: '700', marginBottom: '4px' }}>{s.icon} {s.label}</div>
-            <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '20px', color: 'white' }}>{fmt(s.val)}</div>
+            <div style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '20px', color: 'white' }}>{fmt(s.val)}</div>
           </div>
         ))}
       </div>
@@ -201,7 +201,7 @@ function FunnelCard({ funnel }) {
 function ListCard({ title, rows, render, empty }) {
   return (
     <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '16px' }}>
-      <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Cairo,sans-serif', marginBottom: '12px' }}>{title}</div>
+      <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', fontFamily: 'Tajawal,sans-serif', marginBottom: '12px' }}>{title}</div>
       {(rows?.length || 0) === 0 ? <div style={{ color: MUTED, fontSize: '12px' }}>{empty}</div> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
           {rows.map((x, i) => {

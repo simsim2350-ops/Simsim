@@ -11,8 +11,8 @@ import { fetchBranches } from '../lib/branchesApi'
 
 function Spinner() {
   return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0F1117', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
-      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,107,53,0.3)', borderTopColor:'#FF6B35', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Tajawal,sans-serif' }}>
+      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       جارٍ التحميل...
     </div>
@@ -217,13 +217,13 @@ export default function Marketing() {
       active="marketing"
       title="📣 العروض والكوبونات"
       actions={
-        <button onClick={() => navigate('/dashboard')} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'600', fontSize:'12px', cursor:'pointer', color:'#374151' }}>← الرئيسية</button>
+        <button onClick={() => navigate('/dashboard')} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'600', fontSize:'12px', cursor:'pointer', color:'#374151' }}>← الرئيسية</button>
       }
     >
       {/* Tabs */}
       <div style={{ background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', padding:'0 16px', overflowX:'auto', flexShrink:0 }}>
         {TABS.map(t => (
-          <div key={t.key} onClick={() => setActiveTab(t.key)} style={{ padding:'12px 14px', fontSize:'13px', fontWeight:'700', color: activeTab === t.key ? '#FF6B35' : '#6B7280', borderBottom: activeTab === t.key ? '2.5px solid #FF6B35' : '2.5px solid transparent', cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.2s' }}>
+          <div key={t.key} onClick={() => setActiveTab(t.key)} style={{ padding:'12px 14px', fontSize:'13px', fontWeight:'700', color: activeTab === t.key ? '#FF6A00' : '#6B7280', borderBottom: activeTab === t.key ? '2.5px solid #FF6A00' : '2.5px solid transparent', cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.2s' }}>
             {t.label}
           </div>
         ))}
@@ -235,7 +235,7 @@ export default function Marketing() {
           {activeTab === 'banners' && (
             <>
               <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'12px' }}>
-                <button onClick={openAddBanner} style={{ padding:'8px 16px', borderRadius:'10px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}>＋ بانر جديد</button>
+                <button onClick={openAddBanner} style={{ padding:'8px 16px', borderRadius:'10px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}>＋ بانر جديد</button>
               </div>
               {banners.length === 0 ? (
                 <div style={{ textAlign:'center', padding:'50px 16px', color:'#9CA3AF' }}>
@@ -253,9 +253,9 @@ export default function Marketing() {
                         </div>
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-                            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px' }}>{banner.title}</span>
+                            <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px' }}>{banner.title}</span>
                             {!banner.is_active && <span style={{ fontSize:'10px', fontWeight:'700', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 7px', borderRadius:'100px' }}>معطّل</span>}
-                            {banner.branch_id && <span style={{ fontSize:'10px', fontWeight:'700', color:'#E85A24', background:'#FFF0EB', padding:'2px 7px', borderRadius:'100px' }}>🏢 {branchName(banner.branch_id) || 'فرع محدد'}</span>}
+                            {banner.branch_id && <span style={{ fontSize:'10px', fontWeight:'700', color:'#E05D00', background:'#FFF0EB', padding:'2px 7px', borderRadius:'100px' }}>🏢 {branchName(banner.branch_id) || 'فرع محدد'}</span>}
                           </div>
                           {banner.subtitle && <div style={{ fontSize:'12px', color:'#9CA3AF' }}>{banner.subtitle}</div>}
                           {(banner.starts_at || banner.ends_at) && (
@@ -280,7 +280,7 @@ export default function Marketing() {
           {activeTab === 'coupons' && (
             <>
               <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'12px' }}>
-                <button onClick={openAddCoupon} style={{ padding:'8px 16px', borderRadius:'10px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}>＋ كوبون جديد</button>
+                <button onClick={openAddCoupon} style={{ padding:'8px 16px', borderRadius:'10px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}>＋ كوبون جديد</button>
               </div>
               {coupons.length === 0 ? (
                 <div style={{ textAlign:'center', padding:'50px 16px', color:'#9CA3AF' }}>
@@ -293,14 +293,14 @@ export default function Marketing() {
                   {coupons.map(coupon => (
                     <div key={coupon.id} style={{ background:'white', borderRadius:'14px', border:'1.5px solid #E5E7EB', padding:'14px 16px' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-                        <div style={{ width:'44px', height:'44px', borderRadius:'10px', background:'#FFF0EB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'15px', fontWeight:'900', color:'#E85A24', flexShrink:0 }}>
+                        <div style={{ width:'44px', height:'44px', borderRadius:'10px', background:'#FFF0EB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'15px', fontWeight:'900', color:'#E05D00', flexShrink:0 }}>
                           {coupon.discount_type === 'percent' ? `${coupon.discount_value}%` : `${coupon.discount_value}﷼`}
                         </div>
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-                            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', direction:'ltr' }}>{coupon.code}</span>
+                            <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px', direction:'ltr' }}>{coupon.code}</span>
                             {!coupon.is_active && <span style={{ fontSize:'10px', fontWeight:'700', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 7px', borderRadius:'100px' }}>معطّل</span>}
-                            {coupon.branch_id && <span style={{ fontSize:'10px', fontWeight:'700', color:'#E85A24', background:'#FFF0EB', padding:'2px 7px', borderRadius:'100px' }}>🏢 {branchName(coupon.branch_id) || 'فرع محدد'}</span>}
+                            {coupon.branch_id && <span style={{ fontSize:'10px', fontWeight:'700', color:'#E05D00', background:'#FFF0EB', padding:'2px 7px', borderRadius:'100px' }}>🏢 {branchName(coupon.branch_id) || 'فرع محدد'}</span>}
                           </div>
                           <div style={{ fontSize:'12px', color:'#9CA3AF' }}>
                             {coupon.min_order_amount > 0 && `للطلبات فوق ${coupon.min_order_amount} ﷼ · `}
@@ -327,7 +327,7 @@ export default function Marketing() {
         <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
           <div onClick={() => setBannerModalOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)' }}/>
           <div style={{ background:'white', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', padding:'20px', position:'relative', maxHeight:'85vh', overflowY:'auto' }}>
-            <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', marginBottom:'16px' }}>{editingBanner ? 'تعديل البانر' : 'بانر جديد'}</h3>
+            <h3 style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'18px', marginBottom:'16px' }}>{editingBanner ? 'تعديل البانر' : 'بانر جديد'}</h3>
 
             <div style={{ marginBottom:'14px' }}>
               <label style={labelStyle}>العنوان *</label>
@@ -391,8 +391,8 @@ export default function Marketing() {
             </div>
 
             <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={() => setBannerModalOpen(false)} style={{ flex:1, padding:'13px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer' }}>إلغاء</button>
-              <button onClick={saveBanner} style={{ flex:2, padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>{editingBanner ? 'حفظ التعديلات' : 'إضافة البانر'}</button>
+              <button onClick={() => setBannerModalOpen(false)} style={{ flex:1, padding:'13px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer' }}>إلغاء</button>
+              <button onClick={saveBanner} style={{ flex:2, padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>{editingBanner ? 'حفظ التعديلات' : 'إضافة البانر'}</button>
             </div>
           </div>
         </div>
@@ -403,7 +403,7 @@ export default function Marketing() {
         <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
           <div onClick={() => setCouponModalOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)' }}/>
           <div style={{ background:'white', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', padding:'20px', position:'relative', maxHeight:'85vh', overflowY:'auto' }}>
-            <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', marginBottom:'16px' }}>{editingCoupon ? 'تعديل الكوبون' : 'كوبون جديد'}</h3>
+            <h3 style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'18px', marginBottom:'16px' }}>{editingCoupon ? 'تعديل الكوبون' : 'كوبون جديد'}</h3>
 
             <div style={{ marginBottom:'14px' }}>
               <label style={labelStyle}>الكود *</label>
@@ -458,8 +458,8 @@ export default function Marketing() {
             </div>
 
             <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={() => setCouponModalOpen(false)} style={{ flex:1, padding:'13px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer' }}>إلغاء</button>
-              <button onClick={saveCoupon} style={{ flex:2, padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>{editingCoupon ? 'حفظ التعديلات' : 'إضافة الكوبون'}</button>
+              <button onClick={() => setCouponModalOpen(false)} style={{ flex:1, padding:'13px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer' }}>إلغاء</button>
+              <button onClick={saveCoupon} style={{ flex:2, padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>{editingCoupon ? 'حفظ التعديلات' : 'إضافة الكوبون'}</button>
             </div>
           </div>
         </div>

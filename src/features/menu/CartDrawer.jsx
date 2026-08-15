@@ -37,7 +37,7 @@ export default function CartDrawer({
         <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'2px', margin:'12px auto' }}/>
 
         <div style={{ padding:'0 20px 14px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid #E5E7EB', flexShrink:0 }}>
-          <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px' }}>🛒 {t('cartYours')} ({cartCount})</h3>
+          <h3 style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'18px' }}>🛒 {t('cartYours')} ({cartCount})</h3>
           <button type="button" onClick={onClose} aria-label={t('closeA')} style={{ width:'32px', height:'32px', borderRadius:'50%', border:'1.5px solid #E5E7EB', background:'white', fontSize:'18px', color:'#6B7280' }}>✕</button>
         </div>
 
@@ -45,8 +45,8 @@ export default function CartDrawer({
         {cart.length === 0 ? (
           <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'12px', padding:'40px 20px', textAlign:'center' }}>
             <span style={{ fontSize:'44px' }}>🛒</span>
-            <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px', color:'#374151' }}>{t('emptyCartTitle')}</div>
-            <button type="button" onClick={onClose} style={{ marginTop:'8px', padding:'12px 24px', borderRadius:'12px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px' }}>{t('browseMenuB')}</button>
+            <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'15px', color:'#374151' }}>{t('emptyCartTitle')}</div>
+            <button type="button" onClick={onClose} style={{ marginTop:'8px', padding:'12px 24px', borderRadius:'12px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px' }}>{t('browseMenuB')}</button>
           </div>
         ) : (
         <>
@@ -78,10 +78,10 @@ export default function CartDrawer({
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:'0', border:'1.5px solid #E5E7EB', borderRadius:'10px', overflow:'hidden', flexShrink:0 }}>
                 <button type="button" onClick={() => removeFromCart(item.cartKey)} aria-label={t('decreaseA')} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', color:brandColor, fontWeight:'300' }}>−</button>
-                <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', minWidth:'24px', textAlign:'center', borderRight:'1px solid #E5E7EB', borderLeft:'1px solid #E5E7EB', lineHeight:'30px' }}>{item.qty}</span>
+                <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'13px', minWidth:'24px', textAlign:'center', borderRight:'1px solid #E5E7EB', borderLeft:'1px solid #E5E7EB', lineHeight:'30px' }}>{item.qty}</span>
                 <button type="button" onClick={() => incrementCartItem(item.cartKey)} aria-label={t('increaseA')} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', color:brandColor, fontWeight:'300' }}>+</button>
               </div>
-              <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px', flexShrink:0, minWidth:'50px', textAlign:'left' }}>{(item.price * item.qty).toFixed(2)} ﷼</div>
+              <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', flexShrink:0, minWidth:'50px', textAlign:'left' }}>{(item.price * item.qty).toFixed(2)} ﷼</div>
             </div>
           ))}
         </div>
@@ -89,7 +89,7 @@ export default function CartDrawer({
         {/* محرك الاقتراحات الذكي — قواعد المطعم ← نفس القسم ← الأكثر مبيعاً (بهذا الترتيب) */}
         {suggestions.length > 0 && (
           <div style={{ padding:'12px 20px 14px', borderTop:'1px solid #F3F4F6', flexShrink:0 }}>
-            <div style={{ fontSize:'13.5px', fontWeight:'800', fontFamily:'Cairo,sans-serif', marginBottom:'10px' }}>{t('suggestTitle')}</div>
+            <div style={{ fontSize:'13.5px', fontWeight:'800', fontFamily:'Tajawal,sans-serif', marginBottom:'10px' }}>{t('suggestTitle')}</div>
             <div style={{ display:'flex', gap:'10px', overflowX:'auto', paddingBottom:'2px' }}>
               {suggestions.map(({ product: p, reason }) => {
                 const needsConfig = Array.isArray(p.options) && p.options.some(g => g.required)
@@ -107,7 +107,7 @@ export default function CartDrawer({
                         ? <img loading="lazy" decoding="async" src={p.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                         : (p.emoji || '🍽️')}
                     </div>
-                    <span style={{ alignSelf:'flex-start', fontSize:'10px', fontWeight:'800', fontFamily:'Cairo,sans-serif', padding:'2px 7px', borderRadius:'100px', background:badge.bg, color:badge.fg, whiteSpace:'nowrap' }}>{badge.label}</span>
+                    <span style={{ alignSelf:'flex-start', fontSize:'10px', fontWeight:'800', fontFamily:'Tajawal,sans-serif', padding:'2px 7px', borderRadius:'100px', background:badge.bg, color:badge.fg, whiteSpace:'nowrap' }}>{badge.label}</span>
                     <div style={{ fontSize:'12px', fontWeight:'700', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{(isEn && p.name_en) ? p.name_en : p.name}</div>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'4px' }}>
                       <span style={{ fontSize:'11.5px', fontWeight:'800', color:brandColor }}>{p.price} ﷼</span>
@@ -184,7 +184,7 @@ export default function CartDrawer({
               placeholder={t('namePh2')}
               value={customerName}
               onChange={e => setCustomerName(e.target.value)}
-              style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', marginBottom:'10px' }}
+              style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'white', outline:'none', textAlign:'right', marginBottom:'10px' }}
             />
             <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>{t('phoneReq')} *</label>
             <div style={{ display:'flex', alignItems:'center', gap:'8px', direction:'ltr' }}>
@@ -202,7 +202,7 @@ export default function CartDrawer({
                   if (digits && digits[0] !== '5') return // الجوال السعودي يبدأ دائماً بـ5
                   setCustomerPhone(digits)
                 }}
-                style={{ flex:1, minWidth:0, padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right' }}
+                style={{ flex:1, minWidth:0, padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'white', outline:'none', textAlign:'right' }}
               />
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function CartDrawer({
                   placeholder={t('tablePh')}
                   value={tableNumber}
                   onChange={e => setTableNumber(e.target.value)}
-                  style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right' }}
+                  style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'white', outline:'none', textAlign:'right' }}
                 />
               )}
             </div>
@@ -234,7 +234,7 @@ export default function CartDrawer({
                 placeholder={t('addrPh2')}
                 value={deliveryAddress}
                 onChange={e => setDeliveryAddress(e.target.value)}
-                style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', minHeight:'72px', resize:'vertical' }}
+                style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'white', outline:'none', textAlign:'right', minHeight:'72px', resize:'vertical' }}
               />
             </div>
           )}
@@ -247,7 +247,7 @@ export default function CartDrawer({
               value={orderNote}
               onChange={e => setOrderNote(e.target.value)}
               maxLength={200}
-              style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', minHeight:'60px', resize:'vertical' }}
+              style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'white', outline:'none', textAlign:'right', minHeight:'60px', resize:'vertical' }}
             />
           </div>
 
@@ -267,13 +267,13 @@ export default function CartDrawer({
                     value={couponInput}
                     onChange={e => setCouponInput(e.target.value.toUpperCase())}
                     placeholder={isEn ? 'Enter code' : 'أدخل الكود'}
-                    style={{ flex:1, padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'white', outline:'none', textAlign:'right', direction:'ltr' }}
+                    style={{ flex:1, padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'white', outline:'none', textAlign:'right', direction:'ltr' }}
                   />
                   <button
                     type="button"
                     onClick={applyCoupon}
                     disabled={applyingCoupon || !couponInput.trim()}
-                    style={{ padding:'0 18px', borderRadius:'11px', border:'none', background: couponInput.trim() ? brandColor : '#E5E7EB', color: couponInput.trim() ? 'white' : '#9CA3AF', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor: couponInput.trim() ? 'pointer' : 'not-allowed' }}
+                    style={{ padding:'0 18px', borderRadius:'11px', border:'none', background: couponInput.trim() ? brandColor : '#E5E7EB', color: couponInput.trim() ? 'white' : '#9CA3AF', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', cursor: couponInput.trim() ? 'pointer' : 'not-allowed' }}
                   >
                     {isEn ? 'Apply' : 'تطبيق'}
                   </button>
@@ -301,7 +301,7 @@ export default function CartDrawer({
               <span>{t('deliveryFee')}</span><span>{Number(deliveryFee).toFixed(2)} ﷼</span>
             </div>
           )}
-          <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', paddingTop:'8px', borderTop:'1px solid #E5E7EB' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'16px', paddingTop:'8px', borderTop:'1px solid #E5E7EB' }}>
             <span>{t('total')}</span>
             <span style={{ color:brandColor }}>{finalTotal.toFixed(2)} ﷼</span>
           </div>
@@ -327,7 +327,7 @@ export default function CartDrawer({
             type="button"
             onClick={placeOrder}
             disabled={!canSubmit}
-            style={{ width:'100%', height:'52px', borderRadius:'15px', border:'none', background: canSubmit ? `linear-gradient(135deg, ${brandColor}, ${brandColor}CC)` : '#E5E7EB', color: canSubmit ? 'white' : '#9CA3AF', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', cursor: canSubmit ? 'pointer' : 'not-allowed', boxShadow: canSubmit ? `0 8px 22px ${brandColor}44` : 'none', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 20px' }}
+            style={{ width:'100%', height:'52px', borderRadius:'15px', border:'none', background: canSubmit ? `linear-gradient(135deg, ${brandColor}, ${brandColor}CC)` : '#E5E7EB', color: canSubmit ? 'white' : '#9CA3AF', fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'15px', cursor: canSubmit ? 'pointer' : 'not-allowed', boxShadow: canSubmit ? `0 8px 22px ${brandColor}44` : 'none', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 20px' }}
           >
             {submitting ? (
               <>

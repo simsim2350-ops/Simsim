@@ -9,8 +9,8 @@ import { fetchBranches, createBranch, updateBranch, deleteBranch, cloneMenuToBra
 
 function Spinner() {
   return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0F1117', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
-      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,107,53,0.3)', borderTopColor:'#FF6B35', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Tajawal,sans-serif' }}>
+      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       جارٍ التحميل...
     </div>
@@ -193,8 +193,8 @@ export default function Branches() {
       active="branches"
       title="🏢 الفروع"
       actions={<>
-        <button onClick={() => navigate('/dashboard')} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'600', fontSize:'12px', cursor:'pointer', color:'#374151' }}>← الرئيسية</button>
-        <button onClick={openAdd} style={{ padding:'7px 14px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>＋ فرع جديد</button>
+        <button onClick={() => navigate('/dashboard')} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'600', fontSize:'12px', cursor:'pointer', color:'#374151' }}>← الرئيسية</button>
+        <button onClick={openAdd} style={{ padding:'7px 14px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>＋ فرع جديد</button>
       </>}
     >
         <div style={{ flex:1, overflowY:'auto', padding:'16px' }}>
@@ -213,7 +213,7 @@ export default function Branches() {
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap' }}>
-                        <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px' }}>{branch.name}</span>
+                        <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'15px' }}>{branch.name}</span>
                         {branch.is_primary && <span style={{ fontSize:'10px', fontWeight:'700', color:'#C2410C', background:'#FFEDD5', padding:'2px 7px', borderRadius:'100px' }}>الفرع الرئيسي</span>}
                         {!branch.is_active && <span style={{ fontSize:'10px', fontWeight:'700', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 7px', borderRadius:'100px' }}>معطّل</span>}
                         {branch.is_paused && <span style={{ fontSize:'10px', fontWeight:'700', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>مغلق مؤقتاً</span>}
@@ -240,7 +240,7 @@ export default function Branches() {
 
                   <div style={{ display:'flex', gap:'8px', alignItems:'center', background:'#F8F9FB', borderRadius:'10px', padding:'8px 10px' }}>
                     <span style={{ fontSize:'11px', color:'#9CA3AF', direction:'ltr', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{branchMenuURL(branch).replace('https://','')}</span>
-                    <button onClick={() => copyBranchURL(branch)} style={{ padding:'5px 10px', borderRadius:'7px', border:'none', background:'#FF6B35', color:'white', fontSize:'11px', fontWeight:'700', cursor:'pointer', flexShrink:0 }}>نسخ الرابط</button>
+                    <button onClick={() => copyBranchURL(branch)} style={{ padding:'5px 10px', borderRadius:'7px', border:'none', background:'#FF6A00', color:'white', fontSize:'11px', fontWeight:'700', cursor:'pointer', flexShrink:0 }}>نسخ الرابط</button>
                   </div>
                 </div>
               ))}
@@ -252,7 +252,7 @@ export default function Branches() {
         <div style={{ position:'fixed', inset:0, zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
           <div onClick={() => setModalOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)' }}/>
           <div style={{ background:'white', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', padding:'20px', position:'relative', maxHeight:'85vh', overflowY:'auto' }}>
-            <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'18px', marginBottom:'16px' }}>
+            <h3 style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'18px', marginBottom:'16px' }}>
               {editingBranch ? 'تعديل الفرع' : 'فرع جديد'}
             </h3>
 
@@ -297,7 +297,7 @@ export default function Branches() {
                         <div style={{ position:'absolute', width:'13px', height:'13px', background:'white', borderRadius:'50%', top:'3px', left: h.open ? '18px' : '3px', transition:'0.3s', boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
                       </div>
                     </label>
-                    <span style={{ fontSize:'12.5px', fontWeight:'700', width:'42px', flexShrink:0, color: h.open ? '#0F1117' : '#9CA3AF' }}>{h.day}</span>
+                    <span style={{ fontSize:'12.5px', fontWeight:'700', width:'42px', flexShrink:0, color: h.open ? '#0B0B0F' : '#9CA3AF' }}>{h.day}</span>
                     {h.open ? (
                       <div style={{ display:'flex', alignItems:'center', gap:'4px', flex:1, justifyContent:'flex-end', direction:'ltr', minWidth:0 }}>
                         <input type="time" value={h.from} onChange={e => updateHour(i,'from',e.target.value)} style={{ padding:'5px 4px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'11.5px', outline:'none', width:'78px', minWidth:0 }}/>
@@ -373,10 +373,10 @@ export default function Branches() {
             )}
 
             <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={() => setModalOpen(false)} style={{ flex:1, padding:'13px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer' }}>
+              <button onClick={() => setModalOpen(false)} style={{ flex:1, padding:'13px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer' }}>
                 إلغاء
               </button>
-              <button onClick={saveBranch} disabled={saving} style={{ flex:2, padding:'13px', borderRadius:'12px', border:'none', background: saving ? '#9CA3AF' : 'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor: saving ? 'default' : 'pointer' }}>
+              <button onClick={saveBranch} disabled={saving} style={{ flex:2, padding:'13px', borderRadius:'12px', border:'none', background: saving ? '#9CA3AF' : 'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px', cursor: saving ? 'default' : 'pointer' }}>
                 {saving ? 'جارٍ الحفظ...' : (editingBranch ? 'حفظ التعديلات' : 'إضافة الفرع ونسخ المنيو')}
               </button>
             </div>

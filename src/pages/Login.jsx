@@ -22,7 +22,7 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault()
     if (!email || !password) {
-      toast.error('يرجى إدخال البريد وكلمة المرور')
+      toast.error('أدخل بريدك وكلمة المرور')
       return
     }
     setLoading(true)
@@ -56,13 +56,13 @@ export default function Login() {
 
         <div style={styles.visualContent}>
           <div style={styles.logoWrap}>
-            <div style={styles.logoMark}>S</div>
-            <span style={styles.logoText}>SIM<span style={{ color: '#FF6B35' }}>SIM</span></span>
+            <img src="/simsim-s.svg" alt="" style={{ height:'40px', width:'auto', display:'block' }} />
+            <span style={styles.logoText}>sim<span style={{ color: '#FF6A00' }}>sim</span></span>
           </div>
 
           <h1 style={styles.visualTitle}>
             مطعمك الرقمي<br />
-            <span style={{ color: '#FF6B35' }}>يبدأ من هنا</span>
+            <span style={{ color: '#FF6A00' }}>يبدأ من هنا</span>
           </h1>
 
           <p style={styles.visualDesc}>
@@ -117,7 +117,7 @@ export default function Login() {
             <div style={styles.formGroup}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <label style={{ ...styles.label, marginBottom: 0 }}>كلمة المرور</label>
-                <Link to="/forgot-password" style={{ fontSize: '13px', color: '#FF6B35', fontWeight: '700' }}>
+                <Link to="/forgot-password" style={{ fontSize: '13px', color: '#FF6A00', fontWeight: '700' }}>
                   نسيت كلمة المرور؟
                 </Link>
               </div>
@@ -157,7 +157,7 @@ export default function Login() {
 
           <p style={styles.footer}>
             ليس لديك حساب؟{' '}
-            <Link to="/register" style={{ color: '#FF6B35', fontWeight: '700' }}>
+            <Link to="/register" style={{ color: '#FF6A00', fontWeight: '700' }}>
               أنشئ حساباً مجانياً
             </Link>
           </p>
@@ -175,7 +175,7 @@ const styles = {
   },
   visual: {
     flex: 1,
-    background: '#0F1117',
+    background: '#0B0B0F',
     position: 'relative',
     overflow: 'hidden',
     display: 'flex',
@@ -186,7 +186,7 @@ const styles = {
     position: 'absolute',
     width: '500px', height: '500px',
     borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(255,107,53,0.2) 0%, transparent 70%)',
+    background: 'radial-gradient(circle, rgba(255,106,0,0.2) 0%, transparent 70%)',
     top: '-150px', right: '-100px',
     pointerEvents: 'none',
   },
@@ -212,18 +212,18 @@ const styles = {
   logoWrap: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '40px' },
   logoMark: {
     width: '44px', height: '44px',
-    background: 'linear-gradient(135deg, #FF6B35, #E85A24)',
+    background: 'linear-gradient(135deg, #FF6A00, #E05D00)',
     borderRadius: '12px',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontFamily: 'Cairo, sans-serif', fontWeight: '900', fontSize: '18px',
-    color: 'white', boxShadow: '0 4px 16px rgba(255,107,53,0.4)',
+    fontFamily: 'Tajawal, sans-serif', fontWeight: '900', fontSize: '18px',
+    color: 'white', boxShadow: '0 4px 16px rgba(255,106,0,0.4)',
   },
   logoText: {
-    fontFamily: 'Cairo, sans-serif', fontWeight: '900',
+    fontFamily: 'Poppins, sans-serif', fontWeight: '700',
     fontSize: '24px', color: 'white',
   },
   visualTitle: {
-    fontFamily: 'Cairo, sans-serif', fontWeight: '900',
+    fontFamily: 'Tajawal, sans-serif', fontWeight: '900',
     fontSize: '40px', color: 'white',
     lineHeight: '1.15', letterSpacing: '-1px',
     marginBottom: '16px',
@@ -244,15 +244,15 @@ const styles = {
   statsRow: { display: 'flex', gap: '32px' },
   stat: { display: 'flex', flexDirection: 'column', gap: '4px' },
   statVal: {
-    fontFamily: 'Cairo, sans-serif', fontWeight: '900',
-    fontSize: '26px', color: '#FF6B35',
+    fontFamily: 'Tajawal, sans-serif', fontWeight: '900',
+    fontSize: '26px', color: '#FF6A00',
   },
   statLabel: { fontSize: '12px', color: 'rgba(255,255,255,0.4)' },
   formPanel: {
     flexShrink: 0,
     background: 'white',
     display: 'flex', flexDirection: 'column',
-    borderRight: '3px solid #FF6B35',
+    borderRight: '3px solid #FF6A00',
     overflowY: 'auto',
   },
   formInner: {
@@ -263,25 +263,25 @@ const styles = {
   formHeader: { marginBottom: '32px' },
   eyebrow: {
     fontSize: '12px', fontWeight: '700',
-    color: '#FF6B35', textTransform: 'uppercase',
+    color: '#FF6A00', textTransform: 'uppercase',
     letterSpacing: '1.5px', marginBottom: '10px',
   },
   formTitle: {
     fontSize: '28px', fontWeight: '900',
-    color: '#0F1117', marginBottom: '8px',
+    color: '#0B0B0F', marginBottom: '8px',
   },
   formSub: { fontSize: '15px', color: '#6B7280', lineHeight: '1.6' },
   formGroup: { marginBottom: '18px' },
   label: {
     display: 'block', fontSize: '13px', fontWeight: '700',
-    color: '#0F1117', marginBottom: '8px',
+    color: '#0B0B0F', marginBottom: '8px',
   },
   inputWrap: { position: 'relative' },
   input: {
     width: '100%', padding: '13px 44px 13px 16px',
     border: '1.5px solid #E5E7EB', borderRadius: '12px',
     fontFamily: 'Tajawal, sans-serif', fontSize: '15px',
-    color: '#0F1117', background: '#F8F9FB',
+    color: '#0B0B0F', background: '#F8F9FB',
     outline: 'none', textAlign: 'right',
     transition: 'all 0.2s',
   },
@@ -300,11 +300,11 @@ const styles = {
   submitBtn: {
     width: '100%', padding: '15px',
     borderRadius: '13px', border: 'none',
-    background: 'linear-gradient(135deg, #FF6B35, #E85A24)',
+    background: 'linear-gradient(135deg, #FF6A00, #E05D00)',
     color: 'white',
-    fontFamily: 'Cairo, sans-serif', fontWeight: '800', fontSize: '15px',
+    fontFamily: 'Tajawal, sans-serif', fontWeight: '800', fontSize: '15px',
     cursor: 'pointer',
-    boxShadow: '0 8px 24px rgba(255,107,53,0.35)',
+    boxShadow: '0 8px 24px rgba(255,106,0,0.35)',
     marginTop: '8px', marginBottom: '24px',
     transition: 'all 0.2s',
   },

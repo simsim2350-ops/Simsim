@@ -52,7 +52,7 @@ export default function OrdersScreen({
   const pastList = filtered
     .filter(o => ['completed','cancelled'].includes(o.status))
     .sort((a, b) => (needsReview(b) ? 1 : 0) - (needsReview(a) ? 1 : 0))
-  const sec = { fontFamily:'Cairo,sans-serif', fontSize:'12px', fontWeight:'900', color:'#9CA3AF', margin:'2px 2px 10px' }
+  const sec = { fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'900', color:'#9CA3AF', margin:'2px 2px 10px' }
 
   return (
     <div style={{ minHeight:'100vh', background:'#F8F9FB', direction:'rtl', fontFamily:'Tajawal,sans-serif', maxWidth:'480px', margin:'0 auto', position:'relative', boxShadow:'0 0 60px rgba(15,17,23,0.12)' }}>
@@ -81,7 +81,7 @@ export default function OrdersScreen({
         <div style={{ display:'flex', gap:'8px', marginBottom:'16px' }}>
           <button
             onClick={onBack}
-            style={{ flex:1, padding:'13px', borderRadius:'13px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer', boxShadow:`0 6px 16px ${brandColor}44` }}
+            style={{ flex:1, padding:'13px', borderRadius:'13px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer', boxShadow:`0 6px 16px ${brandColor}44` }}
           >
             {t('browseMenu')}
           </button>
@@ -97,7 +97,7 @@ export default function OrdersScreen({
                   <button
                     key={f.key}
                     onClick={() => setFilter(f.key)}
-                    style={{ flexShrink:0, fontFamily:'Cairo,sans-serif', fontSize:'12px', fontWeight:'800', padding:'7px 14px', borderRadius:'100px', cursor:'pointer', border:`1.5px solid ${on ? '#1B1D24' : '#E5E7EB'}`, background: on ? '#1B1D24' : 'white', color: on ? 'white' : '#9CA3AF' }}
+                    style={{ flexShrink:0, fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'800', padding:'7px 14px', borderRadius:'100px', cursor:'pointer', border:`1.5px solid ${on ? '#1B1D24' : '#E5E7EB'}`, background: on ? '#1B1D24' : 'white', color: on ? 'white' : '#9CA3AF' }}
                   >
                     {f.label}{counts[f.key] > 0 ? ` (${counts[f.key]})` : ''}
                   </button>
@@ -111,7 +111,7 @@ export default function OrdersScreen({
                 value={q}
                 onChange={e => setQ(e.target.value)}
                 placeholder={t('searchOrder')}
-                style={{ flex:1, border:'none', outline:'none', background:'transparent', fontFamily:'Tajawal,sans-serif', fontSize:'13px', color:'#0F1117', textAlign:'right' }}
+                style={{ flex:1, border:'none', outline:'none', background:'transparent', fontFamily:'Tajawal,sans-serif', fontSize:'13px', color:'#0B0B0F', textAlign:'right' }}
               />
               {q && <button onClick={() => setQ('')} style={{ border:'none', background:'none', fontSize:'14px', cursor:'pointer', color:'#9CA3AF' }}>✕</button>}
             </div>

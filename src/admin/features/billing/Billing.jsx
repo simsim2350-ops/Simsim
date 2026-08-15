@@ -32,7 +32,7 @@ function printInvoice(inv) {
   const row = (k, v) => `<tr><td style="padding:6px 0;color:#666">${k}</td><td style="padding:6px 0;text-align:left;font-weight:700">${v}</td></tr>`
   const dt = (v) => v ? new Date(v).toLocaleDateString('ar') : '—'
   w.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>فاتورة #${inv.invoice_number}</title>
-    <style>body{font-family:Tahoma,Arial,sans-serif;padding:40px;color:#111}h1{color:#7C3AED;margin:0}
+    <style>body{font-family:Tahoma,Arial,sans-serif;padding:40px;color:#111}h1{color:#FF6A00;margin:0}
     table{width:100%;border-collapse:collapse;margin-top:18px}.total{font-size:22px;font-weight:900;margin-top:16px}</style></head><body>
     <h1>سِمسِم</h1><div style="color:#666">فاتورة اشتراك المنصّة</div>
     <table>${row('رقم الفاتورة', '#' + inv.invoice_number)}${row('المطعم', inv.restaurant_name)}${row('الحالة', INV_STATUS[inv.status] || inv.status)}${row('تاريخ الإصدار', dt(inv.issued_at))}${inv.due_at ? row('تاريخ الاستحقاق', dt(inv.due_at)) : ''}${inv.paid_at ? row('تاريخ الدفع', dt(inv.paid_at)) : ''}</table>
@@ -58,7 +58,7 @@ export default function Billing() {
           {[['plans', '🏷️ الباقات'], ['subs', '🔁 الاشتراكات'], ['invoices', '🧾 الفواتير']].map(([k, l]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               padding: '10px 16px', background: 'transparent', border: 'none', cursor: 'pointer',
-              fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '13px',
+              fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '13px',
               color: tab === k ? 'white' : MUTED, borderBottom: tab === k ? `2px solid ${ACCENT}` : '2px solid transparent',
             }}>{l}</button>
           ))}
@@ -114,14 +114,14 @@ function PlansTab({ canManage }) {
             <div key={p.id} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: '160px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
-                  <span style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '14px', color: 'white' }}>{p.name}</span>
-                  <Badge text={CYCLE[p.billing_cycle]} color="#C4B5FD" />
+                  <span style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '14px', color: 'white' }}>{p.name}</span>
+                  <Badge text={CYCLE[p.billing_cycle]} color="#FFB27F" />
                   {!p.is_active && <Badge text="معطّلة" color="#F87171" />}
                 </div>
                 {p.features && <div style={{ fontSize: '11.5px', color: MUTED }}>{p.features}</div>}
                 <div style={{ fontSize: '11px', color: MUTED, marginTop: '2px' }}>{num(p.subscribers_count)} مشترك</div>
               </div>
-              <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '16px', color: 'white' }}>{fmt(p.price)} <span style={{ fontSize: '11px', color: MUTED }}>﷼</span></div>
+              <div style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '16px', color: 'white' }}>{fmt(p.price)} <span style={{ fontSize: '11px', color: MUTED }}>﷼</span></div>
               {canManage && (
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <Button variant="neutral" onClick={() => setEdit(p)}>تعديل</Button>
@@ -189,13 +189,13 @@ function SubsTab({ canManage }) {
             <div key={s.id} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: '160px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
-                  <span style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '14px', color: 'white' }}>{s.restaurant_name}</span>
+                  <span style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '14px', color: 'white' }}>{s.restaurant_name}</span>
                   <Badge text={SUB_STATUS[s.status] || s.status} color={s.status === 'active' ? '#6EE7B7' : s.status === 'past_due' ? '#FBBF24' : '#9CA3AF'} />
                 </div>
                 <div style={{ fontSize: '11.5px', color: MUTED }}>{s.plan_label || '—'} · {CYCLE[s.billing_cycle] || s.billing_cycle}</div>
                 {num(s.outstanding_total) > 0 && <div style={{ fontSize: '11px', color: '#FBBF24', marginTop: '2px' }}>مستحقّ مفتوح: {fmt(s.outstanding_total)} ﷼</div>}
               </div>
-              <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '16px', color: 'white' }}>{fmt(s.amount)} <span style={{ fontSize: '11px', color: MUTED }}>﷼</span></div>
+              <div style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '16px', color: 'white' }}>{fmt(s.amount)} <span style={{ fontSize: '11px', color: MUTED }}>﷼</span></div>
               {canManage && <Button variant="neutral" onClick={() => setEdit({ restaurant_id: s.restaurant_id, plan_id: s.plan_id, amount: s.amount, status: s.status, period_start: '', period_end: '', notes: '' })}>تعديل</Button>}
             </div>
           ))}
@@ -287,14 +287,14 @@ function InvoicesTab({ canManage }) {
             <div key={i.id} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: '160px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
-                  <span style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '13.5px', color: 'white' }}>#{i.invoice_number} · {i.restaurant_name}</span>
+                  <span style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '13.5px', color: 'white' }}>#{i.invoice_number} · {i.restaurant_name}</span>
                   <Badge text={INV_STATUS[i.status]} color={INV_COLOR[i.status]} />
                 </div>
                 <div style={{ fontSize: '11px', color: MUTED }}>
                   صافي {fmt(i.amount_net)} + ضريبة {fmt(i.vat_amount)} · أُصدرت {fmtDate(i.issued_at)}{i.due_at ? ` · تستحقّ ${fmtDate(i.due_at)}` : ''}{i.paid_at ? ` · دُفعت ${fmtDate(i.paid_at)}` : ''}
                 </div>
               </div>
-              <div style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '16px', color: 'white' }}>{fmt(i.total)} <span style={{ fontSize: '11px', color: MUTED }}>﷼</span></div>
+              <div style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '16px', color: 'white' }}>{fmt(i.total)} <span style={{ fontSize: '11px', color: MUTED }}>﷼</span></div>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 <Button variant="neutral" onClick={() => printInvoice(i)} title="طباعة / PDF" aria-label="طباعة الفاتورة">🖨️</Button>
                 <Button variant="success" onClick={() => whatsappInvoice(i)} title="مشاركة واتساب">واتساب</Button>

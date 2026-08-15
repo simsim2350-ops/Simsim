@@ -11,8 +11,8 @@ import { exportRows, printReport, buildTable, stampName } from '../lib/exportUti
 
 function Spinner() {
   return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0F1117', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
-      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,107,53,0.3)', borderTopColor:'#FF6B35', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Tajawal,sans-serif' }}>
+      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
       جارٍ التحميل...
     </div>
@@ -334,7 +334,7 @@ function CustomersInner() {
     <AppShell
       active="customers"
       title="👥 العملاء"
-      actions={<button onClick={() => navigate('/dashboard')} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'600', fontSize:'12px', cursor:'pointer', color:'#374151' }}>← الرئيسية</button>}
+      actions={<button onClick={() => navigate('/dashboard')} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'600', fontSize:'12px', cursor:'pointer', color:'#374151' }}>← الرئيسية</button>}
     >
         <div style={{ flex:1, overflowY:'auto', padding:'16px' }}>
 
@@ -362,13 +362,13 @@ function CustomersInner() {
             ].map(s => (
               <div key={s.label} style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding:'14px' }}>
                 <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', marginBottom:'10px' }}>{s.icon}</div>
-                <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'20px', color:s.color, marginBottom:'3px' }}>{s.val}</div>
+                <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'20px', color:s.color, marginBottom:'3px' }}>{s.val}</div>
                 <div style={{ fontSize:'12px', color:'#374151', fontWeight:'700' }}>{s.label}</div>
               </div>
             ))}
           </div>
 
-          <button onClick={() => setShowMoreStats(o => !o)} style={{ width:'100%', padding:'8px', marginBottom:'14px', background:'none', border:'none', color:'#FF6B35', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12.5px', cursor:'pointer' }}>
+          <button onClick={() => setShowMoreStats(o => !o)} style={{ width:'100%', padding:'8px', marginBottom:'14px', background:'none', border:'none', color:'#FF6A00', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12.5px', cursor:'pointer' }}>
             {showMoreStats ? 'إخفاء الإحصائيات الإضافية ▲' : 'عرض المزيد من الإحصائيات ▼'}
           </button>
           {showMoreStats && (
@@ -376,7 +376,7 @@ function CustomersInner() {
               {secondaryStatCards.map(s => (
                 <div key={s.label} style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding:'14px' }}>
                   <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', marginBottom:'10px' }}>{s.icon}</div>
-                  <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'20px', color:s.color, marginBottom:'3px' }}>{s.val}</div>
+                  <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'20px', color:s.color, marginBottom:'3px' }}>{s.val}</div>
                   <div style={{ fontSize:'12px', color:'#374151', fontWeight:'700' }}>{s.label}</div>
                 </div>
               ))}
@@ -427,13 +427,13 @@ function CustomersInner() {
               {loyaltyProgram?.enabled && <option value="points">الأعلى نقاطاً</option>}
               <option value="upgrade">الأقرب للترقية</option>
             </select>
-            <button onClick={() => setMoreFiltersOpen(true)} style={{ padding:'10px 14px', border:'1.5px solid #E5E7EB', borderRadius:'11px', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12.5px', cursor:'pointer', color:'#374151', flexShrink:0 }}>
+            <button onClick={() => setMoreFiltersOpen(true)} style={{ padding:'10px 14px', border:'1.5px solid #E5E7EB', borderRadius:'11px', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12.5px', cursor:'pointer', color:'#374151', flexShrink:0 }}>
               فلاتر أكثر {minSpent ? '●' : ''}
             </button>
-            <button onClick={exportCustomersCSV} disabled={filtered.length === 0} style={{ padding:'10px 14px', border:'1.5px solid #E5E7EB', borderRadius:'11px', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12.5px', cursor: filtered.length ? 'pointer':'not-allowed', color:'#059669', flexShrink:0, opacity: filtered.length ? 1 : 0.5 }}>
+            <button onClick={exportCustomersCSV} disabled={filtered.length === 0} style={{ padding:'10px 14px', border:'1.5px solid #E5E7EB', borderRadius:'11px', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12.5px', cursor: filtered.length ? 'pointer':'not-allowed', color:'#059669', flexShrink:0, opacity: filtered.length ? 1 : 0.5 }}>
               ⬇️ CSV
             </button>
-            <button onClick={printCustomers} disabled={filtered.length === 0} style={{ padding:'10px 14px', border:'1.5px solid #E5E7EB', borderRadius:'11px', background:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12.5px', cursor: filtered.length ? 'pointer':'not-allowed', color:'#374151', flexShrink:0, opacity: filtered.length ? 1 : 0.5 }}>
+            <button onClick={printCustomers} disabled={filtered.length === 0} style={{ padding:'10px 14px', border:'1.5px solid #E5E7EB', borderRadius:'11px', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12.5px', cursor: filtered.length ? 'pointer':'not-allowed', color:'#374151', flexShrink:0, opacity: filtered.length ? 1 : 0.5 }}>
               🖨️ طباعة / PDF
             </button>
           </div>
@@ -443,7 +443,7 @@ function CustomersInner() {
             <div style={{ textAlign:'center', padding:'60px 16px', color:'#9CA3AF' }}>
               <div style={{ fontSize:'48px', opacity:0.3, marginBottom:'12px' }}>👥</div>
               <div style={{ fontSize:'16px', fontWeight:'700', color:'#374151', marginBottom:'8px' }}>
-                {customersFull.length === 0 ? 'لا يوجد عملاء بعد' : 'لا توجد نتائج مطابقة'}
+                {customersFull.length === 0 ? 'ما في عملاء بعد' : 'ما لقينا نتائج مطابقة'}
               </div>
               <div style={{ fontSize:'13px' }}>
                 {customersFull.length === 0 ? 'سيظهر العملاء هنا تلقائياً مع أول طلب يدخل رقم جواله' : 'جرّب كلمة بحث أو فلتر مختلف'}
@@ -457,12 +457,12 @@ function CustomersInner() {
                 return (
                   <div key={c.phone} style={{ background:'white', borderRadius:'14px', border:'1.5px solid #E5E7EB', overflow:'hidden' }}>
                     <div onClick={() => { setDetailCustomer(c); setDetailTab('overview') }} style={{ padding:'14px 16px', display:'flex', alignItems:'center', gap:'12px', cursor:'pointer' }}>
-                      <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'linear-gradient(135deg,#667eea,#764ba2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'17px', fontWeight:'700', color:'white', fontFamily:'Cairo,sans-serif', flexShrink:0 }}>
+                      <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'linear-gradient(135deg,#667eea,#764ba2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'17px', fontWeight:'700', color:'white', fontFamily:'Tajawal,sans-serif', flexShrink:0 }}>
                         {(c.name || c.phone).charAt(0)}
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'3px', flexWrap:'wrap' }}>
-                          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px' }}>{c.name || 'بدون اسم'}</span>
+                          <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px' }}>{c.name || 'بدون اسم'}</span>
                           <span style={{ padding:'2px 8px', borderRadius:'100px', background:displayTier(c).bg, color:displayTier(c).color, fontSize:'10px', fontWeight:'700' }}>{displayTier(c).label}</span>
                           {situational && <span style={{ padding:'2px 8px', borderRadius:'100px', background:situational.bg, color:situational.color, fontSize:'10px', fontWeight:'700' }}>{situational.label}</span>}
                         </div>
@@ -472,7 +472,7 @@ function CustomersInner() {
                         </div>
                       </div>
                       <div style={{ textAlign:'left', flexShrink:0 }}>
-                        <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px', color:'#FF6B35' }}>{c.totalSpent.toFixed(0)} ﷼</div>
+                        <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'15px', color:'#FF6A00' }}>{c.totalSpent.toFixed(0)} ﷼</div>
                         <div style={{ fontSize:'11px', color:'#9CA3AF' }}>{c.orderCount} طلب</div>
                       </div>
                     </div>
@@ -504,7 +504,7 @@ function CustomersInner() {
             <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', animation:'fadeIn 0.2s ease' }}/>
             <div onClick={e => e.stopPropagation()} style={{ position:'relative', background:'white', width:'100%', maxWidth:'480px', borderRadius:'24px 24px 0 0', padding:'12px 16px 24px', maxHeight:'70vh', overflowY:'auto', animation:'slideUp 0.25s ease' }}>
               <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 14px' }}/>
-              <h3 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', margin:'0 0 16px', textAlign:'center' }}>فلاتر أكثر</h3>
+              <h3 style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'16px', margin:'0 0 16px', textAlign:'center' }}>فلاتر أكثر</h3>
               <label style={{ display:'block', fontSize:'12px', fontWeight:'700', color:'#6B7280', marginBottom:'6px' }}>الحد الأدنى للإنفاق (ريال)</label>
               <input
                 type="number" min="0" value={minSpent} onChange={e => setMinSpent(e.target.value)}
@@ -512,7 +512,7 @@ function CustomersInner() {
                 style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', outline:'none', direction:'ltr', textAlign:'left', boxSizing:'border-box' }}
               />
               <button onClick={() => { setMinSpent(''); }} style={{ marginTop:'10px', background:'none', border:'none', color:'#9CA3AF', fontSize:'12px', fontWeight:'700', cursor:'pointer', textDecoration:'underline' }}>مسح الفلتر</button>
-              <button onClick={() => setMoreFiltersOpen(false)} style={{ width:'100%', marginTop:'18px', padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
+              <button onClick={() => setMoreFiltersOpen(false)} style={{ width:'100%', marginTop:'18px', padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
                 تطبيق
               </button>
             </div>
@@ -537,12 +537,12 @@ function CustomersInner() {
                 <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'100px', margin:'0 auto 12px', flexShrink:0 }}/>
 
                 <div style={{ padding:'0 18px 14px', display:'flex', alignItems:'center', gap:'12px', flexShrink:0 }}>
-                  <div style={{ width:'50px', height:'50px', borderRadius:'50%', background:'linear-gradient(135deg,#667eea,#764ba2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'19px', fontWeight:'700', color:'white', fontFamily:'Cairo,sans-serif', flexShrink:0 }}>
+                  <div style={{ width:'50px', height:'50px', borderRadius:'50%', background:'linear-gradient(135deg,#667eea,#764ba2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'19px', fontWeight:'700', color:'white', fontFamily:'Tajawal,sans-serif', flexShrink:0 }}>
                     {(c.name || c.phone).charAt(0)}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap', marginBottom:'3px' }}>
-                      <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px' }}>{c.name || 'بدون اسم'}</span>
+                      <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'16px' }}>{c.name || 'بدون اسم'}</span>
                       <span style={{ padding:'2px 8px', borderRadius:'100px', background:displayTier(c).bg, color:displayTier(c).color, fontSize:'10px', fontWeight:'700' }}>{displayTier(c).label}</span>
                       {situational && <span style={{ padding:'2px 8px', borderRadius:'100px', background:situational.bg, color:situational.color, fontSize:'10px', fontWeight:'700' }}>{situational.label}</span>}
                     </div>
@@ -558,7 +558,7 @@ function CustomersInner() {
 
                 <div style={{ display:'flex', borderBottom:'1px solid #E5E7EB', padding:'0 18px', flexShrink:0, overflowX:'auto' }}>
                   {tabs.map(t => (
-                    <div key={t.key} onClick={() => setDetailTab(t.key)} style={{ padding:'10px 12px', fontSize:'12.5px', fontWeight:'700', color: detailTab === t.key ? '#FF6B35' : '#6B7280', borderBottom: detailTab === t.key ? '2.5px solid #FF6B35' : '2.5px solid transparent', cursor:'pointer', whiteSpace:'nowrap' }}>
+                    <div key={t.key} onClick={() => setDetailTab(t.key)} style={{ padding:'10px 12px', fontSize:'12.5px', fontWeight:'700', color: detailTab === t.key ? '#FF6A00' : '#6B7280', borderBottom: detailTab === t.key ? '2.5px solid #FF6A00' : '2.5px solid transparent', cursor:'pointer', whiteSpace:'nowrap' }}>
                       {t.label}
                     </div>
                   ))}
@@ -575,7 +575,7 @@ function CustomersInner() {
                           { label:'آخر طلب', val: c.lastOrderAt ? new Date(c.lastOrderAt).toLocaleDateString('ar', { day:'numeric', month:'short' }) : '—' },
                         ].map(s => (
                           <div key={s.label} style={{ background:'#F8F9FB', borderRadius:'12px', padding:'12px' }}>
-                            <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', color:'#0F1117' }}>{s.val}</div>
+                            <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'16px', color:'#0B0B0F' }}>{s.val}</div>
                             <div style={{ fontSize:'11px', color:'#9CA3AF', fontWeight:'700', marginTop:'2px' }}>{s.label}</div>
                           </div>
                         ))}
@@ -609,14 +609,14 @@ function CustomersInner() {
                       {detailData.orders.map(o => (
                         <div key={o.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', background:'#F8F9FB', borderRadius:'10px', border: o.status === 'cancelled' ? '1px dashed #FCA5A5' : '1px solid #F0F0F0' }}>
                           <div>
-                            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'13px' }}>{o.order_number}</span>
+                            <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px' }}>{o.order_number}</span>
                             <span style={{ fontSize:'11px', color:'#9CA3AF', marginRight:'8px' }}>
                               {new Date(o.created_at).toLocaleDateString('ar', { day:'numeric', month:'short' })}
                             </span>
                             {o.branch_id && <span style={{ fontSize:'10px', color:'#9CA3AF', marginRight:'6px' }}>· {branchName(o.branch_id)}</span>}
                             {o.status === 'cancelled' && <span style={{ fontSize:'10px', color:'#EF4444', fontWeight:'700', marginRight:'6px' }}>ملغى</span>}
                           </div>
-                          <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color: o.status === 'cancelled' ? '#9CA3AF' : '#FF6B35' }}>{Number(o.total).toFixed(0)} ﷼</span>
+                          <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', color: o.status === 'cancelled' ? '#9CA3AF' : '#FF6A00' }}>{Number(o.total).toFixed(0)} ﷼</span>
                         </div>
                       ))}
                     </div>
@@ -627,13 +627,13 @@ function CustomersInner() {
                     const pct = threshold > 0 ? Math.min(100, (c.loyaltyBalance / threshold) * 100) : 0
                     return (
                       <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
-                        <div style={{ background:'linear-gradient(120deg,#FF6B3516,#FF6B3508)', border:'1px solid #FF6B3530', borderRadius:'14px', padding:'16px' }}>
+                        <div style={{ background:'linear-gradient(120deg,#FF6A0016,#FF6A0008)', border:'1px solid #FF6A0030', borderRadius:'14px', padding:'16px' }}>
                           <div style={{ fontSize:'12px', color:'#9CA3AF', fontWeight:'700', marginBottom:'4px' }}>رصيد النقاط</div>
-                          <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'26px', color:'#FF6B35' }}>{c.loyaltyBalance}</div>
+                          <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'26px', color:'#FF6A00' }}>{c.loyaltyBalance}</div>
                           {threshold > 0 && (
                             <>
                               <div style={{ height:'8px', background:'#E5E7EB', borderRadius:'100px', marginTop:'10px', overflow:'hidden' }}>
-                                <div style={{ height:'100%', width:`${pct}%`, background:'#FF6B35', borderRadius:'100px' }}/>
+                                <div style={{ height:'100%', width:`${pct}%`, background:'#FF6A00', borderRadius:'100px' }}/>
                               </div>
                               <div style={{ fontSize:'11.5px', color:'#9CA3AF', marginTop:'6px' }}>
                                 {c.loyaltyBalance >= threshold ? 'مؤهّل للمكافأة 🎉' : `باقي ${threshold - c.loyaltyBalance} نقطة على المكافأة`}
@@ -643,11 +643,11 @@ function CustomersInner() {
                         </div>
                         <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'10px' }}>
                           <div style={{ background:'#F8F9FB', borderRadius:'12px', padding:'12px' }}>
-                            <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px' }}>{c.loyaltyEarned}</div>
+                            <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'16px' }}>{c.loyaltyEarned}</div>
                             <div style={{ fontSize:'11px', color:'#9CA3AF', fontWeight:'700', marginTop:'2px' }}>نقاط مكتسبة</div>
                           </div>
                           <div style={{ background:'#F8F9FB', borderRadius:'12px', padding:'12px' }}>
-                            <div style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px' }}>{c.loyaltyRedeemed}</div>
+                            <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'16px' }}>{c.loyaltyRedeemed}</div>
                             <div style={{ fontSize:'11px', color:'#9CA3AF', fontWeight:'700', marginTop:'2px' }}>نقاط مُستبدَلة</div>
                           </div>
                         </div>
@@ -669,7 +669,7 @@ function CustomersInner() {
                                       <div style={{ fontSize:'12px', fontWeight:'600' }}>{t.reason || t.type}</div>
                                       <div style={{ fontSize:'10.5px', color:'#9CA3AF' }}>{new Date(t.created_at).toLocaleDateString('ar', { day:'numeric', month:'short' })} · رصيد: {t.balance_after}</div>
                                     </div>
-                                    <div style={{ flexShrink:0, fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'13px', color: pos ? '#10B981' : '#EF4444' }}>{pos ? '+' : ''}{t.points}</div>
+                                    <div style={{ flexShrink:0, fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'13px', color: pos ? '#10B981' : '#EF4444' }}>{pos ? '+' : ''}{t.points}</div>
                                   </div>
                                 )
                               })}
@@ -690,9 +690,9 @@ function CustomersInner() {
                             <span style={{ fontSize:'13px', fontWeight:'800', color:'#F59E0B' }}>{'⭐'.repeat(r.rating || 0)}</span>
                             <span style={{ fontSize:'11px', color:'#9CA3AF' }}>{new Date(r.created_at).toLocaleDateString('ar', { day:'numeric', month:'short' })}</span>
                           </div>
-                          {r.comment && <div style={{ fontSize:'12.5px', color:'#0F1117', lineHeight:'1.6' }}>{r.comment}</div>}
+                          {r.comment && <div style={{ fontSize:'12.5px', color:'#0B0B0F', lineHeight:'1.6' }}>{r.comment}</div>}
                           {r.reply && (
-                            <div style={{ marginTop:'8px', paddingRight:'10px', borderRight:'2px solid #FF6B3540', fontSize:'11.5px', color:'#6B7280' }}>
+                            <div style={{ marginTop:'8px', paddingRight:'10px', borderRight:'2px solid #FF6A0040', fontSize:'11.5px', color:'#6B7280' }}>
                               <b style={{ color:'#C2410C' }}>ردّ داخلي:</b> {r.reply}
                             </div>
                           )}

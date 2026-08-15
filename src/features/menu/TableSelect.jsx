@@ -22,10 +22,10 @@ export default function TableSelect({ tables, value, onChange, brandColor, t }) 
   return (
     <>
       <style>{`
-        .simsim-table-trigger { background:white; color:#0F1117; border-color:#E5E7EB; }
-        .simsim-table-sheet { background:white; color:#0F1117; }
-        .simsim-table-search { background:white; color:#0F1117; border-color:#E5E7EB; }
-        .simsim-table-row { color:#0F1117; border-color:#F3F4F6; }
+        .simsim-table-trigger { background:white; color:#0B0B0F; border-color:#E5E7EB; }
+        .simsim-table-sheet { background:white; color:#0B0B0F; }
+        .simsim-table-search { background:white; color:#0B0B0F; border-color:#E5E7EB; }
+        .simsim-table-row { color:#0B0B0F; border-color:#F3F4F6; }
         @media (prefers-color-scheme: dark) {
           .simsim-table-trigger { background:#1A1B22; color:#F3F4F6; border-color:#2E2F38; }
           .simsim-table-sheet { background:#1A1B22; color:#F3F4F6; }
@@ -49,7 +49,7 @@ export default function TableSelect({ tables, value, onChange, brandColor, t }) 
           <div onClick={() => setOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)', animation:'fadeIn 0.2s ease' }}/>
           <div className="simsim-table-sheet" style={{ borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', maxHeight:'70vh', display:'flex', flexDirection:'column', animation:'slideUp 0.25s ease', position:'relative', overflow:'hidden' }}>
             <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'2px', margin:'12px auto' }}/>
-            <div style={{ padding:'0 18px 12px', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', flexShrink:0 }}>{t('tableReq')}</div>
+            <div style={{ padding:'0 18px 12px', fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'16px', flexShrink:0 }}>{t('tableReq')}</div>
 
             {tables.length > 30 && (
               <div style={{ padding:'0 18px 12px', flexShrink:0 }}>

@@ -13,7 +13,7 @@ import {
 } from './catalogApi'
 
 // ثيم وحدة المنصّة (داكن/بنفسجي) — نظير Flags.jsx
-const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#7C3AED'
+const CARD = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF', ACCENT = '#FF6A00'
 const TYPES = ['feature', 'limit', 'option', 'mode']
 const SCOPES = ['platform', 'restaurant', 'user']
 const LIFECYCLES = ['draft', 'active', 'deprecated', 'archived']
@@ -44,7 +44,7 @@ const inputStyle = {
 }
 const btn = (bg) => ({
   padding: '9px 15px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-  fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '12.5px', color: 'white', background: bg,
+  fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '12.5px', color: 'white', background: bg,
 })
 const mono = { fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', direction: 'ltr', fontSize: '12px' }
 const Loading = () => <div style={{ color: MUTED, textAlign: 'center', padding: '48px', fontSize: '13px' }}>جارٍ التحميل…</div>
@@ -63,7 +63,7 @@ function Modal({ title, children, onClose, maxWidth = '460px' }) {
     <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)' }} />
       <div style={{ position: 'relative', background: CARD, border: `1px solid ${BORDER}`, borderRadius: '16px', padding: '20px', width: '100%', maxWidth, maxHeight: '88vh', overflowY: 'auto' }}>
-        <div style={{ fontSize: '15px', fontWeight: '900', color: 'white', fontFamily: 'Cairo,sans-serif', marginBottom: '16px' }}>{title}</div>
+        <div style={{ fontSize: '15px', fontWeight: '900', color: 'white', fontFamily: 'Tajawal,sans-serif', marginBottom: '16px' }}>{title}</div>
         {children}
       </div>
     </div>
@@ -241,7 +241,7 @@ function AdvancedEditor() {
                   <div key={c.key} onClick={() => openDetail(c.key)}
                     style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 8px',
                       paddingRight: c.parent_key ? '24px' : '8px', borderRadius: '9px', cursor: 'pointer',
-                      background: selected === c.key ? 'rgba(124,58,237,0.18)' : 'transparent' }}>
+                      background: selected === c.key ? 'rgba(255,106,0,0.18)' : 'transparent' }}>
                     <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: RUNTIME_COLOR[c.runtime_status] || MUTED, flexShrink: 0 }} />
                     <span style={{ fontSize: '13px', color: 'white', fontWeight: c.parent_key ? '500' : '700' }}>{c.icon ? `${c.icon} ` : ''}{c.name}</span>
                     <span style={{ color: MUTED, fontSize: '10.5px' }}>{c.type !== 'feature' ? TYPE_AR[c.type] : ''}</span>
@@ -318,7 +318,7 @@ function AdvancedEditor() {
                     {overrides.map((o) => (
                       <Row key={o.restaurant_id}>
                         <span style={{ fontSize: '12.5px', color: 'white' }}>
-                          {o.restaurant_name}: <b style={{ color: '#C4B5FD' }}>{o.value != null ? JSON.stringify(o.value) : (o.enabled == null ? '—' : (o.enabled ? 'مفعّلة' : 'معطّلة'))}</b>
+                          {o.restaurant_name}: <b style={{ color: '#FFB27F' }}>{o.value != null ? JSON.stringify(o.value) : (o.enabled == null ? '—' : (o.enabled ? 'مفعّلة' : 'معطّلة'))}</b>
                         </span>
                         {canWrite && <button onClick={async () => { await setOverride(o.restaurant_id, form.key, null); loadOverrides() }} style={btn('#374151')}>إزالة</button>}
                       </Row>
@@ -356,7 +356,7 @@ export default function Catalog() {
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '18px', borderBottom: `1px solid ${BORDER}`, paddingBottom: '14px' }}>
         {SCREENS.map((s) => (
           <button key={s.key} onClick={() => setScreen(s.key)}
-            style={{ padding: '9px 15px', borderRadius: '10px', cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '13px', border: 'none',
+            style={{ padding: '9px 15px', borderRadius: '10px', cursor: 'pointer', fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '13px', border: 'none',
               background: screen === s.key ? ACCENT : '#12141C', color: screen === s.key ? 'white' : MUTED }}>
             {s.label}
           </button>
@@ -376,7 +376,7 @@ export default function Catalog() {
 function Section({ title, children }) {
   return (
     <div style={{ marginTop: '16px', borderTop: `1px solid ${BORDER}`, paddingTop: '12px' }}>
-      <div style={{ fontSize: '12.5px', color: 'white', fontWeight: '800', marginBottom: '8px', fontFamily: 'Cairo,sans-serif' }}>{title}</div>
+      <div style={{ fontSize: '12.5px', color: 'white', fontWeight: '800', marginBottom: '8px', fontFamily: 'Tajawal,sans-serif' }}>{title}</div>
       {children}
     </div>
   )
@@ -434,7 +434,7 @@ function CapForm({ form, setForm, cats, caps }) {
             return (
               <button key={r} type="button" onClick={() => toggleRole(r)}
                 style={{ padding: '7px 12px', borderRadius: '9px', cursor: 'pointer', fontSize: '12px', fontWeight: '700',
-                  border: `1.5px solid ${on ? ACCENT : BORDER}`, background: on ? 'rgba(124,58,237,0.18)' : '#0B0D12', color: on ? '#C4B5FD' : MUTED }}>
+                  border: `1.5px solid ${on ? ACCENT : BORDER}`, background: on ? 'rgba(255,106,0,0.18)' : '#0B0D12', color: on ? '#FFB27F' : MUTED }}>
                 {ROLE_AR[r]}
               </button>
             )

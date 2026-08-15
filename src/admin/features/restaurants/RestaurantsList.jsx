@@ -77,7 +77,7 @@ export default function RestaurantsList() {
           <div style={{ flex: 1 }} />
           <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
             {FILTERS.map(([v, l]) => (
-              <button key={v} onClick={() => setFilter(v)} style={{ padding: '6px 11px', borderRadius: '9px', border: `1px solid ${filter === v ? ACCENT : BORDER}`, background: filter === v ? 'rgba(124,58,237,0.15)' : 'transparent', color: filter === v ? '#C4B5FD' : MUTED, fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>{l}</button>
+              <button key={v} onClick={() => setFilter(v)} style={{ padding: '6px 11px', borderRadius: '9px', border: `1px solid ${filter === v ? ACCENT : BORDER}`, background: filter === v ? 'rgba(255,106,0,0.15)' : 'transparent', color: filter === v ? '#FFB27F' : MUTED, fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>{l}</button>
             ))}
           </div>
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="بحث…" style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '8px 12px', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '13px', outline: 'none', minWidth: '160px' }} />
@@ -97,7 +97,7 @@ export default function RestaurantsList() {
                 aria-label={`فتح ملف ${r.name}`}
                 style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '14px', cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '3px' }}>
-                  <span style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '800', color: 'white', fontSize: '14px', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                  <span style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '800', color: 'white', fontSize: '14px', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
                   {r.platform_suspended && <span style={{ fontSize: '9px', fontWeight: '800', color: '#FCA5A5', background: 'rgba(239,68,68,0.18)', borderRadius: '100px', padding: '1px 7px' }}>معلّق</span>}
                 </div>
                 <div style={{ fontSize: '10.5px', color: MUTED, direction: 'ltr', textAlign: 'right', marginBottom: '10px' }}>/{r.slug}</div>
@@ -151,7 +151,7 @@ export default function RestaurantsList() {
                     {/* المطعم */}
                     <div role="cell" style={{ minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                        <span style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '800', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                        <span style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '800', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
                         {r.platform_suspended && <span style={{ fontSize: '9px', fontWeight: '800', color: '#FCA5A5', background: 'rgba(239,68,68,0.18)', borderRadius: '100px', padding: '1px 7px' }}>معلّق</span>}
                       </div>
                       <div style={{ fontSize: '10.5px', color: MUTED, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', direction: 'ltr' }}>/{r.slug}</div>
@@ -181,7 +181,7 @@ export default function RestaurantsList() {
             </div>
             {canLoadMore && (
               <div onClick={() => fetchPage({ search: q, sort, dir, filter: filter || null }, rows.length)}
-                style={{ padding: '12px', textAlign: 'center', color: '#C4B5FD', fontFamily: 'Cairo,sans-serif', fontSize: '12.5px', fontWeight: '800', cursor: loadingMore ? 'default' : 'pointer', opacity: loadingMore ? 0.6 : 1 }}>
+                style={{ padding: '12px', textAlign: 'center', color: '#FFB27F', fontFamily: 'Tajawal,sans-serif', fontSize: '12.5px', fontWeight: '800', cursor: loadingMore ? 'default' : 'pointer', opacity: loadingMore ? 0.6 : 1 }}>
                 {loadingMore ? 'جارٍ…' : `تحميل المزيد (${total - rows.length})`}
               </div>
             )}
@@ -190,7 +190,7 @@ export default function RestaurantsList() {
 
         {!error && !loading && rows.length > 0 && isMobile && canLoadMore && (
           <div onClick={() => fetchPage({ search: q, sort, dir, filter: filter || null }, rows.length)}
-            style={{ marginTop: '10px', padding: '12px', textAlign: 'center', color: '#C4B5FD', fontFamily: 'Cairo,sans-serif', fontSize: '12.5px', fontWeight: '800', cursor: loadingMore ? 'default' : 'pointer', opacity: loadingMore ? 0.6 : 1 }}>
+            style={{ marginTop: '10px', padding: '12px', textAlign: 'center', color: '#FFB27F', fontFamily: 'Tajawal,sans-serif', fontSize: '12.5px', fontWeight: '800', cursor: loadingMore ? 'default' : 'pointer', opacity: loadingMore ? 0.6 : 1 }}>
             {loadingMore ? 'جارٍ…' : `تحميل المزيد (${total - rows.length})`}
           </div>
         )}

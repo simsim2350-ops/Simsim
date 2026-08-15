@@ -6,7 +6,7 @@ import { NAV_ICON_MAP, IconSearch } from './ui/Icon'
 
 // شريط أوامر ⌘K لـ Super Admin: بحث المطاعم (خادمي، بإعادة استخدام admin_list_restaurants)
 // + القفز لأقسام اللوحة. بحث مؤجَّل (debounce) بحد أدنى حرفين، وتنقّل كامل بلوحة المفاتيح.
-const PANEL = '#12141C', BORDER = 'rgba(255,255,255,0.10)', MUTED = '#9CA3AF', ACCENT = '#7C3AED'
+const PANEL = '#12141C', BORDER = 'rgba(255,255,255,0.10)', MUTED = '#9CA3AF', ACCENT = '#FF6A00'
 const NAV_ITEMS = ADMIN_NAV.filter((n) => n.ready)
 
 export default function CommandPalette({ onClose }) {
@@ -94,7 +94,7 @@ export default function CommandPalette({ onClose }) {
                   onClick={() => choose(it)} onMouseEnter={() => setActive(idx)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 12px', borderRadius: '10px', cursor: 'pointer',
-                    background: idx === active ? 'rgba(124,58,237,0.18)' : 'transparent',
+                    background: idx === active ? 'rgba(255,106,0,0.18)' : 'transparent',
                   }}>
                   {it.type === 'nav' ? <it.icon size={16} style={{ flexShrink: 0 }} /> : <span style={{ fontSize: '16px' }}>{it.icon}</span>}
                   <span style={{ flex: 1, fontSize: '13.5px', fontWeight: '700', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.label}</span>

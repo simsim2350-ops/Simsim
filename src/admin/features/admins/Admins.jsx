@@ -41,7 +41,7 @@ export default function Admins() {
           {[['admins', '🛡️ المشرفون'], ['roles', '🎭 الأدوار']].map(([k, l]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               padding: '10px 16px', background: 'transparent', border: 'none', cursor: 'pointer',
-              fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '13px',
+              fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '13px',
               color: tab === k ? 'white' : MUTED, borderBottom: tab === k ? `2px solid ${ACCENT}` : '2px solid transparent',
             }}>{l}</button>
           ))}
@@ -101,10 +101,10 @@ function AdminsTab({ canManage }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {admins.map((a) => (
           <div key={a.user_id} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(124,58,237,0.15)', border: `1px solid ${ACCENT}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>🛡️</div>
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(255,106,0,0.15)', border: `1px solid ${ACCENT}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>🛡️</div>
             <div style={{ flex: 1, minWidth: '160px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
-                <span style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '13.5px', color: 'white', direction: 'ltr' }}>{a.email || '—'}</span>
+                <span style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '13.5px', color: 'white', direction: 'ltr' }}>{a.email || '—'}</span>
                 {!a.is_active && <span style={{ fontSize: '10px', fontWeight: '800', color: '#F87171', background: 'rgba(239,68,68,0.12)', borderRadius: '100px', padding: '2px 9px' }}>معطّل</span>}
               </div>
               <div style={{ fontSize: '11px', color: MUTED }}>أُضيف {fmtDate(a.created_at)}</div>
@@ -117,7 +117,7 @@ function AdminsTab({ canManage }) {
                 <Button variant={a.is_active ? 'neutral' : 'success'} onClick={() => toggleActive(a)}>{a.is_active ? 'تعطيل' : 'تفعيل'}</Button>
                 <Button variant="danger" onClick={() => setConfirm(a)}>إلغاء</Button>
               </>
-            ) : <Badge text={a.role_name || '—'} color="#C4B5FD" bg={ACCENT_SOFT} />}
+            ) : <Badge text={a.role_name || '—'} color="#FFB27F" bg={ACCENT_SOFT} />}
           </div>
         ))}
       </div>
@@ -188,13 +188,13 @@ function RolesTab({ canManage }) {
           <div key={r.id} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: '180px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '5px' }}>
-                <span style={{ fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '14px', color: 'white' }}>{r.name}</span>
+                <span style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '14px', color: 'white' }}>{r.name}</span>
                 {r.is_system && <span style={{ fontSize: '10px', fontWeight: '800', color: '#FBBF24', background: 'rgba(251,191,36,0.12)', borderRadius: '100px', padding: '2px 9px' }}>نظام</span>}
                 <span style={{ fontSize: '10px', color: MUTED }}>· {Number(r.admins_count) || 0} مشرف</span>
               </div>
               {r.description && <div style={{ fontSize: '11.5px', color: MUTED, marginBottom: '6px' }}>{r.description}</div>}
               <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                {(r.capabilities || []).map((c) => <Badge key={c} text={capLabel(c)} color="#C4B5FD" bg={ACCENT_SOFT} />)}
+                {(r.capabilities || []).map((c) => <Badge key={c} text={capLabel(c)} color="#FFB27F" bg={ACCENT_SOFT} />)}
               </div>
             </div>
             {canManage && !r.is_system && (

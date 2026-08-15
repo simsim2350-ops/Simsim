@@ -7,7 +7,7 @@ import { IconShield, IconEye, IconEyeOff } from './components/ui/Icon'
 
 // باب دخول مستقل لـ Super Admin — لا يمرّ بأي شاشة مطعم أو Onboarding إطلاقاً.
 // هوية «وضع المنصّة» الداكنة/البنفسجية. من ليس مشرفاً يُرفض ويُسجَّل خروجه (الخيار أ).
-const ACCENT = '#7C3AED', BG = '#0B0D12', PANEL = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF'
+const ACCENT = '#FF6A00', BG = '#0B0D12', PANEL = '#12141C', BORDER = 'rgba(255,255,255,0.08)', MUTED = '#9CA3AF'
 
 export default function AdminLogin() {
   const navigate = useNavigate()
@@ -54,8 +54,11 @@ export default function AdminLogin() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', direction: 'rtl', background: BG, padding: '20px', fontFamily: 'Tajawal,sans-serif' }}>
       <div style={{ width: '100%', maxWidth: '400px' }}>
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{ fontSize: '11px', letterSpacing: '3px', color: ACCENT, fontWeight: '800' }}>SIMSIM</div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '24px', fontWeight: '900', color: 'white', fontFamily: 'Cairo,sans-serif', marginTop: '4px' }}><IconShield size={22} /> لوحة المنصّة</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <img src="/simsim-s.svg" alt="" style={{ height: '22px', width: 'auto', display: 'block' }} />
+            <span style={{ fontFamily: 'Poppins,sans-serif', fontSize: '18px', fontWeight: '700', color: 'white' }}>sim<span style={{ color: ACCENT }}>sim</span></span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '24px', fontWeight: '900', color: 'white', fontFamily: 'Tajawal,sans-serif', marginTop: '4px' }}><IconShield size={22} /> لوحة المنصّة</div>
           <div style={{ fontSize: '13px', color: MUTED, marginTop: '6px' }}>دخول مخصّص لمشرفي منصّة سِمسِم</div>
         </div>
 
@@ -71,7 +74,7 @@ export default function AdminLogin() {
               <button type="button" onClick={() => setShowPass(!showPass)} aria-label={showPass ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: MUTED, cursor: 'pointer', display: 'flex' }}>{showPass ? <IconEyeOff size={17} /> : <IconEye size={17} />}</button>
             </div>
           </label>
-          <button type="submit" disabled={loading} style={{ width: '100%', padding: '14px', borderRadius: '13px', border: 'none', background: ACCENT, color: 'white', fontFamily: 'Cairo,sans-serif', fontWeight: '800', fontSize: '15px', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}>
+          <button type="submit" disabled={loading} style={{ width: '100%', padding: '14px', borderRadius: '13px', border: 'none', background: ACCENT, color: 'white', fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '15px', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}>
             {loading ? 'جارٍ الدخول…' : 'دخول لوحة المنصّة ←'}
           </button>
         </form>

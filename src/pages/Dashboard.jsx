@@ -109,7 +109,7 @@ export default function Dashboard() {
     try {
       if (navigator.share && isMobile) { await navigator.share({ title: restaurant?.name, url }); return }
       await navigator.clipboard.writeText(url); toast.success('تم نسخ رابط المنيو! 📋')
-    } catch { toast.error('تعذّر النسخ') }
+    } catch { toast.error('تعذّر النسخ، انسخه يدوياً') }
   }
 
   // ===== الحسابات =====
@@ -171,8 +171,8 @@ export default function Dashboard() {
   }
 
   if (loading) return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0F1117', color:'white', gap:'16px', fontFamily:'Cairo,sans-serif' }}>
-      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,107,53,0.3)', borderTopColor:'#FF6B35', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Tajawal,sans-serif' }}>
+      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       جارٍ التحميل...
     </div>
@@ -181,16 +181,16 @@ export default function Dashboard() {
   const todayLabel = new Date().toLocaleDateString('ar', { weekday:'long', day:'numeric', month:'long' })
 
   const CSS = `
-    .dash{ --primary:#FF6B35; --success:#10B981; --warning:#F59E0B; --error:#EF4444; --info:#3B82F6; --border:#E5E7EB; --muted:#6B7280; --s2:#F8F9FB; }
+    .dash{ --primary:#FF6A00; --success:#10B981; --warning:#F59E0B; --error:#EF4444; --info:#3B82F6; --border:#E5E7EB; --muted:#6B7280; --s2:#F8F9FB; }
     .dash *{ box-sizing:border-box; }
     @keyframes cardIn{ from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none} }
     @keyframes blink{ 0%,100%{opacity:1} 50%{opacity:.3} }
     .quick-actions{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
     .qa-btn{ background:#fff; border:1px solid var(--border); border-radius:14px; padding:16px 10px; display:flex; flex-direction:column; align-items:center; gap:7px; cursor:pointer; transition:all .2s; }
-    .qa-btn:hover{ border-color:rgba(255,107,53,.4); transform:translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,.06); }
+    .qa-btn:hover{ border-color:rgba(255,106,0,.4); transform:translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,.06); }
     .qa-btn.primary{ background:var(--primary); border-color:var(--primary); }
     .qa-btn.primary .qa-label{ color:#fff; } .qa-btn.primary .qa-icon{ filter:none; }
-    .qa-icon{ font-size:22px; } .qa-label{ font-size:12.5px; font-weight:800; font-family:'Cairo',sans-serif; color:#0F1117; }
+    .qa-icon{ font-size:22px; } .qa-label{ font-size:12.5px; font-weight:800; font-family:'Tajawal',sans-serif; color:#0B0B0F; }
     .stats-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
     .stat-card{ background:#fff; border-radius:18px; padding:18px 20px; border:1px solid var(--border); position:relative; overflow:hidden; transition:all .25s; animation:cardIn .5s ease both; }
     .stat-card:hover{ transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,.07); }
@@ -202,19 +202,19 @@ export default function Dashboard() {
     .stat-card.gold::after{ background:linear-gradient(90deg,var(--warning),#FCD34D); }
     .stat-top{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; }
     .stat-icon{ width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; }
-    .stat-icon.orange{ background:rgba(255,107,53,.1);} .stat-icon.green{ background:rgba(16,185,129,.1);} .stat-icon.blue{ background:rgba(59,130,246,.1);} .stat-icon.gold{ background:rgba(245,158,11,.1);}
+    .stat-icon.orange{ background:rgba(255,106,0,.1);} .stat-icon.green{ background:rgba(16,185,129,.1);} .stat-icon.blue{ background:rgba(59,130,246,.1);} .stat-icon.gold{ background:rgba(245,158,11,.1);}
     .stat-trend{ display:flex; align-items:center; gap:4px; font-size:12px; font-weight:800; padding:3px 8px; border-radius:100px; }
     .stat-trend.up{ background:rgba(16,185,129,.1); color:var(--success);} .stat-trend.down{ background:rgba(239,68,68,.1); color:var(--error);}
-    .stat-value{ font-family:'Cairo',sans-serif; font-weight:900; font-size:28px; color:#0F1117; line-height:1; margin-bottom:4px; letter-spacing:-1px; }
+    .stat-value{ font-family:'Tajawal',sans-serif; font-weight:900; font-size:28px; color:#0B0B0F; line-height:1; margin-bottom:4px; letter-spacing:-1px; }
     .stat-label{ font-size:13px; color:var(--muted); font-weight:600; }
     .stat-sub{ font-size:11px; color:var(--muted); margin-top:8px; padding-top:10px; border-top:1px solid var(--border); }
     .main-grid{ display:grid; grid-template-columns:1fr 340px; gap:16px; }
     .card{ background:#fff; border-radius:18px; border:1px solid var(--border); overflow:hidden; animation:cardIn .5s ease both; }
     .card-header{ padding:16px 18px 14px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
-    .card-title{ font-size:15px; font-weight:800; color:#0F1117; display:flex; align-items:center; gap:8px; }
+    .card-title{ font-size:15px; font-weight:800; color:#0B0B0F; display:flex; align-items:center; gap:8px; }
     .card-action{ font-size:12px; font-weight:700; color:var(--primary); cursor:pointer; background:none; border:none; font-family:'Tajawal',sans-serif; }
     .chart-tabs{ display:flex; gap:4px; padding:4px; background:var(--s2); border-radius:10px; }
-    .chart-tab{ padding:5px 12px; border-radius:7px; font-size:12px; font-weight:700; color:var(--muted); cursor:pointer; border:none; background:none; font-family:'Cairo',sans-serif; }
+    .chart-tab{ padding:5px 12px; border-radius:7px; font-size:12px; font-weight:700; color:var(--muted); cursor:pointer; border:none; background:none; font-family:'Tajawal',sans-serif; }
     .chart-tab.active{ background:#fff; color:var(--primary); box-shadow:0 1px 3px rgba(0,0,0,.08); }
     .orders-filters{ padding:12px 16px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--border); overflow-x:auto; }
     .filter-chip{ padding:5px 14px; border-radius:100px; border:1.5px solid var(--border); background:#fff; font-size:12px; font-weight:700; color:var(--muted); cursor:pointer; white-space:nowrap; transition:all .2s; }
@@ -224,7 +224,7 @@ export default function Dashboard() {
     .otable th{ padding:10px 16px; text-align:right; font-size:11px; font-weight:800; color:var(--muted); background:var(--s2); border-bottom:1px solid var(--border); white-space:nowrap; }
     .otable td{ padding:12px 16px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:middle; }
     .otable tr:last-child td{ border-bottom:none; } .otable tbody tr{ cursor:pointer; transition:background .15s; } .otable tbody tr:hover td{ background:var(--s2); }
-    .avatar{ width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; font-family:'Cairo',sans-serif; flex-shrink:0; }
+    .avatar{ width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; font-family:'Tajawal',sans-serif; flex-shrink:0; }
     .badge{ display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:100px; font-size:11px; font-weight:800; white-space:nowrap; }
     .badge::before{ content:''; width:5px; height:5px; border-radius:50%; }
     .badge.pending{ background:#FEF3C7; color:#92400E;} .badge.pending::before{ background:#F59E0B;}
@@ -251,7 +251,7 @@ export default function Dashboard() {
       badges={{ orders: liveOrders.length }}
       actions={<>
         {!isMobile && <span style={{ fontSize:'12px', color:'#6B7280', background:'#F3F4F6', padding:'6px 12px', borderRadius:'100px', fontWeight:'700', whiteSpace:'nowrap' }}>📅 {todayLabel}</span>}
-        <button onClick={shareLink} style={{ padding:'8px 14px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6B35,#E85A24)', color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', whiteSpace:'nowrap' }}>📤 مشاركة المنيو</button>
+        <button onClick={shareLink} style={{ padding:'8px 14px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', whiteSpace:'nowrap' }}>📤 مشاركة المنيو</button>
       </>}
     >
       <div className="dash" style={{ flex:1, minHeight:0, display:'flex', flexDirection:'column' }}>
@@ -310,12 +310,12 @@ export default function Dashboard() {
                   <div style={{ padding:'16px' }}>
                     <svg viewBox="0 0 700 180" style={{ width:'100%', height: isMobile?'150px':'180px' }}>
                       {[36,72,108,144].map(y => <line key={y} x1="0" y1={y} x2="700" y2={y} stroke="#F0F2F5" strokeWidth="1"/>)}
-                      <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#FF6B35" stopOpacity="0.15"/><stop offset="100%" stopColor="#FF6B35" stopOpacity="0"/></linearGradient></defs>
+                      <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#FF6A00" stopOpacity="0.15"/><stop offset="100%" stopColor="#FF6A00" stopOpacity="0"/></linearGradient></defs>
                       <path d={chart.area} fill="url(#ag)"/>
-                      <path d={chart.line} fill="none" stroke="#FF6B35" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      {chart.pts.map((p,i) => <circle key={i} cx={p.x} cy={p.y} r={i===chart.pts.length-1?6:4} fill={i===chart.pts.length-1?'#FF6B35':'white'} stroke={i===chart.pts.length-1?'white':'#FF6B35'} strokeWidth="2.5"/>)}
+                      <path d={chart.line} fill="none" stroke="#FF6A00" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      {chart.pts.map((p,i) => <circle key={i} cx={p.x} cy={p.y} r={i===chart.pts.length-1?6:4} fill={i===chart.pts.length-1?'#FF6A00':'white'} stroke={i===chart.pts.length-1?'white':'#FF6A00'} strokeWidth="2.5"/>)}
                       {chart.pts.map((p,i) => ((chart.pts.length<=8) || i%Math.ceil(chart.pts.length/7)===0 || i===chart.pts.length-1) && (
-                        <text key={'t'+i} x={p.x} y="176" textAnchor="middle" fontSize="11" fill={i===chart.pts.length-1?'#FF6B35':'#9CA3AF'} fontFamily="Cairo" fontWeight={i===chart.pts.length-1?'bold':'normal'}>{p.label}</text>
+                        <text key={'t'+i} x={p.x} y="176" textAnchor="middle" fontSize="11" fill={i===chart.pts.length-1?'#FF6A00':'#9CA3AF'} fontFamily="Cairo" fontWeight={i===chart.pts.length-1?'bold':'normal'}>{p.label}</text>
                       ))}
                     </svg>
                   </div>
@@ -352,7 +352,7 @@ export default function Dashboard() {
                                 const items = Array.isArray(o.items) ? o.items : []
                                 return (
                                   <tr key={o.id} onClick={() => go('/orders')}>
-                                    <td><span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800' }}>{o.order_number}</span></td>
+                                    <td><span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800' }}>{o.order_number}</span></td>
                                     <td><div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
                                       <div className="avatar">{(o.customer_name||'ع').charAt(0)}</div>
                                       <div><div style={{ fontWeight:'700', fontSize:'13px' }}>{o.customer_name||'عميل'}</div><div style={{ fontSize:'11px', color:'#9CA3AF' }}>{o.type==='dine_in'&&o.table_number?`طاولة ${o.table_number}`:(TYPE_LABEL[o.type]||'')}</div></div>
@@ -360,7 +360,7 @@ export default function Dashboard() {
                                     <td style={{ color:'#6B7280', fontWeight:'600', fontSize:'12px' }}>{TYPE_LABEL[o.type]||'🪑 محلي'}</td>
                                     <td style={{ color:'#6B7280' }}>{items.length} صنف</td>
                                     <td><StatusBadge st={o.status} /></td>
-                                    <td><span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800' }}>{Number(o.total||0).toFixed(0)} ﷼</span></td>
+                                    <td><span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800' }}>{Number(o.total||0).toFixed(0)} ﷼</span></td>
                                     <td style={{ color:'#9CA3AF', fontSize:'12px', whiteSpace:'nowrap' }}>{timeAgo(o.created_at)}</td>
                                   </tr>
                                 )
@@ -390,12 +390,12 @@ export default function Dashboard() {
                         <div key={o.id} className="live-item" onClick={() => go('/orders')} style={{ cursor:'pointer' }}>
                           <div className="bar" style={{ background:barColor }}/>
                           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' }}>
-                            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px' }}>{o.order_number}</span>
+                            <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px' }}>{o.order_number}</span>
                             <StatusBadge st={o.status} />
                           </div>
                           <div style={{ fontSize:'12px', color:'#6B7280', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{items.map(i=>`${i.name}×${i.qty}`).join('، ')}</div>
                           <div style={{ display:'flex', justifyContent:'space-between', marginTop:'6px' }}>
-                            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'13px', color:'#FF6B35' }}>{Number(o.total||0).toFixed(0)} ﷼</span>
+                            <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', color:'#FF6A00' }}>{Number(o.total||0).toFixed(0)} ﷼</span>
                             <span style={{ fontSize:'11px', color:'#9CA3AF' }}>{timeAgo(o.created_at)}</span>
                           </div>
                         </div>
@@ -415,7 +415,7 @@ export default function Dashboard() {
                         <span style={{ fontSize:'14px' }}>{['🥇','🥈','🥉','4️⃣','5️⃣'][i]}</span>
                         <span style={{ fontSize:'20px' }}>{p.emoji}</span>
                         <span style={{ flex:1, fontSize:'13px', fontWeight:'700', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span>
-                        <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', color:'#FF6B35', fontSize:'14px' }}>{p.count}</span>
+                        <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', color:'#FF6A00', fontSize:'14px' }}>{p.count}</span>
                       </div>
                     ))}
                   </div>

@@ -125,11 +125,11 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
 
         <div style={{ overflowY:'auto' }}>
         <div style={{ padding:'20px 20px 32px' }}>
-          <h2 style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'22px', marginBottom:'6px' }}>{(isEn && product.name_en) ? product.name_en : product.name}</h2>
+          <h2 style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'22px', marginBottom:'6px' }}>{(isEn && product.name_en) ? product.name_en : product.name}</h2>
           {((isEn && product.description_en) ? product.description_en : product.description) && <p style={{ ...TYPE.body, color:'#6B7280', marginBottom:'16px' }}>{(isEn && product.description_en) ? product.description_en : product.description}</p>}
 
           <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'20px' }}>
-            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'24px', color:priceColor }}>{product.price} ﷼</span>
+            <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'24px', color:priceColor }}>{product.price} ﷼</span>
             {product.compare_price && <span style={{ fontSize:'15px', color:'#9CA3AF', textDecoration:'line-through' }}>{product.compare_price} ﷼</span>}
             {product.calories && <span style={{ fontSize:'12px', color:'#9CA3AF', background:'#F3F4F6', padding:'3px 10px', borderRadius:'100px', marginRight:'auto' }}>{getCalorieBadge(product.calories)} {product.calories} {t('calories')}</span>}
           </div>
@@ -140,7 +140,7 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
               {product.options.map((group, gi) => (
                 <div key={gi}>
                   <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
-                    <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'14px' }}>{group.name}</span>
+                    <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px' }}>{group.name}</span>
                     {group.required && <span style={{ fontSize:'10px', fontWeight:'700', color:'#EF4444', background:'#FEF2F2', padding:'2px 7px', borderRadius:'100px' }}>{t('required')}</span>}
                     {!group.required && group.type === 'multiple' && <span style={{ fontSize:'10px', fontWeight:'700', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 7px', borderRadius:'100px' }}>{t('optional')}</span>}
                   </div>
@@ -187,10 +187,10 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
           {/* تذييل الطلب (عدّاد+ملاحظات+اقتراحات+زر الإضافة) — يُخفى كاملاً لو الطلبات أونلاين مُطفأة (PCR): المودال يصبح عرض تفاصيل فقط */}
           {ordering && (<>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px' }}>
-            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px' }}>{t('qty')}</span>
+            <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'15px' }}>{t('qty')}</span>
             <div style={{ display:'flex', alignItems:'center', gap:'0', border:'1.5px solid #E5E7EB', borderRadius:'12px', overflow:'hidden' }}>
               <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width:'40px', height:'40px', background:'none', border:'none', fontSize:'22px', cursor:'pointer', color:brandColor, fontWeight:'300' }}>−</button>
-              <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'16px', minWidth:'40px', textAlign:'center', borderRight:'1px solid #E5E7EB', borderLeft:'1px solid #E5E7EB', lineHeight:'40px' }}>{qty}</span>
+              <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'16px', minWidth:'40px', textAlign:'center', borderRight:'1px solid #E5E7EB', borderLeft:'1px solid #E5E7EB', lineHeight:'40px' }}>{qty}</span>
               <button onClick={() => setQty(q => q + 1)} style={{ width:'40px', height:'40px', background:'none', border:'none', fontSize:'22px', cursor:'pointer', color:brandColor, fontWeight:'300' }}>+</button>
             </div>
           </div>
@@ -203,14 +203,14 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
               value={note}
               onChange={e => setNote(e.target.value)}
               rows={2}
-              style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0F1117', background:'#F8F9FB', outline:'none', textAlign:'right', direction:'rtl', resize:'none' }}
+              style={{ width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'#F8F9FB', outline:'none', textAlign:'right', direction:'rtl', resize:'none' }}
             />
           </div>
 
           {/* اقتراحات مخصّصة لهذا الصنف — تُضاف مباشرة للسلة دون إغلاق هذه النافذة (نفس مقاس بطاقات "أكمل وجبتك") */}
           {companions.length > 0 && (
             <div style={{ marginBottom:'20px' }}>
-              <div style={{ fontSize:'13.5px', fontWeight:'800', fontFamily:'Cairo,sans-serif', marginBottom:'10px' }}>{t('companionTitle')}</div>
+              <div style={{ fontSize:'13.5px', fontWeight:'800', fontFamily:'Tajawal,sans-serif', marginBottom:'10px' }}>{t('companionTitle')}</div>
               <div style={{ display:'flex', gap:'10px', overflowX:'auto', paddingBottom:'2px' }}>
                 {companions.map(p => (
                   <button
@@ -244,7 +244,7 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
               onAdd(product, qty, note, resolved)
               onClose()
             }}
-            style={{ width:'100%', padding:'16px', borderRadius:'14px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:`0 8px 24px ${brandColor}44` }}
+            style={{ width:'100%', padding:'16px', borderRadius:'14px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:`0 8px 24px ${brandColor}44` }}
           >
             <span>{submitLabel || t('addToCartB')}</span>
             <span style={{ background:'rgba(0,0,0,0.15)', padding:'4px 12px', borderRadius:'8px', fontSize:'14px' }}>

@@ -7,12 +7,7 @@
 // شعار سمسم المصغّر (نفس علامة "S" المعتمدة في الشل/الأونبوردنغ) — بلا أصول خارجية.
 function SimsimMark() {
   return (
-    <span style={{
-      width: '18px', height: '18px', flexShrink: 0, borderRadius: '5px',
-      background: 'linear-gradient(135deg,#FF6B35,#E85A24)', color: 'white',
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'Cairo,sans-serif', fontWeight: '900', fontSize: '11px', lineHeight: 1,
-    }}>S</span>
+    <img src="/simsim-s.svg" alt="SIMSIM" style={{ height: '16px', width: 'auto', flexShrink: 0, display: 'block' }} />
   )
 }
 

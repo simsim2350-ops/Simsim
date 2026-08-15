@@ -97,7 +97,7 @@ function PublicMenuInner() {
 
   // ===== مشتقات =====
   const itemName = makeItemName(isEn, products)
-  const brandColor = restaurant?.brand_color || '#FF6B35'
+  const brandColor = restaurant?.brand_color || '#FF6A00'
   const priceColor = restaurant?.price_color || brandColor
   const descColor = restaurant?.description_color || '#9CA3AF'
 
@@ -157,9 +157,9 @@ function PublicMenuInner() {
 
   // Not found
   if (notFound) return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F8F9FB', flexDirection:'column', gap:'16px', fontFamily:'Cairo,sans-serif', direction:'rtl', textAlign:'center', padding:'24px' }}>
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F8F9FB', flexDirection:'column', gap:'16px', fontFamily:'Tajawal,sans-serif', direction:'rtl', textAlign:'center', padding:'24px' }}>
       <div style={{ fontSize:'64px' }}>🔍</div>
-      <h2 style={{ fontSize:'22px', fontWeight:'900', color:'#0F1117' }}>{t('notFound')}</h2>
+      <h2 style={{ fontSize:'22px', fontWeight:'900', color:'#0B0B0F' }}>{t('notFound')}</h2>
       <p style={{ color:'#9CA3AF', fontSize:'14px' }}>{t('notFoundSub')}</p>
     </div>
   )
@@ -303,9 +303,9 @@ function PublicMenuInner() {
             onClick={() => setCartOpen(true)}
             style={{ width:'100%', padding:'0 16px', height:'58px', borderRadius:'16px', border:'none', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, color:'white', cursor:'pointer', display:'flex', alignItems:'center', boxShadow:`0 8px 32px ${brandColor}55`, transition:'all 0.2s' }}
           >
-            <div style={{ width:'28px', height:'28px', background:'rgba(0,0,0,0.15)', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'14px' }}>{cartCount}</div>
-            <span style={{ flex:1, textAlign:'center', fontFamily:'Cairo,sans-serif', fontWeight:'800', fontSize:'15px' }}>{t('viewCart')}</span>
-            <span style={{ fontFamily:'Cairo,sans-serif', fontWeight:'900', fontSize:'15px' }}>{cartTotal} ﷼</span>
+            <div style={{ width:'28px', height:'28px', background:'rgba(0,0,0,0.15)', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px' }}>{cartCount}</div>
+            <span style={{ flex:1, textAlign:'center', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'15px' }}>{t('viewCart')}</span>
+            <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'15px' }}>{cartTotal} ﷼</span>
           </button>
         </div>
       )}
