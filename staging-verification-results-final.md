@@ -68,7 +68,13 @@
 
 تم رفع التغييرات إلى PR #239 على الفرع `fix/menu-production-hardening`. آخر commits تشمل إصلاح no-coupon، حماية idempotency، وسحب EXECUTE من PUBLIC. لم يتم تطبيق migration الجديدة على Production.
 
-## 7. Production Gate
+## 7. Production read-only verification
+
+تم تحديد Production كمشروع `simsim` ذي ref `gpwwnuuicywsvmmhxngs`، ثم فُحص سجل migrations وschema قراءةً فقط. سجل Production يحتوي migrations hardening سابقة بأسماء `menu_production_hardening`, `menu_production_hardening_fix_token`, `menu_production_hardening_revoke_trigger_execute`, `menu_production_hardening_revoke_public_execute`, `menu_production_hardening_coupon_order_fix`, و`menu_production_hardening_coupon_order_fix_alias`. لذلك لا يمكن القول إن Production خالٍ من كل hardening migrations السابقة.
+
+في المقابل، لا يظهر `menu_production_hardening_idempotency` في سجل Production، كما أن `public.orders` في schema Production لا يحتوي `idempotency_key`. لم تُطبّق أي Migration أو تعديل خلال Final Gate Review. هذه النتيجة تمنع اعتبار Production جاهزًا للإطلاق النهائي لأن حالة Production الحالية لا تطابق migration الجديدة الموثقة في PR، ويجب إجراء reconciliation منفصل ومصرح به قبل أي deployment لاحق.
+
+## 8. Production Gate
 
 > **NO-GO حاليًا.**
 
@@ -76,6 +82,6 @@
 
 في المقابل، تم حل no-coupon bug، وتمت حماية duplicate submission server-side/database-level، وأصبحت اختبارات coupon race وsame-key/different-key ناجحة على Staging.
 
-## 8. حالة Staging
+## 9. حالة Staging
 
 تم إيقاف المشروع بعد الاختبارات لتقليل التكلفة. لم يمكن تنفيذ الحذف النهائي آليًا عبر الاتصال الحالي، ولا توجد أي تغييرات على Production.
