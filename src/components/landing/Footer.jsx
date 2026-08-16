@@ -42,8 +42,8 @@ export default function Footer() {
         <div className="ss-footer__bottom">
           <span>© {year} SIMSIM — جميع الحقوق محفوظة</span>
           <span className="ss-footer__legal">
-            <a href="#hero">الخصوصية</a>
-            <a href="#hero">الشروط والأحكام</a>
+            <Link to="/privacy">الخصوصية</Link>
+            <Link to="/terms">الشروط والأحكام</Link>
           </span>
         </div>
       </div>
