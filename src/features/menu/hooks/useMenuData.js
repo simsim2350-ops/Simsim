@@ -21,6 +21,7 @@ export function useMenuData(slug, branchId) {
   const [capabilities, setCapabilities] = useState({ online_orders: true, reviews: true, loyalty: true, product_details: true })
   const [branding, setBranding] = useState(null) // هوية المنيو «صمم بواسطة سمسم» — من الإعداد المركزي
   const restaurantLoadChannelRef = useRef(null)
+  const fetchSequenceRef = useRef(0)
 
   useEffect(() => {
     fetchMenu()
@@ -33,6 +34,10 @@ export function useMenuData(slug, branchId) {
   }, [])
 
   const fetchMenu = async () => {
+    const requestId = ++fetchSequenceRef.current
+    const isCurrent = () => requestId === fetchSequenceRef.current
+    setLoading(true)
+    setNotFound(false)
     try {
       // Fetch restaurant
       const { data: rest, error } = await supabase
@@ -42,6 +47,7 @@ export function useMenuData(slug, branchId) {
         .eq('is_active', true)
         .single()
 
+      if (!isCurrent()) return
       if (error || !rest) { setNotFound(true); return }
       // مطعم معلَّق من المنصّة: لا يُفتح منيوه إطلاقاً (يُعامَل كغير متاح، كإيقاف المالك)
       if (rest.platform_suspended) { setNotFound(true); return }
@@ -54,6 +60,7 @@ export function useMenuData(slug, branchId) {
         .eq('restaurant_id', rest.id)
         .eq('is_active', true)
         .order('sort_order')
+      if (!isCurrent()) return
       const list = brs || []
       setBranchList(list)
 
@@ -66,6 +73,7 @@ export function useMenuData(slug, branchId) {
 
       // عدد الطلبات النشطة حالياً لحساب وقت تجهيز تقديري ديناميكي — لهذا الفرع فقط (كل فرع مطبخه مستقل)
       const { data: activeCount } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id, p_branch_id: resolvedBranch.id })
+      if (!isCurrent()) return
       setActiveOrdersCount(activeCount || 0)
 
       // متوسط تقييم المطعم (RPC آمن — sql/get_restaurant_rating.sql)
@@ -116,6 +124,7 @@ export function useMenuData(slug, branchId) {
         supabase.from('categories').select('*').eq('branch_id', resolvedBranch.id).eq('is_visible', true).order('sort_order'),
         supabase.from('products').select('*').eq('branch_id', resolvedBranch.id).eq('is_available', true).order('sort_order'),
       ])
+      if (!isCurrent()) return
 
       if (cats) { setCategories(cats); if (cats.length > 0) setActiveCategory(cats[0].id) }
       if (prods) setProducts(prods)
@@ -123,6 +132,7 @@ export function useMenuData(slug, branchId) {
       // حساب الأصناف الأكثر مبيعاً من الطلبات الفعلية (غير الملغاة) خلال آخر 30 يوماً (عبر RPC آمن)
       const { data: pastOrders } = await supabase.rpc('get_recent_order_items', { p_restaurant_id: rest.id })
 
+      if (!isCurrent()) return
       if (pastOrders && prods) {
         const salesCount = {}
         pastOrders.forEach(o => {
@@ -152,7 +162,7 @@ export function useMenuData(slug, branchId) {
         .on('broadcast', { event: 'UPDATE' }, refreshActiveOrdersCount)
         .subscribe()
     } finally {
-      setLoading(false)
+      if (isCurrent()) setLoading(false)
     }
   }
 

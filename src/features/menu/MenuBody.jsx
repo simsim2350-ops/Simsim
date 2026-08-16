@@ -82,7 +82,10 @@ export default function MenuBody({
         <button onClick={() => setCatsOpen(true)} aria-label="كل الأقسام" style={{ border:'none', background:'none', fontSize:'17px', color:'#374151', padding:'8px 10px', cursor:'pointer', flexShrink:0, lineHeight:1 }}>☰</button>
         <div style={{ overflowX:'auto', display:'flex', flex:1 }}>
           {categories.map(cat => (
-            <div
+                        <button
+              type="button"
+              role="tab"
+              aria-selected={activeCategory === cat.id}
               key={cat.id}
               id={`tab-${cat.id}`}
               onClick={() => goToCategory(cat.id)}
@@ -93,10 +96,13 @@ export default function MenuBody({
                 borderBottom: activeCategory === cat.id ? `2.5px solid ${brandColor}` : '2.5px solid transparent',
                 color: activeCategory === cat.id ? '#0B0B0F' : '#9CA3AF',
                 transition:'all 0.2s',
+                background:'transparent',
+                borderTop:'none', borderLeft:'none', borderRight:'none',
+                fontFamily:'inherit',
               }}
             >
               {tx(cat,'name')}
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -112,7 +118,7 @@ export default function MenuBody({
               const count = products.filter(p => p.category_id === cat.id).length
               const isActive = activeCategory === cat.id
               return (
-                <div key={cat.id} onClick={() => goToCategory(cat.id, true)} style={{ display:'flex', alignItems:'center', gap:'11px', padding:'11px 10px', borderRadius:'12px', cursor:'pointer', background: isActive ? `${brandColor}0D` : 'transparent', marginBottom:'2px' }}>
+                <button type="button" key={cat.id} onClick={() => goToCategory(cat.id, true)} style={{ display:'flex', alignItems:'center', gap:'11px', padding:'11px 10px', borderRadius:'12px', cursor:'pointer', background: isActive ? `${brandColor}0D` : 'transparent', marginBottom:'2px', border:'none', width:'100%', textAlign:'start', fontFamily:'inherit' }}>
                   {cat.cover_url ? (
                     <div style={{ width:'36px', height:'36px', borderRadius:'10px', overflow:'hidden', flexShrink:0 }}>
                       <img loading="lazy" decoding="async" src={cat.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
@@ -122,7 +128,7 @@ export default function MenuBody({
                   )}
                   <span style={{ flex:1, fontSize:'14px', fontWeight: isActive ? '900' : '700', fontFamily:'Tajawal,sans-serif', color: isActive ? brandColor : '#0B0B0F' }}>{tx(cat,'name')}</span>
                   <span style={{ fontSize:'11px', color:'#9CA3AF', background:'#F3F4F6', padding:'2px 9px', borderRadius:'100px' }}>{count}</span>
-                </div>
+                </button>
               )
             })}
           </div>

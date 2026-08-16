@@ -45,7 +45,7 @@ function PublicMenuInner() {
   const reviewsEnabled = capabilities?.reviews !== false
   // تفاصيل المنتج (PCR): عند التعطيل لا تُفتح نافذة المنتج عند الضغط (منيو عرض بلا تفاصيل).
   const productDetails = capabilities?.product_details !== false
-  const { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer } = useActiveOrders(slug, t)
+  const { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer, clearStoredOrders } = useActiveOrders(slug, t)
   const { cart, setCart, cartOpen, setCartOpen, addToCart: addToCartRaw, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount } = useCart(slug, t)
   // تغليف الإضافة للسلة لبثّ حدث تحليلات مركزياً (ADR-42/M2) — إطلاق-وانسَ، لا يغيّر السلوك.
   const addToCart = (...args) => {
@@ -184,6 +184,7 @@ function PublicMenuInner() {
       reviewsEnabled={reviewsEnabled}
       ordering={ordering}
       cancelOrderByCustomer={cancelOrderByCustomer}
+      onClearStoredOrders={clearStoredOrders}
       onBack={() => setOrderPlaced(false)}
       onReorder={reorderToCart}
       onMessage={(order) => openWhatsAppAboutOrder({ restaurant, order, t })}
