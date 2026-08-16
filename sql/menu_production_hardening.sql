@@ -384,6 +384,8 @@ begin
 end;
 $function$;
 
+revoke all on function public.broadcast_order_status() from public, anon, authenticated;
+
 drop trigger if exists trg_broadcast_order_status on public.orders;
 create trigger trg_broadcast_order_status
 after update on public.orders
