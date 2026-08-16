@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../../../lib/supabase'
 import { computeBranchOpenStatus, effectiveDeliverySettings } from '../helpers'
@@ -14,6 +14,7 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
   const [orderNote, setOrderNote] = useState('') // ملاحظة عامة على الطلب كله (اختيارية)
   const [orderNumber, setOrderNumber] = useState('')
   const [submitting, setSubmitting] = useState(false) // أثناء إرسال الطلب — يمنع الضغط المكرّر
+  const idempotencyRef = useRef({ fingerprint: null, key: null })
 
   // Place order
   const placeOrder = async () => {
@@ -40,6 +41,26 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
 
     const previewDeliveryFee = orderType === 'delivery' ? (Number(effectiveDeliverySettings(branch, restaurant).fee) || 0) : 0
     const previewTotal = previewOrderTotal(cartTotal, discountAmount, previewDeliveryFee)
+    const requestFingerprint = JSON.stringify({
+      restaurantId: restaurant.id,
+      branchId: branch?.id,
+      tableNumber: orderType === 'dine_in' ? tableNumber : null,
+      deliveryAddress: orderType === 'delivery' ? deliveryAddress.trim() : null,
+      customerName: customerName.trim() || null,
+      customerPhone: cleanPhone,
+      orderType,
+      items,
+      notes: orderNote.trim(),
+      couponCode: appliedCoupon?.code || null,
+      clientTotal: previewTotal,
+    })
+    if (idempotencyRef.current.fingerprint !== requestFingerprint) {
+      idempotencyRef.current = {
+        fingerprint: requestFingerprint,
+        key: crypto.randomUUID(),
+      }
+    }
+    const idempotencyKey = idempotencyRef.current.key
 
     setSubmitting(true)
     // RPC server-authoritative: لا يثق في أسعار أو ضريبة أو خصم قادمة من المتصفح.
@@ -55,6 +76,7 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
       p_notes: orderNote.trim(),
       p_coupon_code: appliedCoupon?.code || null,
       p_client_total: previewTotal,
+      p_idempotency_key: idempotencyKey,
     }).single()
 
     if (error) {
@@ -76,6 +98,7 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
     setCartOpen(false)
     setOrderNote('')
     setSubmitting(false)
+    idempotencyRef.current = { fingerprint: null, key: null }
     removeCoupon?.()
 
     // إضافة الطلب الجديد فوق قائمة الطلبات النشطة (الأحدث أولاً) — الاشتراك في تحديثاته يحصل تلقائياً

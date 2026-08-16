@@ -31,7 +31,7 @@ begin
     v_restaurant_id, v_branch_id, 'regression', null, 'Regression', '500000000',
     'dine_in', jsonb_build_array(jsonb_build_object(
       'product_id', v_product_id, 'quantity', 1, 'options', jsonb_build_array()
-    )), 'regression', v_code, 1
+    )), 'regression', v_code, 1, 'regression-coupon-key-0001'
   ) limit 1;
 
   select usage_count into v_usage from public.coupons where id = v_coupon_id;
@@ -45,7 +45,7 @@ begin
     v_restaurant_id, v_branch_id, 'regression', null, 'Regression', '500000000',
     'dine_in', jsonb_build_array(jsonb_build_object(
       'product_id', v_product_id, 'quantity', 1, 'options', jsonb_build_array()
-    )), 'regression', v_code, 5
+    )), 'regression', v_code, 5, 'regression-coupon-key-0001'
   ) limit 1;
 
   select usage_count into v_usage from public.coupons where id = v_coupon_id;
