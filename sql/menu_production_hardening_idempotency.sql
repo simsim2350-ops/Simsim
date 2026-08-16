@@ -316,6 +316,9 @@ begin
 end;
 $function$;
 
+revoke all on function public.create_order(
+  uuid, uuid, text, text, text, text, text, jsonb, text, text, numeric, text
+) from public;
 grant execute on function public.create_order(
   uuid, uuid, text, text, text, text, text, jsonb, text, text, numeric, text
 ) to anon, authenticated;
@@ -332,6 +335,7 @@ as $function$
       on req.id = o.id and req.access_token = o.order_access_token
 $function$;
 
+revoke all on function public.get_orders_status_secure(jsonb) from public;
 grant execute on function public.get_orders_status_secure(jsonb) to anon, authenticated;
 
 create or replace function public.cancel_order_by_customer(p_order_id uuid, p_access_token text)
@@ -348,6 +352,7 @@ as $function$
   returning orders.id, orders.status, orders.cancelled_by, orders.cancelled_at
 $function$;
 
+revoke all on function public.cancel_order_by_customer(uuid, text) from public;
 grant execute on function public.cancel_order_by_customer(uuid, text) to anon, authenticated;
 
 create or replace function public.can_read_order_status(p_topic text)
