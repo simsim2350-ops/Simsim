@@ -90,7 +90,8 @@ declare
   v_delivery_fee numeric := 0;
   v_total numeric := 0;
   v_coupon record;
-  v_access_token text := encode(gen_random_bytes(32), 'hex');
+  v_coupon_found boolean := false;
+  v_access_token text := encode(extensions.gen_random_bytes(32), 'hex');
   v_order_id uuid;
   v_order_number text;
   v_price_changes jsonb := '[]'::jsonb;
@@ -239,6 +240,7 @@ begin
        and (c.branch_id is null or c.branch_id = p_branch_id)
      for update;
     if not found then raise exception 'invalid or expired coupon'; end if;
+    v_coupon_found := true;
     if v_subtotal_gross < coalesce(v_coupon.min_order_amount, 0) then
       raise exception 'coupon minimum order not met';
     end if;
@@ -259,9 +261,6 @@ begin
       v_discount := least(v_discount, v_coupon.max_discount_amount);
     end if;
     v_discount := least(v_discount, v_subtotal_gross);
-    update public.coupons
-       set usage_count = usage_count + 1, updated_at = now()
-     where id = v_coupon.id;
   end if;
 
   v_discounted_gross := greatest(0, v_subtotal_gross - v_discount);
@@ -271,6 +270,14 @@ begin
   v_total := round(v_discounted_gross + v_delivery_fee, 2);
   if v_client_total >= 0 and abs(v_client_total - v_total) > 0.01 then
     v_price_changes := jsonb_build_array(jsonb_build_object('client_total', v_client_total, 'server_total', v_total));
+    return query select null::uuid, null::text, null::text, v_net, v_tax, v_delivery_fee, v_total, true, v_price_changes;
+    return;
+  end if;
+
+  if v_coupon_found then
+    update public.coupons as coupon_row
+       set usage_count = coupon_row.usage_count + 1, updated_at = now()
+     where coupon_row.id = v_coupon.id;
   end if;
 
   insert into public.orders (
