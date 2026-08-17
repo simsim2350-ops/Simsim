@@ -1,0 +1,78 @@
+name: Production Backup Connection Check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-backup-check
+  cancel-in-progress: true
+
+jobs:
+  backup-check:
+    name: PostgreSQL connection and temporary logical backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - name: Install PostgreSQL client
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          pg_dump --version
+          psql --version
+
+      - name: Read-only PostgreSQL connection check
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${SUPABASE_DB_URL:-}" ]]; then
+            echo "SUPABASE_DB_URL is not injected into this job" >&2
+            exit 2
+          fi
+          # Do not enable shell tracing; the connection string must never appear in logs.
+          psql "$SUPABASE_DB_URL" \
+            --no-psqlrc \
+            --set=ON_ERROR_STOP=1 \
+            --tuples-only \
+            --no-align \
+            --command="SELECT current_database(), current_setting('server_version'), current_user;" \
+            | sed -E 's/[[:space:]]+/ /g' \
+            | awk '{print "database=" $1 " postgres_version=" $2 " role=" $3}'
+
+      - name: Create temporary logical backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          dump_path="$RUNNER_TEMP/simsim-production-$(date -u +%Y%m%dT%H%M%SZ).dump"
+          pg_dump "$SUPABASE_DB_URL" \
+            --format=custom \
+            --file="$dump_path" \
+            --no-owner \
+            --no-privileges \
+            --verbose 2>"$RUNNER_TEMP/pg_dump.log"
+          if [[ ! -s "$dump_path" ]]; then
+            echo "pg_dump produced no backup file" >&2
+            exit 3
+          fi
+          bytes=$(stat -c '%s' "$dump_path")
+          sha256=$(sha256sum "$dump_path" | awk '{print $1}')
+          echo "backup_format=custom"
+          echo "backup_bytes=$bytes"
+          echo "backup_sha256=$sha256"
+          echo "backup_workspace=$RUNNER_TEMP"
+          echo "backup_uploaded=false"
+          rm -f "$dump_path" "$RUNNER_TEMP/pg_dump.log"
+
+      - name: Confirm no backup artifact was uploaded
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "artifact_upload=false"
+          echo "restore_executed=false"
+          echo "production_mutation=false"
