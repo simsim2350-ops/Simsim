@@ -51,6 +51,8 @@ jobs:
 
       - name: Read-only PostgreSQL connection check
         shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -euo pipefail
           test -n "${SUPABASE_DB_URL}" || { echo "SUPABASE_DB_URL is empty" >&2; exit 1; }
