@@ -56,8 +56,7 @@ jobs:
           test -n "${SUPABASE_DB_URL}" || { echo "SUPABASE_DB_URL is empty" >&2; exit 1; }
           # The URL is supplied only through the masked GitHub Secret.
           # No shell tracing is enabled and the URL is never echoed.
-          psql \
-            --dbname="${SUPABASE_DB_URL}" \
+          psql --dbname="${SUPABASE_DB_URL}" \
             --no-psqlrc \
             --set=ON_ERROR_STOP=1 \
             --tuples-only \
