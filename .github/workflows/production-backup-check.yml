@@ -1,0 +1,102 @@
+name: Production Backup Connection Check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-backup-check
+  cancel-in-progress: true
+
+jobs:
+  backup-check:
+    name: Pooler PostgreSQL connection and temporary logical backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+    steps:
+      - name: Install PostgreSQL client
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          psql --version
+          pg_dump --version
+
+      - name: Validate Supabase Pooler connection URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${SUPABASE_DB_URL:-}" ]]; then
+            echo "SUPABASE_DB_URL is not injected into this job" >&2
+            exit 2
+          fi
+
+          # Validate the injected URL without printing it or extracting any
+          # credential-bearing component into the logs.
+          case "$SUPABASE_DB_URL" in
+            *pooler.supabase.com*) ;;
+            *)
+              echo "SUPABASE_DB_URL is not a Supabase Pooler URL" >&2
+              exit 4
+              ;;
+          esac
+
+          echo "pooler_url_validation=passed"
+
+      - name: Read-only PostgreSQL connection check
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The URL is supplied only through the masked GitHub Secret.
+          # No shell tracing is enabled and the URL is never echoed.
+          psql "$SUPABASE_DB_URL" \
+            --no-psqlrc \
+            --set=ON_ERROR_STOP=1 \
+            --tuples-only \
+            --no-align \
+            --field-separator='|' \
+            --command="SELECT current_database(), current_setting('server_version'), current_user;" \
+            | awk -F'|' '{print "database_name=" $1; print "postgres_version=" $2; print "database_role=" $3}'
+
+      - name: Create temporary custom-format logical backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          dump_path="$RUNNER_TEMP/simsim-production-$(date -u +%Y%m%dT%H%M%SZ).dump"
+          dump_log="$RUNNER_TEMP/simsim-production-pg-dump.log"
+
+          pg_dump "$SUPABASE_DB_URL" \
+            --format=custom \
+            --file="$dump_path" \
+            --no-owner \
+            --no-privileges \
+            --verbose 2>"$dump_log"
+
+          if [[ ! -s "$dump_path" ]]; then
+            echo "pg_dump produced no backup file" >&2
+            rm -f "$dump_path" "$dump_log"
+            exit 3
+          fi
+
+          backup_bytes=$(stat -c '%s' "$dump_path")
+          backup_sha256=$(sha256sum "$dump_path" | awk '{print $1}')
+          echo "backup_format=custom"
+          echo "backup_bytes=$backup_bytes"
+          echo "backup_sha256=$backup_sha256"
+          echo "backup_stored_in=RUNNER_TEMP"
+          echo "artifact_upload=false"
+
+          rm -f "$dump_path" "$dump_log"
+
+      - name: Confirm prohibited operations were not run
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "restore_executed=false"
+          echo "production_mutation=false"
