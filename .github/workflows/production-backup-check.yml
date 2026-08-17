@@ -27,7 +27,7 @@ jobs:
           pg_dump --version
           psql --version
 
-      - name: Read-only PostgreSQL connection check
+      - name: Resolve IPv4 transport address
         shell: bash
         run: |
           set -euo pipefail
@@ -35,7 +35,26 @@ jobs:
             echo "SUPABASE_DB_URL is not injected into this job" >&2
             exit 2
           fi
-          # Do not enable shell tracing; the connection string must never appear in logs.
+          # Extract only the hostname; never print the URL or credentials.
+          db_host=$(printf '%s' "$SUPABASE_DB_URL" | sed -E 's#^[^:]+://[^@]*@([^:/?]+).*$#\1#')
+          if [[ -z "$db_host" || "$db_host" == "$SUPABASE_DB_URL" ]]; then
+            echo "Could not parse database host from the injected connection string" >&2
+            exit 4
+          fi
+          db_ipv4=$(getent ahostsv4 "$db_host" | awk 'NR==1{print $1}')
+          if [[ -z "$db_ipv4" ]]; then
+            echo "No IPv4 address was available for the database host" >&2
+            exit 5
+          fi
+          # PGHOSTADDR avoids the runner's unavailable IPv6 route while retaining
+          # the hostname for TLS/SNI and certificate verification.
+          printf 'PGHOSTADDR=%s\n' "$db_ipv4" >> "$GITHUB_ENV"
+          echo "ipv4_transport=enabled"
+
+      - name: Read-only PostgreSQL connection check
+        shell: bash
+        run: |
+          set -euo pipefail
           psql "$SUPABASE_DB_URL" \
             --no-psqlrc \
             --set=ON_ERROR_STOP=1 \
