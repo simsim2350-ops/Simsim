@@ -56,13 +56,13 @@ jobs:
           # The URL is supplied only through the masked GitHub Secret.
           # No shell tracing is enabled and the URL is never echoed.
           psql \
+            --dbname="$SUPABASE_DB_URL" \
             --no-psqlrc \
             --set=ON_ERROR_STOP=1 \
             --tuples-only \
             --no-align \
             --field-separator='|' \
             --command="SELECT current_database(), current_setting('server_version'), current_user;" \
-            "$SUPABASE_DB_URL" \
             | awk -F'|' '{print "database_name=" $1; print "postgres_version=" $2; print "database_role=" $3}'
 
       - name: Create temporary custom-format logical backup
