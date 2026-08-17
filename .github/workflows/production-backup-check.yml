@@ -31,23 +31,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "${SUPABASE_DB_URL:-}" ]]; then
-            echo "SUPABASE_DB_URL is not injected into this job" >&2
-            exit 2
-          fi
-          # Extract only the hostname; never print the URL or credentials.
-          db_host=$(printf '%s' "$SUPABASE_DB_URL" | sed -E 's#^[^:]+://[^@]*@([^:/?]+).*$#\1#')
-          if [[ -z "$db_host" || "$db_host" == "$SUPABASE_DB_URL" ]]; then
-            echo "Could not parse database host from the injected connection string" >&2
-            exit 4
-          fi
+          # Public hostname only; the credential remains exclusively in SUPABASE_DB_URL.
+          db_host='db.gpwwnuuicywsvmmhxngs.supabase.co'
           db_ipv4=$(getent ahostsv4 "$db_host" | awk 'NR==1{print $1}')
           if [[ -z "$db_ipv4" ]]; then
-            echo "No IPv4 address was available for the database host" >&2
+            echo "No IPv4 address was available for the Production database host" >&2
             exit 5
           fi
           # PGHOSTADDR avoids the runner's unavailable IPv6 route while retaining
-          # the hostname for TLS/SNI and certificate verification.
+          # the hostname from the connection URL for TLS/SNI verification.
           printf 'PGHOSTADDR=%s\n' "$db_ipv4" >> "$GITHUB_ENV"
           echo "ipv4_transport=enabled"
 
