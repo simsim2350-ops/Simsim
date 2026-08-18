@@ -370,8 +370,8 @@ export default function Staff() {
         .staff-login-copy, .staff-login-open { transition: transform 160ms ease-out, background 160ms ease-out, border-color 160ms ease-out; }
         .staff-login-copy:active, .staff-login-open:active { transform: scale(.97); }
         .staff-login-copy:hover { background: #E85F00 !important; }
-        .staff-login-open:hover { background: rgba(255,255,255,.12) !important; border-color: rgba(255,255,255,.44) !important; }
-        .staff-login-copy:focus-visible, .staff-login-open:focus-visible { outline: 3px solid rgba(255, 176, 136, .88); outline-offset: 2px; }
+        .staff-login-open:hover { background: #F9FAFB !important; border-color: #D0D5DD !important; }
+        .staff-login-copy:focus-visible, .staff-login-open:focus-visible { outline: 3px solid rgba(255, 106, 0, .35); outline-offset: 2px; }
         @media (max-width:640px){
           .staff-filter-scroll{margin-left:-16px;margin-right:-16px;padding:0 16px}
           .staff-card-actions{width:100%;justify-content:flex-end}
@@ -403,14 +403,14 @@ export default function Staff() {
         <section
           className="staff-login-utility"
           aria-labelledby="staff-login-link-title"
-          style={{ width: '100%', maxWidth: '100%', minWidth: 0, minHeight: '80px', boxSizing: 'border-box', background: '#0B0B0F', borderRadius: '16px', padding: '10px 12px', marginBottom: '14px', display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0, 1fr) auto' : 'auto minmax(0, 1fr) auto', gridTemplateRows: isMobile ? 'minmax(0, auto) minmax(0, auto)' : '1fr', alignItems: 'center', columnGap: '10px', rowGap: '4px', border: '1px solid rgba(255,255,255,.11)' }}
+          style={{ width: '100%', maxWidth: '100%', minWidth: 0, minHeight: '80px', boxSizing: 'border-box', background: 'white', borderRadius: '16px', padding: '10px 12px', marginBottom: '14px', display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0, 1fr) auto' : 'auto minmax(0, 1fr) auto', gridTemplateRows: isMobile ? 'minmax(0, auto) minmax(0, auto)' : '1fr', alignItems: 'center', columnGap: '10px', rowGap: '4px', border: '1px solid #E5E7EB', boxShadow: '0 2px 6px rgba(16,24,40,.02)' }}
         >
           <div className="staff-login-title" style={{ gridColumn: isMobile ? '1' : 'auto', gridRow: isMobile ? '1' : 'auto', display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-            <span style={{ width: '30px', height: '30px', display: 'grid', placeItems: 'center', color: '#FFB088', background: 'rgba(255,106,0,.14)', borderRadius: '9px', flexShrink: 0 }}><Icon type="link" size={16} /></span>
-            <div id="staff-login-link-title" style={{ minWidth: 0, color: 'white', fontFamily: 'Tajawal,sans-serif', fontWeight: '700', fontSize: '16px', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>رابط دخول الموظفين</div>
+            <span style={{ width: '30px', height: '30px', display: 'grid', placeItems: 'center', color: '#FF6A00', background: '#FFF0EB', border: '1px solid #FFD4BE', borderRadius: '9px', flexShrink: 0 }}><Icon type="link" size={16} /></span>
+            <div id="staff-login-link-title" style={{ minWidth: 0, color: '#344054', fontFamily: 'Tajawal,sans-serif', fontWeight: '700', fontSize: '16px', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>رابط دخول الموظفين</div>
           </div>
 
-          <div className="staff-login-url" dir="ltr" title={staffLoginDisplayLink} style={{ gridColumn: isMobile ? '1' : 'auto', gridRow: isMobile ? '2' : 'auto', minWidth: 0, color: 'rgba(255,255,255,.66)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '12px', lineHeight: 1.35, fontWeight: '700', textAlign: 'left' }}>{staffLoginDisplayLink}</div>
+          <div className="staff-login-url" dir="ltr" title={staffLoginDisplayLink} style={{ gridColumn: isMobile ? '1' : 'auto', gridRow: isMobile ? '2' : 'auto', minWidth: 0, color: '#667085', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '12px', lineHeight: 1.35, fontWeight: '700', textAlign: 'left' }}>{staffLoginDisplayLink}</div>
 
           <div className="staff-login-actions" style={{ gridColumn: isMobile ? '2' : 'auto', gridRow: isMobile ? '1 / span 2' : 'auto', minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px', alignSelf: 'center' }}>
             <button
@@ -430,7 +430,7 @@ export default function Staff() {
               rel="noreferrer"
               aria-label="فتح رابط دخول الموظفين في تبويب جديد"
               title="فتح الرابط في تبويب جديد"
-              style={{ minWidth: '36px', height: '36px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '0 7px', boxSizing: 'border-box', borderRadius: '9px', border: '1px solid rgba(255,255,255,.28)', background: 'rgba(255,255,255,.04)', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', lineHeight: 1, fontWeight: '900', textDecoration: 'none', whiteSpace: 'nowrap' }}
+              style={{ minWidth: '36px', height: '36px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '0 7px', boxSizing: 'border-box', borderRadius: '9px', border: '1px solid #D0D5DD', background: 'white', color: '#475467', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', lineHeight: 1, fontWeight: '900', textDecoration: 'none', whiteSpace: 'nowrap' }}
             >
               <Icon type="external" size={15} /> فتح
             </a>
