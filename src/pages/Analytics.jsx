@@ -245,7 +245,8 @@ export default function Analytics() {
     <AppShell
       active="analytics"
       title={PageTitle}
-      actions={<div style={{ display:'flex', flexDirection:isMobile?'column':'row', alignItems:isMobile?'stretch':'center', gap:'8px', width:isMobile?'100%':'auto', paddingTop:isMobile?'8px':'0', borderTop:isMobile?'1px solid #F3F4F6':'none' }}>
+      headerStacked
+      actions={<div style={{ display:'flex', flexDirection:isMobile?'column':'row', alignItems:isMobile?'stretch':'center', gap:isMobile?'12px':'10px', width:'100%' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'6px', flexShrink:0 }}>
           {branches.length > 0 && !branchLocked ? <label style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'8px 10px', border:'1px solid #E5E7EB', borderRadius:'10px', background:'#FAFAFA', color:'#374151' }}><Icon type="branch" size={13}/><select aria-label="نطاق الفروع" value={branchFilter} onChange={e => setBranchFilter(e.target.value)} style={{ border:0, outline:0, background:'transparent', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'800', color:'#374151', cursor:'pointer' }}><option value="all">كل الفروع</option>{branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label> : <span style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'8px 10px', border:'1px solid #E5E7EB', borderRadius:'10px', background:'#FAFAFA', color:'#6B7280', fontSize:'11px' }}><Icon type="branch" size={13}/> نطاق الفرع المحدد</span>}
           <span style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'8px 10px', border:'1px solid #E5E7EB', borderRadius:'10px', background:'#FAFAFA', color:'#374151', fontSize:'11px', fontWeight:'800', whiteSpace:'nowrap' }}><Icon type="calendar" size={13}/> {periodLabel}</span>

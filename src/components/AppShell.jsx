@@ -20,7 +20,7 @@ import NotificationsBell from './NotificationsBell'
  *  - badges   : أرقام اختيارية بجانب روابط التنقل، مثال: { orders: 3 }
  *  - children : محتوى الصفحة (يتكفّل بالتمرير الداخلي بنفسه)
  */
-export default function AppShell({ active, title, actions, badges = {}, children }) {
+export default function AppShell({ active, title, actions, badges = {}, headerStacked = false, children }) {
   const navigate = useNavigate()
   const { user, restaurant, signOut, isOwner, membership, features } = useAuthStore()
   const { isDesktop } = useBreakpoint()
@@ -119,13 +119,21 @@ export default function AppShell({ active, title, actions, badges = {}, children
 
       {/* Main */}
       <main style={{ marginRight: isDesktop ? '240px' : '0', flex:1, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden' }}>
-        <div style={{ minHeight:'56px', background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', alignItems:'center', padding:'8px 16px', gap:'10px', flexShrink:0, flexWrap:'wrap' }}>
-          {!isDesktop && <button aria-label="فتح القائمة" onClick={() => setSidebarOpen(!sidebarOpen)} style={{ width:'40px', height:'40px', display:'grid', placeItems:'center', background:'white', border:'1px solid #E5E7EB', borderRadius:'10px', cursor:'pointer', padding:0, color:'#374151' }}><span style={{ display:'grid', gap:'4px' }}><i style={{ display:'block', width:'16px', height:'1.5px', background:'currentColor', borderRadius:'2px' }}/><i style={{ display:'block', width:'16px', height:'1.5px', background:'currentColor', borderRadius:'2px' }}/><i style={{ display:'block', width:'16px', height:'1.5px', background:'currentColor', borderRadius:'2px' }}/></span></button>}
-          <span style={{ fontSize:'16px', fontWeight:'800', color:'#0B0B0F' }}>{title}</span>
-          <div style={{ marginRight:'auto', display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap' }}>
-            {actions}
-            <NotificationsBell />
-          </div>
+        <div style={{ minHeight: headerStacked ? (isDesktop ? '126px' : 'auto') : '56px', background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', flexDirection:headerStacked?'column':'row', alignItems:headerStacked?'stretch':'center', padding:headerStacked?'14px 24px':'8px 16px', gap:headerStacked?'12px':'10px', flexShrink:0, flexWrap:headerStacked?'nowrap':'wrap' }}>
+          {headerStacked ? <>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', minHeight:'48px' }}>
+              <div style={{ minWidth:0 }}>{title}</div>
+              <div style={{ display:'flex', alignItems:'center', gap:'8px', flexShrink:0 }}>
+                <NotificationsBell />
+                {!isDesktop && <button aria-label="فتح القائمة" onClick={() => setSidebarOpen(!sidebarOpen)} style={{ width:'40px', height:'40px', display:'grid', placeItems:'center', background:'white', border:'1px solid #E5E7EB', borderRadius:'10px', cursor:'pointer', padding:0, color:'#374151' }}><span style={{ display:'grid', gap:'4px' }}><i style={{ display:'block', width:'16px', height:'1.5px', background:'currentColor', borderRadius:'2px' }}/><i style={{ display:'block', width:'16px', height:'1.5px', background:'currentColor', borderRadius:'2px' }}/><i style={{ display:'block', width:'16px', height:'1.5px', background:'currentColor', borderRadius:'2px' }}/></span></button>}
+              </div>
+            </div>
+            <div style={{ width:'100%', paddingTop:'12px', borderTop:'1px solid #F0F1F3' }}>{actions}</div>
+          </> : <>
+            {!isDesktop && <button aria-label="فتح القائمة" onClick={() => setSidebarOpen(!sidebarOpen)} style={{ width:'40px', height:'40px', display:'grid', placeItems:'center', background:'white', border:'1px solid #E5E7EB', borderRadius:'10px', cursor:'pointer', padding:0, color:'#374151' }}><span style={{ display:'grid', gap:'4px' }}><i style={{ display:'block', width:'16px', height:'1.5px', background:'currentColor', borderRadius:'2px' }}/><i style={{ display:'block', width:'16px', height:'1.5px', background:'currentColor', borderRadius:'2px' }}/><i style={{ display:'block', width:'16px', height:'1.5px', background:'currentColor', borderRadius:'2px' }}/></span></button>}
+            <span style={{ fontSize:'16px', fontWeight:'800', color:'#0B0B0F' }}>{title}</span>
+            <div style={{ marginRight:'auto', display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap' }}>{actions}<NotificationsBell /></div>
+          </>}
         </div>
 
         <div style={{ flex:1, minHeight:0, display:'flex', flexDirection:'column' }}>
