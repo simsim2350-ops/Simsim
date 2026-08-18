@@ -1,20 +1,21 @@
 import { useEffect, useState } from 'react'
 import { fetchActiveTables } from '../../../lib/tablesApi'
 
-// طاولات المطعم المفعّلة فقط — لتعبئة قائمة اختيار رقم الطاولة في السلة (طلب داخل المطعم)
-export function useTables(restaurant) {
+// طاولات الفرع المفعّلة فقط — لتعبئة قائمة اختيار رقم الطاولة في الطلب اليدوي داخل المطعم.
+export function useTables(restaurant, branch) {
   const [tables, setTables] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!restaurant?.id) { setLoading(false); return }
+    if (!restaurant?.id || !branch?.id) { setTables([]); setLoading(false); return }
     let cancelled = false
-    fetchActiveTables(restaurant.id)
+    setLoading(true)
+    fetchActiveTables(restaurant.id, branch.id)
       .then(data => { if (!cancelled) setTables(data) })
       .catch(() => { if (!cancelled) setTables([]) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [restaurant?.id])
+  }, [restaurant?.id, branch?.id])
 
   return { tables, loading }
 }
