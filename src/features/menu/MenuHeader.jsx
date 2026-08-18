@@ -5,6 +5,47 @@ import { estimatedPrepTime } from './helpers'
 // أبعاد الهيرو تُدار الآن عبر Hero Design Tokens في PublicMenu (متغيّرات CSS --hero-*).
 const clamp01 = v => Math.min(1, Math.max(0, v))
 
+function UnifiedOffers({ banners, coupons, brandColor, isEn }) {
+  const banner = banners[0] || null
+  const coupon = coupons[0] || null
+  const [copied, setCopied] = useState(false)
+  if (!banner && !coupon) return null
+
+  const copyCoupon = async () => {
+    if (!coupon?.code) return
+    try {
+      await navigator.clipboard.writeText(coupon.code)
+    } catch {
+      const textarea = document.createElement('textarea')
+      textarea.value = coupon.code
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      textarea.remove()
+    }
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 1800)
+  }
+
+  const discount = coupon && (coupon.discount_type === 'percent' ? `${coupon.discount_value}%` : `${coupon.discount_value} ﷼`)
+  return <section aria-label={isEn ? 'Offers' : 'العروض'} style={{ overflow:'hidden', border:`1px solid ${brandColor}2B`, borderRadius:'13px', background:`linear-gradient(130deg, ${brandColor}0C, #FFFFFF 60%)`, boxShadow:'0 2px 8px rgba(15,17,23,.035)' }}>
+    <div style={{ display:'flex', alignItems:'center', gap:'6px', padding:'7px 10px 5px', color:'#344054', fontFamily:'Tajawal,sans-serif', fontSize:'11px', fontWeight:'900' }}><span aria-hidden="true" style={{ color:brandColor, fontSize:'14px' }}>🎟️</span>{isEn ? 'Offers' : 'العروض'}</div>
+    <div style={{ display:'grid', gap:'6px', padding:'0 8px 8px' }}>
+      {banner && <div style={{ minWidth:0, display:'flex', alignItems:'center', gap:'8px', padding:'7px', borderRadius:'10px', background:'white', border:'1px solid #F2F4F7' }}>
+        <div style={{ width:'42px', height:'38px', display:'grid', placeItems:'center', flexShrink:0, overflow:'hidden', borderRadius:'8px', background:`${brandColor}12`, color:brandColor, fontSize:'17px' }}>{banner.image_url ? <img src={banner.image_url} alt={banner.title} style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : '🖼️'}</div>
+        <div style={{ minWidth:0, flex:1 }}><div style={{ color:'#101828', fontFamily:'Tajawal,sans-serif', fontSize:'11.5px', fontWeight:'900', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{banner.title}</div>{banner.subtitle && <div style={{ marginTop:'2px', color:'#667085', fontSize:'10px', lineHeight:1.4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{banner.subtitle}</div>}{coupon && <div style={{ marginTop:'2px', color:brandColor, fontSize:'9.5px', fontWeight:'800' }}>{isEn ? 'Offer with discount code below' : 'استخدم كود الخصم المرفق مع العرض'}</div>}</div>
+      </div>}
+      {coupon && <div style={{ minWidth:0, display:'flex', alignItems:'center', gap:'8px', padding:'7px', borderRadius:'10px', background:'#FFFCF8', border:`1px dashed ${brandColor}55` }}>
+        <span aria-hidden="true" style={{ width:'30px', height:'30px', display:'grid', placeItems:'center', flexShrink:0, borderRadius:'8px', background:`${brandColor}14`, color:brandColor, fontSize:'15px' }}>🎟️</span>
+        <div style={{ minWidth:0, flex:1 }}><div style={{ color:'#101828', fontFamily:'ui-monospace, SFMono-Regular, Menlo, monospace', direction:'ltr', textAlign:'right', fontSize:'12px', fontWeight:'900', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{coupon.code}</div><div style={{ marginTop:'2px', color:'#667085', fontSize:'9.5px', fontWeight:'800' }}>{isEn ? `${discount} off` : `خصم ${discount}`}</div></div>
+        <button type="button" onClick={copyCoupon} aria-label={isEn ? `Copy code ${coupon.code}` : `نسخ كود ${coupon.code}`} style={{ flexShrink:0, minHeight:'34px', padding:'6px 8px', border:'none', borderRadius:'8px', background:brandColor, color:'white', fontFamily:'Tajawal,sans-serif', fontSize:'10.5px', fontWeight:'900', cursor:'pointer' }}>{copied ? (isEn ? 'Copied ✓' : 'تم النسخ ✓') : (isEn ? 'Copy code' : 'نسخ الكود')}</button>
+      </div>}
+    </div>
+  </section>
+}
+
 // هيدر المنيو — الهندسة الجديدة (مستلهمة من تطبيقات التوصيل):
 // هيرو مصوّر بكامل العرض + أزرار عائمة، ثم ورقة بيضاء بزوايا دائرية تحوي:
 // الهوية (شعار/اسم/فرع مع تغيير) + الوصف + الموقع + التواصل + بطاقة الإحصائيات + البحث
@@ -16,14 +57,6 @@ export default function MenuHeader({
   rating, loyalty,
   banners = [], coupons = [],
 }) {
-  // شريط ترويجي مضغوط (خانة واحدة فقط) — أهم بانر/كوبون نشط
-  const [promoDismissed, setPromoDismissed] = useState(false)
-  const activePromo = banners.length > 0
-    ? { type: 'banner', data: banners[0] }
-    : coupons.length > 0
-      ? { type: 'coupon', data: coupons[0] }
-      : null
-
   // Sticky Morph (مبدأ 6): صفّ الهوية (شعار+اسم+تقييم+حالة) عنصر sticky واحد يبقى مرئياً 100% دائماً
   //   بلا opacity/transform عليه إطلاقاً — لا يمكن أن يختفي. بقية المحتوى (وصف/تواصل/إحصائيات/ولاء)
   //   ينزلق طبيعياً خلف صفّ الهوية ويختفي بالتمرير (بلا حسابات ارتفاع هشّة).
@@ -75,9 +108,8 @@ export default function MenuHeader({
     ...(deliveryEnabled ? [{ icon: '🚚', text: Number(deliveryFee) > 0 ? `${Number(deliveryFee).toFixed(0)} ﷼` : (isEn ? 'Free' : 'مجاني'), color: '#374151' }] : []),
     ...(hoursDetail ? [{ icon: '🕐', text: hoursDetail, color: openStatus.open ? '#10B981' : '#EF4444', ltr: openStatus.open }] : []),
   ]
-  // [المستوى 3] بطاقة ترويجية واحدة بالأولوية: الولاء ← الحملة/الكوبون ← لا شيء
+  // [المستوى 3] تظهر مكافأة الولاء والعروض الحقيقية كمعلومات مستقلة ومضغوطة.
   const showLoyalty = !!loyalty
-  const showPromo = !showLoyalty && !promoDismissed && !!activePromo
 
   return (
     <>
@@ -221,8 +253,11 @@ export default function MenuHeader({
             </div>
           )}
 
-          {/* [PROMO · المستوى 3] بطاقة ترويجية واحدة بالأولوية — الولاء ← الحملة/الكوبون */}
-          {showLoyalty ? (() => {
+          {/* [OFFERS · المستوى 3] البانر والكوبون النشطان في منطقة واحدة، ولا تظهر عند غياب كليهما */}
+          <UnifiedOffers banners={banners} coupons={coupons} brandColor={brandColor} isEn={isEn} />
+
+          {/* [LOYALTY · المستوى 3] معلومات الولاء تبقى مستقلة عن العروض */}
+          {showLoyalty && (() => {
             const threshold = loyalty.reward_threshold || 0
             const balance = loyalty.balance || 0
             const ready = threshold > 0 && balance >= threshold
@@ -231,34 +266,8 @@ export default function MenuHeader({
               : threshold > 0
                 ? (isEn ? `Your points: ${balance} — ${Math.max(0, threshold - balance)} pts to your reward` : `نقاطك: ${balance} — باقي ${Math.max(0, threshold - balance)} نقطة على مكافأتك`)
                 : (isEn ? `Your points: ${balance}` : `نقاطك: ${balance}`)
-            return (
-              <div onClick={onShowOrders} style={{ background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'12px', padding:'6px 10px', display:'flex', alignItems:'center', gap:'7px', cursor:'pointer' }}>
-                <span style={{ fontSize:'13px' }}>🎁</span>
-                <span style={{ flex:1, fontSize:'11px', fontWeight:'800', color:'#0B0B0F', fontFamily:'Tajawal,sans-serif' }}>{text}</span>
-                <span style={{ fontSize:'9.5px', fontWeight:'800', color:brandColor, whiteSpace:'nowrap' }}>{isEn ? 'Details ›' : 'التفاصيل ›'}</span>
-              </div>
-            )
-          })() : showPromo ? (
-            activePromo.type === 'banner' ? (
-              <div style={{ display:'flex', alignItems:'center', gap:'8px', background:`linear-gradient(120deg, ${brandColor}, ${brandColor}CC)`, borderRadius:'13px', padding:'9px 10px 9px 12px', color:'white' }}>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12.5px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activePromo.data.title}</div>
-                  {activePromo.data.subtitle && <div style={{ fontSize:'11px', opacity:0.9, marginTop:'2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activePromo.data.subtitle}</div>}
-                </div>
-                <button onClick={() => setPromoDismissed(true)} aria-label={isEn ? 'Dismiss' : 'إغلاق'} style={{ flexShrink:0, width:'22px', height:'22px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.25)', color:'white', fontSize:'12px', cursor:'pointer' }}>✕</button>
-              </div>
-            ) : (
-              <div style={{ display:'flex', alignItems:'center', gap:'8px', background:`${brandColor}12`, border:`1.5px dashed ${brandColor}`, borderRadius:'13px', padding:'9px 10px 9px 12px' }}>
-                <span style={{ fontSize:'16px', flexShrink:0 }}>🎟️</span>
-                <span style={{ flex:1, fontSize:'12px', fontWeight:'700', color:'#0B0B0F', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                  {isEn
-                    ? `Code ${activePromo.data.code}: ${activePromo.data.discount_type === 'percent' ? activePromo.data.discount_value + '% off' : activePromo.data.discount_value + ' SAR off'}`
-                    : `كود ${activePromo.data.code}: خصم ${activePromo.data.discount_type === 'percent' ? activePromo.data.discount_value + '%' : activePromo.data.discount_value + ' ﷼'}`}
-                </span>
-                <button onClick={() => setPromoDismissed(true)} aria-label={isEn ? 'Dismiss' : 'إغلاق'} style={{ flexShrink:0, width:'22px', height:'22px', borderRadius:'50%', border:'none', background:'rgba(0,0,0,0.06)', color:'#6B7280', fontSize:'12px', cursor:'pointer' }}>✕</button>
-              </div>
-            )
-          ) : null}
+            return <div onClick={onShowOrders} style={{ background:`linear-gradient(120deg, ${brandColor}16, ${brandColor}08)`, border:`1px solid ${brandColor}30`, borderRadius:'12px', padding:'6px 10px', display:'flex', alignItems:'center', gap:'7px', cursor:'pointer' }}><span style={{ fontSize:'13px' }}>🎁</span><span style={{ flex:1, fontSize:'11px', fontWeight:'800', color:'#0B0B0F', fontFamily:'Tajawal,sans-serif' }}>{text}</span><span style={{ fontSize:'9.5px', fontWeight:'800', color:brandColor, whiteSpace:'nowrap' }}>{isEn ? 'Details ›' : 'التفاصيل ›'}</span></div>
+          })()}
         </div>
 
       </div>
