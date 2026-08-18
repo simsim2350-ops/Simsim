@@ -15,8 +15,8 @@ export default function MenuBody({
     ordering = true, // PCR: هل الطلبات أونلاين مفعّلة؟ (false = منيو عرض فقط، بلا إضافة/سلة)
 
 }) {
-  // «الأكثر طلباً» = الأصناف التي علّمها صاحب المطعم (is_featured) — يُعرض منها 4 في القسم
-  const mostOrdered = products.filter(p => p.is_featured).slice(0, 4)
+  // مختارات المطعم تُقرأ من is_featured، بينما «يعجب زبائننا» أعلاه يعتمد فقط على مبيعات الطلبات الفعلية.
+  const featuredProducts = products.filter(p => p.is_featured).slice(0, 4)
   const categoryObserverRef = useRef(null)
   const [catsOpen, setCatsOpen] = useState(false) // قائمة كل الأقسام (زر ☰)
   useBodyScrollLock(catsOpen) // قفل تمرير الصفحة الخلفية طول ما القائمة مفتوحة
@@ -160,14 +160,14 @@ export default function MenuBody({
         {/* بانر ضمن محتوى المنيو — يظهر فقط عند اختيار وضع «بانر داخل المينيو» */}
         <InlineMenuBanner banner={inlineBanner} brandColor={brandColor} />
 
-        {/* الأكثر طلباً — اختيار صاحب المطعم (is_featured)، بطاقات مربعة دائماً (شبكة) بغضّ النظر عن تخطيط المطعم */}
-        {mostOrdered.length > 0 && (
+        {/* مختارات المطعم — اختيار صاحب المطعم من البيانات الحقيقية، وليست ترتيب المبيعات */}
+        {featuredProducts.length > 0 && (
           <div style={{ marginBottom:'6px' }}>
             <div style={{ padding:'12px 16px 8px' }}>
-              <h2 style={{ ...TYPE.sectionTitle, color:'#0B0B0F', margin:0 }}>{t('mostOrdered')}</h2>
+              <h2 style={{ ...TYPE.sectionTitle, color:'#0B0B0F', margin:0 }}>{isEn ? 'Restaurant picks' : 'مختارات المطعم'}</h2>
             </div>
             <div className="sm-products" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }}>
-              {mostOrdered.map(prod => (
+              {featuredProducts.map(prod => (
                 <ProductItem key={prod.id} {...itemProps(prod)} layout="grid" />
               ))}
             </div>
