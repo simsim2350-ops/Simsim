@@ -395,7 +395,7 @@ export default function Analytics() {
               <Card>
                 <CardHead><span style={{ display:'inline-flex', alignItems:'center', gap:'7px' }}><Icon type="warning" size={14}/> الإلغاء ({cancelRate}%)</span></CardHead>
                 <div style={{ padding:'12px' }}><div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', marginBottom:'8px', borderRadius:'9px', background:cancelledCount > 0 ? '#FFF7F2' : '#F8F9FB', fontSize:'11px', color:'#6B7280' }}><span>معدل الإلغاء</span><strong style={{ color:cancelledCount > 0 ? '#C2410C' : '#6B7280' }}>{cancelRate}% · {cancelledCount} من {totalOrders} طلب</strong></div>
-                  {reasons.length === 0 ? <Empty text="لا توجد طلبات ملغاة 🎉" /> : reasons.map(([r, c]) => {
+                  {reasons.length === 0 ? <Empty text="لا توجد طلبات ملغاة" /> : reasons.map(([r, c]) => {
                     const pct = Math.round((c / cancelledCount) * 100)
                     return (
                       <div key={r} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'8px 0', borderBottom:'1px solid #F3F4F6' }}>
@@ -425,11 +425,11 @@ export default function Analytics() {
               const customersInPeriod = num(adv.customers_in_period)
               return (
                 <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
-                  <div style={{ fontSize:'15px', fontWeight:'900', marginTop:'4px' }}>🎯 تحليلات متقدمة</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:'9px', padding:'12px 14px', marginTop:'2px', borderRadius:'12px', background:'#F8F9FB', border:'1px solid #E7E9ED' }}><span style={{ width:'28px', height:'28px', borderRadius:'8px', display:'grid', placeItems:'center', color:'#7C3AED', background:'#F1ECFF' }}><Icon type="chart" size={14}/></span><span><strong style={{ display:'block', fontSize:'15px', fontWeight:'900' }}>تحليلات متقدمة</strong><small style={{ display:'block', marginTop:'2px', color:'#9CA3AF', fontSize:'10px' }}>الولاء والرضا والفروع والشكاوى</small></span></div>
 
                   {/* تأثير الولاء على المبيعات */}
                   <Card>
-                    <CardHead>💎 تأثير الولاء على المبيعات <span style={{ fontSize:'10px', color:'#9CA3AF', fontWeight:'600' }}>· الطلبات المكتملة فقط</span></CardHead>
+                    <CardHead><span style={{ display:'inline-flex', alignItems:'center', gap:'7px' }}><Icon type="chart" size={14}/> تأثير الولاء على المبيعات <span style={{ fontSize:'10px', color:'#9CA3AF', fontWeight:'600' }}>· الطلبات المكتملة فقط</span></span></CardHead>
                     <div style={{ padding:'14px 16px' }}>
                       <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(2,1fr)':'repeat(4,1fr)', gap:'12px', marginBottom:'12px' }}>
                         {[
@@ -455,7 +455,7 @@ export default function Analytics() {
                   <div style={{ display:'grid', gridTemplateColumns: isDesktop?'1fr 1fr':'1fr', gap:'14px' }}>
                     {/* رضا العملاء */}
                     <Card>
-                      <CardHead>😊 رضا العملاء</CardHead>
+                      <CardHead><span style={{ display:'inline-flex', alignItems:'center', gap:'7px' }}><Icon type="chart" size={14}/> رضا العملاء</span></CardHead>
                       <div style={{ padding:'14px 16px' }}>
                         {num(sat.reviews_count) === 0 ? <Empty text="لا توجد تقييمات في هذه الفترة" /> : (
                           <>
@@ -488,7 +488,7 @@ export default function Analytics() {
 
                     {/* أسباب الشكاوى */}
                     <Card>
-                      <CardHead>🚩 أكثر أسباب الشكاوى</CardHead>
+                      <CardHead><span style={{ display:'inline-flex', alignItems:'center', gap:'7px' }}><Icon type="warning" size={14}/> أكثر أسباب الشكاوى</span></CardHead>
                       <div style={{ padding:'14px 16px' }}>
                         {creasons.length === 0 ? <Empty text="لا توجد شكاوى 🎉" /> : creasons.map(r => {
                           const pct = totalComplaints > 0 ? Math.round((num(r.count) / totalComplaints) * 100) : 0
@@ -518,11 +518,11 @@ export default function Analytics() {
                   )}
                 </div>
               )
-            })() : advancedError ? <Card><CardHead>🎯 تحليلات متقدمة</CardHead><ErrorState /></Card> : <Card><CardHead>🎯 تحليلات متقدمة</CardHead><Empty title="لا توجد بيانات كافية للتحليلات المتقدمة" text="ستظهر رؤى الولاء والعملاء والفروع بعد توفر نشاط كافٍ." /></Card>}
+            })() : advancedError ? <Card><CardHead><span style={{ display:'inline-flex', alignItems:'center', gap:'7px' }}><Icon type="chart" size={14}/> تحليلات متقدمة</span></CardHead><ErrorState /></Card> : <Card><CardHead><span style={{ display:'inline-flex', alignItems:'center', gap:'7px' }}><Icon type="chart" size={14}/> تحليلات متقدمة</span></CardHead><Empty title="لا توجد بيانات كافية للتحليلات المتقدمة" text="ستظهر رؤى الولاء والعملاء والفروع بعد توفر نشاط كافٍ." /></Card>}
 
             {/* ملخص */}
             <div style={{ background:'linear-gradient(135deg,#0B0B0F,#1A1A2E)', borderRadius:'16px', padding:'20px' }}>
-              <div style={{ fontSize:'14px', fontWeight:'800', color:'white', marginBottom:'14px' }}>📊 ملخص الفترة</div>
+              <div style={{ display:'inline-flex', alignItems:'center', gap:'8px', fontSize:'14px', fontWeight:'900', color:'white', marginBottom:'14px' }}><Icon type="report" size={15}/> ملخص الفترة</div>
               <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(2,1fr)':'repeat(4,1fr)', gap:'12px' }}>
                 {[
                   { label:'صافي المبيعات (قبل الضريبة)', val:hasRevenueData ? money0(netSales) : '—' },
