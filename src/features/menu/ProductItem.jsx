@@ -1,5 +1,6 @@
 import { getCalorieBadge } from './helpers'
 import { TYPE } from './typography'
+import { productBadgeState } from './productBadgeState'
 
 // بطاقة صنف واحدة في المنيو — تدعم 4 تخطيطات: list (افتراضي) / grid / circles / showcase
 export default function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor, descColor, isEn, layout = 'list', ordering = true }) {
@@ -36,10 +37,12 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
   }
   const qtyControl = renderQtyControl()
   const renderTags = (position = {}) => {
-    if (!product.is_featured) return null
+    const badges = productBadgeState(product)
+    if (!badges.restaurantPick && !badges.bestSeller) return null
     return (
-      <div style={{ position:'absolute', top:'8px', right:'8px', display:'flex', alignItems:'flex-end', zIndex:1, ...position }}>
-        <span style={{ fontSize:'9px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px', whiteSpace:'nowrap' }}>{isEn ? 'Most Ordered 🔥' : 'الأكثر طلبًا 🔥'}</span>
+      <div style={{ position:'absolute', top:'8px', right:'8px', display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'4px', zIndex:1, ...position }}>
+        {badges.bestSeller && <span style={{ fontSize:'9px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px', whiteSpace:'nowrap' }}>{isEn ? 'Best Seller 🔥' : 'الأكثر مبيعًا 🔥'}</span>}
+        {badges.restaurantPick && <span style={{ fontSize:'9px', fontWeight:'800', color:'#1E5FBF', background:'#EAF3FF', padding:'2px 7px', borderRadius:'100px', whiteSpace:'nowrap' }}>{isEn ? "Restaurant's Pick ⭐" : 'مختارات المطعم ⭐'}</span>}
       </div>
     )
   }

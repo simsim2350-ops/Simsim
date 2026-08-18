@@ -26,6 +26,8 @@ export const useAuthStore = create((set, get) => ({
 
       if (session?.user) {
         set({ user: session.user, session })
+        // عند فتح التطبيق بجلسة مؤكدة (بعد البريد مثلاً)، نستأنف نية المطعم مرة واحدة قبل تحميله.
+        await get().resumePendingRestaurant()
         await Promise.all([ get().fetchRestaurant(session.user.id), get().fetchPlatformStatus() ])
         await get().loadFeatures()
       }
@@ -46,7 +48,20 @@ export const useAuthStore = create((set, get) => ({
     })
   },
 
-  // تحميل خريطة القدرات الفعّالة للمطعم الحالي (PCR — ADR-40). fail-safe: عند أي خطأ
+  // استئناف آمن ومتعمد لإنشاء المطعم بعد تأكيد البريد.
+  // الـRPC يعتمد auth.uid() ويعيد مطعماً قائماً إن وجد، فلا ينشئ سجلات مكررة.
+  resumePendingRestaurant: async () => {
+    try {
+      const { data, error } = await supabase.rpc('resume_pending_restaurant')
+      if (error) return { restaurant: null, error }
+      if (data?.id) return { restaurant: data, error: null }
+      return { restaurant: null, error: null }
+    } catch (error) {
+      return { restaurant: null, error }
+    }
+  },
+
+  // تحميل خريطة القدرات الفعّالة للمطعم الحالي (PCR — ADR-40): fail-safe: عند أي خطأ
   // تبقى {} فيعمل fail-open في طبقة features.has (طرح غير كاسر — لا تُخفى أي ميزة).
   loadFeatures: async () => {
     try {
@@ -109,11 +124,18 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  signUp: async (email, password, fullName) => {
+  signUp: async (email, password, fullName, pendingRestaurant = null) => {
+    const metadata = { full_name: fullName }
+    if (pendingRestaurant?.name && pendingRestaurant?.slug) {
+      metadata.pending_restaurant = {
+        name: pendingRestaurant.name,
+        slug: pendingRestaurant.slug,
+      }
+    }
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: { data: metadata },
     })
     if (error) throw error
     return data

@@ -1,0 +1,5 @@
+{
+  "name": "menu_ready_activation_v2_branch_clone_status",
+  "project_id": "gpwwnuuicywsvmmhxngs",
+  "query": "-- SimSim Menu Ready Activation v2 — حالة نسخ المنيو للفروع\n-- تغيير إضافي متوافق: الفروع القائمة جاهزة، والفروع الجديدة لا تصبح Ready قبل نجاح النسخ الذري.\n\nbegin;\n\nalter table public.branches\n  add column if not exists menu_clone_status text not null default 'ready',\n  add column if not exists menu_clone_error text;\n\nalter table public.branches\n  drop constraint if exists branches_menu_clone_status_check;\n\nalter table public.branches\n  add constraint branches_menu_clone_status_check\n  check (menu_clone_status in ('ready', 'copying', 'failed'));\n\nupdate public.branches\nset menu_clone_status = 'ready', menu_clone_error = null\nwhere menu_clone_status is null;\n\ncreate index if not exists branches_restaurant_clone_status_idx\n  on public.branches (restaurant_id, menu_clone_status, sort_order);\n\ncommit;\n"
+}

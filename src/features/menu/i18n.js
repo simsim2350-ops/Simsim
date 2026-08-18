@@ -2,9 +2,14 @@
 export const TT = {
   search:      { ar: 'ابحث عن برجر، شاورما، قهوة...', en: 'Search for burger, shawarma, coffee...' },
   recentSearches: { ar: 'بحثت عنه مؤخراً', en: 'Recent searches' },
+  // أقسام مستقلة: سلوك العملاء، Best Sellers اليدوية، ومختارات المالك.
+  customerFavorites: { ar: 'يعجب زبائننا 👌', en: 'Loved by our customers 👌' },
+  manualBestSellers: { ar: 'الأكثر مبيعًا 🔥', en: 'Best Sellers 🔥' },
+  featuredProducts: { ar: 'مختارات المطعم ⭐', en: "Restaurant's Picks ⭐" },
+  // مفاتيح قديمة مؤقتة لمستهلكي النصوص غير المرتبطة بقائمة Best Sellers.
   bestSellers: { ar: 'يعجب زبائننا 👌', en: 'Loved by our customers 👌' },
-  mostOrdered: { ar: 'الأكثر طلبًا 🔥', en: 'Most Ordered 🔥' },
-  mostOrderedBadge: { ar: 'الأكثر طلبًا 🔥', en: 'Most Ordered 🔥' },
+  mostOrdered: { ar: 'مختارات المطعم ⭐', en: "Restaurant's Picks ⭐" },
+  mostOrderedBadge: { ar: 'مختارات المطعم ⭐', en: "Restaurant's Picks ⭐" },
   viewCart:    { ar: 'عرض السلة', en: 'View Cart' },
   cart:        { ar: 'السلة', en: 'Cart' },
   totalVat:    { ar: 'المجموع (شامل الضريبة)', en: 'Total (VAT incl.)' },
@@ -122,7 +127,7 @@ export const TT = {
   suggestTitle: { ar: '🍽️ أكمل وجبتك', en: '🍽️ Complete your meal' },
   reasonCurated:    { ar: 'اختيار المطعم', en: "Chef's pick" },
   reasonCategory:   { ar: 'من نفس القسم', en: 'Same category' },
-  reasonMostOrdered: { ar: 'الأكثر طلبًا 🔥', en: 'Most Ordered 🔥' },
+  reasonMostOrdered: { ar: 'مختارات المطعم ⭐', en: "Restaurant's Picks ⭐" },
   companionTitle: { ar: '🍟 غالباً يُطلب مع هذا الصنف', en: '🍟 Often ordered with this' },
   allCats:     { ar: 'كل الأقسام', en: 'All categories' },
   browseMenu:  { ar: '🍽️ تصفّح المنيو', en: '🍽️ Browse menu' },

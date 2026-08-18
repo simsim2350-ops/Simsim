@@ -5,6 +5,9 @@ import QRCode from 'qrcode'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import { ensurePrimaryBranch } from '../lib/branchesApi'
+import { calculateMenuReadiness } from '../lib/menuReadiness'
+import MenuReadinessCard from '../components/MenuReadinessCard'
+import { trackOwnerEvent } from '../lib/analytics'
 
 // تحويل الاسم العربي إلى رابط لاتيني صالح
 const AR_MAP = {
@@ -92,10 +95,11 @@ export default function Onboarding() {
   const navigate = useNavigate()
   const { user, restaurant, fetchRestaurant } = useAuthStore()
 
-  const [stage, setStage] = useState('loading') // loading | welcome | create | info | type | categories | items | preview | share | done
+  const [stage, setStage] = useState('loading') // loading | welcome | create | info | type | categories | items | minimum | preview | share | done
   const [rest, setRest] = useState(restaurant || null)
   const [saving, setSaving] = useState(false)
-  const isMobile = window.innerWidth <= 768
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768)
+  const [readiness, setReadiness] = useState(null)
 
   const [cForm, setCForm] = useState({ name:'', slug:'', slugEdited:false })
   const [info, setInfo] = useState({ description:'', phone:'', address:'' })
@@ -107,6 +111,12 @@ export default function Onboarding() {
   const [selectedItems, setSelectedItems] = useState(new Set())
   const dragFrom = useRef(null)
   const qrRef = useRef(null)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     const load = async () => {
@@ -124,12 +134,63 @@ export default function Onboarding() {
       const resumed = RESUME_MAP[r.onboarding_step] || 'welcome'
       // عند الاستئناف لمرحلة الأقسام: نعيد اشتقاق القوالب من النوع المحفوظ
       if ((resumed === 'categories') && r.type) setCats(getTemplate(r.type).slice(0, 5).map(c => ({ ...c })))
+      trackOwnerEvent('onboarding_started', { restaurantId: r.id, props: { resumed: Boolean(r.onboarding_step) } })
       setStage(resumed)
     }
     load()
   }, []) // eslint-disable-line
 
+  useEffect(() => {
+    if (rest?.id) refreshReadiness(rest.id)
+  }, [rest?.id]) // eslint-disable-line
+
   const template = getTemplate(rest?.type)
+
+  // الجاهزية مشتقة من بيانات المنيو الحية، ولا تعتمد على onboarding_completed.
+  const refreshReadiness = async (restaurantId = rest?.id) => {
+    if (!restaurantId) return null
+    try {
+      const { data: branchRows, error: branchError } = await supabase
+        .from('branches').select('*').eq('restaurant_id', restaurantId).order('sort_order')
+      if (branchError) throw branchError
+      const activeBranch = (branchRows || []).find(branch => branch.is_primary && branch.is_active !== false && !branch.is_paused)
+        || (branchRows || []).find(branch => branch.is_active !== false && !branch.is_paused)
+        || null
+      const [{ data: categoryRows }, { data: productRows }, { data: bannerRows }, { data: couponRows }] = await Promise.all([
+        activeBranch ? supabase.from('categories').select('*').eq('branch_id', activeBranch.id) : Promise.resolve({ data: [] }),
+        activeBranch ? supabase.from('products').select('*').eq('branch_id', activeBranch.id) : Promise.resolve({ data: [] }),
+        supabase.from('banners').select('id').eq('restaurant_id', restaurantId).eq('is_active', true),
+        supabase.from('coupons').select('id').eq('restaurant_id', restaurantId).eq('is_active', true),
+      ])
+      const next = calculateMenuReadiness({
+        restaurant: rest,
+        branch: activeBranch,
+        categories: categoryRows || [],
+        products: productRows || [],
+        banners: bannerRows || [],
+        coupons: couponRows || [],
+      })
+      setReadiness(next)
+      return next
+    } catch {
+      return null
+    }
+  }
+
+  const requireMinimumReady = async (nextStage = 'share') => {
+    const nextReadiness = await refreshReadiness()
+    if (!nextReadiness?.minimumReady) {
+      setStage('minimum')
+      return false
+    }
+    setStage(nextStage)
+    return true
+  }
+
+  const goToFirstProduct = () => {
+    if (cats.length > 0) goStage('items')
+    else goStage('categories')
+  }
 
   // حفظ خطوة التقدّم في قاعدة البيانات (للاستئناف عند الإغلاق/التحديث) — صامت وغير كاسر
   const saveStep = async (step) => {
@@ -153,6 +214,7 @@ export default function Onboarding() {
       if (error) throw error
       await fetchRestaurant(user.id)
       setRest(data)
+      trackOwnerEvent('restaurant_created', { restaurantId: data.id, props: { source: 'onboarding_fallback' } })
       setStage('info')
     } catch (err) { toast.error(err.message || 'تعذّر إنشاء المطعم') } finally { setSaving(false) }
   }
@@ -169,8 +231,10 @@ export default function Onboarding() {
         }).eq('id', rest.id)
         setRest(r => ({ ...r, ...info }))
         await fetchRestaurant(user.id)
+        trackOwnerEvent('restaurant_info_completed', { restaurantId: rest.id, props: { skipped: false } })
       } catch (err) { toast.error('تعذّر حفظ المعلومات') } finally { setSaving(false) }
     }
+    if (skip && rest?.id) trackOwnerEvent('restaurant_info_completed', { restaurantId: rest.id, props: { skipped: true } })
     goStage('type')
   }
 
@@ -185,6 +249,7 @@ export default function Onboarding() {
       await fetchRestaurant(user.id)
       // نبدأ بأقسام مقترحة جاهزة (أول 5) — يقدر يحذف/يضيف
       setCats(getTemplate(typeKey).slice(0, 5).map(c => ({ ...c })))
+      trackOwnerEvent('business_type_selected', { restaurantId: rest.id, props: { type: typeKey } })
       goStage('categories')
     } catch (err) { toast.error('تعذّر حفظ النوع') } finally { setSaving(false) }
   }
@@ -267,22 +332,33 @@ export default function Onboarding() {
         if (prodErr) throw prodErr
       }
       toast.success(`🎉 تم إنشاء منيوك (${cats.length} أقسام، ${productRows.length} صنف)!`)
+      trackOwnerEvent('category_created', { restaurantId: rest.id, props: { count: cats.length, source: 'onboarding_template' } })
+      if (productRows.length > 0) trackOwnerEvent('first_product_created', { restaurantId: rest.id, props: { count: productRows.length, source: 'onboarding_template' } })
+      const nextReadiness = await refreshReadiness(rest.id)
+      if (nextReadiness?.minimumReady) trackOwnerEvent('menu_minimum_ready', { restaurantId: rest.id, props: { source: 'onboarding' } })
+      trackOwnerEvent('menu_preview_opened', { restaurantId: rest.id, props: { source: 'onboarding_auto' } })
       goStage('preview')
     } catch (err) { toast.error(err.message || 'تعذّر إنشاء المنيو') } finally { setSaving(false) }
   }
 
-  // تخطّي بناء المنيو: نضمن فرعاً رئيسياً ثم ننتقل لشاشة الرابط/QR (يبني منيوه لاحقاً من اللوحة)
+  // تخطّي بناء المنيو لم يعد يدّعي نجاحاً: يضمن الفرع ثم يعرض ما ينقص قبل أي مشاركة.
   const skipMenu = async () => {
     setSaving(true)
-    try { await ensurePrimaryBranch(rest.id) } catch { /* غير كاسر */ } finally { setSaving(false) }
-    goStage('share')
+    try {
+      await ensurePrimaryBranch(rest.id)
+      await refreshReadiness(rest.id)
+      setStage('minimum')
+    } catch {
+      toast.error('تعذّر تجهيز الفرع الرئيسي، جرّب مرة أخرى')
+    } finally { setSaving(false) }
   }
 
-  // ===== إنهاء الرحلة: وسم الإعداد مكتملاً =====
-  const completeOnboarding = async (dest = '/dashboard') => {
+  // ===== إنهاء الرحلة: الإكمال مستقل عن جاهزية/نشر المنيو =====
+  const completeOnboarding = async (dest = '/dashboard', published = false) => {
     try {
       await supabase.from('restaurants').update({ onboarding_completed:true, onboarding_step:'done' }).eq('id', rest.id)
       await fetchRestaurant(user.id)
+      if (published) trackOwnerEvent('menu_published', { restaurantId: rest.id, props: { source: 'onboarding' } })
     } catch { /* غير كاسر */ }
     navigate(dest, { replace:true })
   }
@@ -303,9 +379,27 @@ export default function Onboarding() {
         document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta)
       }
       toast.success('تم نسخ الرابط! 📋')
+      trackOwnerEvent('menu_link_copied', { restaurantId: rest.id, props: { source: 'onboarding' } })
     } catch { toast.error('تعذّر النسخ، انسخ الرابط يدوياً') }
   }
-  const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(`تفضل منيونا الرقمي 👇\n${menuURL}`)}`, '_blank')
+  const shareWhatsApp = () => {
+    trackOwnerEvent('menu_shared', { restaurantId: rest?.id, props: { channel: 'whatsapp', source: 'onboarding' } })
+    window.open(`https://wa.me/?text=${encodeURIComponent(`تفضل منيونا الرقمي 👇\n${menuURL}`)}`, '_blank')
+  }
+
+  const downloadQR = () => {
+    try {
+      const canvas = qrRef.current
+      if (!canvas) throw new Error('qr_not_ready')
+      const link = document.createElement('a')
+      link.download = `simsim-${rest?.slug || 'menu'}-qr.png`
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+      trackOwnerEvent('qr_downloaded', { restaurantId: rest?.id, props: { source: 'onboarding' } })
+    } catch {
+      toast.error('تعذّر تحميل رمز QR، جرّب مرة أخرى')
+    }
+  }
 
   // ===== أنماط =====
   const bg = { minHeight:'100vh', background:'linear-gradient(135deg,#0B0B0F,#1a1a2e)', display:'flex', alignItems:'flex-start', justifyContent:'center', padding: isMobile ? '18px 12px' : '40px', direction:'rtl' }
@@ -316,16 +410,18 @@ export default function Onboarding() {
   const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }
   const skipLink = { width:'100%', marginTop:'10px', background:'none', border:'none', color:'#9CA3AF', fontFamily:'Tajawal,sans-serif', fontSize:'13px', cursor:'pointer' }
 
-  // مؤشر التقدّم — يظهر في خطوات الرحلة فقط
+  // التقدم يعكس قيمة المنيو، لا عدد الشاشات. تبقى المرحلة الحالية مرئية كنص مساعد فقط.
   const stepIndex = STEPS.findIndex(s => s.key === stage)
   const Progress = () => stepIndex < 0 ? null : (
     <div style={{ margin:'12px 0 18px' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'#9CA3AF', marginBottom:'7px' }}>
-        <span style={{ fontWeight:'800', color:'#FF6A00' }}>{STEPS[stepIndex].label}</span>
-        <span>الخطوة {stepIndex + 1} من {STEPS.length}</span>
+      <div style={{ display:'flex', justifyContent:'space-between', gap:'10px', fontSize:'11px', color:'#9CA3AF', marginBottom:'7px' }}>
+        <span style={{ fontWeight:'800', color: readiness?.minimumReady ? '#15803D' : '#FF6A00' }}>
+          {readiness?.minimumReady ? 'منيوك جاهز للمشاركة' : 'نبني منيوك الجاهز للمشاركة'}
+        </span>
+        <span>{readiness?.completionPercent || 0}% مكتمل</span>
       </div>
       <div style={{ height:'6px', borderRadius:'100px', background:'#F0F2F5', overflow:'hidden' }}>
-        <div style={{ height:'100%', width:`${((stepIndex + 1) / STEPS.length) * 100}%`, background:'linear-gradient(90deg,#FF6A00,#E05D00)', borderRadius:'100px', transition:'width 0.3s' }}/>
+        <div style={{ height:'100%', width:`${readiness?.completionPercent || 0}%`, background:readiness?.minimumReady ? 'linear-gradient(90deg,#16A34A,#22C55E)' : 'linear-gradient(90deg,#FF6A00,#E05D00)', borderRadius:'100px', transition:'width 0.3s' }}/>
       </div>
     </div>
   )
@@ -415,7 +511,8 @@ export default function Onboarding() {
                 </div>
               ))}
             </div>
-            <button onClick={skipMenu} style={{ ...skipLink, marginTop:'16px' }}>تخطّي بناء المنيو الآن</button>
+                            <button onClick={skipMenu} style={{ ...skipLink, marginTop:'16px' }}>راجع جاهزية المنيو أولاً</button>
+
           </>
         )}
 
@@ -482,7 +579,7 @@ export default function Onboarding() {
               <button onClick={() => goStage('type')} style={ghostBtn}>→ رجوع</button>
               <button onClick={goToItems} style={primaryBtn}>التالي: الأصناف ←</button>
             </div>
-            <button onClick={skipMenu} style={skipLink}>تخطّي بناء المنيو الآن</button>
+            <button onClick={skipMenu} style={skipLink}>راجع جاهزية المنيو أولاً</button>
           </>
         )}
 
@@ -521,13 +618,24 @@ export default function Onboarding() {
           </>
         )}
 
+        {/* بوابة الحد الأدنى: لا تعرض رابطاً أو QR كنجاح قبل وجود قسم مرئي وصنف متاح بسعر. */}
+        {stage === 'minimum' && (
+          <>
+            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>لنشارك منيوً حقيقيًا أولاً</h2>
+            <p style={{ fontSize:'13px', color:'#6B7280', lineHeight:'1.8', marginBottom:'16px' }}>تستطيع إكمال الهوية والصور لاحقًا، لكن نحتاج قسمًا ظاهرًا وصنفًا متاحًا بسعر قبل أن يصبح الرابط جاهزًا للمشاركة.</p>
+            <MenuReadinessCard readiness={readiness || calculateMenuReadiness({ restaurant:rest })} onResolve={goToFirstProduct} />
+            <button onClick={() => completeOnboarding('/dashboard', false)} style={{ ...ghostBtn, width:'100%', marginTop:'10px' }}>سأكمل من لوحة التحكم</button>
+          </>
+        )}
+
         {/* معاينة المنيو الحقيقي داخل إطار جوال */}
         {stage === 'preview' && (
           <>
             <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>هذا شكل منيوك 👀</h2>
-            <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'16px' }}>هكذا سيراه زبونك على جواله. تقدر تعدّله لاحقاً من صفحة المنيو.</p>
+            <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'14px' }}>هكذا سيراه زبونك على جواله. نتحقق من الأساسيات قبل إتاحة المشاركة.</p>
+            <MenuReadinessCard readiness={readiness || calculateMenuReadiness({ restaurant:rest })} compact />
 
-            <div style={{ display:'flex', justifyContent:'center', marginBottom:'18px' }}>
+            <div style={{ display:'flex', justifyContent:'center', margin:'18px 0' }}>
               <div style={{ width:'280px', height:'520px', borderRadius:'34px', border:'9px solid #0B0B0F', overflow:'hidden', boxShadow:'0 18px 50px rgba(0,0,0,0.28)', background:'white' }}>
                 <iframe title="معاينة المنيو" src={menuURL} style={{ width:'100%', height:'100%', border:'none' }} />
               </div>
@@ -535,46 +643,54 @@ export default function Onboarding() {
 
             <div style={{ display:'flex', gap:'10px' }}>
               <button onClick={() => window.open(menuURL, '_blank')} style={ghostBtn}>🌐 فتح</button>
-              <button onClick={() => goStage('share')} style={primaryBtn}>التالي: الرابط وQR ←</button>
+              <button onClick={() => requireMinimumReady('share')} style={primaryBtn}>تحقق وشارك ←</button>
             </div>
           </>
         )}
 
-        {/* الرابط + QR */}
+        {/* الرابط + QR — لا يصل لهذه المرحلة إلا بعد اجتياز Menu Ready. */}
         {stage === 'share' && (
           <>
-            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>رابط منيوك جاهز 🔗</h2>
-            <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'16px' }}>شارك الرابط أو اطبع رمز QR ليصل زبونك لمنيوك بمسحة واحدة.</p>
+            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>منيوك جاهز للمشاركة 🎉</h2>
+            <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'14px' }}>افتح المنيو، انسخ رابطه، شاركه على واتساب أو حمّل رمز QR للطباعة.</p>
+            <MenuReadinessCard readiness={readiness || calculateMenuReadiness({ restaurant:rest })} compact />
 
-            <div style={{ display:'flex', justifyContent:'center', marginBottom:'16px' }}>
+            <div style={{ display:'flex', justifyContent:'center', margin:'16px 0' }}>
               <div style={{ padding:'14px', background:'white', border:'1.5px solid #E5E7EB', borderRadius:'18px' }}>
                 <canvas ref={qrRef} style={{ display:'block', borderRadius:'8px' }} />
               </div>
             </div>
 
-            <div style={{ display:'flex', gap:'8px', marginBottom:'12px' }}>
-              <input readOnly value={menuURL} style={{ flex:1, padding:'11px 12px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'12px', color:'#6B7280', background:'#F8F9FB', outline:'none', direction:'ltr', textAlign:'left' }} />
-              <button onClick={copyURL} style={{ padding:'11px 16px', borderRadius:'11px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}>نسخ</button>
+            <div style={{ display:'flex', gap:'8px', marginBottom:'10px' }}>
+              <input readOnly value={menuURL} aria-label="رابط المنيو" style={{ flex:1, minWidth:0, padding:'11px 12px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'12px', color:'#6B7280', background:'#F8F9FB', outline:'none', direction:'ltr', textAlign:'left' }} />
+              <button onClick={copyURL} style={{ padding:'11px 16px', borderRadius:'11px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}>نسخ الرابط</button>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'18px' }}>
-              <button onClick={shareWhatsApp} style={{ ...ghostBtn, display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>💬 واتساب</button>
-              <button onClick={() => window.open(menuURL, '_blank')} style={{ ...ghostBtn, display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>🌐 فتح المنيو</button>
+              <button onClick={() => window.open(menuURL, '_blank')} style={{ ...ghostBtn, minHeight:'44px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>🌐 فتح المنيو</button>
+              <button onClick={shareWhatsApp} style={{ ...ghostBtn, minHeight:'44px', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>💬 مشاركة واتساب</button>
+              <button onClick={downloadQR} style={{ ...ghostBtn, minHeight:'44px', gridColumn:'1 / -1', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>⬇️ تحميل QR</button>
             </div>
 
-            <button onClick={() => goStage('done')} style={{ ...primaryBtn, width:'100%' }}>إنهاء ✓</button>
+            <button onClick={() => { trackOwnerEvent('menu_published', { restaurantId:rest.id, props:{ source:'onboarding' } }); goStage('done') }} style={{ ...primaryBtn, width:'100%' }}>أنهي الإعداد ✓</button>
           </>
         )}
 
-        {/* شاشة النجاح النهائية */}
+        {/* شاشة النجاح النهائية: بداية الاستخدام بعد أول نشر، لا QR منفرد. */}
         {stage === 'done' && (
           <div style={{ textAlign:'center', padding:'18px 6px 8px' }}>
             <div style={{ fontSize:'64px', marginBottom:'10px' }}>🎉</div>
-            <h2 style={{ fontSize:'24px', fontWeight:'900', marginBottom:'8px', fontFamily:'Tajawal,sans-serif' }}>مطعمك أصبح جاهزاً!</h2>
-            <p style={{ fontSize:'14px', color:'#6B7280', lineHeight:'1.8', marginBottom:'22px' }}>
-              منيو <b>{rest?.name}</b> منشور الآن ومتاح لزبائنك عبر الرابط وQR. تقدر تديره بالكامل من لوحة التحكم.
-            </p>
-            <button onClick={() => completeOnboarding('/dashboard')} style={{ ...primaryBtn, width:'100%', marginBottom:'10px' }}>الذهاب للوحة التحكم ←</button>
-            <button onClick={() => window.open(menuURL, '_blank')} style={{ ...ghostBtn, width:'100%' }}>🌐 عرض منيوي</button>
+            <h2 style={{ fontSize:'24px', fontWeight:'900', marginBottom:'8px', fontFamily:'Tajawal,sans-serif' }}>منيوك جاهز!</h2>
+            <p style={{ fontSize:'14px', color:'#6B7280', lineHeight:'1.8', margin:'0 0 16px' }}>منيو <b>{rest?.name}</b> صار جاهزًا لعملائك. تستطيع الآن مشاركته أو متابعة تحسينه من لوحة التحكم.</p>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'16px', textAlign:'right', padding:'12px', borderRadius:'14px', background:'#F8F9FB', fontSize:'12px', color:'#6B7280' }}>
+              <span>○ أضف شعارك</span><span>○ أضف صور الأصناف</span><span>○ أضف ساعات العمل</span><span>○ أنشئ عرضًا أو كوبونًا</span>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'10px' }}>
+              <button onClick={() => window.open(menuURL, '_blank')} style={{ ...ghostBtn, minHeight:'44px' }}>فتح المنيو</button>
+              <button onClick={copyURL} style={{ ...ghostBtn, minHeight:'44px' }}>نسخ الرابط</button>
+              <button onClick={shareWhatsApp} style={{ ...ghostBtn, minHeight:'44px' }}>مشاركة واتساب</button>
+              <button onClick={downloadQR} style={{ ...ghostBtn, minHeight:'44px' }}>تحميل QR</button>
+            </div>
+            <button onClick={() => completeOnboarding('/dashboard', false)} style={{ ...primaryBtn, width:'100%' }}>الذهاب للوحة التحكم ←</button>
           </div>
         )}
       </div>

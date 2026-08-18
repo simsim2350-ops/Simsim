@@ -3,10 +3,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
+import { trackOwnerEvent } from '../lib/analytics'
 
 export default function Login() {
   const navigate = useNavigate()
-  const { signIn, fetchRestaurant } = useAuthStore()
+  const { signIn, fetchRestaurant, resumePendingRestaurant } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -28,10 +29,21 @@ export default function Login() {
     setLoading(true)
     try {
       await signIn(email, password)
-      // توجيه ذكي: لو المستخدم بلا مطعم (حساب قديم/لم يُكمل الإعداد) → صفحة الإعداد
+      // نكمل نية التسجيل المؤكدة قبل تقرير الوجهة. الدالة idempotent ولا تقبل owner من العميل.
       const { data: { user } } = await supabase.auth.getUser()
+      const pending = user?.user_metadata?.pending_restaurant
       let hasRestaurant = false
       if (user) {
+        const { restaurant: resumed, error: resumeError } = await resumePendingRestaurant()
+        if (resumeError?.code === '23505') {
+          toast.error('رابط المنيو المحفوظ أصبح مستخدمًا. عدّله لإكمال إنشاء مطعمك.')
+          navigate('/onboarding')
+          return
+        }
+        if (resumed?.id && pending?.name && pending?.slug) {
+          trackOwnerEvent('registration_completed', { props: { email_confirmation: true } })
+          trackOwnerEvent('restaurant_created', { restaurantId: resumed.id, props: { source: 'email_confirmation' } })
+        }
         const { data: rest } = await supabase.from('restaurants').select('id').eq('owner_id', user.id).maybeSingle()
         hasRestaurant = !!rest
         if (hasRestaurant) await fetchRestaurant(user.id)

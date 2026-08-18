@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { calculateMenuReadiness } from '../lib/menuReadiness'
 
 const PERIODS = { today: 1, week: 7, month: 30, quarter: 90 }
 const STATUS = {
@@ -56,7 +57,7 @@ export default function Dashboard() {
   const { isMobile } = useBreakpoint()
   const [orders, setOrders] = useState([])
   const [summary, setSummary] = useState(null)
-  const [menu, setMenu] = useState({ categories: [], products: [] })
+  const [menu, setMenu] = useState({ categories: [], products: [], branches: [] })
   const [reviews, setReviews] = useState([])
   const [period, setPeriod] = useState('week')
   const [filter, setFilter] = useState('all')
@@ -74,18 +75,18 @@ export default function Dashboard() {
       const [{ data: orderData, error: orderError }, { data: reviewData }, { data: branches }] = await Promise.all([
         supabase.from('orders').select('*').eq('restaurant_id', restaurant.id).gte('created_at', from).order('created_at', { ascending: false }).limit(500),
         supabase.from('reviews').select('rating,created_at').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false }).limit(200),
-        supabase.from('branches').select('id').eq('restaurant_id', restaurant.id),
+        supabase.from('branches').select('id,is_primary,is_active,is_paused,opening_hours,phone,menu_clone_status').eq('restaurant_id', restaurant.id),
       ])
       if (orderError) throw orderError
       setOrders(orderData || []); setReviews(reviewData || [])
       const branchIds = (branches || []).map(b => b.id)
       if (branchIds.length) {
         const [{ data: categories }, { data: products }] = await Promise.all([
-          supabase.from('categories').select('id,name,is_visible').in('branch_id', branchIds),
-          supabase.from('products').select('id,name,description,image_url,price,is_available,branch_id').in('branch_id', branchIds),
+          supabase.from('categories').select('id,name,is_visible,branch_id').in('branch_id', branchIds),
+          supabase.from('products').select('id,name,description,image_url,price,is_available,category_id,branch_id').in('branch_id', branchIds),
         ])
-        setMenu({ categories: categories || [], products: products || [] })
-      } else setMenu({ categories: [], products: [] })
+        setMenu({ categories: categories || [], products: products || [], branches: branches || [] })
+      } else setMenu({ categories: [], products: [], branches: [] })
     } catch (e) { console.error(e); setError(true) } finally { setLoading(false) }
   }
 
@@ -122,9 +123,18 @@ export default function Dashboard() {
   const avgRating = reviews.length ? (reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviews.length).toFixed(1) : null
   const missingImages = menu.products.filter(p => !p.image_url).length
   const missingDescriptions = menu.products.filter(p => !p.description?.trim()).length
+  const primaryBranch = menu.branches.find(branch => branch.is_primary && branch.is_active !== false && !branch.is_paused && branch.menu_clone_status !== 'copying' && branch.menu_clone_status !== 'failed') || menu.branches.find(branch => branch.is_active !== false && !branch.is_paused && branch.menu_clone_status !== 'copying' && branch.menu_clone_status !== 'failed') || null
+  const primaryCategories = primaryBranch ? menu.categories.filter(category => category.branch_id === primaryBranch.id) : []
+  const primaryProducts = primaryBranch ? menu.products.filter(product => product.branch_id === primaryBranch.id) : []
+  const menuReadiness = calculateMenuReadiness({ restaurant, branch: primaryBranch, categories: primaryCategories, products: primaryProducts })
   const healthChecks = [{ label: 'بيانات المطعم', ok: Boolean(restaurant?.name) }, { label: 'الأقسام', ok: menu.categories.length > 0 }, { label: 'الأسعار', ok: menu.products.length > 0 && menu.products.every(p => Number(p.price) > 0) }, { label: 'الأصناف', ok: menu.products.length > 0 }, { label: 'صور الأصناف', ok: menu.products.length > 0 && missingImages === 0 }, { label: 'أوصاف الأصناف', ok: menu.products.length > 0 && missingDescriptions === 0 }]
   const health = Math.round((healthChecks.filter(x => x.ok).length / healthChecks.length) * 100)
-  const attention = [{ label: 'طلبات جديدة', count: todayOrders.filter(o => o.status === 'pending').length, icon: 'cart', path: '/orders', tone: 'warning' }, { label: 'أصناف بدون صور', count: missingImages, icon: 'image', path: '/menu', state: { tab: 'products' }, tone: 'info' }, { label: 'أصناف بدون وصف', count: missingDescriptions, icon: 'file', path: '/menu', state: { tab: 'products' }, tone: 'neutral' }].filter(x => x.count > 0)
+  const attention = [
+    !menuReadiness.minimumReady && { label: 'أكمل أساسيات المنيو', hint: `المتبقي: ${menuReadiness.nextEssential?.label || 'الأساسيات'}`, count: menuReadiness.essentialsTotal - menuReadiness.essentialsDone, icon: 'menu', path: '/menu', state: { tab: 'products' }, tone: 'warning' },
+    { label: 'طلبات جديدة', count: todayOrders.filter(o => o.status === 'pending').length, icon: 'cart', path: '/orders', tone: 'warning' },
+    { label: 'أصناف بدون صور', count: missingImages, icon: 'image', path: '/menu', state: { tab: 'products' }, tone: 'info' },
+    { label: 'أصناف بدون وصف', count: missingDescriptions, icon: 'file', path: '/menu', state: { tab: 'products' }, tone: 'neutral' },
+  ].filter(Boolean).filter(x => x.count > 0)
 
   const chart = useMemo(() => {
     const days = period === 'today' ? 1 : period === 'week' ? 7 : period === 'month' ? 30 : 12
@@ -175,7 +185,7 @@ export default function Dashboard() {
         </div>
         <div className="stack">
           <Section title="يحتاج انتباهك" eyebrow="مركز الإجراءات" action={attention.length ? 'مراجعة' : undefined} onAction={() => go('/orders')}>
-            {attention.length ? <div className="attention">{attention.map(item => <div className={`attention-item ${item.tone}`} key={item.label} onClick={() => go(item.path, item.state)}><div className="attention-icon"><Icon name={item.icon} size={16} /></div><div className="attention-copy"><strong>{item.label}</strong><span>اضغط للانتقال إلى الإجراء</span></div><span className="count">{item.count}</span><Icon name="arrow" size={14} /></div>)}</div> : <EmptyState icon="check" title="كل شيء على ما يرام" text="لا توجد إجراءات معلقة حاليًا." />}
+            {attention.length ? <div className="attention">{attention.map(item => <div className={`attention-item ${item.tone}`} key={item.label} onClick={() => go(item.path, item.state)}><div className="attention-icon"><Icon name={item.icon} size={16} /></div><div className="attention-copy"><strong>{item.label}</strong><span>{item.hint || 'اضغط للانتقال إلى الإجراء'}</span></div><span className="count">{item.count}</span><Icon name="arrow" size={14} /></div>)}</div> : <EmptyState icon="check" title="كل شيء على ما يرام" text="لا توجد إجراءات معلقة حاليًا." />}
           </Section>
           <Section title="الطلبات المباشرة" eyebrow="تحديث لحظي" action="فتح الطلبات" onAction={() => go('/orders')}>
             {activeOrders.length ? <div className="live-list">{activeOrders.slice(0, 4).map(o => <div className="live-item" key={o.id} onClick={() => go('/orders')}><div className="live-top"><span>#{o.order_number || o.id?.slice(0, 6)}</span><span className={`badge ${STATUS[o.status]?.tone || 'neutral'}`}>{STATUS[o.status]?.label || o.status}</span></div><div className="live-bottom"><span>{o.customer_name || 'عميل'}</span><b>{money(o.total)} · {timeAgo(o.created_at)}</b></div></div>)}</div> : <EmptyState icon="check" title="لا توجد طلبات نشطة" text="ستظهر الطلبات الجديدة هنا لحظة وصولها." />}
@@ -183,7 +193,7 @@ export default function Dashboard() {
           <Section title="الأكثر طلبًا 🔥" eyebrow="أداء المنيو" action="عرض تقرير المنيو" onAction={() => go('/analytics')}>
             {summaryLoading ? <div className="product-list">{[1, 2, 3].map(i => <Skeleton key={i} className="row-s" />)}</div> : topProducts.length ? <div className="product-list">{topProducts.map((p, i) => <div className="product-row" key={p.name}><span className="rank">{i + 1}</span><span className="product-name truncate">{p.name}</span><span className="product-meta"><b>{Number(p.count || 0).toLocaleString('ar-SA')}</b> طلب</span><span className="product-meta"><b>غير متاح</b> الإيراد</span></div>)}</div> : <EmptyState icon="menu" title="لا توجد طلبات أصناف بعد" text="ستظهر الأصناف الأكثر طلبًا بعد أول الطلبات." />}
           </Section>
-          <Section title="صحة المنيو" eyebrow="جودة البيانات" action={menuHealthAction} onAction={() => go('/menu')}><div className="health"><div className="health-score"><strong>{menu.products.length ? `${health}%` : 'غير متاح'}</strong><span>{menu.products.length ? 'مكتمل' : 'أضف أصنافًا لقياس الصحة'}</span></div><div className="progress"><span style={{ width: `${menu.products.length ? health : 0}%` }} /></div><div className="checks">{healthChecks.map(check => <div className={`check ${check.ok ? 'ok' : 'warn'}`} key={check.label}><Icon name={check.ok ? 'check' : 'alert'} size={14} /> {check.label}</div>)}</div></div></Section>
+          <Section title="جاهزية المنيو" eyebrow={menuReadiness.minimumReady ? 'جاهز للمشاركة' : 'الأساسيات أولاً'} action={menuHealthAction} onAction={() => go('/menu')}><div className="health"><div className="health-score"><strong>{menuReadiness.minimumReady ? 'جاهز' : `${menuReadiness.essentialsDone}/${menuReadiness.essentialsTotal}`}</strong><span>{menuReadiness.minimumReady ? 'الحد الأدنى مكتمل' : `المتبقي: ${menuReadiness.nextEssential?.label || 'الأساسيات'}`}</span></div><div className="progress"><span style={{ width: `${(menuReadiness.essentialsDone / menuReadiness.essentialsTotal) * 100}%` }} /></div><div className="checks">{menuReadiness.essentials.map(check => <div className={`check ${check.complete ? 'ok' : 'warn'}`} key={check.key}><Icon name={check.complete ? 'check' : 'alert'} size={14} /> {check.label}</div>)}</div></div></Section>
           <Section title="إجراءات سريعة" eyebrow="اختصارات العمل"><div className="quick"><button className="primary" onClick={() => go('/menu', { tab: 'products' })}><Icon name="plus" size={18} />إضافة صنف</button><button onClick={() => go('/menu')}><Icon name="menu" size={18} />إدارة المنيو</button><button onClick={() => window.open(`${window.location.origin}/menu/${restaurant?.slug}`, '_blank')}><Icon name="external" size={18} />معاينة المنيو</button><button onClick={() => go('/qr')}><Icon name="qr" size={18} />QR Code</button><button onClick={() => go('/analytics')}><Icon name="chart" size={18} />التقرير</button><button onClick={shareMenu}><Icon name="share" size={18} />مشاركة المنيو</button></div></Section>
         </div></div>
       </>}

@@ -64,6 +64,7 @@ export default function Branches() {
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [openMenuId, setOpenMenuId] = useState(null)
   const [modalTab, setModalTab] = useState('details')
+  const [retryingBranchId, setRetryingBranchId] = useState(null)
 
   useEffect(() => {
     if (!restaurant) return
@@ -135,18 +136,23 @@ export default function Branches() {
           phone: form.phone, maps_url: form.maps_url, is_active: form.is_active,
           opening_hours: form.hours,
           ...deliveryFields, takeaway_enabled: form.takeaway_enabled,
+          menu_clone_status: primary ? 'copying' : 'ready',
+          menu_clone_error: null,
           sort_order: branches.length,
         })
-        // نسخ منيو الفرع الأساسي بالكامل — نسخة مستقلة قابلة للتعديل بحرية من الآن
+        // RPC ذرية: لا يصبح الفرع جاهزاً إلا حين تنجح الأقسام والأصناف معاً.
         if (primary) {
           try {
             await cloneMenuToBranch(primary.id, newBranch.id, restaurant.id)
+            await updateBranch(newBranch.id, { menu_clone_status:'ready', menu_clone_error:null })
+            toast.success('تم إضافة الفرع ونسخ المنيو إليه 🎉')
           } catch (cloneErr) {
-            toast.error('تم إضافة الفرع، لكن تعذّر نسخ المنيو إليه — راجع المنيو يدوياً')
-            console.error('Clone menu error:', cloneErr)
+            await updateBranch(newBranch.id, { menu_clone_status:'failed', menu_clone_error:(cloneErr?.message || 'clone_failed').slice(0, 240) }).catch(() => {})
+            toast.error('أُضيف الفرع لكن نسخة المنيو تحتاج إعادة محاولة قبل نشره.')
           }
+        } else {
+          toast.success('تم إضافة الفرع ✅')
         }
-        toast.success('تم إضافة الفرع ونسخ المنيو إليه 🎉')
       }
       setModalOpen(false)
       loadBranches()
@@ -154,6 +160,28 @@ export default function Branches() {
       toast.error(err.message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const retryBranchMenu = async (branch) => {
+    const primary = branches.find(item => item.is_primary)
+    if (!primary || primary.id === branch.id) {
+      toast.error('لا يوجد فرع رئيسي صالح لنسخ المنيو منه')
+      return
+    }
+    setRetryingBranchId(branch.id)
+    try {
+      await updateBranch(branch.id, { menu_clone_status:'copying', menu_clone_error:null })
+      await cloneMenuToBranch(primary.id, branch.id, restaurant.id, true)
+      await updateBranch(branch.id, { menu_clone_status:'ready', menu_clone_error:null })
+      toast.success('اكتملت نسخة المنيو وأصبح الفرع جاهزًا ✅')
+      await loadBranches()
+    } catch (error) {
+      await updateBranch(branch.id, { menu_clone_status:'failed', menu_clone_error:(error?.message || 'clone_failed').slice(0, 240) }).catch(() => {})
+      toast.error('تعذّرت إعادة النسخ. جرّب مرة أخرى أو راجع المنيو.')
+      await loadBranches()
+    } finally {
+      setRetryingBranchId(null)
     }
   }
 
@@ -210,7 +238,9 @@ export default function Branches() {
   const PageTitle = <span style={{ display:'inline-flex', alignItems:'center', gap:'10px', minWidth:0 }}><span style={{ width:isMobile?'42px':'44px', height:isMobile?'42px':'44px', borderRadius:'12px', display:'grid', placeItems:'center', color:'#FF6A00', background:'#FFF0EB', border:'1px solid #FFD4BE', flexShrink:0 }}><Icon type="branch" size={20}/></span><span style={{ display:'flex', flexDirection:'column', gap:'2px', minWidth:0 }}><strong style={{ fontSize:isMobile?'18px':'22px', fontWeight:'900', letterSpacing:'-0.025em', lineHeight:1.15 }}>الفروع</strong><small style={{ fontSize:isMobile?'10px':'11px', color:'#9CA3AF', fontWeight:'600', whiteSpace:'nowrap' }}>إدارة فروع المطعم ومنيوهاتها</small></span></span>
 
   const BranchCard = ({ branch }) => {
-    const branchIsLive = branch.is_active && !branch.is_paused
+    const cloneStatus = branch.menu_clone_status || 'ready'
+    const cloneReady = cloneStatus === 'ready'
+    const branchIsLive = branch.is_active && !branch.is_paused && cloneReady
     const isMenuOpen = openMenuId === branch.id
     const runMenuAction = action => { setOpenMenuId(null); action() }
     return <div style={{ position:'relative', background:'white', borderRadius:'15px', border:branch.is_primary?'1px solid #FFD4BE':'1px solid #E7E9ED', boxShadow:'0 2px 10px rgba(17,24,39,0.035)', padding:isMobile?'14px':'16px', display:'flex', flexDirection:'column', minHeight:isDesktop?'246px':'auto' }}>
@@ -218,7 +248,7 @@ export default function Branches() {
         <span style={{ width:'38px', height:'38px', borderRadius:'11px', display:'grid', placeItems:'center', color:branch.is_primary?'#FF6A00':'#5B6472', background:branch.is_primary?'#FFF0EB':'#F4F6F8', flexShrink:0 }}><Icon type="branch" size={18}/></span>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap', marginBottom:'5px' }}><strong style={{ fontSize:'15px', fontWeight:'900', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{branch.name}</strong>{branch.is_primary ? <span style={{ fontSize:'10px', fontWeight:'800', color:'#C2410C', background:'#FFF0EB', border:'1px solid #FFD4BE', padding:'3px 7px', borderRadius:'999px' }}>الفرع الرئيسي</span> : <span style={{ fontSize:'10px', fontWeight:'800', color:'#6B7280', background:'#F4F6F8', padding:'3px 7px', borderRadius:'999px' }}>فرع</span>}</div>
-          <span style={{ display:'inline-flex', alignItems:'center', gap:'5px', fontSize:'10px', fontWeight:'800', color:branchIsLive?'#047857':'#9A3412', background:branchIsLive?'#ECFDF5':'#FFF7ED', padding:'3px 7px', borderRadius:'999px' }}><i style={{ width:'6px', height:'6px', borderRadius:'50%', background:branchIsLive?'#10B981':'#F97316' }}/>{branchIsLive ? 'نشط' : (branch.is_paused ? 'متوقف مؤقتًا' : 'متوقف')}</span>
+          <span style={{ display:'inline-flex', alignItems:'center', gap:'5px', fontSize:'10px', fontWeight:'800', color:branchIsLive?'#047857':'#9A3412', background:branchIsLive?'#ECFDF5':'#FFF7ED', padding:'3px 7px', borderRadius:'999px' }}><i style={{ width:'6px', height:'6px', borderRadius:'50%', background:branchIsLive?'#10B981':'#F97316' }}/>{cloneStatus === 'copying' ? 'جارٍ نسخ المنيو' : cloneStatus === 'failed' ? 'المنيو يحتاج إصلاحًا' : (branchIsLive ? 'نشط' : (branch.is_paused ? 'متوقف مؤقتًا' : 'متوقف'))}</span>
         </div>
         <button aria-label="إجراءات الفرع" onClick={() => setOpenMenuId(isMenuOpen ? null : branch.id)} style={{ width:'36px', height:'36px', borderRadius:'9px', border:'1px solid #E5E7EB', background:'white', color:'#6B7280', display:'grid', placeItems:'center', cursor:'pointer', flexShrink:0 }}><Icon type="more" size={18}/></button>
       </div>
@@ -226,9 +256,10 @@ export default function Branches() {
         <div style={{ display:'flex', alignItems:'center', gap:'7px', color:'#6B7280', fontSize:'12px', minWidth:0 }}><Icon type="pin" size={14}/><span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{branch.address || 'العنوان غير مضاف'}</span></div>
         <div style={{ display:'flex', alignItems:'center', gap:'7px', color:'#6B7280', fontSize:'12px', minWidth:0 }}><Icon type="phone" size={14}/><span dir="ltr">{branch.phone || 'رقم الهاتف غير مضاف'}</span></div>
       </div>
+      {cloneStatus === 'failed' && <button onClick={() => retryBranchMenu(branch)} disabled={retryingBranchId === branch.id} style={{ width:'100%', minHeight:'38px', marginBottom:'8px', borderRadius:'10px', border:'1px solid #F59E0B', background:'#FFFBEB', color:'#B45309', fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'12px', cursor:'pointer' }}>{retryingBranchId === branch.id ? 'جارٍ إعادة النسخ...' : 'إعادة محاولة نسخ المنيو'}</button>}
       <div style={{ display:'flex', alignItems:'center', gap:'7px', marginTop:'auto', paddingTop:'12px', borderTop:'1px solid #F1F3F5' }}>
-        <button onClick={() => previewBranchMenu(branch)} style={{ minHeight:'38px', flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'6px', borderRadius:'10px', border:'1px solid #FF6A00', background:'#FF6A00', color:'white', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'900', cursor:'pointer' }}><Icon type="eye" size={14}/> فتح المنيو</button>
-        <button onClick={() => copyBranchURL(branch)} style={{ minHeight:'38px', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'6px', borderRadius:'10px', border:'1px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'800', cursor:'pointer', padding:'7px 10px' }}><Icon type="copy" size={14}/> نسخ الرابط</button>
+        <button disabled={!cloneReady} onClick={() => cloneReady && previewBranchMenu(branch)} style={{ minHeight:'38px', flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'6px', borderRadius:'10px', border:'1px solid #FF6A00', background:cloneReady?'#FF6A00':'#F3F4F6', color:cloneReady?'white':'#9CA3AF', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'900', cursor:cloneReady?'pointer':'not-allowed' }}><Icon type="eye" size={14}/> فتح المنيو</button>
+        <button disabled={!cloneReady} onClick={() => cloneReady && copyBranchURL(branch)} style={{ minHeight:'38px', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'6px', borderRadius:'10px', border:'1px solid #E5E7EB', background:'white', color:cloneReady?'#374151':'#9CA3AF', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'800', cursor:cloneReady?'pointer':'not-allowed', padding:'7px 10px' }}><Icon type="copy" size={14}/> نسخ الرابط</button>
       </div>
       {isMenuOpen && <div style={{ position:'absolute', top:'56px', left:'14px', zIndex:10, minWidth:'178px', padding:'6px', border:'1px solid #E5E7EB', borderRadius:'12px', background:'white', boxShadow:'0 10px 28px rgba(17,24,39,0.14)' }}>
         {[["edit",'تعديل الفرع',() => openEdit(branch)],['eye','معاينة المنيو',() => previewBranchMenu(branch)],['copy','نسخ الرابط',() => copyBranchURL(branch)],['toggle',branch.is_paused?'إلغاء الإغلاق المؤقت':'إغلاق مؤقت',() => togglePaused(branch)], ...(!branch.is_primary ? [['toggle',branch.is_active?'تعطيل الفرع':'تفعيل الفرع',() => toggleActive(branch)],['trash','حذف الفرع',() => setConfirmDelete(branch)]] : [])].map(([icon,label,action], index) => <button key={`${label}-${index}`} onClick={() => runMenuAction(action)} style={{ width:'100%', display:'flex', alignItems:'center', gap:'8px', padding:'9px 10px', border:0, borderRadius:'8px', background:'transparent', color:label === 'حذف الفرع' ? '#B91C1C' : '#374151', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', textAlign:'right', cursor:'pointer' }}><Icon type={icon} size={14}/>{label}</button>)}

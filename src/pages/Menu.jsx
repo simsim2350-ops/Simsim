@@ -87,7 +87,7 @@ export default function Menu() {
 
   // Forms
   const [catForm, setCatForm] = useState({ name:'', name_en:'', emoji:'🍽️', cover_url:'', is_visible:true })
-  const [prodForm, setProdForm] = useState({ name:'', name_en:'', description:'', description_en:'', price:'', compare_price:'', category_id:'', emoji:'🍽️', image_url:'', calories:'', is_available:true, is_featured:false, options:[] })
+  const [prodForm, setProdForm] = useState({ name:'', name_en:'', description:'', description_en:'', price:'', compare_price:'', category_id:'', emoji:'🍽️', image_url:'', calories:'', is_available:true, is_featured:false, is_best_seller:false, options:[] })
   const [uploadingCatImage, setUploadingCatImage] = useState(false)
   const [uploadingProdImage, setUploadingProdImage] = useState(false)
   const [confirmDeleteCat, setConfirmDeleteCat] = useState(null)
@@ -296,7 +296,7 @@ export default function Menu() {
   // ===== PRODUCTS =====
   const openAddProd = () => {
     setEditingProd(null)
-    setProdForm({ name:'', name_en:'', description:'', description_en:'', price:'', compare_price:'', category_id: categories[0]?.id || '', emoji:'🍽️', image_url:'', calories:'', is_available:true, is_featured:false, options:[] })
+    setProdForm({ name:'', name_en:'', description:'', description_en:'', price:'', compare_price:'', category_id: categories[0]?.id || '', emoji:'🍽️', image_url:'', calories:'', is_available:true, is_featured:false, is_best_seller:false, options:[] })
     setProdModal(true)
   }
 
@@ -315,6 +315,7 @@ export default function Menu() {
       calories: prod.calories || '',
       is_available: prod.is_available,
       is_featured: !!prod.is_featured,
+      is_best_seller: !!prod.is_best_seller,
       options: Array.isArray(prod.options) ? prod.options : [],
     })
     setRecSearch('')
@@ -484,6 +485,7 @@ export default function Menu() {
         calories: prodForm.calories ? parseInt(prodForm.calories) : null,
         is_available: prodForm.is_available,
         is_featured: prodForm.is_featured,
+        is_best_seller: prodForm.is_best_seller,
         options: cleanOptions,
         sort_order: editingProd ? editingProd.sort_order : products.length,
       }
@@ -696,7 +698,8 @@ export default function Menu() {
                                         <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6A00' }}>{prod.price} ﷼</span>
                                         {prod.compare_price && <span style={{ fontSize:'12px', color:'#9CA3AF', textDecoration:'line-through' }}>{prod.compare_price} ﷼</span>}
                                         {prod.calories && <span style={{ fontSize:'11px', color:'#9CA3AF' }}>{getCalorieBadge(prod.calories)} {prod.calories} كالوري</span>}
-                                        {prod.is_featured && <span style={{ fontSize:'10px', color:'#1E5FBF', background:'#EAF3FF', padding:'2px 6px', borderRadius:'100px' }}>مميز</span>}
+                                        {prod.is_best_seller && <span style={{ fontSize:'10px', color:'#B45309', background:'#FEF3C7', padding:'2px 6px', borderRadius:'100px' }}>🔥 الأكثر مبيعًا</span>}
+                                        {prod.is_featured && <span style={{ fontSize:'10px', color:'#1E5FBF', background:'#EAF3FF', padding:'2px 6px', borderRadius:'100px' }}>مختارات المطعم</span>}
                                       </div>
                                     </div>
                                     <div style={{ display:'flex', flexDirection:'column', gap:'6px', alignItems:'flex-end', flexShrink:0 }}>
@@ -758,7 +761,7 @@ export default function Menu() {
               </div>
 
               <div style={{ fontSize:'13px', color:'#9CA3AF', marginBottom:'14px', lineHeight:'1.6' }}>
-                هذه القائمة تظهر في قسم «🍽️ أكمل وجبتك» العام داخل سلة الزبون — بمعزل تماماً عن اقتراحات كل صنف على حدة، وعن المنتجات المميزة التي تظهر في «الأكثر طلبًا 🔥».
+                هذه القائمة تظهر في قسم «🍽️ أكمل وجبتك» العام داخل سلة الزبون — بمعزل تماماً عن اقتراحات كل صنف على حدة، وعن «مختارات المطعم ⭐» و«الأكثر مبيعًا 🔥» اليدوية.
               </div>
 
               <div style={{ position:'relative', marginBottom:'16px' }}>
@@ -965,7 +968,11 @@ export default function Menu() {
               </label>
               <label style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
                 <input type="checkbox" checked={prodForm.is_featured} onChange={e => setProdForm(f=>({...f,is_featured:e.target.checked}))} style={{ width:'17px', height:'17px', accentColor:'#1E5FBF' }}/>
-                <span style={{ fontSize:'13px', fontWeight:'600' }}>مميز</span>
+                <span style={{ fontSize:'13px', fontWeight:'600' }}>⭐ مختارات المطعم</span>
+              </label>
+              <label style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
+                <input type="checkbox" checked={prodForm.is_best_seller} onChange={e => setProdForm(f=>({...f,is_best_seller:e.target.checked}))} style={{ width:'17px', height:'17px', accentColor:'#F59E0B' }}/>
+                <span style={{ fontSize:'13px', fontWeight:'600' }}>🔥 الأكثر مبيعًا</span>
               </label>
             </div>
 

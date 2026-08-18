@@ -8,7 +8,8 @@ export function useMenuData(slug, branchId) {
   const [branchList, setBranchList] = useState([]) // كل الفروع النشطة (لعرض اسم الفرع/تبديله)
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
-  const [bestSellers, setBestSellers] = useState([])
+  const [customerFavorites, setCustomerFavorites] = useState([]) // سلوك طلبات فعلي: «يعجب زبائننا»
+  const [manualBestSellers, setManualBestSellers] = useState([]) // اختيار المالك اليدوي: «الأكثر مبيعًا»
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [activeCategory, setActiveCategory] = useState(null)
@@ -40,7 +41,8 @@ export function useMenuData(slug, branchId) {
     setRating(null)
     setBanners([])
     setCoupons([])
-    setBestSellers([])
+    setCustomerFavorites([])
+    setManualBestSellers([])
     try {
       // Fetch restaurant
       const { data: rest, error } = await supabase
@@ -62,7 +64,7 @@ export function useMenuData(slug, branchId) {
         .eq('restaurant_id', rest.id)
         .eq('is_active', true)
         .order('sort_order')
-      const list = brs || []
+      const list = (brs || []).filter(branch => branch.menu_clone_status !== 'copying' && branch.menu_clone_status !== 'failed')
       setBranchList(list)
 
       const resolvedBranch = (branchId && list.find(b => b.id === branchId))
@@ -129,9 +131,11 @@ export function useMenuData(slug, branchId) {
       const nextProducts = prods || []
       setCategories(nextCategories)
       setProducts(nextProducts)
+      // Best Sellers قائمة يحددها مالك المطعم فقط؛ لا تستعمل الطلبات أو is_featured أو أي ترتيب تلقائي.
+      setManualBestSellers(nextProducts.filter(product => product.is_best_seller === true).slice(0, 4))
       setActiveCategory(previous => nextCategories.some(category => category.id === previous) ? previous : (nextCategories[0]?.id || null))
 
-      // حساب قائمة «يعجب زبائننا» من الطلبات الفعلية غير الملغاة خلال آخر 30 يومًا (عبر RPC آمن)، وهي مستقلة عن المنتجات المميزة.
+      // «يعجب زبائننا» توصية مستقلة من الطلبات الفعلية غير الملغاة خلال آخر 30 يومًا.
       const { data: pastOrders } = await supabase.rpc('get_recent_order_items', { p_restaurant_id: rest.id })
 
       if (pastOrders && nextProducts.length > 0) {
@@ -147,7 +151,7 @@ export function useMenuData(slug, branchId) {
           .filter(p => salesCount[p.id] > 0)
           .sort((a, b) => salesCount[b.id] - salesCount[a.id])
           .slice(0, 4)
-        setBestSellers(ranked)
+        setCustomerFavorites(ranked)
       }
 
       // تحديث عدد الطلبات النشطة لحظياً مع كل طلب جديد أو تغيّر حالة — عبر Realtime Broadcast
@@ -180,7 +184,7 @@ export function useMenuData(slug, branchId) {
 
   return {
     restaurant, branch, branchList,
-    categories, products, bestSellers, loading, notFound,
+    categories, products, customerFavorites, manualBestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
     banners, coupons, capabilities, branding,
   }

@@ -45,4 +45,34 @@ export function track(eventType, opts = {}) {
   } catch { /* لا يكسر الواجهة أبداً */ }
 }
 
-export default { track, getSessionId }
+// أحداث مالك المطعم ضمن Funnel التفعيل. يتحقق الخادم من الحساب والمطعم ونوع الحدث.
+// props يجب أن تكون تقنية/تجميعية فقط؛ لا تمرر البريد أو الهاتف أو أسماء العملاء.
+export function trackOwnerEvent(eventType, opts = {}) {
+  try {
+    const { restaurantId = null, props = {} } = opts
+    if (!eventType) return
+    const sessionId = getSessionId()
+    if (!sessionId) return
+    supabase.rpc('track_owner_event', {
+      p_event_type: eventType,
+      p_restaurant_id: restaurantId,
+      p_session_id: sessionId,
+      p_props: props || {},
+    }).then(() => {}, () => {})
+  } catch { /* لا يكسر الواجهة أبداً */ }
+}
+
+// حدثا بداية التسجيل وطلب تأكيد البريد فقط يمكن إرسالهما قبل المصادقة.
+export function trackRegistrationEvent(eventType, props = {}) {
+  try {
+    const sessionId = getSessionId()
+    if (!sessionId) return
+    supabase.rpc('track_registration_event', {
+      p_event_type: eventType,
+      p_session_id: sessionId,
+      p_props: props || {},
+    }).then(() => {}, () => {})
+  } catch { /* لا يكسر الواجهة أبداً */ }
+}
+
+export default { track, trackOwnerEvent, trackRegistrationEvent, getSessionId }
