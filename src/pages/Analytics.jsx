@@ -8,7 +8,7 @@ import { vatBreakdown } from '../lib/pricing'
 import { fetchBranches } from '../lib/branchesApi'
 import { exportRows, printReport, buildTable, stampName } from '../lib/exportUtils'
 
-const PERIOD_DAYS = { week: 7, month: 30, quarter: 90 }
+const PERIOD_DAYS = { today: 1, week: 7, month: 30, quarter: 90 }
 const STATUS_LABELS = { pending:'انتظار', preparing:'تحضير', ready:'جاهز', completed:'مكتمل', cancelled:'ملغي' }
 const STATUS_COLORS = { pending:'#F59E0B', preparing:'#3B82F6', ready:'#10B981', completed:'#6B7280', cancelled:'#EF4444' }
 const TYPE_LABELS = { dine_in:'محلي', takeaway:'سفري', delivery:'توصيل' }
@@ -20,17 +20,23 @@ export default function Analytics() {
   const branchLocked = !isOwner && membership?.branch_scope && membership.branch_scope !== 'all'
   const { isMobile, isDesktop } = useBreakpoint()
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [period, setPeriod] = useState('week')
+  const [chartMetric, setChartMetric] = useState('revenue')
   const [branches, setBranches] = useState([])
   const [branchFilter, setBranchFilter] = useState('all')
   const [data, setData] = useState(null)   // ناتج التجميع الخادمي get_analytics_summary
   const [adv, setAdv] = useState(null)     // تحليلات متقدمة (ولاء/رضا/فروع/شكاوى) — ADR-39
+  const [advancedError, setAdvancedError] = useState(false)
 
   useEffect(() => { if (restaurant) fetchBranches(restaurant.id).then(setBranches).catch(() => {}) }, [restaurant])
   useEffect(() => { if (restaurant) fetchAnalytics() }, [restaurant, period, branchFilter])
 
   const fetchAnalytics = async () => {
+    if (!restaurant) return
     setLoading(true)
+    setError(null)
+    setAdvancedError(false)
     try {
       const days = PERIOD_DAYS[period] || 7
       const now = new Date()
@@ -39,7 +45,7 @@ export default function Analytics() {
       // التجميع في قاعدة البيانات (استدعاء واحد) بدل تنزيل كل طلبات الفترة للمتصفح.
       // فلتر الفرع أصبح معامل خادمي (إعادة جلب) — لا ننزّل بيانات كل الفروع لنفلترها محلياً.
       const branchParam = branchFilter === 'all' ? null : branchFilter
-      const [{ data: j }, { data: a }] = await Promise.all([
+      const [summaryResult, advancedResult] = await Promise.all([
         supabase.rpc('get_analytics_summary', {
           p_restaurant_id: restaurant.id,
           p_from: from.toISOString(),
@@ -56,8 +62,15 @@ export default function Analytics() {
           p_branch_id: branchParam,
         }),
       ])
-      setData(j || null)
-      setAdv(a || null)
+      if (summaryResult.error) throw summaryResult.error
+      setData(summaryResult.data || null)
+      setAdvancedError(Boolean(advancedResult.error))
+      setAdv(advancedResult.error ? null : (advancedResult.data || null))
+    } catch (e) {
+      setError(e)
+      setData(null)
+      setAdv(null)
+      setAdvancedError(false)
     } finally { setLoading(false) }
   }
 
@@ -83,15 +96,21 @@ export default function Analytics() {
   const growth = (cur, prev) => prev > 0 ? Math.round(((cur - prev) / prev) * 100) : (cur > 0 ? 100 : 0)
   const revGrowth = growth(revenue, prevRevenue)
   const ordGrowth = growth(totalOrders, prevTotalOrders)
+  const hasRevenueData = revenue > 0
+  const hasOrdersData = totalOrders > 0
+  const hasAdvancedData = Boolean(adv)
+  const periodLabel = period === 'today' ? 'اليوم' : period === 'week' ? 'آخر 7 أيام' : period === 'month' ? 'آخر 30 يومًا' : 'آخر 90 يومًا'
 
   const avgPrep = d.avg_prep_minutes == null ? null : Math.round(num(d.avg_prep_minutes))
 
   // مبيعات يومية (التاريخ مُجمَّع بتوقيت الرياض في الخادم، والتسمية تُنسَّق هنا)
   const dailyRevenue = (d.daily || []).map(x => ({
     day: new Date(x.d + 'T00:00:00').toLocaleDateString('ar', { weekday:'short', day:'numeric' }),
-    revenue: num(x.revenue), orders: num(x.orders),
+    revenue: num(x.revenue), orders: num(x.orders), avg: num(x.orders) > 0 ? num(x.revenue) / num(x.orders) : 0,
   }))
-  const maxRevenue = Math.max(...dailyRevenue.map(x => x.revenue), 1)
+  const chartMetricLabel = chartMetric === 'orders' ? 'الطلبات' : chartMetric === 'avg' ? 'متوسط الطلب' : 'المبيعات'
+  const chartValue = point => chartMetric === 'orders' ? point.orders : chartMetric === 'avg' ? point.avg : point.revenue
+  const maxRevenue = Math.max(...dailyRevenue.map(chartValue), 1)
 
   const statusMap = d.status_counts || {}
   const typeRev = d.type_revenue || {}
@@ -99,6 +118,7 @@ export default function Analytics() {
   const branchName = (id) => branches.find(b => b.id === id)?.name || 'فرع محذوف'
 
   const productsArr = (d.products || []).map(p => ({ name:p.name, emoji:p.emoji || '🍽️', count:num(p.count), revenue:num(p.revenue) }))
+  const productRevenueTotal = productsArr.reduce((sum, p) => sum + p.revenue, 0)
   const topProducts = [...productsArr].sort((a, b) => b.count - a.count).slice(0, 6)
   const bottomProducts = [...productsArr].sort((a, b) => a.count - b.count).slice(0, 3)
 
@@ -194,49 +214,52 @@ export default function Analytics() {
 
   const Card = ({ children, style }) => <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden', ...style }}>{children}</div>
   const CardHead = ({ children }) => <div style={{ padding:'14px 16px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>{children}</div>
-  const Empty = ({ text='ما في بيانات بعد' }) => <div style={{ padding:'28px', textAlign:'center', color:'#9CA3AF', fontSize:'13px' }}>{text}</div>
+  const Empty = ({ title='لا توجد بيانات بعد', text, action, onAction }) => <div style={{ padding:isMobile?'18px 12px':'24px 18px', textAlign:'center', color:'#9CA3AF', fontSize:'12px' }}><div style={{ width:'32px', height:'32px', borderRadius:'10px', background:'#F8F9FB', display:'grid', placeItems:'center', margin:'0 auto 8px', color:'#9CA3AF' }}>∅</div><strong style={{ display:'block', color:'#374151', fontSize:'12px', marginBottom:'4px' }}>{title}</strong><span>{text || 'ستظهر البيانات هنا بعد توفر نشاط كافٍ خلال الفترة.'}</span>{action && <button onClick={onAction} style={{ display:'block', margin:'10px auto 0', border:0, background:'transparent', color:'#FF6A00', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'800', cursor:'pointer' }}>{action} →</button>}</div>
+  const ErrorState = () => <div style={{ padding:'24px 18px', textAlign:'center', color:'#B91C1C', fontSize:'12px' }}><strong style={{ display:'block', color:'#7F1D1D', marginBottom:'5px' }}>تعذر تحميل البيانات</strong><span style={{ display:'block', marginBottom:'10px' }}>حاول مرة أخرى.</span><button onClick={fetchAnalytics} style={{ border:'1px solid #FECACA', background:'#FFF7F7', color:'#B91C1C', borderRadius:'8px', padding:'7px 12px', fontFamily:'Tajawal,sans-serif', fontWeight:'800', cursor:'pointer' }}>إعادة المحاولة</button></div>
+  const Skeleton = ({ height='90px' }) => <div style={{ height, borderRadius:'12px', background:'linear-gradient(90deg,#F3F4F6 25%,#FAFAFA 37%,#F3F4F6 63%)', backgroundSize:'400% 100%', animation:'analytics-shimmer 1.4s ease infinite' }} />
 
   if (loading) return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Tajawal,sans-serif' }}>
-      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      جارٍ تحميل التحليلات...
-    </div>
+    <AppShell active="analytics" title="التحليلات">
+      <div style={{ padding:isMobile?'16px':'24px', background:'#F8F9FB', minHeight:'100%', fontFamily:'Tajawal,sans-serif' }}><div style={{ maxWidth:'1160px', margin:'0 auto' }}><style>{`@keyframes analytics-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}`}</style><Skeleton height="56px" /><div style={{ display:'grid', gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)', gap:'12px', margin:'14px 0' }}>{[1,2,3,4].map(i => <Skeleton key={i} height="118px" />)}</div><Skeleton height="230px" /><div style={{ display:'grid', gridTemplateColumns:isMobile?'1fr':'1fr 1fr', gap:'14px', marginTop:'14px' }}>{[1,2].map(i => <Skeleton key={i} height="180px" />)}</div></div></div>
+    </AppShell>
   )
 
-  const GrowthBadge = ({ v }) => (
-    <span style={{ fontSize:'11px', fontWeight:'800', color: v >= 0 ? '#10B981' : '#EF4444' }}>{v >= 0 ? '▲' : '▼'} {Math.abs(v)}%</span>
-  )
+  const GrowthBadge = ({ v, hasData=true }) => hasData ? (
+    <span style={{ fontSize:'11px', fontWeight:'800', color: v >= 0 ? '#10B981' : '#EF4444' }}>{v >= 0 ? '▲' : '▼'} {Math.abs(v)}% · مقارنة بالفترة السابقة</span>
+  ) : <span style={{ fontSize:'11px', color:'#9CA3AF' }}>لا توجد مقارنة كافية</span>
 
   return (
     <AppShell
       active="analytics"
       title="📊 التحليلات"
-      actions={<>
+      actions={<div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap', maxWidth:isMobile?'100%':'none' }}>
+        <span style={{ fontSize:'11px', color:'#6B7280', fontWeight:'700', whiteSpace:'nowrap' }}>الفترة: {periodLabel}</span>
         {branches.length > 0 && !branchLocked && (
           <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} style={{ padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'700', color:'#374151', cursor:'pointer', background:'white' }}>
             <option value="all">🏢 كل الفروع</option>
             {branches.map(b => <option key={b.id} value={b.id}>{b.is_primary ? '🏠' : '🏢'} {b.name}</option>)}
           </select>
         )}
-        {[{ key:'week', label:'7 أيام' }, { key:'month', label:'30 يوم' }, { key:'quarter', label:'90 يوم' }].map(p => (
+        {[{ key:'today', label:'اليوم' }, { key:'week', label:'7 أيام' }, { key:'month', label:'30 يوم' }, { key:'quarter', label:'90 يوم' }].map(p => (
           <button key={p.key} onClick={() => setPeriod(p.key)} style={{ padding:'6px 12px', borderRadius:'8px', border:`1.5px solid ${period===p.key?'#FF6A00':'#E5E7EB'}`, background: period===p.key?'#FFF0EB':'white', color: period===p.key?'#FF6A00':'#374151', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>{p.label}</button>
         ))}
         <button onClick={exportCSV} title="تصدير CSV" style={{ padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>⬇️ تصدير</button>
         <button onClick={printAnalytics} title="طباعة / حفظ كـPDF" style={{ padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>🖨️ تقرير</button>
-      </>}
+      </div>}
     >
         {/* Content */}
         <div style={{ flex:1, overflowY:'auto', padding: isDesktop?'24px':'16px', background:'#F8F9FB' }}>
           <div style={{ maxWidth: isDesktop?'1160px':'100%', margin:'0 auto' }}>
+            {error ? <Card><ErrorState /></Card> : <>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px', marginBottom:'12px', flexWrap:'wrap' }}><div><div style={{ fontSize:'20px', fontWeight:'900', color:'#111827' }}>التحليلات</div><div style={{ fontSize:'12px', color:'#6B7280', marginTop:'3px' }}>رؤى عملية لاتخاذ قرارات أفضل · {periodLabel}</div></div><div style={{ fontSize:'11px', color:'#6B7280', background:'#FFF7F2', border:'1px solid #FFE1D2', borderRadius:'999px', padding:'6px 10px' }}>{branchFilter === 'all' ? 'كل الفروع' : branchName(branchFilter)}</div></div>
 
             {/* البطاقات الرئيسية */}
             <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(2,1fr)':'repeat(4,1fr)', gap: isMobile?'10px':'14px', marginBottom:'14px' }}>
               {[
-                { icon:'💰', val:`${revenue.toFixed(2)} ﷼`, label:'إجمالي المبيعات', sub:<GrowthBadge v={revGrowth} />, color:'#FF6A00', bg:'rgba(255,106,0,0.1)' },
-                { icon:'🛒', val:totalOrders, label:'عدد الطلبات', sub:<GrowthBadge v={ordGrowth} />, color:'#3B82F6', bg:'rgba(59,130,246,0.1)' },
-                { icon:'🧾', val:`${Math.round(avgOrder)} ﷼`, label:'متوسط الطلب', sub:`إتمام ${completionRate}%`, color:'#10B981', bg:'rgba(16,185,129,0.1)' },
-                { icon:'🏛️', val:`${taxCollected.toFixed(2)} ﷼`, label:'ض.ق.م المحصّلة', sub:`صافي ${Math.round(netSales)} ﷼`, color:'#8B5CF6', bg:'rgba(139,92,246,0.1)' },
+                { icon:'💰', val:`${revenue.toFixed(2)} ﷼`, label:'إجمالي المبيعات', sub:<GrowthBadge v={revGrowth} hasData={hasRevenueData || prevRevenue > 0} />, color:'#FF6A00', bg:'rgba(255,106,0,0.1)' },
+                { icon:'🛒', val:totalOrders, label:'عدد الطلبات', sub:<GrowthBadge v={ordGrowth} hasData={hasOrdersData || prevTotalOrders > 0} />, color:'#3B82F6', bg:'rgba(59,130,246,0.1)' },
+                { icon:'🧾', val:completedCount > 0 ? `${Math.round(avgOrder)} ﷼` : '—', label:'متوسط الطلب', sub:completedCount > 0 ? `إتمام ${completionRate}%` : 'لا توجد طلبات خلال الفترة', color:'#10B981', bg:'rgba(16,185,129,0.1)' },
+                { icon:'🏛️', val:`${taxCollected.toFixed(2)} ﷼`, label:'ض.ق.م المحصّلة', sub:hasRevenueData ? `صافي ${Math.round(netSales)} ﷼` : 'لا توجد مبيعات خلال الفترة', color:'#8B5CF6', bg:'rgba(139,92,246,0.1)' },
               ].map(s => (
                 <div key={s.label} style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding: isMobile?'14px':'18px' }}>
                   <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', marginBottom:'10px' }}>{s.icon}</div>
@@ -250,21 +273,21 @@ export default function Analytics() {
             {/* الرسم البياني */}
             <Card style={{ marginBottom:'14px' }}>
               <div style={{ padding:'14px 16px', borderBottom:'1px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                <span style={{ fontSize:'14px', fontWeight:'800' }}>📈 المبيعات اليومية</span>
-                <span style={{ fontSize:'12px', color:'#9CA3AF' }}>شامل الضريبة · ريال</span>
+                <div><span style={{ fontSize:'14px', fontWeight:'800', display:'block' }}>📈 أداء المبيعات</span><span style={{ fontSize:'11px', color:'#9CA3AF' }}>الفترة: {periodLabel} · المقياس: {chartMetricLabel}</span></div>
+                <div style={{ display:'flex', gap:'4px', overflowX:'auto' }}>{[['revenue','المبيعات'],['orders','الطلبات'],['avg','متوسط الطلب']].map(([key,label]) => <button key={key} onClick={() => setChartMetric(key)} style={{ border:`1px solid ${chartMetric===key?'#FF6A00':'#E5E7EB'}`, background:chartMetric===key?'#FFF0EB':'white', color:chartMetric===key?'#FF6A00':'#6B7280', borderRadius:'7px', padding:'5px 8px', fontFamily:'Tajawal,sans-serif', fontSize:'10px', fontWeight:'800', cursor:'pointer', whiteSpace:'nowrap' }}>{label}</button>)}</div>
               </div>
               <div style={{ padding:'16px' }}>
-                {dailyRevenue.length > 0 ? (
+                {dailyRevenue.length > 0 && dailyRevenue.some(x => x.revenue > 0 || x.orders > 0) ? (
                   <div style={{ display:'flex', alignItems:'flex-end', gap:'6px', height:'140px' }}>
                     {dailyRevenue.map((d, i) => (
                       <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', height:'100%', justifyContent:'flex-end' }}>
-                        <div style={{ fontSize:'10px', color:'#9CA3AF', fontWeight:'700' }}>{d.revenue > 0 ? Math.round(d.revenue) : ''}</div>
-                        <div style={{ width:'100%', borderRadius:'5px 5px 0 0', background: i === dailyRevenue.length-1 ? '#FF6A00' : 'rgba(255,106,0,0.35)', height:`${Math.max((d.revenue / maxRevenue) * 90, d.revenue > 0 ? 4 : 0)}%`, minHeight: d.revenue > 0 ? '4px' : '0', transition:'height 0.5s ease' }}/>
+                        <div style={{ fontSize:'10px', color:'#9CA3AF', fontWeight:'700' }}>{chartValue(d) > 0 ? Math.round(chartValue(d)) : ''}</div>
+                        <div style={{ width:'100%', borderRadius:'5px 5px 0 0', background: i === dailyRevenue.length-1 ? '#FF6A00' : 'rgba(255,106,0,0.35)', height:`${Math.max((chartValue(d) / maxRevenue) * 90, chartValue(d) > 0 ? 4 : 0)}%`, minHeight: chartValue(d) > 0 ? '4px' : '0', transition:'height 0.5s ease' }}/>
                         <div style={{ fontSize:'9px', color:'#9CA3AF', textAlign:'center', whiteSpace:'nowrap', overflow:'hidden', width:'100%', textOverflow:'ellipsis' }}>{d.day}</div>
                       </div>
                     ))}
                   </div>
-                ) : <Empty />}
+                ) : <Empty title="لا توجد بيانات مبيعات بعد" text="ستظهر حركة المبيعات هنا بعد استلام أول طلب." />}
               </div>
             </Card>
 
@@ -277,7 +300,7 @@ export default function Analytics() {
                 {topProducts.length === 0 ? <Empty /> : (
                   <div style={{ padding:'12px' }}>
                     {topProducts.map((p, i) => {
-                      const pct = Math.round((p.count / (topProducts[0]?.count || 1)) * 100)
+                      const pct = productRevenueTotal > 0 ? Math.round((p.revenue / productRevenueTotal) * 100) : 0
                       const medals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣']
                       return (
                         <div key={p.name} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'9px 0', borderBottom: i < topProducts.length-1 ? '1px solid #F3F4F6':'none' }}>
@@ -288,8 +311,8 @@ export default function Analytics() {
                             <div style={{ height:'6px', background:'#F3F4F6', borderRadius:'3px', overflow:'hidden' }}><div style={{ height:'100%', width:`${pct}%`, background:'linear-gradient(90deg,#FF6A00,#FF9F6B)', borderRadius:'3px' }}/></div>
                           </div>
                           <div style={{ textAlign:'left', flexShrink:0 }}>
-                            <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6A00' }}>{p.count}</div>
-                            <div style={{ fontSize:'10px', color:'#9CA3AF' }}>{Math.round(p.revenue)} ﷼</div>
+                            <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6A00' }}>{p.count} <span style={{ fontSize:'10px', fontWeight:'700' }}>طلب</span></div>
+                            <div style={{ fontSize:'10px', color:'#6B7280' }}>{Math.round(p.revenue)} ﷼ · {pct}%</div>
                           </div>
                         </div>
                       )
@@ -349,7 +372,7 @@ export default function Analytics() {
                         <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:STATUS_COLORS[st], flexShrink:0 }}/>
                         <span style={{ fontSize:'13px', fontWeight:'600', flex:1 }}>{STATUS_LABELS[st]}</span>
                         <div style={{ flex:2 }}><div style={{ height:'6px', background:'#F3F4F6', borderRadius:'3px', overflow:'hidden' }}><div style={{ height:'100%', width:`${pct}%`, background:STATUS_COLORS[st], borderRadius:'3px' }}/></div></div>
-                        <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', minWidth:'30px', textAlign:'left' }}>{count}</span>
+                        <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', minWidth:'54px', textAlign:'left' }}>{count} <small style={{ color:'#9CA3AF', fontWeight:'600' }}>({pct}٪)</small></span>
                       </div>
                     )
                   })}
@@ -374,7 +397,7 @@ export default function Analytics() {
             </div>
 
             {/* ===== تحليلات متقدمة (ولاء / رضا / فروع / شكاوى) ===== */}
-            {adv && (() => {
+            {adv ? (() => {
               const li = adv.loyalty_impact || {}
               const sat = adv.satisfaction || {}
               const bperf = Array.isArray(adv.branch_performance) ? adv.branch_performance : []
@@ -402,10 +425,10 @@ export default function Analytics() {
                           </div>
                         ))}
                       </div>
-                      <div style={{ fontSize:'12.5px', color: uplift >= 0 ? '#166534' : '#92400E', background: uplift >= 0 ? '#DCFCE7' : '#FEF3C7', borderRadius:'10px', padding:'10px 12px', lineHeight:1.7 }}>
-                        {uplift >= 0
-                          ? `متوسط طلب عضو الولاء أعلى بـ ${Math.abs(uplift)}٪ من غير الأعضاء — البرنامج يرفع قيمة السلة.`
-                          : `متوسط طلب عضو الولاء أقل بـ ${Math.abs(uplift)}٪ من غير الأعضاء — البرنامج يرفع تكرار الطلب لا حجمه. فكّر بمكافآت تشجّع سلّة أكبر.`}
+                      <div style={{ fontSize:'12.5px', color:'#6B7280', background:'#F8F9FB', borderRadius:'10px', padding:'10px 12px', lineHeight:1.7 }}>
+                        {num(li.member_orders) > 0 && num(li.nonmember_orders) > 0
+                          ? `متوسط طلب عضو الولاء ${uplift >= 0 ? 'أعلى' : 'أقل'} بـ ${Math.abs(uplift)}٪ من غير الأعضاء.`
+                          : 'لا توجد بيانات كافية لتحليل تأثير برنامج الولاء. ستظهر المقارنة بعد توفر طلبات من أعضاء البرنامج وغير الأعضاء.'}
                       </div>
                     </div>
                   </Card>
@@ -478,6 +501,7 @@ export default function Analytics() {
                               <th style={{ padding:'8px 4px', fontWeight:'700' }}>الفرع</th>
                               <th style={{ padding:'8px 4px', fontWeight:'700' }}>الإيراد</th>
                               <th style={{ padding:'8px 4px', fontWeight:'700' }}>الطلبات</th>
+                              <th style={{ padding:'8px 4px', fontWeight:'700' }}>متوسط الطلب</th>
                               <th style={{ padding:'8px 4px', fontWeight:'700' }}>التقييم</th>
                               <th style={{ padding:'8px 4px', fontWeight:'700' }}>شكاوى</th>
                             </tr>
@@ -488,6 +512,7 @@ export default function Analytics() {
                                 <td style={{ padding:'10px 4px', fontWeight:'700' }}>{b.is_primary ? '🏠' : '🏢'} {b.name}</td>
                                 <td style={{ padding:'10px 4px', fontFamily:'Tajawal,sans-serif', fontWeight:'800', color:'#FF6A00' }}>{Math.round(num(b.revenue))} ﷼</td>
                                 <td style={{ padding:'10px 4px' }}>{num(b.orders)}</td>
+                                <td style={{ padding:'10px 4px', fontFamily:'Tajawal,sans-serif' }}>{num(b.orders) > 0 ? `${Math.round(num(b.revenue) / num(b.orders))} ﷼` : '—'}</td>
                                 <td style={{ padding:'10px 4px', color:'#F59E0B', fontWeight:'700' }}>{b.avg_rating == null ? '—' : `${num(b.avg_rating)} ⭐`}</td>
                                 <td style={{ padding:'10px 4px', color: num(b.complaints) > 0 ? '#EF4444' : '#9CA3AF', fontWeight:'700' }}>{num(b.complaints)}</td>
                               </tr>
@@ -499,7 +524,7 @@ export default function Analytics() {
                   )}
                 </div>
               )
-            })()}
+            })() : advancedError ? <Card><CardHead>🎯 تحليلات متقدمة</CardHead><ErrorState /></Card> : <Card><CardHead>🎯 تحليلات متقدمة</CardHead><Empty title="لا توجد بيانات كافية للتحليلات المتقدمة" text="ستظهر رؤى الولاء والعملاء والفروع بعد توفر نشاط كافٍ." /></Card>}
 
             {/* ملخص */}
             <div style={{ background:'linear-gradient(135deg,#0B0B0F,#1A1A2E)', borderRadius:'16px', padding:'20px' }}>
@@ -518,6 +543,7 @@ export default function Analytics() {
                 ))}
               </div>
             </div>
+            </>}
 
           </div>
         </div>
