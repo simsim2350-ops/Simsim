@@ -57,12 +57,13 @@ describe('ROLE_PRESETS', () => {
   it('لكل دور قالب معرّف', () => {
     for (const r of MEMBER_ROLES) expect(Array.isArray(ROLE_PRESETS[r])).toBe(true)
   })
-  it('cashier = الطلبات فقط · staff فارغ (تخصيص)', () => {
-    expect(ROLE_PRESETS.cashier).toEqual(['orders'])
-    expect(ROLE_PRESETS.staff).toEqual([])
+  it('الكاشير يملك صلاحيات التشغيل الأساسية والموظف يبدأ بالطلبات', () => {
+    expect(ROLE_PRESETS.cashier).toEqual(['orders', 'tables', 'qr'])
+    expect(ROLE_PRESETS.staff).toEqual(['orders'])
   })
-  it('manager لا يشمل صفحات OWNER_ONLY', () => {
+  it('المدير يستعمل all مع استمرار canAccess في منع OWNER_ONLY', () => {
+    expect(ROLE_PRESETS.manager).toEqual(['all'])
     for (const p of ['settings', 'staff', 'billing', 'dashboard', 'marketing'])
-      expect(ROLE_PRESETS.manager).not.toContain(p)
+      expect(canAccess(p, member({ allowedPages: ROLE_PRESETS.manager, role: 'manager' }))).toBe(false)
   })
 })

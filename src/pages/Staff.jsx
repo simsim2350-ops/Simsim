@@ -1,169 +1,279 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { appConfig } from '../config'
 import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 import { fetchBranches } from '../lib/branchesApi'
-import { MEMBER_ROLES, ROLE_LABELS, ROLE_PRESETS } from '../lib/permissions'
+import { CAPABILITIES } from '../registry/features.manifest'
+import { MEMBER_ROLES, OWNER_ONLY, ROLE_LABELS, ROLE_PRESETS } from '../lib/permissions'
 
-// عميل ثانوي لإنشاء حسابات الموظفين دون التأثير على جلسة صاحب المطعم.
-// الإعدادات من طبقة config الموحّدة (نفس قيم العميل الرئيسي، بلا قراءة import.meta.env هنا).
+// عميل ثانوي لإنشاء حسابات الموظفين دون تغيير جلسة صاحب المطعم الحالية.
 const signupClient = createClient(
   appConfig.supabaseUrl,
   appConfig.supabaseAnonKey,
   { auth: { persistSession: false, autoRefreshToken: false } }
 )
 
-// الصفحات القابلة للتخصيص للموظف (الإعدادات وإدارة الموظفين محصورة بصاحب المطعم)
-const PAGES = [
-  { key:'orders',    label:'الطلبات',   icon:'📋' },
-  { key:'menu',      label:'المنيو',    icon:'🍽️' },
-  { key:'customers', label:'العملاء',   icon:'👥' },
-  { key:'analytics', label:'التحليلات', icon:'📊' },
-  { key:'loyalty',   label:'الولاء',    icon:'⭐' },
-  { key:'qr',        label:'QR',        icon:'🔳' },
+const GROUP_DEFINITIONS = [
+  { key: 'sales', label: 'المبيعات', keys: ['orders', 'tables', 'qr'] },
+  { key: 'restaurant', label: 'المطعم', keys: ['menu', 'branches'] },
+  { key: 'customers', label: 'العملاء', keys: ['customers', 'loyalty'] },
+  { key: 'reports', label: 'التقارير', keys: ['analytics'] },
 ]
+
+const pageCapabilities = CAPABILITIES.filter(capability => capability.kind === 'page' && !OWNER_ONLY.includes(capability.key))
+const pageByKey = new Map(pageCapabilities.map(capability => [capability.key, capability]))
+const groupedKeys = new Set(GROUP_DEFINITIONS.flatMap(group => group.keys))
+const extraCapabilityKeys = pageCapabilities.map(capability => capability.key).filter(key => !groupedKeys.has(key))
+const PERMISSION_GROUPS = [
+  ...GROUP_DEFINITIONS.map(group => ({
+    ...group,
+    pages: group.keys.map(key => pageByKey.get(key)).filter(Boolean),
+  })).filter(group => group.pages.length > 0),
+  ...(extraCapabilityKeys.length ? [{
+    key: 'other',
+    label: 'أخرى',
+    pages: extraCapabilityKeys.map(key => pageByKey.get(key)).filter(Boolean),
+  }] : []),
+]
+const MANAGEABLE_PAGE_KEYS = pageCapabilities.map(capability => capability.key)
+
+const filterOptions = [
+  { key: 'all', label: 'الكل' },
+  { key: 'manager', label: 'المديرون' },
+  { key: 'cashier', label: 'الكاشير' },
+  { key: 'staff', label: 'الموظفون' },
+  { key: 'active', label: 'المفعلون' },
+  { key: 'inactive', label: 'المعطلون' },
+]
+
+const emptyForm = {
+  username: '',
+  password: '',
+  role: 'staff',
+  allowed_pages: [...(ROLE_PRESETS.staff || [])],
+  all_pages: false,
+  branch_mode: 'all',
+  branch_ids: [],
+}
+
+function Icon({ type, size = 16 }) {
+  const paths = {
+    users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm13 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+    plus: 'M12 5v14M5 12h14', search: 'm21 21-4.35-4.35M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0z',
+    link: 'M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1',
+    copy: 'M9 9h10v11H9zM5 5h10v4', more: 'M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0-14a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
+    edit: 'M4 20h4l10-10-4-4L4 16v4zM13 7l4 4', trash: 'M4 7h16M10 11v5m4-5v5M9 7l1-3h4l1 3m-9 0 1 14h10l1-14',
+    power: 'M12 2v10m5.66-6.34a8 8 0 1 1-11.32 0', close: 'm18 6-12 12M6 6l12 12',
+    branch: 'M4 20V4h16v16M8 8h2M14 8h2M8 12h2M14 12h2M8 16h2M14 16h2',
+    clock: 'M12 6v6l4 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0', shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+    check: 'm5 12 4 4L19 6', info: 'M12 8h.01M11 12h1v4h1M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z',
+  }
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[type] || paths.users} /></svg>
+}
 
 function Spinner() {
   return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Tajawal,sans-serif' }}>
-      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0B0B0F', color: 'white', gap: '16px', fontFamily: 'Tajawal,sans-serif' }}>
+      <div style={{ width: '44px', height: '44px', border: '3px solid rgba(255,106,0,0.3)', borderTopColor: '#FF6A00', borderRadius: '50%', animation: 'staffSpin 0.8s linear infinite' }} />
+      <style>{'@keyframes staffSpin{to{transform:rotate(360deg)}}'}</style>
       جارٍ التحميل...
     </div>
   )
 }
 
 const inputStyle = {
-  width:'100%', padding:'11px 13px',
-  border:'1.5px solid #E5E7EB', borderRadius:'11px',
-  fontFamily:'Tajawal,sans-serif', fontSize:'14px',
-  outline:'none', boxSizing:'border-box',
+  width: '100%', minHeight: '46px', padding: '11px 13px', border: '1.5px solid #E1E5EA', borderRadius: '11px',
+  fontFamily: 'Tajawal,sans-serif', fontSize: '14px', color: '#111827', outline: 'none', boxSizing: 'border-box', background: 'white',
 }
-const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px', color:'#374151' }
+const labelStyle = { display: 'block', fontSize: '12px', fontWeight: '800', marginBottom: '7px', color: '#374151' }
+const softButton = { padding: '8px 11px', borderRadius: '9px', border: '1px solid #E1E5EA', background: 'white', color: '#374151', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '800', cursor: 'pointer' }
 
-const emptyForm = { username:'', password:'', role:'staff', allowed_pages:[], branch_scope:'all', all_pages:false }
+const formatDateTime = (value) => {
+  if (!value) return null
+  return new Date(value).toLocaleString('ar-SA', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
+}
 
 export default function Staff() {
-  const navigate = useNavigate()
   const { restaurant } = useAuthStore()
+  const { isMobile, isDesktop } = useBreakpoint()
   const [members, setMembers] = useState([])
   const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
-  useBodyScrollLock(modalOpen)
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(emptyForm)
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('all')
+  const [openMenuId, setOpenMenuId] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(null)
+  const [togglingId, setTogglingId] = useState(null)
+
+  useBodyScrollLock(modalOpen || !!confirmDelete)
 
   useEffect(() => {
-    if (!restaurant) return
+    if (!restaurant?.id) return
     fetchAll()
-  }, [restaurant])
+  }, [restaurant?.id])
 
   const fetchAll = async () => {
+    if (!restaurant?.id) return
     setLoading(true)
     try {
-      const [{ data: mem }, br] = await Promise.all([
+      const [{ data: mem, error: memberError }, branchList] = await Promise.all([
         supabase.from('restaurant_members').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false }),
         fetchBranches(restaurant.id),
       ])
+      if (memberError) throw memberError
       setMembers(mem || [])
-      setBranches(br || [])
+      setBranches(branchList || [])
+    } catch (err) {
+      toast.error(err.message || 'تعذّر تحميل الموظفين')
+      setMembers([])
     } finally {
       setLoading(false)
     }
   }
 
-  const openAdd = () => { setEditing(null); setForm(emptyForm); setModalOpen(true) }
-  const openEdit = (m) => {
-    setEditing(m)
-    setForm({
-      username: m.username,
-      password: '',
-      role: m.role || 'staff',
-      allowed_pages: Array.isArray(m.allowed_pages) ? m.allowed_pages.filter(p => p !== 'all') : [],
-      branch_scope: m.branch_scope || 'all',
-      all_pages: Array.isArray(m.allowed_pages) && m.allowed_pages.includes('all'),
+  const summary = useMemo(() => ({
+    total: members.length,
+    active: members.filter(member => member.is_active).length,
+    inactive: members.filter(member => !member.is_active).length,
+  }), [members])
+
+  const visibleMembers = useMemo(() => {
+    const keyword = search.trim().toLowerCase()
+    return members.filter(member => {
+      const matchesSearch = !keyword || member.username?.toLowerCase().includes(keyword) || ROLE_LABELS[member.role]?.includes(search.trim())
+      const matchesFilter = filter === 'all'
+        || filter === member.role
+        || (filter === 'active' && member.is_active)
+        || (filter === 'inactive' && !member.is_active)
+      return matchesSearch && matchesFilter
     })
+  }, [members, search, filter])
+
+  const getBranchIds = (member) => Array.isArray(member.branch_ids) ? member.branch_ids : []
+  const branchNames = (member) => {
+    if (member.branch_scope === 'all' || (!member.branch_scope && getBranchIds(member).length === 0)) return ['كل الفروع']
+    const ids = getBranchIds(member)
+    const names = ids.map(id => branches.find(branch => branch.id === id)?.name).filter(Boolean)
+    return names.length ? names : ['فروع محددة']
+  }
+  const branchDescription = (member) => {
+    const names = branchNames(member)
+    if (names[0] === 'كل الفروع') return 'يرى ويعمل على كل فروع المطعم'
+    return names.length === 1 ? 'يرى ويعمل على هذا الفرع فقط' : `يرى ويعمل على ${names.length} فروع`
+  }
+  const pageNames = (member) => {
+    const pages = Array.isArray(member.allowed_pages) ? member.allowed_pages : []
+    if (pages.includes('all')) return ['كل الصفحات']
+    return pages.map(key => pageByKey.get(key)?.name || key)
+  }
+  const pagesSummary = (member) => {
+    const names = pageNames(member)
+    if (!names.length) return 'بدون صلاحيات صفحات'
+    if (names[0] === 'كل الصفحات') return 'كل الصفحات التشغيلية'
+    return names.slice(0, 4).join(' · ') + (names.length > 4 ? ` +${names.length - 4}` : '')
+  }
+
+  const openAdd = () => {
+    setEditing(null)
+    setForm({ ...emptyForm, allowed_pages: [...(ROLE_PRESETS.staff || [])] })
     setModalOpen(true)
   }
 
-  const togglePage = (key) => {
-    setForm(f => ({
-      ...f,
-      allowed_pages: f.allowed_pages.includes(key)
-        ? f.allowed_pages.filter(p => p !== key)
-        : [...f.allowed_pages, key],
-    }))
+  const openEdit = (member) => {
+    setEditing(member)
+    const pages = Array.isArray(member.allowed_pages) ? member.allowed_pages : []
+    setForm({
+      username: member.username || '',
+      password: '',
+      role: member.role || 'staff',
+      allowed_pages: pages.filter(page => page !== 'all'),
+      all_pages: pages.includes('all'),
+      branch_mode: member.branch_scope === 'all' || (!member.branch_scope && getBranchIds(member).length === 0) ? 'all' : 'selected',
+      branch_ids: [...getBranchIds(member)],
+    })
+    setOpenMenuId(null)
+    setModalOpen(true)
   }
 
-  // اختيار الدور يطبّق قالبه الافتراضي على الصفحات (يبقى قابلاً للتعديل يدوياً — هجين M7)
   const applyRole = (role) => {
     const preset = ROLE_PRESETS[role] || []
-    setForm(f => ({ ...f, role, all_pages: false, allowed_pages: [...preset] }))
+    const fullAccess = preset.includes('all')
+    setForm(current => ({ ...current, role, all_pages: fullAccess, allowed_pages: fullAccess ? [] : [...preset] }))
   }
+
+  const togglePage = (key) => setForm(current => ({
+    ...current,
+    allowed_pages: current.allowed_pages.includes(key)
+      ? current.allowed_pages.filter(page => page !== key)
+      : [...current.allowed_pages, key],
+  }))
+
+  const toggleBranch = (id) => setForm(current => ({
+    ...current,
+    branch_ids: current.branch_ids.includes(id)
+      ? current.branch_ids.filter(branchId => branchId !== id)
+      : [...current.branch_ids, id],
+  }))
 
   const buildEmail = (username) => `${username.toLowerCase()}.${restaurant.slug}@staff.simsim.app`
 
   const handleSave = async () => {
     const username = form.username.trim().toLowerCase()
-    // تحقّق من اسم المستخدم (يبدأ بحرف إنجليزي، ثم حروف/أرقام/_ . -)
-    if (!/^[a-z][a-z0-9._-]{2,}$/.test(username)) {
+    if (!editing && !/^[a-z][a-z0-9._-]{2,}$/.test(username)) {
       toast.error('اسم المستخدم يبدأ بحرف إنجليزي (3 أحرف على الأقل، بدون مسافات)')
       return
     }
     const pages = form.all_pages ? ['all'] : form.allowed_pages
-    if (pages.length === 0) { toast.error('اختر صفحة واحدة على الأقل'); return }
+    if (!pages.length) { toast.error('اختر صفحة واحدة على الأقل'); return }
+    if (form.branch_mode === 'selected' && !form.branch_ids.length) { toast.error('اختر فرعًا واحدًا على الأقل'); return }
+    if (!editing && form.password.length < 6) { toast.error('كلمة المرور 6 أحرف على الأقل'); return }
+
+    const accessPayload = {
+      role: form.role || 'staff',
+      allowed_pages: pages,
+      branch_scope: form.branch_mode === 'all' ? 'all' : 'selected',
+      branch_ids: form.branch_mode === 'all' ? [] : form.branch_ids,
+    }
 
     setSaving(true)
     try {
       if (editing) {
-        // تعديل الصلاحيات فقط (اسم المستخدم وكلمة المرور لا يُعدّلان هنا)
-        const { error } = await supabase.from('restaurant_members').update({
-          role: form.role || 'staff',
-          allowed_pages: pages,
-          branch_scope: form.branch_scope || 'all',
-        }).eq('id', editing.id)
+        const { error } = await supabase.from('restaurant_members').update(accessPayload).eq('id', editing.id).eq('restaurant_id', restaurant.id)
         if (error) throw error
-        toast.success('تم تحديث صلاحيات الموظف')
+        toast.success('تم حفظ التعديلات')
       } else {
-        // إنشاء موظف جديد
-        if (form.password.length < 6) { toast.error('كلمة المرور 6 أحرف على الأقل'); setSaving(false); return }
         const email = buildEmail(username)
-        // 1) إنشاء حساب المصادقة عبر العميل الثانوي (لا يؤثر على جلسة صاحب المطعم)
-        const { data: signData, error: signErr } = await signupClient.auth.signUp({ email, password: form.password })
-        if (signErr) {
-          if (String(signErr.message).toLowerCase().includes('already')) {
-            toast.error('اسم المستخدم مستخدم مسبقاً، اختر غيره')
-          } else {
-            toast.error(signErr.message || 'تعذّر إنشاء الحساب')
-          }
-          setSaving(false); return
+        const { data: signData, error: signError } = await signupClient.auth.signUp({ email, password: form.password })
+        if (signError) {
+          toast.error(String(signError.message || '').toLowerCase().includes('already') ? 'اسم المستخدم مستخدم مسبقًا، اختر غيره' : (signError.message || 'تعذّر إنشاء الحساب'))
+          return
         }
         const newUserId = signData?.user?.id
-        if (!newUserId) { toast.error('تعذّر إنشاء الحساب'); setSaving(false); return }
+        if (!newUserId) throw new Error('تعذّر إنشاء حساب الدخول')
         await signupClient.auth.signOut()
 
-        // 2) ربط الموظف بالمطعم وصلاحياته
-        const { error: memErr } = await supabase.from('restaurant_members').insert({
+        const { error: memberError } = await supabase.from('restaurant_members').insert({
           restaurant_id: restaurant.id,
           user_id: newUserId,
           username,
-          role: form.role || 'staff',
-          allowed_pages: pages,
-          branch_scope: form.branch_scope || 'all',
           is_active: true,
+          ...accessPayload,
         })
-        if (memErr) throw memErr
-        toast.success('تم إنشاء الموظف 🎉')
+        if (memberError) throw memberError
+        toast.success('تم إنشاء الموظف بنجاح')
       }
       setModalOpen(false)
-      fetchAll()
+      await fetchAll()
     } catch (err) {
       toast.error(err.message || 'حصل خطأ، جرّب مرة ثانية')
     } finally {
@@ -171,179 +281,265 @@ export default function Staff() {
     }
   }
 
-  const toggleActive = async (m) => {
-    await supabase.from('restaurant_members').update({ is_active: !m.is_active }).eq('id', m.id)
-    fetchAll()
-  }
-
-  const removeMember = async (m) => {
-    if (!confirm(`حذف الموظف "${m.username}" نهائياً؟`)) return
+  const toggleActive = async (member) => {
+    setTogglingId(member.id)
     try {
-      const { data, error } = await supabase.functions.invoke('delete-staff', {
-        body: { member_id: m.id },
-      })
-      if (error) {
-        // احتياط: لو الدالة غير منشورة، احذف العضوية مباشرة على الأقل
-        const { data: del, error: delErr } = await supabase.from('restaurant_members').delete().eq('id', m.id).select()
-        if (delErr || !del || del.length === 0) {
-          toast.error('تعذّر الحذف — تأكد من نشر دالة delete-staff')
-          return
-        }
-        toast.success('تم حذف الموظف (الحساب قد يبقى)')
-        fetchAll()
-        return
-      }
-      if (data?.warning) toast.success('تم الحذف (بقي حساب الدخول)')
-      else toast.success('تم حذف الموظف نهائياً')
-      fetchAll()
+      const { error } = await supabase.from('restaurant_members').update({ is_active: !member.is_active }).eq('id', member.id).eq('restaurant_id', restaurant.id)
+      if (error) throw error
+      toast.success(member.is_active ? 'تم تعطيل الموظف' : 'تم تفعيل الموظف')
+      await fetchAll()
     } catch (err) {
-      toast.error(err.message || 'حصل خطأ، جرّب مرة ثانية')
+      toast.error(err.message || 'تعذّر تحديث حالة الموظف')
+    } finally {
+      setTogglingId(null)
+      setOpenMenuId(null)
     }
   }
 
-  const branchLabel = (scope) => {
-    if (!scope || scope === 'all') return 'كل الفروع'
-    const b = branches.find(x => x.id === scope)
-    return b ? `${b.is_primary ? '🏠' : '🏢'} ${b.name}` : '🏢 فرع'
+  const removeMember = async () => {
+    const member = confirmDelete
+    if (!member) return
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-staff', { body: { member_id: member.id } })
+      if (error) throw error
+      if (data?.warning) {
+        toast.error('تمت إزالة العضوية ومنع الدخول، لكن تعذّر حذف حساب المصادقة')
+      } else {
+        toast.success('تم حذف الموظف نهائيًا')
+      }
+      setConfirmDelete(null)
+      await fetchAll()
+    } catch (err) {
+      toast.error(err.message || 'تعذّر حذف الموظف')
+    }
   }
 
-  const pagesSummary = (m) => {
-    if (Array.isArray(m.allowed_pages) && m.allowed_pages.includes('all')) return 'كل الصفحات'
-    if (!Array.isArray(m.allowed_pages) || m.allowed_pages.length === 0) return '—'
-    return m.allowed_pages.map(k => PAGES.find(p => p.key === k)?.label || k).join('، ')
-  }
-
-  const copyLoginLink = () => {
+  const copyLoginLink = async () => {
     const link = `${window.location.origin}/staff-login/${restaurant.slug}`
-    navigator.clipboard?.writeText(link).then(
-      () => toast.success('تم نسخ رابط دخول الموظفين 📋'),
-      () => toast.error('تعذّر النسخ، انسخه يدوياً')
-    )
+    try {
+      if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(link)
+      else {
+        const field = document.createElement('textarea')
+        field.value = link
+        field.style.position = 'fixed'
+        field.style.opacity = '0'
+        document.body.appendChild(field)
+        field.select()
+        document.execCommand('copy')
+        document.body.removeChild(field)
+      }
+      toast.success('تم نسخ رابط دخول الموظفين')
+    } catch {
+      toast.error('تعذّر النسخ، انسخه يدويًا')
+    }
   }
 
   if (!restaurant || loading) return <Spinner />
 
   return (
-    <AppShell title="الموظفون" active="staff"
-      actions={<button onClick={openAdd} style={{ padding:'10px 16px', borderRadius:'11px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>+ إضافة موظف</button>}
+    <AppShell
+      title="الموظفون"
+      active="staff"
+      headerStacked
+      actions={<button onClick={openAdd} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px', minHeight: '42px', padding: '10px 15px', borderRadius: '11px', border: 'none', background: '#FF6A00', color: 'white', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '13px', cursor: 'pointer', boxShadow: '0 6px 16px rgba(255,106,0,.22)', whiteSpace: 'nowrap' }}><Icon type="plus" size={16} /> إضافة موظف</button>}
     >
-      <div style={{ maxWidth:'760px' }}>
-        <div style={{ background:'#0B0B0F', borderRadius:'14px', padding:'14px 16px', marginBottom:'14px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', flexWrap:'wrap' }}>
-          <div style={{ color:'white' }}>
-            <div style={{ fontWeight:'800', fontSize:'14px', fontFamily:'Tajawal,sans-serif' }}>🔗 رابط دخول الموظفين</div>
-            <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.6)', direction:'ltr', textAlign:'left', marginTop:'2px' }}>/staff-login/{restaurant.slug}</div>
+      <style>{`@media (max-width:640px){.staff-filter-scroll{margin-left:-16px;margin-right:-16px;padding:0 16px}.staff-card-actions{width:100%;justify-content:flex-end}.staff-page-grid{grid-template-columns:1fr!important}.staff-modal-sheet{border-radius:22px 22px 0 0!important;max-height:92dvh!important}.staff-login-card{align-items:flex-start!important}.staff-login-actions{width:100%;justify-content:space-between!important}}`}</style>
+      <div style={{ maxWidth: '1020px', paddingBottom: '32px' }}>
+        <section style={{ marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '5px' }}>
+                <span style={{ width: '34px', height: '34px', borderRadius: '10px', display: 'grid', placeItems: 'center', background: '#FFF0EB', color: '#FF6A00', border: '1px solid #FFD4BE' }}><Icon type="users" size={18} /></span>
+                <h1 style={{ margin: 0, fontFamily: 'Tajawal,sans-serif', color: '#101828', fontSize: isMobile ? '20px' : '23px', fontWeight: '900' }}>إدارة فريق العمل</h1>
+              </div>
+              <p style={{ margin: 0, color: '#667085', fontSize: '13px', lineHeight: 1.6 }}>أضف الموظفين وحدد أدوارهم وصلاحياتهم ونطاق الفروع بأمان.</p>
+            </div>
+            <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
+              <SummaryChip label="موظفين" value={summary.total} color="#344054" bg="#F2F4F7" />
+              <SummaryChip label="مفعلين" value={summary.active} color="#027A48" bg="#ECFDF3" />
+              <SummaryChip label="معطلين" value={summary.inactive} color="#667085" bg="#F2F4F7" />
+            </div>
           </div>
-          <button onClick={copyLoginLink} style={{ padding:'9px 16px', borderRadius:'10px', border:'none', background:'#FF6A00', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer' }}>نسخ الرابط</button>
-        </div>
+        </section>
+
+        <section className="staff-login-card" style={{ background: '#0B0B0F', borderRadius: '15px', padding: isMobile ? '14px' : '14px 16px', marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap', border: '1px solid rgba(255,255,255,.07)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            <span style={{ width: '36px', height: '36px', borderRadius: '10px', display: 'grid', placeItems: 'center', color: '#FFB088', background: 'rgba(255,106,0,.14)', flexShrink: 0 }}><Icon type="link" size={18} /></span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ color: 'white', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '13px' }}>رابط دخول الموظفين</div>
+              <div style={{ direction: 'ltr', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isMobile ? '235px' : '420px', color: 'rgba(255,255,255,.54)', fontSize: '11px', marginTop: '3px' }}>/staff-login/{restaurant.slug}</div>
+            </div>
+          </div>
+          <div className="staff-login-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button onClick={copyLoginLink} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 12px', borderRadius: '9px', border: '1px solid rgba(255,176,136,.28)', background: 'rgba(255,106,0,.16)', color: '#FFD0BA', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '900', cursor: 'pointer' }}><Icon type="copy" size={14} /> نسخ الرابط</button>
+          </div>
+        </section>
+
+        <section style={{ background: 'white', border: '1px solid #E7EAEE', borderRadius: '15px', padding: isMobile ? '12px' : '14px', marginBottom: '14px', boxShadow: '0 3px 10px rgba(16,24,40,.025)' }}>
+          <div style={{ position: 'relative', marginBottom: '11px' }}>
+            <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#98A2B3', pointerEvents: 'none' }}><Icon type="search" size={17} /></span>
+            <input value={search} onChange={event => setSearch(event.target.value)} placeholder="بحث عن موظف..." style={{ ...inputStyle, paddingRight: '40px', background: '#FCFCFD' }} />
+          </div>
+          <div className="staff-filter-scroll" style={{ display: 'flex', gap: '7px', overflowX: 'auto', paddingBottom: '1px', scrollbarWidth: 'none' }}>
+            {filterOptions.map(option => {
+              const selected = filter === option.key
+              return <button key={option.key} onClick={() => setFilter(option.key)} style={{ flexShrink: 0, padding: '7px 11px', borderRadius: '999px', border: `1px solid ${selected ? '#FFD1B8' : '#E4E7EC'}`, background: selected ? '#FFF0EB' : 'white', color: selected ? '#C2410C' : '#667085', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '800', cursor: 'pointer' }}>{option.label}</button>
+            })}
+          </div>
+        </section>
 
         {members.length === 0 ? (
-          <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', padding:'40px 20px', textAlign:'center', color:'#9CA3AF' }}>
-            <div style={{ fontSize:'40px', marginBottom:'10px' }}>👥</div>
-            <div style={{ fontWeight:'700', marginBottom:'4px', color:'#374151' }}>لا يوجد موظفون بعد</div>
-            <div style={{ fontSize:'13px' }}>أضف موظفاً وحدّد الصفحات والفرع المسموح له</div>
+          <EmptyState onAdd={openAdd} />
+        ) : visibleMembers.length === 0 ? (
+          <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E7EAEE', padding: '34px 20px', textAlign: 'center' }}>
+            <div style={{ color: '#667085', fontWeight: '800', fontSize: '14px' }}>لا توجد نتائج مطابقة</div>
+            <button onClick={() => { setSearch(''); setFilter('all') }} style={{ ...softButton, marginTop: '12px' }}>إزالة الفلاتر</button>
           </div>
         ) : (
-          <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
-            {members.map(m => (
-              <div key={m.id} style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding:'14px 16px' }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', flexWrap:'wrap' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-                    <div style={{ width:'40px', height:'40px', borderRadius:'10px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>👤</div>
-                    <div>
-                      <div style={{ display:'flex', alignItems:'center', gap:'7px' }}>
-                        <span style={{ fontWeight:'800', fontSize:'15px', fontFamily:'Tajawal,sans-serif' }}>{m.username}</span>
-                        <span style={{ fontSize:'11px', fontWeight:'800', color:'#7C3AED', background:'#F5F3FF', border:'1px solid #DDD6FE', borderRadius:'6px', padding:'1px 7px' }}>{ROLE_LABELS[m.role] || ROLE_LABELS.staff}</span>
-                      </div>
-                      <div style={{ fontSize:'12px', color:'#6B7280' }}>
-                        {pagesSummary(m)} · {branchLabel(m.branch_scope)}
+          <div className="staff-page-grid" style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap: '12px' }}>
+            {visibleMembers.map(member => {
+              const isOpen = openMenuId === member.id
+              const active = !!member.is_active
+              const lastLogin = formatDateTime(member.last_login_at)
+              const lastActivity = member.last_activity_at ? formatDateTime(member.last_activity_at) : null
+              return (
+                <article key={member.id} style={{ position: 'relative', background: 'white', border: '1px solid #E5E7EB', borderRadius: '16px', padding: '15px', boxShadow: '0 4px 13px rgba(16,24,40,.035)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', marginBottom: '13px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                      <span style={{ width: '42px', height: '42px', borderRadius: '12px', display: 'grid', placeItems: 'center', background: active ? '#FFF0EB' : '#F2F4F7', color: active ? '#FF6A00' : '#98A2B3', fontWeight: '900', fontSize: '16px', flexShrink: 0 }}>{member.username?.slice(0, 1).toUpperCase() || 'م'}</span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                          <h2 style={{ margin: 0, color: '#101828', fontFamily: 'Tajawal,sans-serif', fontSize: '15px', fontWeight: '900', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '155px' }}>{member.username}</h2>
+                          <RoleBadge role={member.role} />
+                        </div>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', marginTop: '4px', fontSize: '11px', color: active ? '#027A48' : '#667085', fontWeight: '800' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: active ? '#12B76A' : '#98A2B3' }} />{active ? 'مفعل' : 'معطل'}</div>
                       </div>
                     </div>
+                    <div style={{ position: 'relative' }}>
+                      <button aria-label={`إجراءات ${member.username}`} onClick={() => setOpenMenuId(isOpen ? null : member.id)} style={{ width: '32px', height: '32px', borderRadius: '9px', border: '1px solid #E4E7EC', background: isOpen ? '#F9FAFB' : 'white', color: '#667085', display: 'grid', placeItems: 'center', cursor: 'pointer' }}><Icon type="more" size={17} /></button>
+                      {isOpen && <div style={{ position: 'absolute', left: 0, top: '38px', zIndex: 8, minWidth: '154px', padding: '5px', background: 'white', border: '1px solid #E4E7EC', borderRadius: '11px', boxShadow: '0 10px 26px rgba(16,24,40,.14)' }}>
+                        <MenuAction icon="edit" label="تعديل" onClick={() => openEdit(member)} />
+                        <MenuAction icon="power" label={active ? (togglingId === member.id ? 'جارٍ التعطيل...' : 'تعطيل') : (togglingId === member.id ? 'جارٍ التفعيل...' : 'تفعيل')} onClick={() => toggleActive(member)} disabled={togglingId === member.id} />
+                        <MenuAction icon="trash" label="حذف" danger onClick={() => { setConfirmDelete(member); setOpenMenuId(null) }} />
+                      </div>}
+                    </div>
                   </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-                    <button onClick={() => toggleActive(m)} style={{ padding:'6px 10px', borderRadius:'8px', border:'1px solid #E5E7EB', background: m.is_active ? '#ECFDF5' : '#FEF2F2', color: m.is_active ? '#059669' : '#DC2626', fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>
-                      {m.is_active ? 'مفعّل' : 'موقوف'}
-                    </button>
-                    <button onClick={() => openEdit(m)} style={{ padding:'6px 10px', borderRadius:'8px', border:'1px solid #E5E7EB', background:'white', fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>تعديل</button>
-                    <button onClick={() => removeMember(m)} style={{ padding:'6px 10px', borderRadius:'8px', border:'1px solid #FECACA', background:'white', color:'#DC2626', fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>حذف</button>
+
+                  <div style={{ display: 'grid', gap: '8px', padding: '11px', background: '#FCFCFD', border: '1px solid #F0F2F5', borderRadius: '12px' }}>
+                    <MetaRow icon="branch" label="الفروع" value={branchNames(member).join(' · ')} title={branchDescription(member)} />
+                    <MetaRow icon="shield" label="الصلاحيات" value={pagesSummary(member)} />
                   </div>
-                </div>
-              </div>
-            ))}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '10px' }}>
+                    <CompactMetric icon="clock" label="آخر دخول" value={lastLogin || 'لم يسجل دخولًا بعد'} />
+                    <CompactMetric icon="info" label="آخر نشاط" value={lastActivity || 'غير متوفر بعد'} />
+                  </div>
+                </article>
+              )
+            })}
           </div>
         )}
       </div>
 
-      {modalOpen && (
-        <div onClick={() => setModalOpen(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100, padding:'16px' }}>
-          <div onClick={e => e.stopPropagation()} style={{ background:'white', borderRadius:'18px', padding:'22px', width:'100%', maxWidth:'440px', maxHeight:'88vh', overflowY:'auto', direction:'rtl' }}>
-            <h2 style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'18px', marginBottom:'16px' }}>
-              {editing ? `تعديل: ${editing.username}` : 'إضافة موظف'}
-            </h2>
+      {modalOpen && <StaffModal
+        isMobile={isMobile}
+        editing={editing}
+        form={form}
+        branches={branches}
+        saving={saving}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSave}
+        onForm={setForm}
+        onRole={applyRole}
+        onTogglePage={togglePage}
+        onToggleBranch={toggleBranch}
+      />}
 
-            {!editing && (
-              <>
-                <div style={{ marginBottom:'14px' }}>
-                  <label style={labelStyle}>اسم المستخدم (إنجليزي) *</label>
-                  <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} value={form.username} onChange={e => setForm(f=>({...f,username:e.target.value}))} placeholder="e.g. ahmad_muruj" />
-                </div>
-                <div style={{ marginBottom:'14px' }}>
-                  <label style={labelStyle}>كلمة المرور *</label>
-                  <input type="text" style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} value={form.password} onChange={e => setForm(f=>({...f,password:e.target.value}))} placeholder="6 أحرف على الأقل" />
-                </div>
-              </>
-            )}
-
-            <div style={{ marginBottom:'14px' }}>
-              <label style={labelStyle}>الدور</label>
-              <div style={{ display:'flex', gap:'8px' }}>
-                {MEMBER_ROLES.map(r => (
-                  <button key={r} type="button" onClick={() => applyRole(r)}
-                    style={{ flex:1, padding:'10px', borderRadius:'10px', cursor:'pointer', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px',
-                      border:`1.5px solid ${form.role === r ? '#FED7AA' : '#E5E7EB'}`,
-                      background: form.role === r ? '#FFF7ED' : 'white', color: form.role === r ? '#C2410C' : '#374151' }}>
-                    {ROLE_LABELS[r]}
-                  </button>
-                ))}
-              </div>
-              <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'4px' }}>اختيار الدور يملأ الصفحات بقالب افتراضي — عدّلها كما تشاء.</div>
-            </div>
-
-            <div style={{ marginBottom:'14px' }}>
-              <label style={labelStyle}>الصفحات المسموحة *</label>
-              <label style={{ display:'flex', alignItems:'center', gap:'8px', padding:'10px 12px', background:'#FFF7ED', borderRadius:'10px', marginBottom:'8px', cursor:'pointer', border:'1.5px solid #FED7AA' }}>
-                <input type="checkbox" checked={form.all_pages} onChange={e => setForm(f=>({...f,all_pages:e.target.checked}))} />
-                <span style={{ fontSize:'13px', fontWeight:'800', color:'#C2410C' }}>✅ كل الصفحات (صلاحية كاملة)</span>
-              </label>
-              {!form.all_pages && (
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
-                  {PAGES.map(p => (
-                    <label key={p.key} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'10px 12px', background: form.allowed_pages.includes(p.key) ? '#EFF6FF' : '#F8F9FB', borderRadius:'10px', cursor:'pointer', border:`1.5px solid ${form.allowed_pages.includes(p.key) ? '#BFDBFE' : '#E5E7EB'}` }}>
-                      <input type="checkbox" checked={form.allowed_pages.includes(p.key)} onChange={() => togglePage(p.key)} />
-                      <span style={{ fontSize:'13px', fontWeight:'700' }}>{p.icon} {p.label}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div style={{ marginBottom:'18px' }}>
-              <label style={labelStyle}>الفرع</label>
-              <select style={inputStyle} value={form.branch_scope} onChange={e => setForm(f=>({...f,branch_scope:e.target.value}))}>
-                <option value="all">كل الفروع</option>
-                {branches.map(b => <option key={b.id} value={b.id}>{b.is_primary ? '🏠' : '🏢'} {b.name}</option>)}
-              </select>
-              <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'4px' }}>لو اخترت فرعاً، الموظف يرى طلبات هذا الفرع فقط.</div>
-            </div>
-
-            <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={() => setModalOpen(false)} style={{ flex:1, padding:'12px', borderRadius:'11px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', cursor:'pointer' }}>إلغاء</button>
-              <button onClick={handleSave} disabled={saving} style={{ flex:2, padding:'12px', borderRadius:'11px', border:'none', background: saving ? '#9CA3AF' : 'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', cursor: saving ? 'default' : 'pointer' }}>
-                {saving ? 'جارٍ الحفظ...' : (editing ? 'حفظ التعديلات' : 'إنشاء الموظف')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        icon="⚠️"
+        title="حذف الموظف؟"
+        body={`سيتم إزالة حساب ${confirmDelete?.username || 'الموظف'} ومنعه من تسجيل الدخول. هذا الإجراء لا يمكن التراجع عنه.`}
+        confirmLabel="حذف الموظف"
+        cancelLabel="إلغاء"
+        danger
+        onCancel={() => setConfirmDelete(null)}
+        onConfirm={removeMember}
+      />
     </AppShell>
+  )
+}
+
+function SummaryChip({ label, value, color, bg }) {
+  return <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '5px', padding: '7px 10px', borderRadius: '10px', background: bg, color }}><b style={{ fontSize: '15px', fontFamily: 'Tajawal,sans-serif' }}>{value}</b><span style={{ fontSize: '11px', fontWeight: '800' }}>{label}</span></span>
+}
+
+function RoleBadge({ role }) {
+  const palette = {
+    manager: { bg: '#EEF4FF', color: '#175CD3', border: '#D1E0FF' },
+    cashier: { bg: '#FFF7ED', color: '#C2410C', border: '#FED7AA' },
+    staff: { bg: '#F2F4F7', color: '#475467', border: '#E4E7EC' },
+  }[role] || { bg: '#F2F4F7', color: '#475467', border: '#E4E7EC' }
+  return <span style={{ padding: '3px 7px', borderRadius: '999px', background: palette.bg, color: palette.color, border: `1px solid ${palette.border}`, fontSize: '10px', fontWeight: '900' }}>{ROLE_LABELS[role] || ROLE_LABELS.staff}</span>
+}
+
+function MetaRow({ icon, label, value, title }) {
+  return <div title={title} style={{ display: 'flex', alignItems: 'flex-start', gap: '7px', minWidth: 0 }}><span style={{ color: '#98A2B3', marginTop: '1px' }}><Icon type={icon} size={14} /></span><span style={{ color: '#667085', fontSize: '11px', fontWeight: '800', flexShrink: 0 }}>{label}:</span><span style={{ color: '#344054', fontSize: '11px', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</span></div>
+}
+
+function CompactMetric({ icon, label, value }) {
+  return <div style={{ minWidth: 0, padding: '8px 9px', border: '1px solid #F0F2F5', borderRadius: '10px', background: 'white' }}><div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#98A2B3', marginBottom: '3px' }}><Icon type={icon} size={12} /><span style={{ fontSize: '10px', fontWeight: '800' }}>{label}</span></div><div style={{ color: '#475467', fontSize: '10.5px', fontWeight: '700', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</div></div>
+}
+
+function MenuAction({ icon, label, onClick, danger = false, disabled = false }) {
+  return <button disabled={disabled} onClick={onClick} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '9px', border: 'none', borderRadius: '8px', background: 'transparent', color: danger ? '#D92D20' : '#344054', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '800', cursor: disabled ? 'default' : 'pointer', textAlign: 'right', opacity: disabled ? .6 : 1 }}><Icon type={icon} size={14} />{label}</button>
+}
+
+function EmptyState({ onAdd }) {
+  return <div style={{ background: 'white', border: '1px solid #E7EAEE', borderRadius: '18px', padding: '48px 22px', textAlign: 'center', boxShadow: '0 4px 12px rgba(16,24,40,.025)' }}><span style={{ width: '58px', height: '58px', borderRadius: '17px', display: 'grid', placeItems: 'center', color: '#FF6A00', background: '#FFF0EB', margin: '0 auto 14px' }}><Icon type="users" size={27} /></span><div style={{ color: '#101828', fontFamily: 'Tajawal,sans-serif', fontSize: '16px', fontWeight: '900', marginBottom: '5px' }}>لا يوجد موظفون بعد</div><p style={{ maxWidth: '330px', margin: '0 auto 18px', color: '#667085', fontSize: '13px', lineHeight: 1.7 }}>أضف أعضاء فريقك وحدد صلاحياتهم ونطاق الفروع لإدارة المطعم بأمان.</p><button onClick={onAdd} style={{ padding: '10px 14px', borderRadius: '11px', border: 'none', background: '#FF6A00', color: 'white', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', cursor: 'pointer' }}>+ إضافة موظف</button></div>
+}
+
+function StaffModal({ isMobile, editing, form, branches, saving, onClose, onSave, onForm, onRole, onTogglePage, onToggleBranch }) {
+  const isAllPages = form.all_pages
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, padding: isMobile ? 0 : '16px', background: 'rgba(16,24,40,.48)', display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}>
+      <div className="staff-modal-sheet" onClick={event => event.stopPropagation()} style={{ width: '100%', maxWidth: '610px', maxHeight: '88vh', overflowY: 'auto', background: 'white', borderRadius: '18px', padding: isMobile ? '18px 16px calc(18px + env(safe-area-inset-bottom))' : '22px', direction: 'rtl' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', marginBottom: '19px' }}>
+          <div><h2 style={{ margin: 0, color: '#101828', fontFamily: 'Tajawal,sans-serif', fontSize: '18px', fontWeight: '900' }}>{editing ? `تعديل ${editing.username}` : 'إضافة موظف'}</h2><p style={{ margin: '4px 0 0', color: '#667085', fontSize: '12px', lineHeight: 1.55 }}>حدد الدور والصلاحيات والفروع التي يمكن للموظف العمل فيها.</p></div>
+          <button aria-label="إغلاق" onClick={onClose} style={{ width: '34px', height: '34px', borderRadius: '9px', border: '1px solid #E4E7EC', background: 'white', color: '#667085', display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0 }}><Icon type="close" size={17} /></button>
+        </div>
+
+        {!editing && <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '15px' }}>
+          <div><label style={labelStyle}>اسم المستخدم *</label><input style={{ ...inputStyle, direction: 'ltr', textAlign: 'left' }} value={form.username} onChange={event => onForm(current => ({ ...current, username: event.target.value }))} placeholder="e.g. ahmad_muruj" autoCapitalize="none" autoCorrect="off" /></div>
+          <div><label style={labelStyle}>كلمة المرور *</label><input type="password" style={{ ...inputStyle, direction: 'ltr', textAlign: 'left' }} value={form.password} onChange={event => onForm(current => ({ ...current, password: event.target.value }))} placeholder="6 أحرف على الأقل" autoComplete="new-password" /></div>
+        </div>}
+
+        <section style={{ marginBottom: '16px' }}>
+          <label style={labelStyle}>الدور *</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: '8px' }}>
+            {MEMBER_ROLES.map(role => {
+              const selected = form.role === role
+              return <button type="button" key={role} onClick={() => onRole(role)} style={{ padding: '10px 7px', borderRadius: '11px', cursor: 'pointer', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '12px', border: `1.5px solid ${selected ? '#FFD0B5' : '#E4E7EC'}`, background: selected ? '#FFF0EB' : 'white', color: selected ? '#C2410C' : '#475467' }}>{ROLE_LABELS[role]}</button>
+            })}
+          </div>
+          <p style={{ margin: '6px 0 0', color: '#98A2B3', fontSize: '11px', lineHeight: 1.5 }}>الدور يطبق قالبًا ابتدائيًا، ويمكنك تعديل الصلاحيات يدويًا في أي وقت.</p>
+        </section>
+
+        <section style={{ marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '8px' }}><label style={{ ...labelStyle, marginBottom: 0 }}>الصلاحيات *</label>{!isAllPages && <div style={{ display: 'flex', gap: '6px' }}><button type="button" onClick={() => onForm(current => ({ ...current, allowed_pages: [...MANAGEABLE_PAGE_KEYS] }))} style={{ border: 0, background: 'transparent', color: '#C2410C', fontFamily: 'Tajawal,sans-serif', fontSize: '11px', fontWeight: '900', cursor: 'pointer' }}>تحديد الكل</button><button type="button" onClick={() => onForm(current => ({ ...current, allowed_pages: [] }))} style={{ border: 0, background: 'transparent', color: '#667085', fontFamily: 'Tajawal,sans-serif', fontSize: '11px', fontWeight: '900', cursor: 'pointer' }}>إلغاء الكل</button></div>}</div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '11px 12px', borderRadius: '11px', background: isAllPages ? '#FFF0EB' : '#FCFCFD', border: `1.5px solid ${isAllPages ? '#FFD0B5' : '#E4E7EC'}`, cursor: 'pointer', marginBottom: '8px' }}><input type="checkbox" checked={isAllPages} onChange={event => onForm(current => ({ ...current, all_pages: event.target.checked, allowed_pages: event.target.checked ? [] : current.allowed_pages }))} /><span style={{ display: 'grid', placeItems: 'center', color: '#C2410C' }}><Icon type="shield" size={15} /></span><span style={{ color: '#C2410C', fontSize: '12px', fontWeight: '900' }}>كل الصفحات — صلاحية كاملة</span></label>
+          {!isAllPages && <div style={{ display: 'grid', gap: '10px' }}>{PERMISSION_GROUPS.map(group => <div key={group.key} style={{ border: '1px solid #EAECF0', borderRadius: '12px', overflow: 'hidden' }}><div style={{ padding: '8px 11px', background: '#F9FAFB', color: '#475467', fontSize: '11px', fontWeight: '900' }}>{group.label}</div><div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1px', background: '#EAECF0' }}>{group.pages.map(page => { const checked = form.allowed_pages.includes(page.key); return <label key={page.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 11px', background: checked ? '#FFF9F5' : 'white', cursor: 'pointer' }}><input type="checkbox" checked={checked} onChange={() => onTogglePage(page.key)} /><span style={{ fontSize: '12px', fontWeight: '800', color: checked ? '#9A3412' : '#475467' }}>{page.name}</span></label> })}</div></div>)}</div>}
+        </section>
+
+        <section style={{ marginBottom: '20px' }}>
+          <label style={labelStyle}>الفروع *</label>
+          <div style={{ display: 'flex', gap: '7px', marginBottom: '9px' }}>
+            {[{ key: 'all', label: 'كل الفروع' }, { key: 'selected', label: 'فروع محددة' }].map(option => <button type="button" key={option.key} onClick={() => onForm(current => ({ ...current, branch_mode: option.key, branch_ids: option.key === 'all' ? [] : current.branch_ids }))} style={{ flex: 1, padding: '9px 10px', borderRadius: '10px', border: `1.5px solid ${form.branch_mode === option.key ? '#FFD0B5' : '#E4E7EC'}`, background: form.branch_mode === option.key ? '#FFF0EB' : 'white', color: form.branch_mode === option.key ? '#C2410C' : '#475467', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '12px', cursor: 'pointer' }}>{option.label}</button>)}
+          </div>
+          {form.branch_mode === 'all' ? <div style={{ display: 'flex', gap: '7px', color: '#667085', fontSize: '11px', lineHeight: 1.6 }}><Icon type="info" size={14} />هذا الموظف يرى ويعمل على كل فروع المطعم ضمن صفحاته المسموحة.</div> : <><div style={{ display: 'grid', gap: '7px' }}>{branches.map(branch => { const checked = form.branch_ids.includes(branch.id); return <label key={branch.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 11px', borderRadius: '10px', border: `1px solid ${checked ? '#FFD0B5' : '#EAECF0'}`, background: checked ? '#FFF9F5' : 'white', cursor: 'pointer' }}><input type="checkbox" checked={checked} onChange={() => onToggleBranch(branch.id)} /><span style={{ display: 'grid', color: '#98A2B3' }}><Icon type="branch" size={14} /></span><span style={{ color: '#344054', fontSize: '12px', fontWeight: '800' }}>{branch.name}{branch.is_primary ? ' · الرئيسي' : ''}</span></label> })}</div><p style={{ margin: '7px 0 0', color: '#98A2B3', fontSize: '11px' }}>{form.branch_ids.length === 1 ? 'هذا الموظف يرى ويعمل على هذا الفرع فقط.' : form.branch_ids.length > 1 ? `هذا الموظف يرى ويعمل على ${form.branch_ids.length} فروع.` : 'اختر فرعًا واحدًا على الأقل.'}</p></>}
+        </section>
+
+        <div style={{ display: 'flex', gap: '9px' }}><button onClick={onClose} disabled={saving} style={{ ...softButton, flex: 1, minHeight: '46px' }}>إلغاء</button><button onClick={onSave} disabled={saving} style={{ flex: 2, minHeight: '46px', borderRadius: '11px', border: 'none', background: saving ? '#98A2B3' : '#FF6A00', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '13px', fontWeight: '900', cursor: saving ? 'default' : 'pointer' }}>{saving ? 'جارٍ الحفظ...' : editing ? 'حفظ التعديلات' : 'إنشاء الموظف'}</button></div>
+      </div>
+    </div>
   )
 }
