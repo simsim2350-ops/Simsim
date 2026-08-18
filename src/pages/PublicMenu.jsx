@@ -295,7 +295,7 @@ function PublicMenuInner() {
         onToggleSearch={() => setSearchOpen(true)}
         rating={rating}
         loyalty={loyalty}
-        banners={[]}
+        banners={banners}
         coupons={coupons}
       />
 
