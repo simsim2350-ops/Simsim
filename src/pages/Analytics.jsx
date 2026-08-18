@@ -101,7 +101,8 @@ export default function Analytics() {
   const hasRevenueData = revenue > 0
   const periodLabel = period === 'today' ? 'اليوم' : period === 'week' ? 'آخر 7 أيام' : period === 'month' ? 'آخر 30 يومًا' : 'آخر 90 يومًا'
 
-  const avgPrep = d.avg_prep_minutes == null ? null : Math.round(num(d.avg_prep_minutes))
+  const rawAvgPrep = d.avg_prep_minutes == null ? null : num(d.avg_prep_minutes)
+  const avgPrep = rawAvgPrep != null && rawAvgPrep >= 0 && rawAvgPrep <= 24 * 60 ? Math.round(rawAvgPrep) : null
 
   // مبيعات يومية (التاريخ مُجمَّع بتوقيت الرياض في الخادم، والتسمية تُنسَّق هنا)
   const dailyRevenue = (d.daily || []).map(x => ({
@@ -113,7 +114,10 @@ export default function Analytics() {
   const maxRevenue = Math.max(...dailyRevenue.map(chartValue), 1)
 
   const statusMap = d.status_counts || {}
+  const statusEntries = Object.entries(statusMap).filter(([, value]) => num(value) > 0)
   const typeRev = d.type_revenue || {}
+  const typeEntries = Object.entries(typeRev).filter(([, value]) => num(value) > 0)
+  const typeRevenueTotal = typeEntries.reduce((sum, [, value]) => sum + num(value), 0)
   const branchRev = d.branch_revenue || {}
   const branchName = (id) => branches.find(b => b.id === id)?.name || 'فرع محذوف'
 
@@ -123,8 +127,10 @@ export default function Analytics() {
   const bottomProducts = [...productsArr].sort((a, b) => a.count - b.count).slice(0, 3)
   const reasons = (d.cancel_reasons || []).map(x => [x.reason, num(x.count)])
   const topProduct = topProducts[0]
-  const bestSalesDay = dailyRevenue.reduce((best, item) => item.revenue > (best?.revenue || 0) ? item : best, null)
+  const bestDayMetricLabel = chartMetric === 'orders' ? 'الطلبات' : chartMetric === 'avg' ? 'متوسط الطلب' : 'المبيعات'
+  const bestSalesDay = dailyRevenue.reduce((best, item) => chartValue(item) > (best ? chartValue(best) : 0) ? item : best, null)
   const unclassifiedCancellationCount = reasons.filter(([reason]) => ['غير محدد', 'غير مصنف', 'غير مُصنف'].includes(reason)).reduce((sum, [, count]) => sum + count, 0)
+  const cancellationReasonTotal = reasons.reduce((sum, [, count]) => sum + count, 0)
 
   const hourMap = d.hours || {}
   const peakHour = Object.entries(hourMap).sort((a, b) => b[1] - a[1])[0]
@@ -293,7 +299,7 @@ export default function Analytics() {
                 ) : <Empty title="لا توجد بيانات مبيعات بعد" text="ستظهر حركة المبيعات هنا بعد استلام أول طلب." />}
               </div>
             </Card>
-            <div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'9px 12px', marginBottom:'14px', borderRadius:'10px', background:bestSalesDay && bestSalesDay.revenue > 0 ? '#FFF7F2' : '#F8F9FB', color:bestSalesDay && bestSalesDay.revenue > 0 ? '#9A3412' : '#6B7280', fontSize:'11px', fontWeight:'700' }}>{bestSalesDay && bestSalesDay.revenue > 0 ? `📈 أعلى يوم مبيعات: ${bestSalesDay.day} · ${money0(bestSalesDay.revenue)} · ${bestSalesDay.orders} طلب` : 'لا توجد بيانات كافية لاستخراج Insight للمبيعات.'}</div>
+            <div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'9px 12px', marginBottom:'14px', borderRadius:'10px', background:bestSalesDay && chartValue(bestSalesDay) > 0 ? '#FFF7F2' : '#F8F9FB', color:bestSalesDay && chartValue(bestSalesDay) > 0 ? '#9A3412' : '#6B7280', fontSize:'11px', fontWeight:'700' }}>{bestSalesDay && chartValue(bestSalesDay) > 0 ? `📈 أعلى يوم حسب ${bestDayMetricLabel}: ${bestSalesDay.day} · ${chartMetric === 'orders' ? `${bestSalesDay.orders} طلب` : chartMetric === 'avg' ? `${money0(bestSalesDay.avg)} متوسط الطلب` : `${money0(bestSalesDay.revenue)} مبيعات`} ` : 'لا توجد بيانات كافية لاستخراج Insight للمبيعات.'}</div>
 
             {/* صفّان جنب بعض على اللابتوب */}
             <div style={{ display:'grid', gridTemplateColumns: isDesktop?'1fr 1fr':'1fr', gap:'14px', marginBottom:'14px' }}>
@@ -335,16 +341,15 @@ export default function Analytics() {
               <Card>
                 <CardHead>🍽️ المبيعات حسب النوع</CardHead>
                 <div style={{ padding:'12px' }}>
-                  {Object.keys(TYPE_LABELS).filter(t => typeRev[t]).length === 0 ? <Empty /> : Object.keys(TYPE_LABELS).map(t => {
-                    const val = typeRev[t] || 0
-                    if (!val) return null
-                    const pct = revenue > 0 ? Math.round((val / revenue) * 100) : 0
+                  {typeEntries.length === 0 ? <Empty /> : typeEntries.map(([t, rawVal]) => {
+                    const val = num(rawVal)
+                    const pct = typeRevenueTotal > 0 ? Math.round((val / typeRevenueTotal) * 100) : 0
                     return (
                       <div key={t} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'8px 0', borderBottom:'1px solid #F3F4F6' }}>
-                        <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:TYPE_COLORS[t], flexShrink:0 }}/>
-                        <span style={{ fontSize:'13px', fontWeight:'600', flex:1 }}>{TYPE_LABELS[t]}</span>
-                        <div style={{ flex:2 }}><div style={{ height:'6px', background:'#F3F4F6', borderRadius:'3px', overflow:'hidden' }}><div style={{ height:'100%', width:`${pct}%`, background:TYPE_COLORS[t], borderRadius:'3px' }}/></div></div>
-                        <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', minWidth:'54px', textAlign:'left' }}>{money0(val)}</span>
+                        <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:TYPE_COLORS[t] || '#9CA3AF', flexShrink:0 }}/>
+                        <span style={{ fontSize:'13px', fontWeight:'600', flex:1 }}>{TYPE_LABELS[t] || 'غير مصنف'}</span>
+                        <div style={{ flex:2 }}><div style={{ height:'6px', background:'#F3F4F6', borderRadius:'3px', overflow:'hidden' }}><div style={{ height:'100%', width:`${pct}%`, background:TYPE_COLORS[t] || '#9CA3AF', borderRadius:'3px' }}/></div></div>
+                        <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:isMobile?'10px':'12px', minWidth:isMobile?'72px':'82px', textAlign:'left', whiteSpace:'nowrap' }}>{money0(val)} <small style={{ color:'#9CA3AF', fontWeight:'700' }}>({pct}% من المبيعات)</small></span>
                       </div>
                     )
                   })}
@@ -368,15 +373,14 @@ export default function Analytics() {
               <Card>
                 <CardHead>📋 الطلبات حسب الحالة</CardHead>
                 <div style={{ padding:'12px' }}>
-                  {totalOrders === 0 ? <Empty /> : Object.keys(STATUS_LABELS).map(st => {
-                    const count = statusMap[st] || 0
-                    if (!count) return null
+                  {totalOrders === 0 ? <Empty /> : statusEntries.map(([st, rawCount]) => {
+                    const count = num(rawCount)
                     const pct = Math.round((count / totalOrders) * 100)
                     return (
                       <div key={st} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'8px 0', borderBottom:'1px solid #F3F4F6' }}>
-                        <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:STATUS_COLORS[st], flexShrink:0 }}/>
-                        <span style={{ fontSize:'13px', fontWeight:'600', flex:1 }}>{STATUS_LABELS[st]}</span>
-                        <div style={{ flex:2 }}><div style={{ height:'6px', background:'#F3F4F6', borderRadius:'3px', overflow:'hidden' }}><div style={{ height:'100%', width:`${pct}%`, background:STATUS_COLORS[st], borderRadius:'3px' }}/></div></div>
+                        <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:STATUS_COLORS[st] || '#9CA3AF', flexShrink:0 }}/>
+                        <span style={{ fontSize:'13px', fontWeight:'600', flex:1 }}>{STATUS_LABELS[st] || st}</span>
+                        <div style={{ flex:2 }}><div style={{ height:'6px', background:'#F3F4F6', borderRadius:'3px', overflow:'hidden' }}><div style={{ height:'100%', width:`${pct}%`, background:STATUS_COLORS[st] || '#9CA3AF', borderRadius:'3px' }}/></div></div>
                         <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', minWidth:'54px', textAlign:'left' }}>{count} <small style={{ color:'#9CA3AF', fontWeight:'600' }}>({pct}٪)</small></span>
                       </div>
                     )
@@ -398,6 +402,7 @@ export default function Analytics() {
                     )
                   })}
                   {unclassifiedCancellationCount > 0 && <div style={{ marginTop:'10px', padding:'9px 10px', borderRadius:'9px', background:'#FFFBEB', color:'#92400E', fontSize:'11px', lineHeight:1.6 }}>⚠️ جودة البيانات تحتاج تحسين: {unclassifiedCancellationCount} من {cancelledCount} إلغاء غير مصنف.</div>}
+                  {cancellationReasonTotal !== cancelledCount && <div style={{ marginTop:'8px', padding:'9px 10px', borderRadius:'9px', background:'#FEF2F2', color:'#991B1B', fontSize:'11px', lineHeight:1.6 }}>⚠️ مجموع أسباب الإلغاء ({cancellationReasonTotal}) لا يطابق إجمالي الإلغاءات ({cancelledCount}).</div>}
                 </div>
               </Card>
             </div>
@@ -409,6 +414,7 @@ export default function Analytics() {
               const bperf = Array.isArray(adv.branch_performance) ? adv.branch_performance : []
               const creasons = Array.isArray(adv.complaint_reasons) ? adv.complaint_reasons : []
               const totalComplaints = creasons.reduce((s, x) => s + num(x.count), 0)
+              const unclassifiedComplaints = creasons.filter(x => ['غير مصنّف', 'غير مصنف'].includes(x.category)).reduce((s, x) => s + num(x.count), 0)
               const uplift = num(li.aov_uplift_pct)
               const neutralPct = Math.max(0, Math.round((100 - num(sat.satisfied_pct) - num(sat.detractors_pct)) * 10) / 10)
               const returnRate = num(adv.return_rate)
@@ -419,7 +425,7 @@ export default function Analytics() {
 
                   {/* تأثير الولاء على المبيعات */}
                   <Card>
-                    <CardHead>💎 تأثير الولاء على المبيعات</CardHead>
+                    <CardHead>💎 تأثير الولاء على المبيعات <span style={{ fontSize:'10px', color:'#9CA3AF', fontWeight:'600' }}>· الطلبات المكتملة فقط</span></CardHead>
                     <div style={{ padding:'14px 16px' }}>
                       <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(2,1fr)':'repeat(4,1fr)', gap:'12px', marginBottom:'12px' }}>
                         {[
@@ -492,11 +498,7 @@ export default function Analytics() {
                             </div>
                           )
                         })}
-                        {creasons.some(r => r.category === 'غير مصنّف') && (
-                          <div style={{ marginTop:'10px', fontSize:'11.5px', color:'#9CA3AF', lineHeight:1.6 }}>
-                            صنّف الشكاوى من صفحة «الولاء والتقييمات» لتحليل أدقّ.
-                          </div>
-                        )}
+                        {unclassifiedComplaints > 0 && <div style={{ marginTop:'10px', padding:'9px 10px', borderRadius:'9px', background:'#FFFBEB', color:'#92400E', fontSize:'11px', lineHeight:1.6 }}>⚠️ جودة بيانات الشكاوى: {unclassifiedComplaints} شكاوى تحتاج إلى تصنيف. تصنيفها يساعد على اكتشاف المشاكل المتكررة.</div>}
                       </div>
                     </Card>
                   </div>
@@ -505,31 +507,8 @@ export default function Analytics() {
                   {bperf.length > 1 && (
                     <Card>
                       <CardHead>🏢 أداء الفروع (أفضل ← أسوأ)</CardHead>
-                      <div style={{ padding:'6px 16px 14px', overflowX:'auto' }}>
-                        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'12.5px', minWidth:'420px' }}>
-                          <thead>
-                            <tr style={{ color:'#9CA3AF', fontSize:'11.5px', textAlign:'right' }}>
-                              <th style={{ padding:'8px 4px', fontWeight:'700' }}>الفرع</th>
-                              <th style={{ padding:'8px 4px', fontWeight:'700' }}>الإيراد</th>
-                              <th style={{ padding:'8px 4px', fontWeight:'700' }}>الطلبات</th>
-                              <th style={{ padding:'8px 4px', fontWeight:'700' }}>متوسط الطلب</th>
-                              <th style={{ padding:'8px 4px', fontWeight:'700' }}>التقييم</th>
-                              <th style={{ padding:'8px 4px', fontWeight:'700' }}>شكاوى</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {bperf.map(b => (
-                              <tr key={b.id} style={{ borderTop:'1px solid #F3F4F6' }}>
-                                <td style={{ padding:'10px 4px', fontWeight:'700' }}>{b.is_primary ? '🏠' : '🏢'} {b.name}</td>
-                                <td style={{ padding:'10px 4px', fontFamily:'Tajawal,sans-serif', fontWeight:'800', color:'#FF6A00' }}>{money0(b.revenue)}</td>
-                                <td style={{ padding:'10px 4px' }}>{num(b.orders)}</td>
-                                <td style={{ padding:'10px 4px', fontFamily:'Tajawal,sans-serif' }}>{num(b.orders) > 0 ? money0(num(b.revenue) / num(b.orders)) : '—'}</td>
-                                <td style={{ padding:'10px 4px', color:'#F59E0B', fontWeight:'700' }}>{b.avg_rating == null ? '—' : `${num(b.avg_rating)} ⭐`}</td>
-                                <td style={{ padding:'10px 4px', color: num(b.complaints) > 0 ? '#EF4444' : '#9CA3AF', fontWeight:'700' }}>{num(b.complaints)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                      <div style={{ padding:'6px 16px 14px' }}>
+                        {isMobile ? <div style={{ display:'grid', gap:'8px' }}>{bperf.map(b => <div key={b.id} style={{ border:'1px solid #F3F4F6', borderRadius:'11px', padding:'10px', background:'#FAFAFA' }}><div style={{ display:'flex', justifyContent:'space-between', gap:'8px', marginBottom:'8px' }}><strong style={{ fontSize:'13px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{b.is_primary ? '🏠' : '🏢'} {b.name}</strong><span style={{ color:'#FF6A00', fontFamily:'Tajawal,sans-serif', fontWeight:'900', whiteSpace:'nowrap' }}>{money0(b.revenue)}</span></div><div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'6px', fontSize:'10px', color:'#6B7280' }}><div><span style={{ display:'block', color:'#9CA3AF' }}>الطلبات</span><strong style={{ color:'#374151' }}>{num(b.orders)}</strong></div><div><span style={{ display:'block', color:'#9CA3AF' }}>متوسط الطلب</span><strong style={{ color:'#374151' }}>{num(b.orders) > 0 ? money0(num(b.revenue) / num(b.orders)) : '—'}</strong></div><div><span style={{ display:'block', color:'#9CA3AF' }}>التقييم</span><strong style={{ color:'#F59E0B' }}>{b.avg_rating == null ? '—' : `${num(b.avg_rating)} ⭐`}</strong></div><div><span style={{ display:'block', color:'#9CA3AF' }}>الشكاوى</span><strong style={{ color:num(b.complaints) > 0 ? '#EF4444' : '#374151' }}>{num(b.complaints)}</strong></div></div></div>)}</div> : <div style={{ overflowX:'auto' }}><table style={{ width:'100%', borderCollapse:'collapse', fontSize:'12.5px', minWidth:'560px' }}><thead><tr style={{ color:'#9CA3AF', fontSize:'11.5px', textAlign:'right' }}><th style={{ padding:'8px 4px', fontWeight:'700' }}>الفرع</th><th style={{ padding:'8px 4px', fontWeight:'700' }}>الإيراد</th><th style={{ padding:'8px 4px', fontWeight:'700' }}>الطلبات</th><th style={{ padding:'8px 4px', fontWeight:'700' }}>متوسط الطلب</th><th style={{ padding:'8px 4px', fontWeight:'700' }}>التقييم</th><th style={{ padding:'8px 4px', fontWeight:'700' }}>شكاوى</th></tr></thead><tbody>{bperf.map(b => <tr key={b.id} style={{ borderTop:'1px solid #F3F4F6' }}><td style={{ padding:'10px 4px', fontWeight:'700' }}>{b.is_primary ? '🏠' : '🏢'} {b.name}</td><td style={{ padding:'10px 4px', fontFamily:'Tajawal,sans-serif', fontWeight:'800', color:'#FF6A00' }}>{money0(b.revenue)}</td><td style={{ padding:'10px 4px' }}>{num(b.orders)}</td><td style={{ padding:'10px 4px', fontFamily:'Tajawal,sans-serif' }}>{num(b.orders) > 0 ? money0(num(b.revenue) / num(b.orders)) : '—'}</td><td style={{ padding:'10px 4px', color:'#F59E0B', fontWeight:'700' }}>{b.avg_rating == null ? '—' : `${num(b.avg_rating)} ⭐`}</td><td style={{ padding:'10px 4px', color:num(b.complaints) > 0 ? '#EF4444' : '#9CA3AF', fontWeight:'700' }}>{num(b.complaints)}</td></tr>)}</tbody></table></div>}
                       </div>
                     </Card>
                   )}
@@ -544,7 +523,7 @@ export default function Analytics() {
                 {[
                   { label:'صافي المبيعات (قبل الضريبة)', val:hasRevenueData ? money0(netSales) : '—' },
                   { label:'عملاء فريدون', val:uniqueCustomers },
-                  { label:'متوسط وقت التحضير', val: avgPrep != null ? `${avgPrep} د` : '—' },
+                  { label:'متوسط وقت التحضير', val: avgPrep != null ? `${avgPrep} دقيقة` : 'بيانات غير كافية' },
                   { label:'ساعة الذروة', val:peakHourLabel },
                 ].map(s => (
                   <div key={s.label} style={{ background:'rgba(255,255,255,0.05)', borderRadius:'12px', padding:'12px' }}>
