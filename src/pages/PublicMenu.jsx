@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { track } from '../lib/analytics'
+import { supabase } from '../lib/supabase'
 import ErrBoundary from '../features/menu/ErrBoundary'
 import { computeBranchOpenStatus, effectiveDeliverySettings, makeItemName, estimatedPrepTime } from '../features/menu/helpers'
 import { openWhatsAppAboutOrder } from '../features/menu/whatsapp'
@@ -31,6 +32,40 @@ function PublicMenuInner() {
   const { slug } = useParams()
   const [searchParams] = useSearchParams()
   const branchId = searchParams.get('branch')
+  const rawTableQrToken = searchParams.get('table')
+  const [tableQr, setTableQr] = useState(null) // { token, tableId, tableName, restaurantId, branchId }
+  const [resolvingTableQr, setResolvingTableQr] = useState(Boolean(rawTableQrToken))
+
+  // رمز الطاولة لا يُوثق من query string وحده: RPC عامة ضيقة النطاق تتحقق من token + slug + حالة الفرع.
+  useEffect(() => {
+    let cancelled = false
+    if (!rawTableQrToken) {
+      setTableQr(null)
+      setResolvingTableQr(false)
+      return () => { cancelled = true }
+    }
+
+    setResolvingTableQr(true)
+    supabase.rpc('resolve_table_qr', { p_qr_token: rawTableQrToken, p_restaurant_slug: slug })
+      .single()
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error || !data) { setTableQr(null); return }
+        setTableQr({
+          token: rawTableQrToken,
+          tableId: data.table_id,
+          tableName: data.table_name,
+          restaurantId: data.restaurant_id,
+          branchId: data.branch_id,
+        })
+      })
+      .catch(() => { if (!cancelled) setTableQr(null) })
+      .finally(() => { if (!cancelled) setResolvingTableQr(false) })
+
+    return () => { cancelled = true }
+  }, [rawTableQrToken, slug])
+
+  const effectiveBranchId = tableQr?.branchId || branchId
 
   // ===== الحالة عبر الـ hooks (features/menu/hooks) =====
   const { isEn, toggleLang, t, tx } = useLang()
@@ -39,7 +74,7 @@ function PublicMenuInner() {
     categories, products, bestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
     banners, coupons, capabilities, branding,
-  } = useMenuData(slug, branchId)
+  } = useMenuData(slug, effectiveBranchId)
   // قدرات منيو الزبون (PCR — ADR-40): الطلبات أونلاين والتقييمات. إخفاء تام عند الإطفاء.
   const ordering = capabilities?.online_orders !== false
   const reviewsEnabled = capabilities?.reviews !== false
@@ -57,11 +92,11 @@ function PublicMenuInner() {
     tableNumber, setTableNumber, orderType, setOrderType,
     deliveryAddress, setDeliveryAddress, customerName, setCustomerName,
     customerPhone, setCustomerPhone, orderNote, setOrderNote, placeOrder, submitting,
-  } = useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, appliedCoupon, discountAmount, removeCoupon })
+  } = useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, appliedCoupon, discountAmount, removeCoupon, tableQr })
   // PCR: شريط الولاء يظهر فقط إذا كانت قدرة الولاء مفعّلة في الباقة (loyaltyEnabled) — وإلا لا نمرّره
   const loyaltyRaw = useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone })
   const loyalty = loyaltyEnabled ? loyaltyRaw : null
-  const { tables } = useTables(restaurant)
+  const { tables } = useTables(restaurant, branch)
   const recommendationsMap = useRecommendationRules(restaurant)
   const cartWideIds = useCartWideIds(restaurant, branch)
   const { reviewedIds, reviewDraft, setDraft, submitReview, submittingReview } = useReviews({ slug, restaurant, branch, t })
@@ -152,8 +187,19 @@ function PublicMenuInner() {
   // محرك الاقتراحات الذكي: قواعد المطعم اليدوية ← نفس القسم ← الأكثر مبيعاً (ADR-13)
   const cartSuggestions = useSmartSuggestions({ cart, products, restaurant, cartWideIds })
 
-  // Loading — هيكل يحاكي شكل المنيو بدل شاشة فارغة
-  if (loading) return <MenuSkeleton />
+  // لا نعرض منيو أو سلة قبل توثيق QR حتى لا ينتقل العميل مؤقتاً إلى فرع آخر.
+  if (loading || resolvingTableQr) return <MenuSkeleton />
+
+  // الرابط المعطّل أو المُعاد إنشاؤه أو طاولة غير نشطة لا يكشف أي منيو ولا يسمح بإنشاء طلب.
+  if (rawTableQrToken && !tableQr) return (
+    <div style={{ minHeight:'100vh', display:'grid', placeItems:'center', background:'#F8F9FB', fontFamily:'Tajawal,sans-serif', direction:'rtl', padding:'24px', textAlign:'center' }}>
+      <div style={{ maxWidth:'360px', background:'white', border:'1px solid #FDE2CD', borderRadius:'18px', padding:'28px 22px', boxShadow:'0 8px 28px rgba(17,24,39,0.06)' }}>
+        <span style={{ width:'48px', height:'48px', display:'grid', placeItems:'center', margin:'0 auto 12px', borderRadius:'14px', background:'#FFF0EB', color:'#FF6A00', fontSize:'22px' }}>▦</span>
+        <strong style={{ display:'block', color:'#111827', fontSize:'16px', marginBottom:'6px' }}>رمز الطاولة غير متاح</strong>
+        <span style={{ display:'block', color:'#6B7280', fontSize:'12px', lineHeight:1.7 }}>قد يكون الرمز قد عُطّل أو أُعيد إنشاؤه. اطلب رمزًا جديدًا من فريق المطعم.</span>
+      </div>
+    </div>
+  )
 
   // Not found
   if (notFound) return (
@@ -334,6 +380,7 @@ function PublicMenuInner() {
           orderNote={orderNote}
           setOrderNote={setOrderNote}
           tables={tables}
+          tableQr={tableQr}
           openStatus={openStatus}
           deliveryEnabled={delivery.enabled}
           deliveryFee={delivery.fee}

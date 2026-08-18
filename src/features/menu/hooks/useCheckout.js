@@ -1,77 +1,79 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../../../lib/supabase'
-import { vatBreakdown } from '../../../lib/pricing'
 import { computeBranchOpenStatus, effectiveDeliverySettings } from '../helpers'
 
-// بيانات نموذج الطلب + إنشاء الطلب في قاعدة البيانات (ADR-1: الأسعار شاملة الضريبة، تُفكّ للخلف)
-export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, appliedCoupon, discountAmount = 0, removeCoupon }) {
+// بيانات نموذج الطلب + إنشاء الطلب في قاعدة البيانات.
+// طلب QR لا يرسل restaurant_id أو branch_id أو table_id من المتصفح؛ الخادم يستخرجها من token فقط.
+export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, appliedCoupon, discountAmount = 0, removeCoupon, tableQr = null }) {
   const [tableNumber, setTableNumber] = useState('')
   const [orderType, setOrderType] = useState('dine_in') // dine_in | takeaway | delivery
   const [deliveryAddress, setDeliveryAddress] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
-  const [orderNote, setOrderNote] = useState('') // ملاحظة عامة على الطلب كله (اختيارية)
+  const [orderNote, setOrderNote] = useState('')
   const [orderNumber, setOrderNumber] = useState('')
-  const [submitting, setSubmitting] = useState(false) // أثناء إرسال الطلب — يمنع الضغط المكرّر
+  const [submitting, setSubmitting] = useState(false)
 
-  const PHONE_STORAGE_KEY = `simsim_phone_${slug}`       // آخر رقم جوال استخدمه الزبون (لعرض نقاطه)
+  const PHONE_STORAGE_KEY = `simsim_phone_${slug}`
 
-  // Place order
+  // رابط QR موثوق يثبت تجربة الطلب على الطاولة نفسها؛ لا توجد واجهة لتغييرها.
+  useEffect(() => {
+    if (!tableQr) return
+    setTableNumber(tableQr.tableName)
+    setOrderType('dine_in')
+    setDeliveryAddress('')
+  }, [tableQr?.token, tableQr?.tableName])
+
   const placeOrder = async () => {
-    if (submitting) return // حارس: لا نرسل الطلب مرتين
+    if (submitting) return
     if (cart.length === 0) { toast.error(t('tCartEmpty')); return }
-    // منع الطلب وقت الإغلاق حسب أوقات الفرع (كل فرع ساعاته المستقلة، والإغلاق المؤقت يتفوّق فوراً)
     const openStatus = computeBranchOpenStatus(branch)
     if (!openStatus.open) {
       toast.error(openStatus.nextText ? `${t('closedTitle')} — ${openStatus.nextText}` : t('tClosed'))
       return
     }
-    if (orderType === 'dine_in' && !tableNumber.trim()) { toast.error(t('tEnterTable')); return }
-    if (orderType === 'delivery' && !deliveryAddress.trim()) { toast.error(t('tEnterAddr')); return }
+    if (!tableQr && orderType === 'dine_in' && !tableNumber.trim()) { toast.error(t('tEnterTable')); return }
+    if (!tableQr && orderType === 'delivery' && !deliveryAddress.trim()) { toast.error(t('tEnterAddr')); return }
     if (!customerPhone.trim()) { toast.error(t('tEnterPhone')); return }
-    // رقم الجوال السعودي: 9 أرقام تبدأ بـ5 (حقل السلة نفسه يمنع أي إدخال آخر أثناء الكتابة)
-    if (!/^5\d{8}$/.test(customerPhone)) {
-      toast.error(t('tBadPhone'))
-      return
-    }
-    const cleanPhone = customerPhone
+    if (!/^5\d{8}$/.test(customerPhone)) { toast.error(t('tBadPhone')); return }
 
     const items = cart.map(i => ({
-      id: i.id, name: i.name, emoji: i.emoji, image_url: i.image_url,
-      price: i.price, qty: i.qty, notes: i.note,
-      selectedOptions: i.selectedOptions || [],
+      product_id: i.id,
+      quantity: i.qty,
+      notes: i.note || '',
+      options: (i.selectedOptions || []).map(o => ({ groupName: o.groupName, choiceName: o.choiceName })),
     }))
 
-    const deliveryFee = orderType === 'delivery' ? (Number(effectiveDeliverySettings(branch, restaurant).fee) || 0) : 0
-    // الخصم يُطبَّق على المجموع الفرعي قبل رسوم التوصيل (الكوبون لا يخفّض رسوم التوصيل)
-    const discountedSubtotal = Math.max(0, cartTotal - discountAmount)
-    // الأسعار المعروضة شاملة ض.ق.م 15% — نفكّ الضريبة للخلف (lib/pricing)، محسوبة بعد الخصم
-    const { net, tax } = vatBreakdown(discountedSubtotal)
-    const total = discountedSubtotal + deliveryFee
-
+    const deliveryFee = !tableQr && orderType === 'delivery' ? (Number(effectiveDeliverySettings(branch, restaurant).fee) || 0) : 0
+    const total = Math.max(0, cartTotal - discountAmount) + deliveryFee
     setSubmitting(true)
-    // عبر RPC آمنة لا عبر إدخال مباشر + .select() — الأخير يحتاج قراءة الصف بعد إدخاله (RETURNING)،
-    // وهذا يصطدم بسياسة SELECT المغلقة عمداً أمام الزبون العابر (ADR-9). الدالة تتجاوز ذلك من الداخل
-    // بأمان وترجع فقط رقم الطلب ومعرّفه، بلا أي كشف لبيانات عملاء آخرين.
-    const { data, error } = await supabase.rpc('create_order', {
-      p_restaurant_id: restaurant.id,
-      p_branch_id: branch?.id,
-      p_table_number: orderType === 'dine_in' ? tableNumber : null,
-      p_delivery_address: orderType === 'delivery' ? deliveryAddress.trim() : null,
-      p_customer_name: customerName.trim() || null,
-      p_customer_phone: cleanPhone,
-      p_type: orderType,
-      p_items: items,
-      p_subtotal: net,
-      p_tax: tax,
-      p_delivery_fee: deliveryFee,
-      p_total: total,
-      p_notes: orderNote.trim(),
-      p_coupon_code: appliedCoupon?.code || null,
-      p_discount_amount: discountAmount,
-    }).single()
 
+    const request = tableQr
+      ? supabase.rpc('create_order_from_table_qr', {
+        p_qr_token: tableQr.token,
+        p_items: items,
+        p_customer_name: customerName.trim() || null,
+        p_customer_phone: customerPhone,
+        p_notes: orderNote.trim(),
+        p_coupon_code: appliedCoupon?.code || null,
+        p_client_total: total,
+      })
+      : supabase.rpc('create_order', {
+        p_restaurant_id: restaurant.id,
+        p_branch_id: branch?.id,
+        p_table_number: orderType === 'dine_in' ? tableNumber : null,
+        p_delivery_address: orderType === 'delivery' ? deliveryAddress.trim() : null,
+        p_customer_name: customerName.trim() || null,
+        p_customer_phone: customerPhone,
+        p_type: orderType,
+        p_items: items,
+        p_notes: orderNote.trim(),
+        p_coupon_code: appliedCoupon?.code || null,
+        p_client_total: total,
+      })
+
+    const { data, error } = await request.single()
     if (error) {
       console.error('Order error:', error)
       toast.error(error.message || t('tErr'))
@@ -79,8 +81,14 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
       return
     }
 
+    if (!data?.id || data.price_changed) {
+      toast('تم تحديث السعر. راجع إجمالي السلة ثم حاول مرة أخرى.', { icon:'↻' })
+      setSubmitting(false)
+      return
+    }
+
     setOrderNumber(data.order_number)
-    try { localStorage.setItem(PHONE_STORAGE_KEY, cleanPhone) } catch { /* تجاهل */ }
+    try { localStorage.setItem(PHONE_STORAGE_KEY, customerPhone) } catch { /* تجاهل */ }
     setOrderPlaced(true)
     setCart([])
     setCartOpen(false)
@@ -88,9 +96,18 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
     setSubmitting(false)
     removeCoupon?.()
 
-    // إضافة الطلب الجديد فوق قائمة الطلبات النشطة (الأحدث أولاً) — الاشتراك في تحديثاته يحصل تلقائياً
     setActiveOrders(prev => [
-      { id: data.id, orderNumber: data.order_number, status: 'pending', items, total, tableNumber, orderType, deliveryAddress, createdAt: Date.now() },
+      {
+        id: data.id,
+        orderNumber: data.order_number,
+        status: 'pending',
+        items: cart,
+        total: Number(data.total ?? total),
+        tableNumber: tableQr?.tableName || (orderType === 'dine_in' ? tableNumber : null),
+        orderType: tableQr ? 'dine_in' : orderType,
+        source: tableQr ? 'qr' : 'manual',
+        deliveryAddress: tableQr ? null : deliveryAddress,
+      },
       ...prev,
     ])
   }

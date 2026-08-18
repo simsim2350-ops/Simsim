@@ -445,7 +445,8 @@ export default function Orders() {
         <div style={{ fontSize:'12px', color:'#6B7280', display:'flex', gap:'6px', alignItems:'center', flexWrap:'wrap', marginBottom:'8px' }}>
           {order.customer_name && <span style={{ fontWeight:'700', color:'#374151' }}>{order.customer_name}</span>}
           <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize:'10px', fontWeight:'800', color:tc.c, background:tc.bg, padding:'2px 7px', borderRadius:'100px' }}>{tc.emoji} {tc.label}</span>
-          {order.type === 'dine_in' && order.table_number && <span>طاولة {order.table_number}</span>}
+          {order.type === 'dine_in' && (order.table_name || order.table_number) && <span>طاولة {order.table_name || order.table_number}</span>}
+          {order.source === 'qr' && <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize:'10px', fontWeight:'800', color:'#9A3412', background:'#FFF0EB', padding:'2px 7px', borderRadius:'100px' }}>▦ QR</span>}
         </div>
 
         {order.notes && <div style={{ fontSize:'11px', color:'#92400E', background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:'8px', padding:'5px 8px', marginBottom:'8px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>📝 {order.notes}</div>}
@@ -519,7 +520,7 @@ export default function Orders() {
                 <div style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap' }}>
                   <span style={{ fontSize:'10px', fontWeight:'800', background:'#FF6A00', color:'white', padding:'1px 7px', borderRadius:'100px' }}>جديد</span>
                   <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px' }}>{o.order_number}</span>
-                  <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.6)' }}>{TYPE_LABEL[o.type] || '🪑 محلي'}{o.type === 'dine_in' && o.table_number ? ` · طاولة ${o.table_number}` : ''}</span>
+                  <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.6)' }}>{TYPE_LABEL[o.type] || '🪑 محلي'}{o.type === 'dine_in' && (o.table_name || o.table_number) ? ` · طاولة ${o.table_name || o.table_number}` : ''}{o.source === 'qr' ? ' · QR' : ''}</span>
                 </div>
                 <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.75)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginTop:'2px' }}>{itemsSummary(o)} — {Number(o.total || 0).toFixed(0)} ﷼</div>
               </div>
@@ -670,7 +671,8 @@ export default function Orders() {
                 <div style={{ fontSize:'13px', color:'#6B7280', display:'flex', gap:'10px', flexWrap:'wrap', marginBottom:'14px' }}>
                   {order.customer_name && <span>👤 {order.customer_name}</span>}
                   <span>{TYPE_LABEL[order.type] || '🪑 محلي'}</span>
-                  {order.type === 'dine_in' && order.table_number && <span>طاولة {order.table_number}</span>}
+                  {order.type === 'dine_in' && (order.table_name || order.table_number) && <span>طاولة {order.table_name || order.table_number}</span>}
+                  {order.source === 'qr' && <span style={{ color:'#C2410C', fontWeight:'800' }}>· QR الطاولة</span>}
                   {order.type === 'delivery' && order.delivery_address && <span>📍 {order.delivery_address}</span>}
                   {order.customer_phone && (
                     <span style={{ direction:'ltr', display:'inline-flex', alignItems:'center', gap:'6px' }}>

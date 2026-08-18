@@ -8,7 +8,7 @@ export default function CartDrawer({
   orderType, setOrderType,
   customerName, setCustomerName, customerPhone, setCustomerPhone,
   tableNumber, setTableNumber, deliveryAddress, setDeliveryAddress,
-  orderNote, setOrderNote, tables = [],
+  orderNote, setOrderNote, tables = [], tableQr = null,
   openStatus, deliveryEnabled, deliveryFee, takeawayEnabled = true, placeOrder, submitting, removeFromCart, incrementCartItem, onDeleteItem, onEditItem, onClose,
   suggestions = [], onAddSuggestion, onOpenSuggestion, loyalty,
   couponInput, setCouponInput, appliedCoupon, applyCoupon, removeCoupon, applyingCoupon, discountAmount = 0,
@@ -145,36 +145,47 @@ export default function CartDrawer({
 
         {/* نوع الطلب + بيانات الزبون + ملاحظة الطلب — قبل الملخص المالي */}
         <div style={{ padding:'14px 20px 2px', borderTop:'1px solid #E5E7EB', flexShrink:0 }}>
-          {/* Order type */}
-          <div style={{ marginBottom:'14px' }}>
-            <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px' }}>{t('orderTypeR')} *</label>
-            <div style={{ display:'grid', gridTemplateColumns: `repeat(${1 + (takeawayEnabled ? 1 : 0) + (deliveryEnabled ? 1 : 0)},1fr)`, gap:'8px' }}>
-              {[
-                { key:'dine_in', icon:'🪑', label:t('dineIn') },
-                ...(takeawayEnabled ? [{ key:'takeaway', icon:'🥡', label:t('takeaway2') }] : []),
-                ...(deliveryEnabled ? [{ key:'delivery', icon:'🛵', label:t('deliveryT') }] : []),
-              ].map(opt => (
-                <button
-                  type="button"
-                  key={opt.key}
-                  onClick={() => setOrderType(opt.key)}
-                  aria-pressed={orderType===opt.key}
-                  style={{
-                    padding:'12px 8px', borderRadius:'11px', textAlign:'center',
-                    border:`1.5px solid ${orderType===opt.key ? brandColor : '#E5E7EB'}`,
-                    background: orderType===opt.key ? `${brandColor}0D` : 'white',
-                    transition:'all 0.15s',
-                  }}
-                >
-                  <div style={{ fontSize:'20px', marginBottom:'4px' }}>{opt.icon}</div>
-                  <div style={{ fontSize:'12px', fontWeight:'700', color: orderType===opt.key ? brandColor : '#374151' }}>{opt.label}</div>
-                </button>
-              ))}
+          {/* QR الموثوق يثبّت الطلب على طاولة داخل المطعم؛ لا يمكن تغيير الطاولة أو نوع الطلب من السلة. */}
+          {tableQr ? (
+            <div style={{ marginBottom:'14px', padding:'11px 12px', background:'#FFF8F3', border:'1px solid #FDE2CD', borderRadius:'12px', display:'flex', alignItems:'center', gap:'10px' }}>
+              <span style={{ width:'32px', height:'32px', display:'grid', placeItems:'center', background:'#FFF0E6', borderRadius:'9px', color:brandColor, fontSize:'16px', flexShrink:0 }}>🪑</span>
+              <div style={{ minWidth:0, flex:1 }}>
+                <span style={{ display:'block', color:'#9A3412', fontSize:'10.5px', fontWeight:'800', marginBottom:'2px' }}>طلب داخل المطعم عبر QR</span>
+                <strong dir="auto" style={{ display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'#374151', fontSize:'13px' }}>طاولة {tableQr.tableName}</strong>
+              </div>
+              <span style={{ color:'#047857', background:'#ECFDF5', border:'1px solid #D1FAE5', borderRadius:'999px', padding:'3px 7px', fontSize:'10px', fontWeight:'800', whiteSpace:'nowrap' }}>موثوقة</span>
             </div>
-            {orderType === 'delivery' && deliveryFee > 0 && (
-              <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>+ {Number(deliveryFee).toFixed(2)} ﷼ {t('feeSuffix')}</div>
-            )}
-          </div>
+          ) : (
+            <div style={{ marginBottom:'14px' }}>
+              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px' }}>{t('orderTypeR')} *</label>
+              <div style={{ display:'grid', gridTemplateColumns: `repeat(${1 + (takeawayEnabled ? 1 : 0) + (deliveryEnabled ? 1 : 0)},1fr)`, gap:'8px' }}>
+                {[
+                  { key:'dine_in', icon:'🪑', label:t('dineIn') },
+                  ...(takeawayEnabled ? [{ key:'takeaway', icon:'🥡', label:t('takeaway2') }] : []),
+                  ...(deliveryEnabled ? [{ key:'delivery', icon:'🛵', label:t('deliveryT') }] : []),
+                ].map(opt => (
+                  <button
+                    type="button"
+                    key={opt.key}
+                    onClick={() => setOrderType(opt.key)}
+                    aria-pressed={orderType===opt.key}
+                    style={{
+                      padding:'12px 8px', borderRadius:'11px', textAlign:'center',
+                      border:`1.5px solid ${orderType===opt.key ? brandColor : '#E5E7EB'}`,
+                      background: orderType===opt.key ? `${brandColor}0D` : 'white',
+                      transition:'all 0.15s',
+                    }}
+                  >
+                    <div style={{ fontSize:'20px', marginBottom:'4px' }}>{opt.icon}</div>
+                    <div style={{ fontSize:'12px', fontWeight:'700', color: orderType===opt.key ? brandColor : '#374151' }}>{opt.label}</div>
+                  </button>
+                ))}
+              </div>
+              {orderType === 'delivery' && deliveryFee > 0 && (
+                <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'6px' }}>+ {Number(deliveryFee).toFixed(2)} ﷼ {t('feeSuffix')}</div>
+              )}
+            </div>
+          )}
 
           {/* Customer info */}
           <div style={{ marginBottom:'12px' }}>
@@ -209,7 +220,7 @@ export default function CartDrawer({
 
           {/* رقم الطاولة — محلي فقط. Dropdown من طاولات المطعم المفعّلة؛ لو المطعم لم يُعرِّف طاولات بعد
               (لوحة التحكم فارغة)، نتراجع للحقل النصي القديم حتى لا نعطّل طلبات "داخل المطعم" */}
-          {orderType === 'dine_in' && (
+          {!tableQr && orderType === 'dine_in' && (
             <div style={{ marginBottom:'12px' }}>
               <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }}>{t('tableReq')} *</label>
               {tables.length > 0 ? (
