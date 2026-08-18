@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { SOCIAL_ICONS } from './SocialIcons'
 import { estimatedPrepTime } from './helpers'
+import { OffersIcon } from './MenuOffersDrawer'
 
 // أبعاد الهيرو تُدار الآن عبر Hero Design Tokens في PublicMenu (متغيّرات CSS --hero-*).
 const clamp01 = v => Math.min(1, Math.max(0, v))
@@ -12,7 +13,7 @@ export default function MenuHeader({
   restaurant, branch, brandColor, descColor, openStatus, deliveryEnabled, deliveryFee, activeOrdersCount,
   isEn, t, tx, toggleLang,
   hasOrders, liveOrdersCount, onShowOrders, onShowAllergens,
-  onToggleSearch,
+  onToggleSearch, hasOffers = false, offersCount = 0, onShowOffers,
   rating, loyalty,
 }) {
   // Sticky Morph (مبدأ 6): صفّ الهوية (شعار+اسم+تقييم+حالة) عنصر sticky واحد يبقى مرئياً 100% دائماً
@@ -99,6 +100,9 @@ export default function MenuHeader({
         <button onClick={onToggleSearch} aria-label={isEn ? 'Search' : 'بحث'} style={{ position:'absolute', top:'12px', left:'62px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', color:'#374151', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center' }}>
           🔍
         </button>
+
+        {/* زر العروض — لا يظهر إلا عند وجود بانر أو كوبون نشط */}
+        {hasOffers && <button type="button" onClick={onShowOffers} aria-label={isEn ? 'Open offers and coupons' : 'فتح العروض والكوبونات'} style={{ position:'absolute', top:'12px', left:'110px', width:'40px', height:'40px', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', color:brandColor, boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer' }}><OffersIcon size={18} />{offersCount > 0 && <span aria-label={`${offersCount}`} style={{ position:'absolute', top:'-3px', right:'-3px', minWidth:'16px', height:'16px', display:'grid', placeItems:'center', borderRadius:'999px', padding:'0 3px', background:brandColor, color:'white', border:'2px solid white', fontSize:'9px', fontFamily:'Tajawal,sans-serif', fontWeight:'900' }}>{offersCount > 9 ? '9+' : offersCount}</span>}</button>}
 
         {/* زر طلباتي — عائم بعداد حي */}
         {hasOrders && (
@@ -261,6 +265,7 @@ export default function MenuHeader({
         <button onClick={onToggleSearch} aria-label={isEn ? 'Search' : 'بحث'} style={{ flexShrink:0, width:'38px', height:'38px', borderRadius:'50%', border:'none', background:'#F3F4F6', color:'#374151', cursor:'pointer', fontSize:'15px', display:'flex', alignItems:'center', justifyContent:'center' }}>
           🔍
         </button>
+        {hasOffers && <button type="button" onClick={onShowOffers} aria-label={isEn ? 'Open offers and coupons' : 'فتح العروض والكوبونات'} style={{ flexShrink:0, width:'38px', height:'38px', display:'grid', placeItems:'center', borderRadius:'50%', border:'none', background:`${brandColor}14`, color:brandColor, cursor:'pointer', position:'relative' }}><OffersIcon size={17} />{offersCount > 0 && <span aria-label={`${offersCount}`} style={{ position:'absolute', top:'-2px', right:'-2px', minWidth:'15px', height:'15px', display:'grid', placeItems:'center', borderRadius:'999px', padding:'0 2px', background:brandColor, color:'white', border:'1.5px solid white', fontSize:'8.5px', fontFamily:'Tajawal,sans-serif', fontWeight:'900' }}>{offersCount > 9 ? '9+' : offersCount}</span>}</button>}
         {hasOrders && (
           <button onClick={onShowOrders} aria-label={t('myOrders')} style={{ flexShrink:0, width:'38px', height:'38px', borderRadius:'50%', border:'none', background:`${brandColor}14`, color:brandColor, cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
             📋
