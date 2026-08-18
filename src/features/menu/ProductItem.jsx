@@ -75,7 +75,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
               : product.emoji}
           </div>
           {product.is_featured && (
-            <span style={{ position:'absolute', top:'8px', right:'8px', fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>{isEn ? '🔥 Most Ordered' : '🔥 الأكثر طلباً'}</span>
+            <span style={{ position:'absolute', top:'8px', right:'8px', fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>{isEn ? 'Featured' : 'مميز'}</span>
           )}
           {qtyControl}
         </div>
@@ -100,7 +100,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
               : product.emoji}
           </div>
           {product.is_featured && (
-            <span style={{ position:'absolute', top:'8px', right:'8px', fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>{isEn ? '🔥 Most Ordered' : '🔥 الأكثر طلباً'}</span>
+            <span style={{ position:'absolute', top:'8px', right:'8px', fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>{isEn ? 'Featured' : 'مميز'}</span>
           )}
           {qtyControl}
         </div>
@@ -143,7 +143,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
             : product.emoji}
         </div>
         {product.is_featured && (
-          <span style={{ position:'absolute', top:'8px', right:'8px', fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>{isEn ? '🔥 Most Ordered' : '🔥 الأكثر طلباً'}</span>
+          <span style={{ position:'absolute', top:'8px', right:'8px', fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>{isEn ? 'Featured' : 'مميز'}</span>
         )}
         {renderQtyControl(-9, true)}
       </div>

@@ -21,6 +21,7 @@ export function useMenuData(slug, branchId) {
   const [capabilities, setCapabilities] = useState({ online_orders: true, reviews: true, loyalty: true, product_details: true })
   const [branding, setBranding] = useState(null) // هوية المنيو «صمم بواسطة سمسم» — من الإعداد المركزي
   const restaurantLoadChannelRef = useRef(null)
+  const menuDataChannelRef = useRef(null)
 
   useEffect(() => {
     fetchMenu()
@@ -29,10 +30,17 @@ export function useMenuData(slug, branchId) {
   useEffect(() => {
     return () => {
       if (restaurantLoadChannelRef.current) supabase.removeChannel(restaurantLoadChannelRef.current)
+      if (menuDataChannelRef.current) supabase.removeChannel(menuDataChannelRef.current)
     }
   }, [])
 
   const fetchMenu = async () => {
+    setLoading(true)
+    setNotFound(false)
+    setRating(null)
+    setBanners([])
+    setCoupons([])
+    setBestSellers([])
     try {
       // Fetch restaurant
       const { data: rest, error } = await supabase
@@ -109,7 +117,7 @@ export function useMenuData(slug, branchId) {
         const relevant = (row) => !row.branch_id || row.branch_id === resolvedBranch.id
         setBanners((bnrs || []).filter(b => relevant(b) && (!b.starts_at || b.starts_at <= now) && (!b.ends_at || b.ends_at >= now)))
         setCoupons((cpns || []).filter(c => relevant(c) && (!c.expires_at || c.expires_at >= now)))
-      } catch { /* تجاهل — البانرات والكوبونات اختيارية */ }
+      } catch { setBanners([]); setCoupons([]) }
 
       // Fetch categories & products — كل فرع منيوه المستقل الخاص به
       const [{ data: cats }, { data: prods }] = await Promise.all([
@@ -117,13 +125,16 @@ export function useMenuData(slug, branchId) {
         supabase.from('products').select('*').eq('branch_id', resolvedBranch.id).eq('is_available', true).order('sort_order'),
       ])
 
-      if (cats) { setCategories(cats); if (cats.length > 0) setActiveCategory(cats[0].id) }
-      if (prods) setProducts(prods)
+      const nextCategories = cats || []
+      const nextProducts = prods || []
+      setCategories(nextCategories)
+      setProducts(nextProducts)
+      setActiveCategory(previous => nextCategories.some(category => category.id === previous) ? previous : (nextCategories[0]?.id || null))
 
       // حساب الأصناف الأكثر مبيعاً من الطلبات الفعلية (غير الملغاة) خلال آخر 30 يوماً (عبر RPC آمن)
       const { data: pastOrders } = await supabase.rpc('get_recent_order_items', { p_restaurant_id: rest.id })
 
-      if (pastOrders && prods) {
+      if (pastOrders && nextProducts.length > 0) {
         const salesCount = {}
         pastOrders.forEach(o => {
           const orderItems = Array.isArray(o.items) ? o.items : []
@@ -132,7 +143,7 @@ export function useMenuData(slug, branchId) {
             salesCount[it.id] = (salesCount[it.id] || 0) + (it.qty || 1)
           })
         })
-        const ranked = prods
+        const ranked = nextProducts
           .filter(p => salesCount[p.id] > 0)
           .sort((a, b) => salesCount[b.id] - salesCount[a.id])
           .slice(0, 4)
@@ -150,6 +161,17 @@ export function useMenuData(slug, branchId) {
       restaurantLoadChannelRef.current = supabase.channel(`restaurant-orders:${rest.id}`, { config: { private: true } })
         .on('broadcast', { event: 'INSERT' }, refreshActiveOrdersCount)
         .on('broadcast', { event: 'UPDATE' }, refreshActiveOrdersCount)
+        .subscribe()
+
+      // ربط حيّ لنفس مصادر Supabase المستخدمة في التحميل الأولي؛ لا توجد بيانات واجهة بديلة أو ثابتة.
+      if (menuDataChannelRef.current) supabase.removeChannel(menuDataChannelRef.current)
+      menuDataChannelRef.current = supabase.channel(`menu-data:${rest.id}:${resolvedBranch.id}`)
+        .on('postgres_changes', { event:'*', schema:'public', table:'restaurants', filter:`id=eq.${rest.id}` }, fetchMenu)
+        .on('postgres_changes', { event:'*', schema:'public', table:'branches', filter:`restaurant_id=eq.${rest.id}` }, fetchMenu)
+        .on('postgres_changes', { event:'*', schema:'public', table:'categories', filter:`branch_id=eq.${resolvedBranch.id}` }, fetchMenu)
+        .on('postgres_changes', { event:'*', schema:'public', table:'products', filter:`branch_id=eq.${resolvedBranch.id}` }, fetchMenu)
+        .on('postgres_changes', { event:'*', schema:'public', table:'banners', filter:`restaurant_id=eq.${rest.id}` }, fetchMenu)
+        .on('postgres_changes', { event:'*', schema:'public', table:'coupons', filter:`restaurant_id=eq.${rest.id}` }, fetchMenu)
         .subscribe()
     } finally {
       setLoading(false)
