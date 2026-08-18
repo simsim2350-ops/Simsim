@@ -1,42 +1,54 @@
-// موك-أب هاتف يعرض منيو سمسم (تمثيل حقيقي للمنتج، لا Screenshot عام).
-// يُستخدم في الـHero وفي قسم المعاينة الحية.
+import { useMemo } from 'react'
+import { useMenuData } from '../../features/menu/hooks/useMenuData'
+import { computeBranchOpenStatus } from '../../features/menu/helpers'
 
-const ITEMS = [
-  { emoji: '🍔', name: 'برجر سمسم الخاص', desc: 'لحم أنغوس + صوص سري', price: '32', best: true },
-  { emoji: '🍟', name: 'بطاطس مقرمشة', desc: 'مع صوص الجبن', price: '14' },
-  { emoji: '🥤', name: 'ليمون بالنعناع', desc: 'طازج ومنعش', price: '10' },
-  { emoji: '🍰', name: 'تشيز كيك التوت', desc: 'قطعة تكفي شخصين', price: '18' },
-]
+const localized = (ar, en) => en || ar || ''
 
+// نموذج الهاتف في البطل يعرض نفس بيانات المنيو الحية؛ لا يحتوي على مطعم أو منتجات ثابتة.
 export default function PhoneMockup() {
+  const { restaurant, branch, categories, products, bestSellers, rating, loading, notFound } = useMenuData('gzala')
+  const openStatus = useMemo(() => branch ? computeBranchOpenStatus(branch) : null, [branch])
+  const visibleProducts = (bestSellers.length > 0 ? bestSellers : products).slice(0, 4)
+  const categoryTabs = [
+    ...(bestSellers.length > 0 ? [{ id: 'most-ordered', name: 'الأكثر طلباً' }] : []),
+    ...categories.map((category) => ({ id: category.id, name: category.name })),
+  ].slice(0, 4)
+
+  if (loading) {
+    return <div className="ss-phone" role="status" aria-label="جارٍ تحميل منيو سمسم"><div className="ss-phone__notch" /><div className="ss-phone__screen"><div className="ss-menuUI__loading">جارٍ تحميل منيو سمسم...</div></div></div>
+  }
+
+  if (notFound || !restaurant) return null
+
   return (
-    <div className="ss-phone" role="img" aria-label="معاينة منيو مطعم على الجوال داخل تطبيق سمسم">
+    <div className="ss-phone" role="img" aria-label={`معاينة منيو ${restaurant.name} على الجوال`}>
       <div className="ss-phone__notch" />
       <div className="ss-phone__screen">
         <div className="ss-menuUI">
-          <div className="ss-menuUI__top">
-            <div className="ss-menuUI__rest">مطعم الذواقة 🍽️</div>
+          <div className="ss-menuUI__top" style={restaurant.cover_url ? { backgroundImage: `linear-gradient(135deg, rgba(139,92,246,.92), rgba(91,33,182,.94)), url("${restaurant.cover_url}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
+            <div className="ss-menuUI__rest">{restaurant.name}</div>
             <div className="ss-menuUI__meta">
-              <span>⭐ 4.9</span><span>•</span><span>مفتوح الآن</span><span>•</span><span>توصيل سريع</span>
+              {rating?.avg != null && <><span>⭐ {rating.avg.toFixed(1)}</span><span>•</span></>}
+              <span>{openStatus?.open ? 'مفتوح الآن' : 'مغلق الآن'}</span>
+              {branch?.name && <><span>•</span><span>{branch.name}</span></>}
             </div>
           </div>
           <div className="ss-menuUI__tabs">
-            <span className="ss-menuUI__tab is-active">الأكثر طلباً</span>
-            <span className="ss-menuUI__tab">برجر</span>
-            <span className="ss-menuUI__tab">مشروبات</span>
-            <span className="ss-menuUI__tab">حلويات</span>
+            {categoryTabs.map((category, index) => <span className={`ss-menuUI__tab ${index === 0 ? 'is-active' : ''}`} key={category.id}>{category.name}</span>)}
           </div>
           <div className="ss-menuUI__list">
-            {ITEMS.map((it) => (
-              <div className="ss-menuUI__item" key={it.name}>
-                <div className="ss-menuUI__thumb">{it.emoji}</div>
+            {visibleProducts.map((product) => (
+              <div className="ss-menuUI__item" key={product.id}>
+                <div className="ss-menuUI__thumb">
+                  {product.image_url ? <img src={product.image_url} alt="" /> : <span aria-hidden="true">{product.emoji || '🍽️'}</span>}
+                </div>
                 <div className="ss-menuUI__info">
-                  <div className="ss-menuUI__name">{it.name}</div>
-                  <div className="ss-menuUI__desc">{it.desc}</div>
-                  {it.best && <span className="ss-menuUI__badge">🔥 الأكثر طلباً</span>}
+                  <div className="ss-menuUI__name">{localized(product.name, product.name_en)}</div>
+                  {product.description && <div className="ss-menuUI__desc">{localized(product.description, product.description_en)}</div>}
+                  {bestSellers.some((bestSeller) => bestSeller.id === product.id) && <span className="ss-menuUI__badge">🔥 الأكثر طلباً</span>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
-                  <span className="ss-menuUI__price">{it.price} ﷼</span>
+                  <span className="ss-menuUI__price">{Number(product.price || 0)} ﷼</span>
                   <span className="ss-menuUI__add" aria-hidden="true">+</span>
                 </div>
               </div>

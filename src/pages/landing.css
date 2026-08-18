@@ -318,6 +318,7 @@
 
 /* شاشة المنيو داخل الهاتف (mock) */
 .ss-menuUI { display: flex; flex-direction: column; height: 100%; }
+.ss-menuUI__loading { height: 100%; display: grid; place-items: center; padding: 20px; color: var(--ss-muted); font-family: 'Tajawal', sans-serif; font-weight: 700; font-size: 12px; text-align: center; }
 .ss-menuUI__top { background: linear-gradient(135deg, var(--ss-primary), var(--ss-primary-dark)); color: #fff; padding: 34px 16px 16px; }
 .ss-menuUI__rest { font-family: 'Tajawal', sans-serif; font-weight: 900; font-size: 17px; }
 .ss-menuUI__meta { font-size: 11px; opacity: .92; margin-top: 3px; display: flex; align-items: center; gap: 6px; }
@@ -326,7 +327,8 @@
 .ss-menuUI__tab.is-active { background: var(--ss-ink); color: #fff; }
 .ss-menuUI__list { padding: 4px 12px; display: flex; flex-direction: column; gap: 9px; overflow: hidden; }
 .ss-menuUI__item { background: #fff; border: 1px solid var(--ss-border); border-radius: 14px; padding: 9px; display: flex; gap: 10px; align-items: center; }
-.ss-menuUI__thumb { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; display: grid; place-items: center; font-size: 20px; background: var(--ss-primary-soft); }
+.ss-menuUI__thumb { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; display: grid; place-items: center; font-size: 20px; background: var(--ss-primary-soft); overflow: hidden; }
+.ss-menuUI__thumb img { width: 100%; height: 100%; object-fit: cover; }
 .ss-menuUI__info { flex: 1; min-width: 0; }
 .ss-menuUI__name { font-family: 'Tajawal', sans-serif; font-weight: 800; font-size: 12px; color: var(--ss-ink); }
 .ss-menuUI__desc { font-size: 10px; color: var(--ss-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -647,6 +649,7 @@
 
 /* ------- تطبيق الشاشة ------- */
 .ss-demo__app { display: flex; flex-direction: column; height: 100%; position: relative; background: var(--ss-bg-2); }
+.ss-demo__loading { height: 100%; display: grid; place-items: center; padding: 28px; color: var(--ss-muted); font-family: 'Tajawal',sans-serif; font-size: 13px; font-weight: 700; text-align: center; }
 
 /* غلاف المطعم */
 .ss-demo__cover { color: #fff; padding: 30px 15px 14px; position: relative; }
@@ -656,7 +659,8 @@
 .ss-demo__iconbtn { width: 30px; height: 30px; border-radius: 9px; border: none; background: rgba(255,255,255,.2); color: #fff; font-family: 'Tajawal',sans-serif; font-weight: 800; font-size: 12px; display: grid; place-items: center; }
 .ss-demo__iconbtn:hover { background: rgba(255,255,255,.32); }
 .ss-demo__rest { display: flex; align-items: center; gap: 11px; }
-.ss-demo__logo { width: 46px; height: 46px; border-radius: 13px; background: rgba(255,255,255,.9); display: grid; place-items: center; font-size: 24px; box-shadow: 0 6px 16px rgba(0,0,0,.18); flex-shrink: 0; }
+.ss-demo__logo { width: 46px; height: 46px; border-radius: 13px; background: rgba(255,255,255,.9); display: grid; place-items: center; font-size: 24px; box-shadow: 0 6px 16px rgba(0,0,0,.18); flex-shrink: 0; overflow: hidden; }
+.ss-demo__logo img { width: 100%; height: 100%; object-fit: cover; }
 .ss-demo__restname { font-family: 'Tajawal',sans-serif; font-weight: 900; font-size: 17px; line-height: 1.2; }
 .ss-demo__resttag { font-size: 11.5px; opacity: .9; margin-top: 2px; }
 .ss-demo__restmeta { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 11.5px; font-weight: 600; }
@@ -688,7 +692,8 @@
 }
 .ss-demo__card:hover { transform: translateY(-2px); box-shadow: var(--ss-shadow); border-color: var(--ss-border-2); }
 .ss-demo__card:active { transform: scale(.99); }
-.ss-demo__cardthumb { width: 62px; height: 62px; border-radius: 13px; flex-shrink: 0; display: grid; place-items: center; font-size: 30px; }
+.ss-demo__cardthumb { width: 62px; height: 62px; border-radius: 13px; flex-shrink: 0; display: grid; place-items: center; font-size: 30px; overflow: hidden; background: var(--ss-primary-soft); }
+.ss-demo__cardthumb img { width: 100%; height: 100%; object-fit: cover; }
 .ss-demo__cardinfo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .ss-demo__cardname { font-family: 'Tajawal',sans-serif; font-weight: 800; font-size: 13.5px; color: var(--ss-ink); }
 .ss-demo__carddesc { font-size: 11px; color: var(--ss-muted); margin-top: 2px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -724,7 +729,8 @@
 }
 .ss-demo__sheet-close { position: absolute; top: 12px; inset-inline-end: 12px; z-index: 3; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(255,255,255,.9); color: var(--ss-ink); font-size: 14px; display: grid; place-items: center; box-shadow: var(--ss-shadow-sm); }
 .ss-demo__sheet-close.is-inline { position: static; background: var(--ss-bg-2); box-shadow: none; }
-.ss-demo__sheet-hero { height: 120px; border-radius: 22px 22px 0 0; display: grid; place-items: center; font-size: 58px; position: relative; }
+.ss-demo__sheet-hero { height: 120px; border-radius: 22px 22px 0 0; display: grid; place-items: center; font-size: 58px; position: relative; overflow: hidden; background: var(--ss-primary-soft); }
+.ss-demo__sheet-hero img { width: 100%; height: 100%; object-fit: cover; }
 .ss-demo__hot { position: absolute; bottom: 10px; inset-inline-start: 12px; background: rgba(11,11,15,.82); color: #fff; font-family: 'Tajawal',sans-serif; font-weight: 800; font-size: 10px; padding: 4px 9px; border-radius: 999px; }
 .ss-demo__sheet-body { padding: 14px 16px 4px; overflow-y: auto; }
 .ss-demo__sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -764,7 +770,8 @@
 .ss-demo__empty p { color: var(--ss-muted); font-size: 12.5px; margin-top: 4px; }
 .ss-demo__cartlist { overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 10px; }
 .ss-demo__cartrow { display: flex; gap: 10px; align-items: center; }
-.ss-demo__cartthumb { width: 48px; height: 48px; border-radius: 11px; display: grid; place-items: center; font-size: 24px; flex-shrink: 0; }
+.ss-demo__cartthumb { width: 48px; height: 48px; border-radius: 11px; display: grid; place-items: center; font-size: 24px; flex-shrink: 0; overflow: hidden; background: var(--ss-primary-soft); }
+.ss-demo__cartthumb img { width: 100%; height: 100%; object-fit: cover; }
 .ss-demo__cartinfo { flex: 1; min-width: 0; }
 .ss-demo__cartname { font-family: 'Tajawal',sans-serif; font-weight: 800; font-size: 13px; color: var(--ss-ink); }
 .ss-demo__cartopts { font-size: 10.5px; color: var(--ss-muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
