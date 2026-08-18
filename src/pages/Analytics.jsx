@@ -79,6 +79,8 @@ export default function Analytics() {
   // ===== الحسابات (من التجميع الخادمي get_analytics_summary) =====
   const d = data || {}
   const num = (v) => Number(v) || 0
+  const money = (v, decimals=2) => `${num(v).toLocaleString('ar-SA', { minimumFractionDigits:decimals, maximumFractionDigits:decimals })} ر.س`
+  const money0 = (v) => money(v, 0)
 
   const revenue = num(d.revenue)
   // الضريبة تُفكّ عبر lib/pricing.js (ADR-1) من مجموع الأساس المحصّل خادمياً — يطابق جمع التفكيك لكل طلب
@@ -97,8 +99,6 @@ export default function Analytics() {
   const revGrowth = growth(revenue, prevRevenue)
   const ordGrowth = growth(totalOrders, prevTotalOrders)
   const hasRevenueData = revenue > 0
-  const hasOrdersData = totalOrders > 0
-  const hasAdvancedData = Boolean(adv)
   const periodLabel = period === 'today' ? 'اليوم' : period === 'week' ? 'آخر 7 أيام' : period === 'month' ? 'آخر 30 يومًا' : 'آخر 90 يومًا'
 
   const avgPrep = d.avg_prep_minutes == null ? null : Math.round(num(d.avg_prep_minutes))
@@ -121,8 +121,10 @@ export default function Analytics() {
   const productRevenueTotal = productsArr.reduce((sum, p) => sum + p.revenue, 0)
   const topProducts = [...productsArr].sort((a, b) => b.count - a.count).slice(0, 6)
   const bottomProducts = [...productsArr].sort((a, b) => a.count - b.count).slice(0, 3)
-
   const reasons = (d.cancel_reasons || []).map(x => [x.reason, num(x.count)])
+  const topProduct = topProducts[0]
+  const bestSalesDay = dailyRevenue.reduce((best, item) => item.revenue > (best?.revenue || 0) ? item : best, null)
+  const unclassifiedCancellationCount = reasons.filter(([reason]) => ['غير محدد', 'غير مصنف', 'غير مُصنف'].includes(reason)).reduce((sum, [, count]) => sum + count, 0)
 
   const hourMap = d.hours || {}
   const peakHour = Object.entries(hourMap).sort((a, b) => b[1] - a[1])[0]
@@ -150,29 +152,29 @@ export default function Analytics() {
     const bperf = (adv && Array.isArray(adv.branch_performance)) ? adv.branch_performance : []
     const creasons = (adv && Array.isArray(adv.complaint_reasons)) ? adv.complaint_reasons : []
     const kv = (items) => `<div class="kv">${items.map(i => `<div>${i.label}<b>${i.val}</b></div>`).join('')}</div>`
-    const periodLabel = period === 'week' ? 'آخر 7 أيام' : period === 'month' ? 'آخر 30 يوماً' : 'آخر 90 يوماً'
+    const periodLabel = period === 'today' ? 'اليوم' : period === 'week' ? 'آخر 7 أيام' : period === 'month' ? 'آخر 30 يوماً' : 'آخر 90 يوماً'
 
     const sections = [
       { title:'ملخّص الفترة', html: kv([
-        { label:'إجمالي المبيعات', val:`${Math.round(revenue)} ﷼` },
-        { label:'صافي المبيعات', val:`${Math.round(netSales)} ﷼` },
-        { label:'ض.ق.م المحصّلة', val:`${Math.round(taxCollected)} ﷼` },
+        { label:'إجمالي المبيعات', val:money0(revenue) },
+        { label:'صافي المبيعات', val:money0(netSales) },
+        { label:'ض.ق.م المحصّلة', val:money0(taxCollected) },
         { label:'عدد الطلبات', val:totalOrders },
         { label:'مكتملة', val:completedCount },
         { label:'ملغاة', val:`${cancelledCount} (${cancelRate}٪)` },
-        { label:'متوسط الطلب', val:`${Math.round(avgOrder)} ﷼` },
+        { label:'متوسط الطلب', val:completedCount > 0 ? money0(avgOrder) : '—' },
         { label:'عملاء فريدون', val:uniqueCustomers },
         { label:'ساعة الذروة', val:peakHourLabel },
       ]) },
       { title:'المبيعات اليومية', html: buildTable(dailyRevenue, [
         { key:'day', label:'اليوم' },
         { key:'orders', label:'الطلبات' },
-        { key:'revenue', label:'المبيعات', format:v => `${Number(v).toFixed(2)} ﷼` },
+        { key:'revenue', label:'المبيعات', format:v => money(v) },
       ]) },
       { title:'أفضل المنتجات', html: buildTable(topProducts, [
         { key:p => `${p.emoji} ${p.name}`, label:'الصنف' },
         { key:'count', label:'الكمية' },
-        { key:'revenue', label:'الإيراد', format:v => `${Number(v).toFixed(2)} ﷼` },
+        { key:'revenue', label:'الإيراد', format:v => money(v) },
       ]) },
     ]
 
@@ -180,9 +182,9 @@ export default function Analytics() {
       sections.push({ title:'تأثير الولاء على المبيعات', html: kv([
         { label:'حصّة الأعضاء من الإيراد', val:`${num(li.member_revenue_share)}٪` },
         { label:'طلبات الأعضاء', val:num(li.member_orders) },
-        { label:'متوسط طلب العضو', val:`${Math.round(num(li.member_aov))} ﷼` },
+        { label:'متوسط طلب العضو', val:money0(li.member_aov) },
         { label:'طلبات غير الأعضاء', val:num(li.nonmember_orders) },
-        { label:'متوسط طلب غير العضو', val:`${Math.round(num(li.nonmember_aov))} ﷼` },
+        { label:'متوسط طلب غير العضو', val:money0(li.nonmember_aov) },
         { label:'فرق متوسط الطلب', val:`${num(li.aov_uplift_pct)}٪` },
       ]) })
       sections.push({ title:'رضا العملاء', html: kv([
@@ -194,7 +196,7 @@ export default function Analytics() {
       ]) })
       if (bperf.length > 0) sections.push({ title:'أداء الفروع', html: buildTable(bperf, [
         { key:b => `${b.is_primary ? '🏠' : '🏢'} ${b.name}`, label:'الفرع' },
-        { key:'revenue', label:'الإيراد', format:v => `${Math.round(Number(v))} ﷼` },
+        { key:'revenue', label:'الإيراد', format:v => money0(v) },
         { key:'orders', label:'الطلبات' },
         { key:b => b.avg_rating == null ? '—' : `${b.avg_rating} ⭐`, label:'التقييم' },
         { key:'complaints', label:'شكاوى' },
@@ -224,27 +226,28 @@ export default function Analytics() {
     </AppShell>
   )
 
-  const GrowthBadge = ({ v, hasData=true }) => hasData ? (
+  const GrowthBadge = ({ v, currentValue, previousValue }) => previousValue > 0 ? (
     <span style={{ fontSize:'11px', fontWeight:'800', color: v >= 0 ? '#10B981' : '#EF4444' }}>{v >= 0 ? '▲' : '▼'} {Math.abs(v)}% · مقارنة بالفترة السابقة</span>
-  ) : <span style={{ fontSize:'11px', color:'#9CA3AF' }}>لا توجد مقارنة كافية</span>
+  ) : currentValue > 0 ? <span style={{ fontSize:'11px', color:'#6B7280', fontWeight:'800' }}>بيانات جديدة</span> : <span style={{ fontSize:'11px', color:'#9CA3AF' }}>لا توجد مقارنة سابقة</span>
 
   return (
     <AppShell
       active="analytics"
       title="📊 التحليلات"
-      actions={<div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap', maxWidth:isMobile?'100%':'none' }}>
-        <span style={{ fontSize:'11px', color:'#6B7280', fontWeight:'700', whiteSpace:'nowrap' }}>الفترة: {periodLabel}</span>
+      actions={<div style={{ display:'flex', flexDirection:isMobile?'column':'row', alignItems:isMobile?'stretch':'center', gap:'6px', width:isMobile?'100%':'auto' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'6px', justifyContent:isMobile?'space-between':'flex-start' }}><span style={{ fontSize:'11px', color:'#6B7280', fontWeight:'700', whiteSpace:'nowrap' }}>الفترة: {periodLabel}</span>
         {branches.length > 0 && !branchLocked && (
           <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} style={{ padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'700', color:'#374151', cursor:'pointer', background:'white' }}>
             <option value="all">🏢 كل الفروع</option>
             {branches.map(b => <option key={b.id} value={b.id}>{b.is_primary ? '🏠' : '🏢'} {b.name}</option>)}
           </select>
         )}
-        {[{ key:'today', label:'اليوم' }, { key:'week', label:'7 أيام' }, { key:'month', label:'30 يوم' }, { key:'quarter', label:'90 يوم' }].map(p => (
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:'4px', overflowX:'auto' }}>{[{ key:'today', label:'اليوم' }, { key:'week', label:'7 أيام' }, { key:'month', label:'30 يوم' }, { key:'quarter', label:'90 يوم' }].map(p => (
           <button key={p.key} onClick={() => setPeriod(p.key)} style={{ padding:'6px 12px', borderRadius:'8px', border:`1.5px solid ${period===p.key?'#FF6A00':'#E5E7EB'}`, background: period===p.key?'#FFF0EB':'white', color: period===p.key?'#FF6A00':'#374151', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>{p.label}</button>
-        ))}
-        <button onClick={exportCSV} title="تصدير CSV" style={{ padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>⬇️ تصدير</button>
-        <button onClick={printAnalytics} title="طباعة / حفظ كـPDF" style={{ padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>🖨️ تقرير</button>
+        ))}</div>
+        <div style={{ display:'flex', alignItems:'center', gap:'4px' }}><button onClick={exportCSV} title="تصدير CSV" style={{ padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>⬇️ تصدير</button>
+        <button onClick={printAnalytics} title="طباعة / حفظ كـPDF" style={{ padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>🖨️ تقرير</button></div>
       </div>}
     >
         {/* Content */}
@@ -256,10 +259,10 @@ export default function Analytics() {
             {/* البطاقات الرئيسية */}
             <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(2,1fr)':'repeat(4,1fr)', gap: isMobile?'10px':'14px', marginBottom:'14px' }}>
               {[
-                { icon:'💰', val:`${revenue.toFixed(2)} ﷼`, label:'إجمالي المبيعات', sub:<GrowthBadge v={revGrowth} hasData={hasRevenueData || prevRevenue > 0} />, color:'#FF6A00', bg:'rgba(255,106,0,0.1)' },
-                { icon:'🛒', val:totalOrders, label:'عدد الطلبات', sub:<GrowthBadge v={ordGrowth} hasData={hasOrdersData || prevTotalOrders > 0} />, color:'#3B82F6', bg:'rgba(59,130,246,0.1)' },
-                { icon:'🧾', val:completedCount > 0 ? `${Math.round(avgOrder)} ﷼` : '—', label:'متوسط الطلب', sub:completedCount > 0 ? `إتمام ${completionRate}%` : 'لا توجد طلبات خلال الفترة', color:'#10B981', bg:'rgba(16,185,129,0.1)' },
-                { icon:'🏛️', val:`${taxCollected.toFixed(2)} ﷼`, label:'ض.ق.م المحصّلة', sub:hasRevenueData ? `صافي ${Math.round(netSales)} ﷼` : 'لا توجد مبيعات خلال الفترة', color:'#8B5CF6', bg:'rgba(139,92,246,0.1)' },
+                { icon:'💰', val:money(revenue), label:'إجمالي المبيعات', sub:<GrowthBadge v={revGrowth} currentValue={revenue} previousValue={prevRevenue} />, color:'#FF6A00', bg:'rgba(255,106,0,0.1)' },
+                { icon:'🛒', val:totalOrders, label:'عدد الطلبات', sub:<GrowthBadge v={ordGrowth} currentValue={totalOrders} previousValue={prevTotalOrders} />, color:'#3B82F6', bg:'rgba(59,130,246,0.1)' },
+                { icon:'🧾', val:completedCount > 0 ? money0(avgOrder) : '—', label:'متوسط الطلب', sub:completedCount > 0 ? `إتمام ${completionRate}%` : 'لا توجد طلبات خلال الفترة', color:'#10B981', bg:'rgba(16,185,129,0.1)' },
+                { icon:'🏛️', val:money(taxCollected), label:'ض.ق.م المحصّلة', sub:hasRevenueData ? `صافي ${money0(netSales)}` : 'لا توجد مبيعات خلال الفترة', color:'#8B5CF6', bg:'rgba(139,92,246,0.1)' },
               ].map(s => (
                 <div key={s.label} style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding: isMobile?'14px':'18px' }}>
                   <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', marginBottom:'10px' }}>{s.icon}</div>
@@ -290,6 +293,7 @@ export default function Analytics() {
                 ) : <Empty title="لا توجد بيانات مبيعات بعد" text="ستظهر حركة المبيعات هنا بعد استلام أول طلب." />}
               </div>
             </Card>
+            <div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'9px 12px', marginBottom:'14px', borderRadius:'10px', background:bestSalesDay && bestSalesDay.revenue > 0 ? '#FFF7F2' : '#F8F9FB', color:bestSalesDay && bestSalesDay.revenue > 0 ? '#9A3412' : '#6B7280', fontSize:'11px', fontWeight:'700' }}>{bestSalesDay && bestSalesDay.revenue > 0 ? `📈 أعلى يوم مبيعات: ${bestSalesDay.day} · ${money0(bestSalesDay.revenue)} · ${bestSalesDay.orders} طلب` : 'لا توجد بيانات كافية لاستخراج Insight للمبيعات.'}</div>
 
             {/* صفّان جنب بعض على اللابتوب */}
             <div style={{ display:'grid', gridTemplateColumns: isDesktop?'1fr 1fr':'1fr', gap:'14px', marginBottom:'14px' }}>
@@ -312,7 +316,7 @@ export default function Analytics() {
                           </div>
                           <div style={{ textAlign:'left', flexShrink:0 }}>
                             <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6A00' }}>{p.count} <span style={{ fontSize:'10px', fontWeight:'700' }}>طلب</span></div>
-                            <div style={{ fontSize:'10px', color:'#6B7280' }}>{Math.round(p.revenue)} ﷼ · {pct}%</div>
+                            <div style={{ fontSize:'10px', color:'#6B7280' }}>{money0(p.revenue)} · {pct}%</div>
                           </div>
                         </div>
                       )
@@ -322,6 +326,7 @@ export default function Analytics() {
                         📉 الأقل طلباً: {bottomProducts.map(p => `${p.name} (${p.count})`).join('، ')}
                       </div>
                     )}
+                    <div style={{ marginTop:'10px', paddingTop:'10px', borderTop:'1px solid #F3F4F6', fontSize:'11px', color:'#6B7280' }}>{topProduct ? `💡 أعلى صنف: ${topProduct.name} — ${topProduct.count} طلب` : 'لا توجد بيانات كافية لاستخراج Insight للمنتجات.'}</div>
                   </div>
                 )}
               </Card>
@@ -339,7 +344,7 @@ export default function Analytics() {
                         <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:TYPE_COLORS[t], flexShrink:0 }}/>
                         <span style={{ fontSize:'13px', fontWeight:'600', flex:1 }}>{TYPE_LABELS[t]}</span>
                         <div style={{ flex:2 }}><div style={{ height:'6px', background:'#F3F4F6', borderRadius:'3px', overflow:'hidden' }}><div style={{ height:'100%', width:`${pct}%`, background:TYPE_COLORS[t], borderRadius:'3px' }}/></div></div>
-                        <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', minWidth:'54px', textAlign:'left' }}>{Math.round(val)} ﷼</span>
+                        <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', minWidth:'54px', textAlign:'left' }}>{money0(val)}</span>
                       </div>
                     )
                   })}
@@ -349,7 +354,7 @@ export default function Analytics() {
                       {Object.entries(branchRev).sort((a,b)=>b[1]-a[1]).map(([id, v]) => (
                         <div key={id} style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', padding:'4px 0' }}>
                           <span style={{ color:'#6B7280' }}>{branchName(id)}</span>
-                          <span style={{ fontWeight:'800' }}>{Math.round(v)} ﷼</span>
+                          <span style={{ fontWeight:'800' }}>{money0(v)}</span>
                         </div>
                       ))}
                     </div>
@@ -381,7 +386,7 @@ export default function Analytics() {
 
               <Card>
                 <CardHead>🚫 الإلغاء ({cancelRate}%)</CardHead>
-                <div style={{ padding:'12px' }}>
+                <div style={{ padding:'12px' }}><div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', marginBottom:'8px', borderRadius:'9px', background:cancelledCount > 0 ? '#FFF7F2' : '#F8F9FB', fontSize:'11px', color:'#6B7280' }}><span>معدل الإلغاء</span><strong style={{ color:cancelledCount > 0 ? '#C2410C' : '#6B7280' }}>{cancelRate}% · {cancelledCount} من {totalOrders} طلب</strong></div>
                   {reasons.length === 0 ? <Empty text="لا توجد طلبات ملغاة 🎉" /> : reasons.map(([r, c]) => {
                     const pct = Math.round((c / cancelledCount) * 100)
                     return (
@@ -392,6 +397,7 @@ export default function Analytics() {
                       </div>
                     )
                   })}
+                  {unclassifiedCancellationCount > 0 && <div style={{ marginTop:'10px', padding:'9px 10px', borderRadius:'9px', background:'#FFFBEB', color:'#92400E', fontSize:'11px', lineHeight:1.6 }}>⚠️ جودة البيانات تحتاج تحسين: {unclassifiedCancellationCount} من {cancelledCount} إلغاء غير مصنف.</div>}
                 </div>
               </Card>
             </div>
@@ -404,6 +410,9 @@ export default function Analytics() {
               const creasons = Array.isArray(adv.complaint_reasons) ? adv.complaint_reasons : []
               const totalComplaints = creasons.reduce((s, x) => s + num(x.count), 0)
               const uplift = num(li.aov_uplift_pct)
+              const neutralPct = Math.max(0, Math.round((100 - num(sat.satisfied_pct) - num(sat.detractors_pct)) * 10) / 10)
+              const returnRate = num(adv.return_rate)
+              const customersInPeriod = num(adv.customers_in_period)
               return (
                 <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
                   <div style={{ fontSize:'15px', fontWeight:'900', marginTop:'4px' }}>🎯 تحليلات متقدمة</div>
@@ -416,8 +425,8 @@ export default function Analytics() {
                         {[
                           { label:'حصّة الأعضاء من الإيراد', val:`${num(li.member_revenue_share)}٪`, color:'#7C3AED' },
                           { label:'طلبات الأعضاء', val:num(li.member_orders), color:'#10B981' },
-                          { label:'متوسط طلب العضو', val:`${Math.round(num(li.member_aov))} ﷼`, color:'#FF6A00' },
-                          { label:'متوسط طلب غير العضو', val:`${Math.round(num(li.nonmember_aov))} ﷼`, color:'#6B7280' },
+                          { label:'متوسط طلب العضو', val:money0(li.member_aov), color:'#FF6A00' },
+                          { label:'متوسط طلب غير العضو', val:money0(li.nonmember_aov), color:'#6B7280' },
                         ].map(s => (
                           <div key={s.label} style={{ background:'#F8F9FB', borderRadius:'12px', padding:'12px' }}>
                             <div style={{ fontSize:'11px', color:'#9CA3AF', fontWeight:'700', marginBottom:'4px' }}>{s.label}</div>
@@ -446,6 +455,7 @@ export default function Analytics() {
                             </div>
                             {[
                               { label:'راضون (4-5 ⭐)', pct:num(sat.satisfied_pct), color:'#10B981' },
+                              { label:'محايدون (3 ⭐)', pct:neutralPct, color:'#F59E0B' },
                               { label:'ساخطون (1-2 ⭐)', pct:num(sat.detractors_pct), color:'#EF4444' },
                             ].map(s => (
                               <div key={s.label} style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'8px' }}>
@@ -458,8 +468,9 @@ export default function Analytics() {
                             ))}
                             <div style={{ marginTop:'12px', paddingTop:'12px', borderTop:'1px solid #F3F4F6', display:'flex', justifyContent:'space-between', fontSize:'12.5px' }}>
                               <span style={{ color:'#9CA3AF', fontWeight:'700' }}>معدل عودة العملاء (الفترة)</span>
-                              <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', color:'#0891B2' }}>{num(adv.return_rate)}٪</span>
+                              <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', color:'#0891B2' }}>{returnRate}٪</span>
                             </div>
+                            {customersInPeriod >= 3 && <div style={{ marginTop:'10px', padding:'9px 10px', borderRadius:'9px', background:'#F0FDFA', color:'#0F766E', fontSize:'11px', lineHeight:1.6 }}>{returnRate >= 30 ? `حوالي ${returnRate}% من العملاء عادوا للطلب خلال الفترة.` : `معدل العودة الحالي ${returnRate}% من العملاء خلال الفترة.`}</div>}
                           </>
                         )}
                       </div>
@@ -510,9 +521,9 @@ export default function Analytics() {
                             {bperf.map(b => (
                               <tr key={b.id} style={{ borderTop:'1px solid #F3F4F6' }}>
                                 <td style={{ padding:'10px 4px', fontWeight:'700' }}>{b.is_primary ? '🏠' : '🏢'} {b.name}</td>
-                                <td style={{ padding:'10px 4px', fontFamily:'Tajawal,sans-serif', fontWeight:'800', color:'#FF6A00' }}>{Math.round(num(b.revenue))} ﷼</td>
+                                <td style={{ padding:'10px 4px', fontFamily:'Tajawal,sans-serif', fontWeight:'800', color:'#FF6A00' }}>{money0(b.revenue)}</td>
                                 <td style={{ padding:'10px 4px' }}>{num(b.orders)}</td>
-                                <td style={{ padding:'10px 4px', fontFamily:'Tajawal,sans-serif' }}>{num(b.orders) > 0 ? `${Math.round(num(b.revenue) / num(b.orders))} ﷼` : '—'}</td>
+                                <td style={{ padding:'10px 4px', fontFamily:'Tajawal,sans-serif' }}>{num(b.orders) > 0 ? money0(num(b.revenue) / num(b.orders)) : '—'}</td>
                                 <td style={{ padding:'10px 4px', color:'#F59E0B', fontWeight:'700' }}>{b.avg_rating == null ? '—' : `${num(b.avg_rating)} ⭐`}</td>
                                 <td style={{ padding:'10px 4px', color: num(b.complaints) > 0 ? '#EF4444' : '#9CA3AF', fontWeight:'700' }}>{num(b.complaints)}</td>
                               </tr>
@@ -531,7 +542,7 @@ export default function Analytics() {
               <div style={{ fontSize:'14px', fontWeight:'800', color:'white', marginBottom:'14px' }}>📊 ملخص الفترة</div>
               <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(2,1fr)':'repeat(4,1fr)', gap:'12px' }}>
                 {[
-                  { label:'صافي المبيعات (قبل الضريبة)', val:`${Math.round(netSales)} ﷼` },
+                  { label:'صافي المبيعات (قبل الضريبة)', val:hasRevenueData ? money0(netSales) : '—' },
                   { label:'عملاء فريدون', val:uniqueCustomers },
                   { label:'متوسط وقت التحضير', val: avgPrep != null ? `${avgPrep} د` : '—' },
                   { label:'ساعة الذروة', val:peakHourLabel },
