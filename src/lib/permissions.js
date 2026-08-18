@@ -19,14 +19,16 @@ export const ROLE_LABELS = { manager: 'مدير', cashier: 'كاشير', staff: 
 // قوالب افتراضية لكل دور (صفحات غير OWNER_ONLY فقط). تُطبَّق عند اختيار الدور
 // وتبقى قابلة للتعديل يدوياً (هجين). الدور UI-soft — لا يُفرَض في RLS.
 export const ROLE_PRESETS = {
-  manager: ['orders', 'menu', 'customers', 'analytics', 'loyalty', 'branches', 'tables', 'qr'],
-  cashier: ['orders'],
-  staff: [],
+  // all لا يتجاوز OWNER_ONLY داخل canAccess؛ لذلك يظل الوصول الإداري الحساس محصورًا بالمالك.
+  // كما يجعله قابلاً للتوسع تلقائيًا عند إضافة صفحة تشغيلية جديدة مستقبلًا.
+  manager: ['all'],
+  cashier: ['orders', 'tables', 'qr'],
+  staff: ['orders'],
 }
 
-// صفحات مشتركة على مستوى المطعم كله (منيو/فروع/ولاء+تقييمات/QR).
-// تتطلب صلاحية "كل الفروع" — يُمنع منها الموظف المقيّد بفرع محدّد.
-export const SHARED_PAGES = ['menu', 'branches', 'tables', 'loyalty', 'qr']
+// المنيو والفروع والولاء عمليات مشتركة على مستوى المطعم وتتطلب صلاحية كل الفروع.
+// أما الطاولات وQR فلهما RLS على branch_id، لذلك يجوز منحهما لموظف فرع محدد.
+export const SHARED_PAGES = ['menu', 'branches', 'loyalty']
 
 // ترتيب الصفحات القابلة للتخصيص (لتحديد أول صفحة يُوجَّه إليها الموظف)
 export const PAGE_ORDER = ['orders', 'menu', 'branches', 'tables', 'customers', 'analytics', 'loyalty', 'qr']
