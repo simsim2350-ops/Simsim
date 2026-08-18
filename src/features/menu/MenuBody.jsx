@@ -5,9 +5,9 @@ import HProductCard from './HProductCard'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { InlineMenuBanner } from './BannerDisplays'
 
-// جسم المنيو: شريط الأقسام + يعجب زبائننا (من المبيعات) + الأكثر طلبًا (المنتجات المميزة) + الأقسام.
+// جسم المنيو: شريط الأقسام + Best Sellers اليدوية + مختارات المطعم + توصيات الطلبات + الأقسام.
 export default function MenuBody({
-  categories, products, bestSellers,
+  categories, products, customerFavorites, manualBestSellers,
   activeCategory, setActiveCategory,
   cart, addToCart, removeFromCart, onOpenProduct,
       brandColor, priceColor, descColor, isEn, t, tx, layout,
@@ -15,8 +15,8 @@ export default function MenuBody({
     ordering = true, // PCR: هل الطلبات أونلاين مفعّلة؟ (false = منيو عرض فقط، بلا إضافة/سلة)
 
 }) {
-  // مصدران فقط: يعجب زبائننا من المبيعات الفعلية، والأكثر طلبًا من المنتجات التي يميزها صاحب المطعم.
-  const featuredProducts = products.filter(p => p.is_featured).slice(0, 4)
+  // مصادر مستقلة: Best Sellers يدويًا، ومختارات المالك، وتوصيات الطلبات الفعلية.
+  const featuredProducts = products.filter(p => p.is_featured === true).slice(0, 4)
   const categoryObserverRef = useRef(null)
   const [catsOpen, setCatsOpen] = useState(false) // قائمة كل الأقسام (زر ☰)
   useBodyScrollLock(catsOpen) // قفل تمرير الصفحة الخلفية طول ما القائمة مفتوحة
@@ -65,7 +65,7 @@ export default function MenuBody({
       clearTimeout(timer)
       observer.disconnect()
     }
-  }, [categories, bestSellers])
+  }, [categories, customerFavorites, manualBestSellers])
 
   // Filter products
   const filteredProducts = (catId) => products.filter(p => p.category_id === catId)
@@ -135,14 +135,45 @@ export default function MenuBody({
       {/* Menu content */}
       <div style={{ padding:'0 0 100px' }}>
 
-        {/* يعجب زبائننا — تلقائية من المبيعات، شريط أفقي منزلق بـ4 أصناف */}
-        {bestSellers.length > 0 && (
+        {/* بانر ضمن محتوى المنيو — يظهر فقط عند اختيار وضع «بانر داخل المينيو». */}
+        <InlineMenuBanner banner={inlineBanner} brandColor={brandColor} />
+
+        {/* الأكثر مبيعًا — اختيار يدوي صريح من مالك المطعم فقط. */}
+        {manualBestSellers.length > 0 && (
           <div style={{ marginBottom:'6px' }}>
             <div style={{ padding:'12px 16px 8px' }}>
-              <h2 style={{ ...TYPE.sectionTitle, color:'#0B0B0F', margin:0 }}>{t('bestSellers')}</h2>
+              <h2 style={{ ...TYPE.sectionTitle, color:'#0B0B0F', margin:0 }}>{t('manualBestSellers')}</h2>
+            </div>
+            <div className="sm-products" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }}>
+              {manualBestSellers.map(prod => (
+                <ProductItem key={prod.id} {...itemProps(prod)} layout="grid" />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* مختارات المطعم — منفصلة عن Best Sellers اليدوية وعن توصيات الطلبات. */}
+        {featuredProducts.length > 0 && (
+          <div style={{ marginBottom:'6px' }}>
+            <div style={{ padding:'12px 16px 8px' }}>
+              <h2 style={{ ...TYPE.sectionTitle, color:'#0B0B0F', margin:0 }}>{t('featuredProducts')}</h2>
+            </div>
+            <div className="sm-products" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }}>
+              {featuredProducts.map(prod => (
+                <ProductItem key={prod.id} {...itemProps(prod)} layout="grid" />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* يعجب زبائننا — توصية سلوكية مستقلة من الطلبات الفعلية. */}
+        {customerFavorites.length > 0 && (
+          <div style={{ marginBottom:'6px' }}>
+            <div style={{ padding:'12px 16px 8px' }}>
+              <h2 style={{ ...TYPE.sectionTitle, color:'#0B0B0F', margin:0 }}>{t('customerFavorites')}</h2>
             </div>
             <div style={{ display:'flex', gap:'10px', overflowX:'auto', padding:'0 16px 4px', WebkitOverflowScrolling:'touch' }}>
-              {bestSellers.map(prod => (
+              {customerFavorites.map(prod => (
                 <HProductCard
                   key={prod.id}
                   product={prod}
@@ -152,23 +183,6 @@ export default function MenuBody({
                   priceColor={priceColor}
                   isEn={isEn}
                 />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* بانر ضمن محتوى المنيو — يظهر فقط عند اختيار وضع «بانر داخل المينيو» */}
-        <InlineMenuBanner banner={inlineBanner} brandColor={brandColor} />
-
-        {/* الأكثر طلبًا — قائمة المنتجات التي يحددها صاحب المطعم كـ«مميز». */}
-        {featuredProducts.length > 0 && (
-          <div style={{ marginBottom:'6px' }}>
-            <div style={{ padding:'12px 16px 8px' }}>
-              <h2 style={{ ...TYPE.sectionTitle, color:'#0B0B0F', margin:0 }}>{t('mostOrdered')}</h2>
-            </div>
-            <div className="sm-products" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }}>
-              {featuredProducts.map(prod => (
-                <ProductItem key={prod.id} {...itemProps(prod)} layout="grid" />
               ))}
             </div>
           </div>

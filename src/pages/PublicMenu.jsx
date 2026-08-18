@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { track } from '../lib/analytics'
 import { supabase } from '../lib/supabase'
@@ -32,6 +32,7 @@ import { FloatingMenuBanner, MenuBannerOverlays, TopMenuBanner, useMenuBannerDis
 
 function PublicMenuInner() {
   const { slug } = useParams()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const branchId = searchParams.get('branch')
   const rawTableQrToken = searchParams.get('table')
@@ -73,10 +74,36 @@ function PublicMenuInner() {
   const { isEn, toggleLang, t, tx } = useLang()
   const {
     restaurant, branch,
-    categories, products, bestSellers, loading, notFound,
+    categories, products, customerFavorites, manualBestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
     banners, coupons, capabilities, branding,
   } = useMenuData(slug, effectiveBranchId)
+  // يعيد slug التاريخي إلى الرابط الحالي قبل عرض حالة عدم التوفر؛ يحافظ على QR والمواد المطبوعة.
+  useEffect(() => {
+    if (!notFound || !slug) return
+    let active = true
+    supabase.rpc('resolve_menu_slug', { p_slug: slug })
+      .then(({ data }) => {
+        if (!active || !data || data === slug) return
+        const query = searchParams.toString()
+        navigate(`/menu/${data}${query ? `?${query}` : ''}`, { replace:true })
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [notFound, slug, navigate, searchParams])
+
+  // واجهة اللغة ليست ترجمة نص فقط: تغير خصائص المستند وإطار المنيو واتجاه القراءة.
+  useEffect(() => {
+    const lang = isEn ? 'en' : 'ar'
+    const dir = isEn ? 'ltr' : 'rtl'
+    document.documentElement.lang = lang
+    document.documentElement.dir = dir
+    return () => {
+      document.documentElement.lang = 'ar'
+      document.documentElement.dir = 'rtl'
+    }
+  }, [isEn])
+
   // قدرات منيو الزبون (PCR — ADR-40): الطلبات أونلاين والتقييمات. إخفاء تام عند الإطفاء.
   const ordering = capabilities?.online_orders !== false
   const reviewsEnabled = capabilities?.reviews !== false
@@ -189,7 +216,7 @@ function PublicMenuInner() {
   const delivery = effectiveDeliverySettings(branch, restaurant)
   const takeawayEnabled = branch?.takeaway_enabled ?? true
 
-  // محرك الاقتراحات الذكي: قواعد المطعم اليدوية ← نفس القسم ← المنتجات المميزة/«الأكثر طلبًا 🔥» (ADR-13).
+  // محرك الاقتراحات الذكي: قواعد المطعم اليدوية ← نفس القسم ← مختارات المطعم المميزة (ADR-13).
   const cartSuggestions = useSmartSuggestions({ cart, products, restaurant, cartWideIds })
 
   // لا نعرض منيو أو سلة قبل توثيق QR حتى لا ينتقل العميل مؤقتاً إلى فرع آخر.
@@ -241,8 +268,9 @@ function PublicMenuInner() {
     />
   )
 
+  const menuDirection = isEn ? 'ltr' : 'rtl'
   return (
-    <div className="sm-menu-frame" style={{ minHeight:'100vh', background:'#F8F9FB', direction:'rtl', fontFamily:'Tajawal,sans-serif', maxWidth:'480px', margin:'0 auto', position:'relative' }}>
+    <div className="sm-menu-frame" lang={isEn ? 'en' : 'ar'} dir={menuDirection} style={{ minHeight:'100vh', background:'#F8F9FB', direction:menuDirection, textAlign:isEn ? 'left' : 'right', fontFamily:'Tajawal,sans-serif', maxWidth:'480px', margin:'0 auto', position:'relative' }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -310,7 +338,8 @@ function PublicMenuInner() {
       <MenuBody
         categories={categories}
         products={products}
-        bestSellers={bestSellers}
+        customerFavorites={customerFavorites}
+        manualBestSellers={manualBestSellers}
         activeCategory={activeCategory}
         setActiveCategory={setActiveCategory}
         cart={cart}
@@ -340,7 +369,8 @@ function PublicMenuInner() {
         onClose={() => setSearchOpen(false)}
         products={products}
         categories={categories}
-        bestSellers={bestSellers}
+        customerFavorites={customerFavorites}
+        manualBestSellers={manualBestSellers}
         cart={cart}
         addToCart={addToCart}
         removeFromCart={removeFromCart}

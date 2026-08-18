@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 
 // محرك الاقتراحات الذكي لقسم السلة العام — سلسلة أولويات تتوقف حين يكتمل العدد المطلوب:
-// 1) قائمة السلة العامة المُنسَّقة يدوياً (مستقلة تماماً عن قواعد الأصناف الفردية) 2) نفس القسم 3) المنتجات المميزة/الأكثر طلبًا (شبكة أمان أخيرة)
-// كل اقتراح يحمل reason لعرض شارة السبب في الواجهة (curated | category | mostOrdered)
+// 1) قائمة السلة العامة المُنسَّقة يدوياً 2) نفس القسم 3) مختارات المطعم (شبكة أمان أخيرة).
+// كل اقتراح يحمل reason لعرض شارة السبب في الواجهة (curated | category | mostOrdered).
+// لا يستخدم هذا المحرك المنتجات المميزة لتعريف Best Sellers اليدوية.
 export function useSmartSuggestions({ cart, products, restaurant, cartWideIds = [] }) {
   const cartKey = cart.map(i => i.id).sort().join(',') // تغيّر الكمية فقط لا يُعيد الحساب
   const enabled = restaurant?.recommendations_enabled !== false
@@ -39,7 +40,7 @@ export function useSmartSuggestions({ cart, products, restaurant, cartWideIds = 
       }
     }
 
-    // 3) الأكثر طلبًا من المنتجات المميزة — آخر خيار وليس الأول.
+    // 3) مختارات المطعم من المنتجات المميزة — آخر خيار وليس الأول.
     if (picked.size < count) {
       for (const p of products.filter(p => p.is_featured)) {
         if (picked.size >= count) break

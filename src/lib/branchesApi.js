@@ -47,43 +47,14 @@ export async function deleteBranch(id) {
   if (error) throw error
 }
 
-// نسخ منيو الفرع الأساسي بالكامل (أقسام + أصناف) إلى فرع جديد — نسخة مستقلة قابلة للتعديل بحرية،
-// بلا أي ربط لاحق بالأصل (تعديل فرع لا يمسّ فرعاً آخر إطلاقاً)
-export async function cloneMenuToBranch(sourceBranchId, targetBranchId, restaurantId) {
-  const { data: sourceCats, error: catErr } = await supabase
-    .from('categories')
-    .select('*')
-    .eq('branch_id', sourceBranchId)
-  if (catErr) throw catErr
-
-  const { data: sourceProds, error: prodErr } = await supabase
-    .from('products')
-    .select('*')
-    .eq('branch_id', sourceBranchId)
-  if (prodErr) throw prodErr
-
-  // نسخ الأقسام أولاً، مع بناء خريطة (معرّف قديم → معرّف جديد) لإعادة ربط الأصناف بأقسامها الصحيحة
-  const categoryIdMap = {}
-  if (sourceCats && sourceCats.length > 0) {
-    const newCats = sourceCats.map(({ id, created_at, updated_at, ...rest }) => ({
-      ...rest, restaurant_id: restaurantId, branch_id: targetBranchId,
-    }))
-    const { data: insertedCats, error: insCatErr } = await supabase
-      .from('categories')
-      .insert(newCats)
-      .select()
-    if (insCatErr) throw insCatErr
-    sourceCats.forEach((oldCat, i) => { categoryIdMap[oldCat.id] = insertedCats[i].id })
-  }
-
-  if (sourceProds && sourceProds.length > 0) {
-    const newProds = sourceProds.map(({ id, created_at, updated_at, category_id, ...rest }) => ({
-      ...rest,
-      restaurant_id: restaurantId,
-      branch_id: targetBranchId,
-      category_id: category_id ? (categoryIdMap[category_id] || null) : null,
-    }))
-    const { error: insProdErr } = await supabase.from('products').insert(newProds)
-    if (insProdErr) throw insProdErr
-  }
+// نسخ منيو الفرع الأساسي بالكامل عبر RPC ذري: الأقسام والأصناف ينجحان معاً أو لا يتغير شيء.
+// pReplaceExisting يستخدم فقط لمسار إعادة المحاولة على فرع يحمل نسخة جزئية سابقة.
+export async function cloneMenuToBranch(sourceBranchId, targetBranchId, restaurantId, pReplaceExisting = false) {
+  const { error } = await supabase.rpc('clone_menu_to_branch_atomic', {
+    p_restaurant_id: restaurantId,
+    p_source_branch_id: sourceBranchId,
+    p_target_branch_id: targetBranchId,
+    p_replace_existing: pReplaceExisting,
+  })
+  if (error) throw error
 }

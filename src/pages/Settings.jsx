@@ -127,6 +127,8 @@ export default function Settings() {
   const saveRestaurant = async () => {
     if (!restForm.name.trim()) { toast.error('اسم المطعم مطلوب'); return }
     if (!restForm.slug.trim()) { toast.error('رابط المنيو مطلوب'); return }
+    const slugChanged = Boolean(restaurant?.slug && restForm.slug !== restaurant.slug)
+    if (slugChanged && !window.confirm('سيتم تغيير رابط المنيو. ستبقى روابطك وQR السابقة صالحة وتحوّل تلقائيًا إلى الرابط الجديد. هل تريد المتابعة؟')) return
     setLoading(true)
     try {
       const { error } = await supabase
@@ -332,6 +334,7 @@ export default function Settings() {
                         </span>
                         <input style={{ ...inputStyle, border:'none', borderRadius:'0', direction:'ltr', textAlign:'left', background:'white' }} value={restForm.slug} onChange={e => setRestForm(f=>({...f,slug:e.target.value.toLowerCase().replace(/[^\w-]/g,'')}))} placeholder="al-bait" />
                       </div>
+                      {restaurant?.slug && restForm.slug !== restaurant.slug && <div style={{ marginTop:'7px', padding:'8px 10px', borderRadius:'9px', background:'#FFF8ED', border:'1px solid #FDE2CD', color:'#9A3412', fontSize:'11px', lineHeight:1.55 }}>سيُحفظ الرابط السابق تلقائيًا، وستستمر أكواد QR والروابط المطبوعة في تحويل الزوار للرابط الجديد.</div>}
                     </div>
 
                     <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:'12px' }}>

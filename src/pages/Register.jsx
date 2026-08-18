@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
+import { trackOwnerEvent, trackRegistrationEvent } from '../lib/analytics'
 
 // خريطة تحويل الحروف العربية إلى لاتينية لتوليد رابط منيو صالح من اسم عربي
 const AR_MAP = {
@@ -23,7 +24,7 @@ const slugify = (name) =>
 
 export default function Register() {
   const navigate = useNavigate()
-  const { signUp, fetchRestaurant } = useAuthStore()
+  const { signUp, fetchRestaurant, resumePendingRestaurant } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showSlugEdit, setShowSlugEdit] = useState(false)
@@ -53,7 +54,7 @@ export default function Register() {
 
     setLoading(true)
     try {
-      // فحص توفّر الرابط قبل إنشاء الحساب (يتجنب إنشاء حساب ثم فشل المطعم)
+      // فحص مبكر للتجربة فقط؛ الـRPC يعيد الفحص تحت الجلسة لمنع سباق/تكرار التسجيل.
       const { data: taken } = await supabase.from('restaurants').select('id').eq('slug', slug).maybeSingle()
       if (taken) {
         toast.error('رابط المنيو مستخدم، عدّله من «تعديل الرابط»')
@@ -62,37 +63,36 @@ export default function Register() {
         return
       }
 
-      await signUp(form.email.trim(), form.password, form.fullName.trim() || form.restaurantName.trim())
+      trackRegistrationEvent('registration_started', { source: 'register' })
+      await signUp(
+        form.email.trim(),
+        form.password,
+        form.fullName.trim() || form.restaurantName.trim(),
+        { name: form.restaurantName.trim(), slug },
+      )
 
-      // نتأكد من وجود جلسة (auth.uid) قبل إنشاء المطعم
+      // نية المطعم تعيش في user metadata حتى التأكيد؛ الاستئناف أدناه آمن وidempotent.
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        // البريد يحتاج تأكيد — نكمل الإعداد بعد تسجيل الدخول
-        toast('📧 تحقق من بريدك لتأكيد الحساب ثم سجّل الدخول', { icon:'📧', duration:7000 })
+        trackRegistrationEvent('email_confirmation_required', { source: 'register' })
+        toast('📧 تحقق من بريدك لتأكيد الحساب ثم سجّل الدخول — سنكمل باسم مطعمك ورابطه تلقائياً.', { icon:'📧', duration:7000 })
         navigate('/login')
         return
       }
 
-      const { error } = await supabase.from('restaurants').insert({
-        owner_id: user.id,
-        name: form.restaurantName.trim(),
-        slug,
-        type: 'restaurant',
-        brand_color: '#FF6A00',
-        is_active: true,
-        onboarding_step: 'welcome',
-      })
-      if (error) {
-        if (error.code === '23505') {
-          toast.error('رابط المنيو مستخدم، عدّله وحاول ثانية')
+      const { restaurant, error } = await resumePendingRestaurant()
+      if (error || !restaurant?.id) {
+        if (error?.code === '23505') {
+          toast.error('رابط المنيو أصبح مستخدمًا، عدّله وحاول مرة أخرى')
           setShowSlugEdit(true)
-          setLoading(false)
           return
         }
-        throw error
+        throw error || new Error('تعذّر إنشاء المطعم')
       }
 
       await fetchRestaurant(user.id)
+      trackOwnerEvent('registration_completed', { props: { email_confirmation: false } })
+      trackOwnerEvent('restaurant_created', { restaurantId: restaurant.id, props: { source: 'immediate_session' } })
       toast.success('🎉 تم إنشاء مطعمك! خلينا نجهّز المنيو')
       navigate('/onboarding')
     } catch (err) {

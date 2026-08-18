@@ -15,9 +15,9 @@ const chipStyle = {
 }
 
 // شاشة بحث مستقلة (Overlay) — تفتح من زر البحث في الهيرو أو الهيدر المصغّر الدائم، بغضّ النظر عن موضع التمرير.
-// قبل الكتابة: اقتراحات «الأكثر طلبًا» من المنتجات المميزة / عمليات بحث سابقة / الأقسام. أثناء الكتابة: نتائج حيّة مرتّبة بالأهمية.
+// قبل الكتابة: Best Sellers اليدوية / عمليات بحث سابقة / الأقسام. أثناء الكتابة: نتائج حيّة مرتّبة بالأهمية.
 export default function SearchOverlay({
-  open, onClose, products, categories, bestSellers,
+  open, onClose, products, categories, customerFavorites = [], manualBestSellers = [],
   cart, addToCart, removeFromCart, onOpenProduct,
   brandColor, priceColor, descColor, isEn, t, tx, layout, ordering = true,
 }) {
@@ -45,8 +45,8 @@ export default function SearchOverlay({
     saveRecent(next)
   }
 
-  const mostOrdered = products.filter(p => p.is_featured).slice(0, 6)
-  const bestSellerIds = new Set(bestSellers.map(p => p.id))
+  const mostOrdered = manualBestSellers.slice(0, 6)
+  const bestSellerIds = new Set(manualBestSellers.map(p => p.id))
   const results = query.trim() ? rankProducts(query, products, { bestSellerIds }) : []
 
   const itemProps = (prod) => ({
@@ -72,7 +72,7 @@ export default function SearchOverlay({
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') commitSearch(query) }}
             placeholder={t('search')}
-            style={{ flex: 1, padding: '9px 4px', border: 'none', outline: 'none', fontFamily: 'Tajawal,sans-serif', fontSize: '14px', color: '#0B0B0F', background: 'transparent', textAlign: 'right' }}
+            style={{ flex: 1, padding: '9px 4px', border: 'none', outline: 'none', fontFamily: 'Tajawal,sans-serif', fontSize: '14px', color: '#0B0B0F', background: 'transparent', textAlign: isEn ? 'left' : 'right', direction: isEn ? 'ltr' : 'rtl' }}
           />
           {query && (
             <button onClick={() => { setQuery(''); inputRef.current?.focus() }} style={{ padding: '9px 12px', background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: '#9CA3AF' }}>✕</button>
@@ -86,7 +86,7 @@ export default function SearchOverlay({
           <div style={{ padding: '12px 16px' }}>
             {mostOrdered.length > 0 && (
               <div style={{ marginBottom: '18px' }}>
-                <div style={{ fontSize: '12px', fontWeight: '800', color: '#9CA3AF', marginBottom: '8px' }}>{t('mostOrdered')}</div>
+                <div style={{ fontSize: '12px', fontWeight: '800', color: '#9CA3AF', marginBottom: '8px' }}>{t('manualBestSellers')}</div>
                 <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
                   {mostOrdered.map(p => (
                     <button key={p.id} onClick={() => setQuery(isEn && p.name_en ? p.name_en : p.name)} style={chipStyle}>{isEn && p.name_en ? p.name_en : p.name}</button>

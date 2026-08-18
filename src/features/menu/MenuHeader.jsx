@@ -69,6 +69,8 @@ export default function MenuHeader({
   ]
   // [المستوى 3] تظهر مكافأة الولاء والعروض الحقيقية كمعلومات مستقلة ومضغوطة.
   const showLoyalty = !!loyalty
+  const utilitySide = isEn ? 'right' : 'left'
+  const ordersSide = isEn ? 'left' : 'right'
 
   return (
     <>
@@ -92,21 +94,21 @@ export default function MenuHeader({
         <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, rgba(0,0,0,0.12), transparent 30%, transparent 70%, rgba(0,0,0,0.18))', pointerEvents:'none' }}/>
 
         {/* زر اللغة — عائم */}
-        <button onClick={toggleLang} style={{ position:'absolute', top:'12px', left:'14px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', color:'#374151', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <button onClick={toggleLang} style={{ position:'absolute', top:'12px', [utilitySide]:'14px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', color:'#374151', display:'flex', alignItems:'center', justifyContent:'center' }}>
           {isEn ? 'ع' : 'EN'}
         </button>
 
         {/* زر البحث — عائم بجانب زر اللغة (أفقياً)، يفتح شاشة البحث المستقلة */}
-        <button onClick={onToggleSearch} aria-label={isEn ? 'Search' : 'بحث'} style={{ position:'absolute', top:'12px', left:'62px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', color:'#374151', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <button onClick={onToggleSearch} aria-label={isEn ? 'Search' : 'بحث'} style={{ position:'absolute', top:'12px', [utilitySide]:'62px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', color:'#374151', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontSize:'16px', display:'flex', alignItems:'center', justifyContent:'center' }}>
           🔍
         </button>
 
         {/* زر العروض — لا يظهر إلا عند وجود بانر أو كوبون نشط */}
-        {hasOffers && <button type="button" onClick={onShowOffers} aria-label={isEn ? 'Open offers and coupons' : 'فتح العروض والكوبونات'} style={{ position:'absolute', top:'12px', left:'110px', width:'40px', height:'40px', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', color:brandColor, boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer' }}><OffersIcon size={18} />{offersCount > 0 && <span aria-label={`${offersCount}`} style={{ position:'absolute', top:'-3px', right:'-3px', minWidth:'16px', height:'16px', display:'grid', placeItems:'center', borderRadius:'999px', padding:'0 3px', background:brandColor, color:'white', border:'2px solid white', fontSize:'9px', fontFamily:'Tajawal,sans-serif', fontWeight:'900' }}>{offersCount > 9 ? '9+' : offersCount}</span>}</button>}
+        {hasOffers && <button type="button" onClick={onShowOffers} aria-label={isEn ? 'Open offers and coupons' : 'فتح العروض والكوبونات'} style={{ position:'absolute', top:'12px', [utilitySide]:'110px', width:'40px', height:'40px', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', color:brandColor, boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer' }}><OffersIcon size={18} />{offersCount > 0 && <span aria-label={`${offersCount}`} style={{ position:'absolute', top:'-3px', [isEn ? 'left' : 'right']:'-3px', minWidth:'16px', height:'16px', display:'grid', placeItems:'center', borderRadius:'999px', padding:'0 3px', background:brandColor, color:'white', border:'2px solid white', fontSize:'9px', fontFamily:'Tajawal,sans-serif', fontWeight:'900' }}>{offersCount > 9 ? '9+' : offersCount}</span>}</button>}
 
         {/* زر طلباتي — عائم بعداد حي */}
         {hasOrders && (
-          <button onClick={onShowOrders} style={{ position:'absolute', top:'12px', right:'14px', padding:'10px 15px', borderRadius:'100px', border:'none', background:brandColor, color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', boxShadow:`0 6px 18px ${brandColor}66` }}>
+          <button onClick={onShowOrders} style={{ position:'absolute', top:'12px', [ordersSide]:'14px', padding:'10px 15px', borderRadius:'100px', border:'none', background:brandColor, color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', boxShadow:`0 6px 18px ${brandColor}66` }}>
             📋 {t('myOrders')}
             {liveOrdersCount > 0 && (
               <span style={{ background:'rgba(255,255,255,0.3)', borderRadius:'100px', padding:'1px 7px', fontSize:'11px' }}>{liveOrdersCount}</span>
