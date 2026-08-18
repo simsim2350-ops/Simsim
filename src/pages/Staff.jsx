@@ -330,6 +330,8 @@ export default function Staff() {
   }
 
   const staffLoginLink = `${window.location.origin}/staff-login/${restaurant.slug}`
+  // العرض مختصر بصريًا فقط؛ قيمة النسخ والفتح تظل الرابط الحقيقي الكامل.
+  const staffLoginDisplayLink = staffLoginLink.replace(/^https?:\/\//, '')
 
   const copyLoginLink = async () => {
     const link = staffLoginLink
@@ -363,6 +365,9 @@ export default function Staff() {
       actions={<button onClick={openAdd} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px', minHeight: '42px', padding: '10px 15px', borderRadius: '11px', border: 'none', background: '#FF6A00', color: 'white', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '13px', cursor: 'pointer', boxShadow: '0 6px 16px rgba(255,106,0,.22)', whiteSpace: 'nowrap' }}><Icon type="plus" size={16} /> إضافة موظف</button>}
     >
       <style>{`
+        .staff-login-card, .staff-login-content, .staff-login-description, .staff-login-link-box, .staff-login-url, .staff-login-actions { min-width: 0; max-width: 100%; box-sizing: border-box; }
+        .staff-login-description { white-space: normal; overflow-wrap: anywhere; }
+        .staff-login-link-box { overflow: hidden; }
         .staff-login-link-box:hover { border-color: rgba(255, 176, 136, .5) !important; background: rgba(255,255,255,.09) !important; }
         .staff-login-link-box:focus-visible, .staff-login-copy:focus-visible, .staff-login-open:focus-visible { outline: 3px solid rgba(255, 176, 136, .88); outline-offset: 3px; }
         .staff-login-copy, .staff-login-open { transition: transform 160ms ease-out, background 160ms ease-out, border-color 160ms ease-out, box-shadow 160ms ease-out; }
@@ -373,9 +378,9 @@ export default function Staff() {
           .staff-card-actions{width:100%;justify-content:flex-end}
           .staff-page-grid{grid-template-columns:1fr!important}
           .staff-modal-sheet{border-radius:22px 22px 0 0!important;max-height:92dvh!important}
-          .staff-login-card{padding:16px!important}
+          .staff-login-card{width:100%!important;max-width:100%!important;padding:16px!important}
           .staff-login-actions{width:100%;max-width:none!important;justify-content:stretch!important}
-          .staff-login-actions > *{flex:1 1 0!important;min-width:0!important}
+          .staff-login-actions > *{flex:1 1 0!important;min-width:0!important;max-width:100%!important}
         }
       `}</style>
       <div style={{ maxWidth: '1020px', paddingBottom: '32px' }}>
@@ -399,12 +404,12 @@ export default function Staff() {
           </div>
         </section>
 
-        <section className="staff-login-card" aria-labelledby="staff-login-link-title" style={{ background: '#0B0B0F', borderRadius: '18px', padding: isMobile ? '16px' : '18px', marginBottom: '14px', display: 'grid', gap: '14px', border: '1px solid rgba(255,255,255,.09)', boxShadow: '0 10px 26px rgba(16,24,40,.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '11px', minWidth: 0 }}>
+        <section className="staff-login-card" aria-labelledby="staff-login-link-title" style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box', background: '#0B0B0F', borderRadius: '18px', padding: isMobile ? '16px' : '18px', marginBottom: '14px', display: 'grid', gap: '14px', border: '1px solid rgba(255,255,255,.09)', boxShadow: '0 10px 26px rgba(16,24,40,.08)' }}>
+          <div className="staff-login-content" style={{ display: 'flex', alignItems: 'flex-start', gap: '11px', minWidth: 0, maxWidth: '100%' }}>
             <span style={{ width: '40px', height: '40px', borderRadius: '12px', display: 'grid', placeItems: 'center', color: '#FFB088', background: 'rgba(255,106,0,.16)', border: '1px solid rgba(255,176,136,.16)', flexShrink: 0 }}><Icon type="link" size={19} /></span>
-            <div style={{ minWidth: 0 }}>
+            <div style={{ minWidth: 0, maxWidth: '100%' }}>
               <div id="staff-login-link-title" style={{ color: 'white', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '15px', lineHeight: 1.4 }}>رابط دخول الموظفين</div>
-              <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,.64)', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', lineHeight: 1.65 }}>استخدم هذا الرابط لتمكين موظفيك من تسجيل الدخول إلى لوحة العمل.</p>
+              <p className="staff-login-description" style={{ maxWidth: '100%', margin: '4px 0 0', color: 'rgba(255,255,255,.64)', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', lineHeight: 1.65 }}>استخدم هذا الرابط لتمكين موظفيك من تسجيل الدخول إلى لوحة العمل.</p>
             </div>
           </div>
 
@@ -414,20 +419,19 @@ export default function Staff() {
             onClick={copyLoginLink}
             aria-label="نسخ رابط دخول الموظفين"
             title="اضغط لنسخ الرابط"
-            style={{ width: '100%', minHeight: '48px', display: 'flex', alignItems: 'center', gap: '9px', padding: '10px 12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,.14)', background: 'rgba(255,255,255,.055)', color: 'rgba(255,255,255,.84)', fontFamily: 'Tajawal,sans-serif', cursor: 'pointer', textAlign: 'right', boxSizing: 'border-box' }}
+            style={{ width: '100%', maxWidth: '100%', minWidth: 0, minHeight: '48px', display: 'flex', alignItems: 'center', gap: '9px', padding: '10px 12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,.14)', background: 'rgba(255,255,255,.055)', color: 'rgba(255,255,255,.84)', fontFamily: 'Tajawal,sans-serif', cursor: 'pointer', textAlign: 'right', boxSizing: 'border-box' }}
           >
             <span style={{ color: '#FFB088', display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon type="link" size={16} /></span>
-            <span dir="ltr" style={{ minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: isMobile ? '11px' : '12px', fontWeight: '700' }}>{staffLoginLink}</span>
-            <span style={{ color: 'rgba(255,255,255,.48)', fontSize: '10px', fontWeight: '800', whiteSpace: 'nowrap', flexShrink: 0 }}>اضغط للنسخ</span>
+            <span className="staff-login-url" dir="ltr" style={{ minWidth: 0, maxWidth: '100%', flex: '1 1 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: isMobile ? '11px' : '12px', fontWeight: '700' }}>{staffLoginDisplayLink}</span>
           </button>
 
-          <div className="staff-login-actions" style={{ width: '100%', maxWidth: '390px', display: 'flex', gap: '9px', alignItems: 'center' }}>
+          <div className="staff-login-actions" style={{ width: '100%', maxWidth: '390px', minWidth: 0, display: 'flex', gap: '9px', alignItems: 'center', boxSizing: 'border-box' }}>
             <button
               type="button"
               className="staff-login-copy"
               onClick={copyLoginLink}
               aria-live="polite"
-              style={{ flex: 1, minWidth: '138px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #FF6A00', background: '#FF6A00', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 6px 16px rgba(255,106,0,.22)', whiteSpace: 'nowrap' }}
+              style={{ flex: '1 1 0', minWidth: 0, minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '10px 8px', borderRadius: '11px', border: '1px solid #FF6A00', background: '#FF6A00', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 6px 16px rgba(255,106,0,.22)', whiteSpace: 'nowrap', boxSizing: 'border-box' }}
             >
               <Icon type={loginLinkCopied ? 'check' : 'copy'} size={15} /> {loginLinkCopied ? 'تم النسخ' : 'نسخ الرابط'}
             </button>
@@ -437,7 +441,7 @@ export default function Staff() {
               target="_blank"
               rel="noreferrer"
               aria-label="فتح رابط دخول الموظفين في تبويب جديد"
-              style={{ flex: 1, minWidth: '138px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '10px 13px', boxSizing: 'border-box', borderRadius: '11px', border: '1px solid rgba(255,255,255,.3)', background: 'rgba(255,255,255,.055)', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '900', textDecoration: 'none', whiteSpace: 'nowrap' }}
+              style={{ flex: '1 1 0', minWidth: 0, minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '10px 8px', boxSizing: 'border-box', borderRadius: '11px', border: '1px solid rgba(255,255,255,.3)', background: 'rgba(255,255,255,.055)', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '900', textDecoration: 'none', whiteSpace: 'nowrap' }}
             >
               <Icon type="external" size={15} /> فتح الرابط
             </a>
