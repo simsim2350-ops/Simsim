@@ -27,6 +27,13 @@ function Icon({ type, size = 18 }) {
     check: 'm5 12 4 4L19 6',
     info: 'M12 8h.01M11 12h1v4h1M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z',
     back: 'm15 18-6-6 6-6',
+    fullscreen: 'M4 4h16v16H4zM4 9h16M9 4v16',
+    popup: 'M5 4h14v16H5zM8 8h8M8 12h6M8 16h4',
+    top: 'M4 5h16v4H4zM4 13h16M4 17h11',
+    inline: 'M4 5h16v4H4zM4 12h16v7H4z',
+    floating: 'M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4zM8 9h8M8 13h5',
+    clock: 'M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
+    priority: 'M6 4h12M6 10h9M6 16h6',
   }
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[type] || paths.info} /></svg>
 }
@@ -48,7 +55,19 @@ const inputStyle = {
 const labelStyle = { display:'block', fontSize:'12px', fontWeight:'800', marginBottom:'6px', color:'#475467', fontFamily:'Tajawal,sans-serif' }
 const sectionLabelStyle = { color:'#98A2B3', fontSize:'11px', fontWeight:'900', letterSpacing:'.02em', marginBottom:'9px', fontFamily:'Tajawal,sans-serif' }
 
-const EMPTY_BANNER = { title:'', subtitle:'', image_url:'', cta_text:'اطلب الآن', starts_at:'', ends_at:'', is_active:true, branch_id:'' }
+const EMPTY_BANNER = { title:'', subtitle:'', image_url:'', cta_text:'اطلب الآن', starts_at:'', ends_at:'', is_active:true, branch_id:'', display_mode:'top', display_frequency:'every_visit', display_delay_seconds:0, visitor_cooldown_hours:24, display_priority:0 }
+const DISPLAY_MODES = [
+  { key:'fullscreen', label:'شاشة كاملة عند الدخول', note:'تجربة عرض كاملة مع زر دخول واضح للمنيو', icon:'fullscreen' },
+  { key:'popup', label:'نافذة منبثقة', note:'تظهر فوق المنيو ويمكن للعميل إغلاقها فورًا', icon:'popup' },
+  { key:'top', label:'أعلى المينيو', note:'شريط عرض في بداية المنيو دون إيقاف التصفح', icon:'top' },
+  { key:'inline', label:'بانر داخل المينيو', note:'بطاقة عرض ضمن محتوى الأصناف', icon:'inline' },
+  { key:'floating', label:'عرض عائم', note:'زر ترويجي صغير يفتحه العميل عند الحاجة', icon:'floating' },
+]
+const DISPLAY_FREQUENCIES = [
+  { key:'every_visit', label:'عند كل دخول للمينيو', note:'يظهر في كل زيارة جديدة' },
+  { key:'once_per_visitor', label:'مرة واحدة لكل زائر', note:'يتذكر المنيو زيارة العميل خلال المدة المحددة' },
+  { key:'delayed', label:'بعد عدد محدد من الثواني', note:'يظهر بعد وقت تختاره' },
+]
 const EMPTY_COUPON = { code:'', discount_type:'percent', discount_value:'', min_order_amount:'', expires_at:'', is_active:true, branch_id:'' }
 const STATUS_FILTERS = [
   { key:'all', label:'الكل' },
@@ -127,6 +146,29 @@ function SectionCaption({ children }) {
   return <div style={sectionLabelStyle}>{children}</div>
 }
 
+function DisplayModeBadge({ mode }) {
+  const item = DISPLAY_MODES.find(option => option.key === mode) || DISPLAY_MODES[2]
+  return <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', padding:'3px 6px', borderRadius:'999px', color:'#B54708', background:'#FFF7ED', border:'1px solid #FED7AA', fontSize:'10px', fontWeight:'900' }}><Icon type={item.icon} size={11} />{item.label}</span>
+}
+
+function BannerDisplayPreview({ form }) {
+  const option = DISPLAY_MODES.find(item => item.key === form.display_mode) || DISPLAY_MODES[2]
+  const image = form.image_url
+  const title = form.title || 'عنوان العرض'
+  const subtitle = form.subtitle || 'وصف مختصر للعرض'
+  const cta = form.cta_text || 'اطلب الآن'
+  const visual = <><div style={{ minWidth:0, flex:1 }}><div style={{ fontSize:'12px', fontWeight:'900', color:'#101828', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title}</div><div style={{ marginTop:'2px', fontSize:'10px', color:'#667085', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{subtitle}</div></div>{image && <img src={image} alt="معاينة صورة البانر" style={{ width:'56px', height:'40px', borderRadius:'8px', objectFit:'cover', flexShrink:0 }} />}</>
+  const frameStyle = { minHeight:'116px', position:'relative', overflow:'hidden', display:'flex', alignItems:'center', background:'#F8F9FB', border:'1px solid #EAECF0', borderRadius:'13px', padding:'10px' }
+  return <div style={{ marginTop:'11px', padding:'10px', border:'1px solid #FDE2CD', background:'#FFFCFA', borderRadius:'12px' }}>
+    <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'8px', color:'#C2410C', fontSize:'11px', fontWeight:'900' }}><Icon type="eye" size={14} />معاينة: {option.label}</div>
+    {form.display_mode === 'fullscreen' && <div style={{ ...frameStyle, justifyContent:'center', textAlign:'center', color:'white', background:'linear-gradient(150deg,#1D2939,#0B0B0F)' }}><div style={{ width:'100%', maxWidth:'190px' }}>{image && <img src={image} alt="" style={{ width:'54px', height:'40px', borderRadius:'8px', objectFit:'cover', margin:'0 auto 6px' }} />}<div style={{ fontSize:'13px', fontWeight:'900' }}>{title}</div><div style={{ marginTop:'3px', fontSize:'10px', opacity:.76 }}>{subtitle}</div><div style={{ display:'grid', gap:'5px', marginTop:'9px' }}><span style={{ padding:'6px', borderRadius:'7px', background:'#FF6A00', fontSize:'10px', fontWeight:'900' }}>{cta}</span><span style={{ padding:'5px', borderRadius:'7px', border:'1px solid rgba(255,255,255,.3)', fontSize:'10px', fontWeight:'800' }}>الدخول إلى المينيو</span></div></div></div>}
+    {form.display_mode === 'popup' && <div style={{ ...frameStyle, justifyContent:'center', background:'#F2F4F7' }}><div style={{ width:'83%', padding:'9px', borderRadius:'10px', background:'white', boxShadow:'0 6px 14px rgba(16,24,40,.14)' }}><div style={{ display:'flex', gap:'8px', alignItems:'center' }}>{visual}<span style={{ color:'#667085', fontSize:'12px' }}>×</span></div><div style={{ marginTop:'7px', padding:'5px', textAlign:'center', borderRadius:'6px', background:'#FF6A00', color:'white', fontSize:'10px', fontWeight:'900' }}>{cta}</div></div></div>}
+    {form.display_mode === 'top' && <div style={{ ...frameStyle, alignItems:'flex-start', padding:'0', background:'#F8F9FB' }}><div style={{ width:'100%', display:'flex', alignItems:'center', gap:'8px', padding:'9px', background:'#FFF0EB', borderBottom:'1px solid #FFD4BE' }}><span style={{ width:'24px', height:'24px', display:'grid', placeItems:'center', borderRadius:'7px', background:'#FF6A00', color:'white' }}><Icon type="banner" size={13} /></span>{visual}</div><div style={{ position:'absolute', right:'10px', left:'10px', bottom:'10px', height:'35px', borderRadius:'7px', background:'white', border:'1px solid #EAECF0' }} /></div>}
+    {form.display_mode === 'inline' && <div style={{ ...frameStyle, flexDirection:'column', alignItems:'stretch', justifyContent:'flex-end', gap:'8px', background:'#F8F9FB' }}><div style={{ height:'26px', borderRadius:'6px', background:'white', border:'1px solid #EAECF0' }} /><div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'9px', background:'white', border:'1px solid #FDE2CD', borderRadius:'9px' }}>{visual}</div></div>}
+    {form.display_mode === 'floating' && <div style={{ ...frameStyle, background:'#F8F9FB' }}><div style={{ width:'100%', height:'34px', borderRadius:'7px', background:'white', border:'1px solid #EAECF0' }} /><div style={{ position:'absolute', left:'10px', bottom:'10px', display:'flex', alignItems:'center', gap:'5px', padding:'7px 9px', borderRadius:'999px', background:'#FF6A00', color:'white', boxShadow:'0 4px 10px rgba(255,106,0,.3)', fontSize:'10px', fontWeight:'900' }}><Icon type="banner" size={13} />{title}</div></div>}
+  </div>
+}
+
 export default function Marketing() {
   const navigate = useNavigate()
   const { restaurant } = useAuthStore()
@@ -164,7 +206,7 @@ export default function Marketing() {
     setLoading(true)
     try {
       const [{ data: b, error: bannerError }, { data: c, error: couponError }, branchList] = await Promise.all([
-        supabase.from('banners').select('*').eq('restaurant_id', restaurant.id).order('sort_order'),
+        supabase.from('banners').select('*').eq('restaurant_id', restaurant.id).order('display_priority', { ascending:false }).order('sort_order'),
         supabase.from('coupons').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending:false }),
         fetchBranches(restaurant.id),
       ])
@@ -198,6 +240,10 @@ export default function Marketing() {
     setBannerForm({
       title:banner.title || '', subtitle:banner.subtitle || '', image_url:banner.image_url || '', cta_text:banner.cta_text || 'اطلب الآن',
       starts_at:toDatetimeLocal(banner.starts_at), ends_at:toDatetimeLocal(banner.ends_at), is_active:banner.is_active, branch_id:banner.branch_id || '',
+      display_mode:banner.display_mode || 'top', display_frequency:banner.display_frequency || 'every_visit',
+      display_delay_seconds:Number.isFinite(Number(banner.display_delay_seconds)) ? Number(banner.display_delay_seconds) : 0,
+      visitor_cooldown_hours:Number.isFinite(Number(banner.visitor_cooldown_hours)) ? Number(banner.visitor_cooldown_hours) : 24,
+      display_priority:Number.isFinite(Number(banner.display_priority)) ? Number(banner.display_priority) : 0,
     })
     setOpenMenu(null)
     setBannerModalOpen(true)
@@ -226,6 +272,11 @@ export default function Marketing() {
       title:bannerForm.title.trim(), subtitle:bannerForm.subtitle.trim() || null, image_url:bannerForm.image_url || null,
       cta_text:bannerForm.cta_text.trim() || 'اطلب الآن', starts_at:fromDatetimeLocal(bannerForm.starts_at), ends_at:fromDatetimeLocal(bannerForm.ends_at),
       is_active:bannerForm.is_active, branch_id:bannerForm.branch_id || null,
+      display_mode:DISPLAY_MODES.some(option => option.key === bannerForm.display_mode) ? bannerForm.display_mode : 'top',
+      display_frequency:DISPLAY_FREQUENCIES.some(option => option.key === bannerForm.display_frequency) ? bannerForm.display_frequency : 'every_visit',
+      display_delay_seconds:Math.min(300, Math.max(0, Number(bannerForm.display_delay_seconds) || 0)),
+      visitor_cooldown_hours:Math.min(8760, Math.max(1, Number(bannerForm.visitor_cooldown_hours) || 24)),
+      display_priority:Math.max(0, Number(bannerForm.display_priority) || 0),
     }
     setSaving(true)
     try {
@@ -395,6 +446,8 @@ export default function Marketing() {
                     </div>
                     <div style={{ display:'flex', alignItems:'center', flexWrap:'wrap', gap:'6px', marginTop:'7px' }}>
                       <StatusBadge status={status} />
+                      <DisplayModeBadge mode={banner.display_mode} />
+                      {Number(banner.display_priority || 0) > 0 && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', color:'#475467', background:'#F2F4F7', border:'1px solid #EAECF0', padding:'3px 6px', borderRadius:'999px', fontSize:'10px', fontWeight:'800' }}><Icon type="priority" size={11} />أولوية {banner.display_priority}</span>}
                       {banner.branch_id && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', color:'#B54708', background:'#FFFAEB', border:'1px solid #FEDF89', padding:'3px 6px', borderRadius:'999px', fontSize:'10px', fontWeight:'800' }}><Icon type="branch" size={11} />{branchName(banner.branch_id) || 'فرع محدد'}</span>}
                     </div>
                   </div>
@@ -440,6 +493,25 @@ export default function Marketing() {
           <div><label style={labelStyle}>صورة البانر</label><div style={{ minHeight:'92px', display:'flex', alignItems:'center', gap:'10px', padding:'9px', border:'1px dashed #D0D5DD', borderRadius:'11px', background:'#FCFCFD' }}><div style={{ width:'92px', height:'70px', flexShrink:0, display:'grid', placeItems:'center', overflow:'hidden', borderRadius:'9px', background:'#FFF7ED', color:'#F97316' }}>{bannerForm.image_url ? <img src={bannerForm.image_url} alt="معاينة البانر" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <Icon type="banner" size={25} />}</div><label style={{ minWidth:0, color:'#475467', fontSize:'12px', fontWeight:'800', cursor:'pointer' }}><span style={{ display:'inline-flex', alignItems:'center', gap:'5px', color:'#C2410C' }}><Icon type="upload" size={15} />{uploadingImage ? 'جارٍ رفع الصورة...' : 'رفع صورة أو استبدالها'}</span><input type="file" accept="image/*" onChange={handleBannerImageUpload} disabled={uploadingImage} style={{ display:'block', width:'100%', marginTop:'5px', fontSize:'11px' }} /></label></div></div>
           <div><label style={labelStyle}>نص الزر</label><input style={inputStyle} value={bannerForm.cta_text} onChange={event => setBannerForm(form => ({ ...form, cta_text:event.target.value }))} placeholder="اطلب الآن" /></div>
         </div>
+        <SectionCaption>طريقة عرض البانر</SectionCaption>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(2, minmax(0, 1fr))', gap:'8px', marginBottom:'12px' }}>
+          {DISPLAY_MODES.map(option => {
+            const selected = bannerForm.display_mode === option.key
+            return <button key={option.key} type="button" aria-pressed={selected} onClick={() => setBannerForm(form => ({ ...form, display_mode:option.key }))} style={{ minHeight:'78px', display:'flex', alignItems:'flex-start', gap:'7px', padding:'9px', textAlign:'right', borderRadius:'11px', border:`1.5px solid ${selected ? '#FF6A00' : '#E4E7EC'}`, background:selected ? '#FFF7ED' : 'white', color:selected ? '#C2410C' : '#344054', cursor:'pointer', fontFamily:'Tajawal,sans-serif' }}><span style={{ width:'26px', height:'26px', display:'grid', placeItems:'center', flexShrink:0, borderRadius:'8px', background:selected ? '#FF6A00' : '#F2F4F7', color:selected ? 'white' : '#667085' }}><Icon type={option.icon} size={14} /></span><span style={{ minWidth:0 }}><span style={{ display:'block', fontSize:'11px', fontWeight:'900', lineHeight:1.35 }}>{option.label}</span><span style={{ display:'block', marginTop:'3px', color:selected ? '#B54708' : '#98A2B3', fontSize:'9.5px', lineHeight:1.4 }}>{option.note}</span></span></button>
+          })}
+        </div>
+        <SectionCaption>متى يظهر البانر؟</SectionCaption>
+        <div style={{ display:'grid', gap:'7px', marginBottom:'12px' }}>
+          {DISPLAY_FREQUENCIES.map(option => {
+            const selected = bannerForm.display_frequency === option.key
+            return <button key={option.key} type="button" aria-pressed={selected} onClick={() => setBannerForm(form => ({ ...form, display_frequency:option.key }))} style={{ minHeight:'48px', display:'flex', alignItems:'center', gap:'8px', padding:'8px 10px', textAlign:'right', borderRadius:'10px', border:`1.5px solid ${selected ? '#FF6A00' : '#E4E7EC'}`, background:selected ? '#FFF7ED' : 'white', color:'#344054', cursor:'pointer', fontFamily:'Tajawal,sans-serif' }}><span style={{ width:'19px', height:'19px', display:'grid', placeItems:'center', flexShrink:0, borderRadius:'50%', border:`5px solid ${selected ? '#FF6A00' : '#D0D5DD'}`, boxSizing:'border-box' }} /><span style={{ minWidth:0, flex:1 }}><span style={{ display:'block', fontSize:'11px', fontWeight:'900', color:selected ? '#C2410C' : '#344054' }}>{option.label}</span><span style={{ display:'block', marginTop:'2px', color:'#98A2B3', fontSize:'9.5px' }}>{option.note}</span></span></button>
+          })}
+        </div>
+        {bannerForm.display_frequency === 'once_per_visitor' && <div style={{ marginBottom:'12px' }}><label style={labelStyle}>مدة عدم التكرار للزائر (بالساعات)</label><input type="number" min="1" max="8760" style={inputStyle} value={bannerForm.visitor_cooldown_hours} onChange={event => setBannerForm(form => ({ ...form, visitor_cooldown_hours:event.target.value }))} /><div style={{ marginTop:'5px', color:'#667085', fontSize:'10.5px', lineHeight:1.5 }}>لن يظهر هذا البانر للزائر نفسه مجددًا خلال هذه المدة.</div></div>}
+        {bannerForm.display_frequency === 'delayed' && <div style={{ marginBottom:'12px' }}><label style={labelStyle}>وقت الظهور بعد فتح المنيو (بالثواني)</label><input type="number" min="0" max="300" style={inputStyle} value={bannerForm.display_delay_seconds} onChange={event => setBannerForm(form => ({ ...form, display_delay_seconds:event.target.value }))} /><div style={{ marginTop:'5px', color:'#667085', fontSize:'10.5px', lineHeight:1.5 }}>استخدم 0 للظهور فورًا بعد تحميل المنيو.</div></div>}
+        <div style={{ marginBottom:'16px' }}><label style={labelStyle}>أولوية العرض</label><div style={{ display:'flex', alignItems:'center', gap:'8px' }}><span style={{ width:'36px', height:'36px', display:'grid', placeItems:'center', flexShrink:0, borderRadius:'10px', color:'#B54708', background:'#FFF7ED', border:'1px solid #FED7AA' }}><Icon type="priority" size={16} /></span><input type="number" min="0" step="1" style={inputStyle} value={bannerForm.display_priority} onChange={event => setBannerForm(form => ({ ...form, display_priority:event.target.value }))} /><span style={{ color:'#667085', fontSize:'10.5px', lineHeight:1.4 }}>القيمة الأعلى تظهر أولًا عند وجود أكثر من بانر بنفس الطريقة.</span></div></div>
+        <BannerDisplayPreview form={bannerForm} />
+        <div style={{ height:'16px' }} />
         <SectionCaption>الجدولة</SectionCaption>
         <div className="marketing-form-two" style={{ marginBottom:'16px' }}><div><label style={labelStyle}>يبدأ</label><input type="datetime-local" style={inputStyle} value={bannerForm.starts_at} onChange={event => setBannerForm(form => ({ ...form, starts_at:event.target.value }))} /></div><div><label style={labelStyle}>ينتهي</label><input type="datetime-local" style={inputStyle} value={bannerForm.ends_at} onChange={event => setBannerForm(form => ({ ...form, ends_at:event.target.value }))} /></div></div>
         {branches.length > 0 && <><SectionCaption>النطاق</SectionCaption><div style={{ marginBottom:'16px' }}><label style={labelStyle}>الفرع</label><select style={{ ...inputStyle, cursor:'pointer' }} value={bannerForm.branch_id} onChange={event => setBannerForm(form => ({ ...form, branch_id:event.target.value }))}><option value="">كل الفروع</option>{branches.map(branch => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</select></div></>}
@@ -462,7 +534,8 @@ export default function Marketing() {
         <div style={{ overflow:'hidden', borderRadius:'14px', background:'#FFF7ED', border:'1px solid #FDE7D5', marginBottom:'14px', aspectRatio:'16 / 7', display:'grid', placeItems:'center', color:'#F97316' }}>{previewBanner.image_url ? <img src={previewBanner.image_url} alt={`معاينة ${previewBanner.title}`} style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <Icon type="banner" size={34} />}</div>
         <div style={{ color:'#101828', fontFamily:'Tajawal,sans-serif', fontSize:'17px', fontWeight:'900' }}>{previewBanner.title}</div>
         {previewBanner.subtitle && <p style={{ margin:'5px 0 12px', color:'#667085', fontSize:'13px', lineHeight:1.6 }}>{previewBanner.subtitle}</p>}
-        <StatusBadge status={getItemStatus(previewBanner, 'banner')} />
+        <div style={{ display:'flex', alignItems:'center', flexWrap:'wrap', gap:'6px' }}><StatusBadge status={getItemStatus(previewBanner, 'banner')} /><DisplayModeBadge mode={previewBanner.display_mode} /></div>
+        <BannerDisplayPreview form={{ ...EMPTY_BANNER, ...previewBanner }} />
       </ModalShell>}
 
       {previewCoupon && <ModalShell title="عرض الكوبون" onClose={() => setPreviewCoupon(null)} footer={<button type="button" onClick={() => setPreviewCoupon(null)} style={{ width:'100%', minHeight:'44px', border:'none', borderRadius:'11px', background:'#FF6A00', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'900', cursor:'pointer' }}>تم</button>}>
