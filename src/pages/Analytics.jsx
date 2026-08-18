@@ -134,7 +134,7 @@ export default function Analytics() {
 
   const hourMap = d.hours || {}
   const peakHour = Object.entries(hourMap).sort((a, b) => b[1] - a[1])[0]
-  const peakHourLabel = peakHour ? `${peakHour[0]}:00 - ${(+peakHour[0]+1)}:00` : '—'
+  const peakHourLabel = peakHour ? `${String(peakHour[0]).padStart(2,'0')}:00 – ${String(+peakHour[0]+1).padStart(2,'0')}:00` : '—'
 
   const exportCSV = () => {
     const rows = [['اليوم', 'عدد الطلبات', 'المبيعات (شامل الضريبة)']]
@@ -220,6 +220,11 @@ export default function Analytics() {
     })
   }
 
+  const Icon = ({ type, size=15 }) => {
+    const paths = { chart:'M3 17l4-5 3 3 5-7 4 4', download:'M12 3v12m0 0l-4-4m4 4l4-4M5 21h14', report:'M6 3h9l3 3v15H6zM9 12h6M9 16h6M9 8h3', menu:'M4 6h16M4 12h16M4 18h16', warning:'M12 3l9 17H3L12 3zm0 6v4m0 3h.01' }
+    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[type] || paths.chart}/></svg>
+  }
+  const PageTitle = <span style={{ display:'inline-flex', alignItems:'center', gap:'8px', lineHeight:1 }}><span style={{ width:'28px', height:'28px', borderRadius:'9px', display:'grid', placeItems:'center', color:'#FF6A00', background:'#FFF0EB' }}><Icon type="chart" size={16}/></span><span>التحليلات</span></span>
   const Card = ({ children, style }) => <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden', ...style }}>{children}</div>
   const CardHead = ({ children }) => <div style={{ padding:'14px 16px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>{children}</div>
   const Empty = ({ title='لا توجد بيانات بعد', text, action, onAction }) => <div style={{ padding:isMobile?'18px 12px':'24px 18px', textAlign:'center', color:'#9CA3AF', fontSize:'12px' }}><div style={{ width:'32px', height:'32px', borderRadius:'10px', background:'#F8F9FB', display:'grid', placeItems:'center', margin:'0 auto 8px', color:'#9CA3AF' }}>∅</div><strong style={{ display:'block', color:'#374151', fontSize:'12px', marginBottom:'4px' }}>{title}</strong><span>{text || 'ستظهر البيانات هنا بعد توفر نشاط كافٍ خلال الفترة.'}</span>{action && <button onClick={onAction} style={{ display:'block', margin:'10px auto 0', border:0, background:'transparent', color:'#FF6A00', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'800', cursor:'pointer' }}>{action} →</button>}</div>
@@ -239,9 +244,9 @@ export default function Analytics() {
   return (
     <AppShell
       active="analytics"
-      title="📊 التحليلات"
+      title={PageTitle}
       actions={<div style={{ display:'flex', flexDirection:isMobile?'column':'row', alignItems:isMobile?'stretch':'center', gap:'6px', width:isMobile?'100%':'auto' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'6px', justifyContent:isMobile?'space-between':'flex-start' }}><span style={{ fontSize:'11px', color:'#6B7280', fontWeight:'700', whiteSpace:'nowrap' }}>الفترة: {periodLabel}</span>
+        <div style={{ display:'flex', alignItems:'center', gap:'6px', justifyContent:isMobile?'space-between':'flex-start' }}><span style={{ fontSize:'11px', color:'#6B7280', fontWeight:'800', whiteSpace:'nowrap' }}>الفترة: {periodLabel}</span>
         {branches.length > 0 && !branchLocked && (
           <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} style={{ padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'700', color:'#374151', cursor:'pointer', background:'white' }}>
             <option value="all">🏢 كل الفروع</option>
@@ -252,23 +257,25 @@ export default function Analytics() {
         <div style={{ display:'flex', alignItems:'center', gap:'4px', overflowX:'auto' }}>{[{ key:'today', label:'اليوم' }, { key:'week', label:'7 أيام' }, { key:'month', label:'30 يوم' }, { key:'quarter', label:'90 يوم' }].map(p => (
           <button key={p.key} onClick={() => setPeriod(p.key)} style={{ padding:'6px 12px', borderRadius:'8px', border:`1.5px solid ${period===p.key?'#FF6A00':'#E5E7EB'}`, background: period===p.key?'#FFF0EB':'white', color: period===p.key?'#FF6A00':'#374151', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>{p.label}</button>
         ))}</div>
-        <div style={{ display:'flex', alignItems:'center', gap:'4px' }}><button onClick={exportCSV} title="تصدير CSV" style={{ padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>⬇️ تصدير</button>
-        <button onClick={printAnalytics} title="طباعة / حفظ كـPDF" style={{ padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>🖨️ تقرير</button></div>
+        <div style={{ display:'flex', alignItems:'center', gap:'4px' }}><button onClick={exportCSV} title="تصدير CSV" style={{ display:'inline-flex', alignItems:'center', gap:'5px', padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}><Icon type="download" size={13}/> تصدير</button>
+        <button onClick={printAnalytics} title="طباعة / حفظ كـPDF" style={{ display:'inline-flex', alignItems:'center', gap:'5px', padding:'6px 10px', borderRadius:'8px', border:'1.5px solid #FF6A00', background:'#FF6A00', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer' }}><Icon type="report" size={13}/> تقرير</button></div>
       </div>}
     >
         {/* Content */}
         <div style={{ flex:1, overflowY:'auto', padding: isDesktop?'24px':'16px', background:'#F8F9FB' }}>
           <div style={{ maxWidth: isDesktop?'1160px':'100%', margin:'0 auto' }}>
             {error ? <Card><ErrorState /></Card> : <>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px', marginBottom:'12px', flexWrap:'wrap' }}><div><div style={{ fontSize:'20px', fontWeight:'900', color:'#111827' }}>التحليلات</div><div style={{ fontSize:'12px', color:'#6B7280', marginTop:'3px' }}>رؤى عملية لاتخاذ قرارات أفضل · {periodLabel}</div></div><div style={{ fontSize:'11px', color:'#6B7280', background:'#FFF7F2', border:'1px solid #FFE1D2', borderRadius:'999px', padding:'6px 10px' }}>{branchFilter === 'all' ? 'كل الفروع' : branchName(branchFilter)}</div></div>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px', marginBottom:'12px', flexWrap:'wrap' }}><div style={{ fontSize:'12px', color:'#6B7280' }}>رؤى عملية لاتخاذ قرارات أفضل</div><div style={{ display:'inline-flex', alignItems:'center', gap:'6px', fontSize:'11px', color:'#6B7280', background:'#FFF7F2', border:'1px solid #FFE1D2', borderRadius:'999px', padding:'6px 10px' }}><span>{periodLabel}</span><span style={{ color:'#D1D5DB' }}>·</span><span>{branchFilter === 'all' ? 'كل الفروع' : branchName(branchFilter)}</span></div></div>
 
             {/* البطاقات الرئيسية */}
-            <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(2,1fr)':'repeat(4,1fr)', gap: isMobile?'10px':'14px', marginBottom:'14px' }}>
+            <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(2,1fr)':isDesktop?'repeat(6,1fr)':'repeat(3,1fr)', gap: isMobile?'10px':'12px', marginBottom:'14px' }}>
               {[
                 { icon:'💰', val:money(revenue), label:'إجمالي المبيعات', sub:<GrowthBadge v={revGrowth} currentValue={revenue} previousValue={prevRevenue} />, color:'#FF6A00', bg:'rgba(255,106,0,0.1)' },
                 { icon:'🛒', val:totalOrders, label:'عدد الطلبات', sub:<GrowthBadge v={ordGrowth} currentValue={totalOrders} previousValue={prevTotalOrders} />, color:'#3B82F6', bg:'rgba(59,130,246,0.1)' },
-                { icon:'🧾', val:completedCount > 0 ? money0(avgOrder) : '—', label:'متوسط الطلب', sub:completedCount > 0 ? `إتمام ${completionRate}%` : 'لا توجد طلبات خلال الفترة', color:'#10B981', bg:'rgba(16,185,129,0.1)' },
+                { icon:'🧾', val:completedCount > 0 ? money0(avgOrder) : '—', label:'متوسط الطلب', sub:completedCount > 0 ? 'من الطلبات المكتملة فقط' : 'لا توجد طلبات خلال الفترة', color:'#10B981', bg:'rgba(16,185,129,0.1)' },
                 { icon:'🏛️', val:money(taxCollected), label:'ض.ق.م المحصّلة', sub:hasRevenueData ? `صافي ${money0(netSales)}` : 'لا توجد مبيعات خلال الفترة', color:'#8B5CF6', bg:'rgba(139,92,246,0.1)' },
+                { icon:'✅', val:totalOrders > 0 ? `${completionRate}%` : '—', label:'معدل الإتمام', sub:totalOrders > 0 ? `${completedCount} من ${totalOrders} طلب` : 'لا توجد طلبات خلال الفترة', color:'#059669', bg:'rgba(5,150,105,0.1)' },
+                { icon:'⚠️', val:totalOrders > 0 ? `${cancelRate}%` : '—', label:'معدل الإلغاء', sub:totalOrders > 0 ? `${cancelledCount} من ${totalOrders} طلب` : 'لا توجد طلبات خلال الفترة', color:'#DC2626', bg:'rgba(220,38,38,0.1)' },
               ].map(s => (
                 <div key={s.label} style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding: isMobile?'14px':'18px' }}>
                   <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', marginBottom:'10px' }}>{s.icon}</div>
@@ -322,7 +329,7 @@ export default function Analytics() {
                           </div>
                           <div style={{ textAlign:'left', flexShrink:0 }}>
                             <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6A00' }}>{p.count} <span style={{ fontSize:'10px', fontWeight:'700' }}>طلب</span></div>
-                            <div style={{ fontSize:'10px', color:'#6B7280' }}>{money0(p.revenue)} · {pct}%</div>
+                            <div style={{ fontSize:'10px', color:'#6B7280' }}>{money0(p.revenue)} · {pct}% من الإيراد</div>
                           </div>
                         </div>
                       )
@@ -332,7 +339,7 @@ export default function Analytics() {
                         📉 الأقل طلباً: {bottomProducts.map(p => `${p.name} (${p.count})`).join('، ')}
                       </div>
                     )}
-                    <div style={{ marginTop:'10px', paddingTop:'10px', borderTop:'1px solid #F3F4F6', fontSize:'11px', color:'#6B7280' }}>{topProduct ? `💡 أعلى صنف: ${topProduct.name} — ${topProduct.count} طلب` : 'لا توجد بيانات كافية لاستخراج Insight للمنتجات.'}</div>
+                    <div style={{ marginTop:'10px', paddingTop:'10px', borderTop:'1px solid #F3F4F6', fontSize:'11px', color:'#6B7280' }}>{topProduct ? `💡 أعلى صنف: ${topProduct.name} — ${topProduct.count} طلب · ${money0(topProduct.revenue)} من الإيراد` : 'لا توجد بيانات كافية لاستخراج Insight للمنتجات.'}</div>
                   </div>
                 )}
               </Card>
@@ -401,8 +408,8 @@ export default function Analytics() {
                       </div>
                     )
                   })}
-                  {unclassifiedCancellationCount > 0 && <div style={{ marginTop:'10px', padding:'9px 10px', borderRadius:'9px', background:'#FFFBEB', color:'#92400E', fontSize:'11px', lineHeight:1.6 }}>⚠️ جودة البيانات تحتاج تحسين: {unclassifiedCancellationCount} من {cancelledCount} إلغاء غير مصنف.</div>}
-                  {cancellationReasonTotal !== cancelledCount && <div style={{ marginTop:'8px', padding:'9px 10px', borderRadius:'9px', background:'#FEF2F2', color:'#991B1B', fontSize:'11px', lineHeight:1.6 }}>⚠️ مجموع أسباب الإلغاء ({cancellationReasonTotal}) لا يطابق إجمالي الإلغاءات ({cancelledCount}).</div>}
+                  {unclassifiedCancellationCount > 0 && <div style={{ marginTop:'10px', padding:'9px 10px', borderRadius:'9px', background:'#FFFBEB', color:'#92400E', fontSize:'11px', lineHeight:1.6 }}><Icon type="warning" size={13}/> جودة البيانات تحتاج تحسين: {unclassifiedCancellationCount} من {cancelledCount} إلغاء غير مصنف.</div>}
+                  {cancellationReasonTotal !== cancelledCount && <div style={{ marginTop:'8px', padding:'9px 10px', borderRadius:'9px', background:'#FEF2F2', color:'#991B1B', fontSize:'11px', lineHeight:1.6 }}><Icon type="warning" size={13}/> مجموع أسباب الإلغاء ({cancellationReasonTotal}) لا يطابق إجمالي الإلغاءات ({cancelledCount}).</div>}
                 </div>
               </Card>
             </div>
@@ -498,7 +505,7 @@ export default function Analytics() {
                             </div>
                           )
                         })}
-                        {unclassifiedComplaints > 0 && <div style={{ marginTop:'10px', padding:'9px 10px', borderRadius:'9px', background:'#FFFBEB', color:'#92400E', fontSize:'11px', lineHeight:1.6 }}>⚠️ جودة بيانات الشكاوى: {unclassifiedComplaints} شكاوى تحتاج إلى تصنيف. تصنيفها يساعد على اكتشاف المشاكل المتكررة.</div>}
+                        {unclassifiedComplaints > 0 && <div style={{ marginTop:'10px', padding:'9px 10px', borderRadius:'9px', background:'#FFFBEB', color:'#92400E', fontSize:'11px', lineHeight:1.6 }}><Icon type="warning" size={13}/> جودة بيانات الشكاوى: {unclassifiedComplaints} شكاوى تحتاج إلى تصنيف. تصنيفها يساعد على اكتشاف المشاكل المتكررة.</div>}
                       </div>
                     </Card>
                   </div>
