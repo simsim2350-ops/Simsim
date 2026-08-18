@@ -103,7 +103,7 @@ export function useMenuData(slug, branchId) {
       try {
         const now = new Date().toISOString()
         const [{ data: bnrs }, { data: cpns }] = await Promise.all([
-          supabase.from('banners').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('sort_order'),
+          supabase.from('banners').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('display_priority', { ascending:false }).order('sort_order'),
           supabase.from('coupons').select('*').eq('restaurant_id', rest.id).eq('is_active', true),
         ])
         const relevant = (row) => !row.branch_id || row.branch_id === resolvedBranch.id

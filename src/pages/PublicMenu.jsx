@@ -27,6 +27,7 @@ import ProductModal from '../features/menu/ProductModal'
 import CartDrawer from '../features/menu/CartDrawer'
 import AllergensModal from '../features/menu/AllergensModal'
 import OrdersScreen from '../features/menu/OrdersScreen'
+import { FloatingMenuBanner, MenuBannerOverlays, TopMenuBanner, useMenuBannerDisplay } from '../features/menu/BannerDisplays'
 
 function PublicMenuInner() {
   const { slug } = useParams()
@@ -134,6 +135,7 @@ function PublicMenuInner() {
   const itemName = makeItemName(isEn, products)
   const brandColor = restaurant?.brand_color || '#FF6A00'
   const priceColor = restaurant?.price_color || brandColor
+  const bannerDisplay = useMenuBannerDisplay(banners, restaurant?.id, branch?.id)
   const descColor = restaurant?.description_color || '#9CA3AF'
 
   // تعديل صنف من السلة (✎): يفتح المودال معبّأً بالكمية/الملاحظة/الخيارات المحفوظة
@@ -293,9 +295,12 @@ function PublicMenuInner() {
         onToggleSearch={() => setSearchOpen(true)}
         rating={rating}
         loyalty={loyalty}
-        banners={banners}
+        banners={[]}
         coupons={coupons}
       />
+
+      {/* بانر أعلى المنيو — يظهر كأول عنصر عند اختيار وضع «أعلى المينيو» */}
+      <TopMenuBanner banner={bannerDisplay.topBanner} brandColor={brandColor} />
 
       {/* Category tabs + menu content */}
       <MenuBody
@@ -315,6 +320,7 @@ function PublicMenuInner() {
         t={t}
         tx={tx}
         layout={restaurant.menu_layout}
+        inlineBanner={bannerDisplay.inlineBanner}
         ordering={ordering}
       />
 
@@ -341,6 +347,9 @@ function PublicMenuInner() {
         layout={restaurant.menu_layout}
         ordering={ordering}
       />
+
+      {/* عرض عائم — يمكن للعميل فتح تفاصيل العرض أثناء تصفح المنيو */}
+      <FloatingMenuBanner banner={bannerDisplay.floatingBanner} brandColor={brandColor} />
 
       {/* Floating cart button — يُخفى تماماً لو الطلبات أونلاين مُطفأة في الباقة (PCR) */}
       {ordering && cartCount > 0 && !cartOpen && (
@@ -440,6 +449,15 @@ function PublicMenuInner() {
           onAddCompanion={(p) => addToCart(p, 1)}
         />
       )}
+
+      {/* عروض شاشة كاملة أو نافذة منبثقة — لا يُفتح أكثر من عرض من كل نوع في الوقت نفسه */}
+      <MenuBannerOverlays
+        fullscreenBanner={bannerDisplay.fullscreenBanner}
+        popupBanner={bannerDisplay.popupBanner}
+        brandColor={brandColor}
+        onDismissFullscreen={bannerDisplay.dismissFullscreen}
+        onDismissPopup={bannerDisplay.dismissPopup}
+      />
 
       {/* Allergens Modal */}
       {showAllergensModal && (
