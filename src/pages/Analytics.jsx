@@ -111,6 +111,14 @@ export default function Analytics() {
   }))
   const chartMetricLabel = chartMetric === 'orders' ? 'الطلبات' : chartMetric === 'avg' ? 'متوسط الطلب' : 'المبيعات'
   const chartValue = point => chartMetric === 'orders' ? point.orders : chartMetric === 'avg' ? point.avg : point.revenue
+  const chartPoints = dailyRevenue.map((point, index) => {
+    const width = 760 - 48
+    const x = 24 + (dailyRevenue.length <= 1 ? width / 2 : (index / (dailyRevenue.length - 1)) * width)
+    const y = 178 - ((chartValue(point) / Math.max(...dailyRevenue.map(chartValue), 1)) * 142)
+    return { ...point, x, y, value: chartValue(point) }
+  })
+  const chartLinePath = chartPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ')
+  const chartAreaPath = chartPoints.length > 0 ? `${chartLinePath} L ${chartPoints[chartPoints.length - 1].x.toFixed(1)} 178 L ${chartPoints[0].x.toFixed(1)} 178 Z` : ''
   const maxRevenue = Math.max(...dailyRevenue.map(chartValue), 1)
 
   const statusMap = d.status_counts || {}
@@ -123,6 +131,11 @@ export default function Analytics() {
 
   const productsArr = (d.products || []).map(p => ({ name:p.name, emoji:p.emoji || '🍽️', count:num(p.count), revenue:num(p.revenue) }))
   const productRevenueTotal = productsArr.reduce((sum, p) => sum + p.revenue, 0)
+  const productPalette = ['#FF6A00','#3B82F6','#F59E0B','#8B5CF6','#10B981','#EC4899']
+  const productDonutBackground = topProducts => {
+    let cursor = 0
+    return `conic-gradient(${topProducts.map((p, i) => { const pct = productRevenueTotal > 0 ? (p.revenue / productRevenueTotal) * 100 : 0; const start = cursor; cursor += pct; return `${productPalette[i]} ${start}% ${cursor}%` }).join(',')})`
+  }
   const topProducts = [...productsArr].sort((a, b) => b.count - a.count).slice(0, 6)
   const bottomProducts = [...productsArr].sort((a, b) => a.count - b.count).slice(0, 3)
   const reasons = (d.cancel_reasons || []).map(x => [x.reason, num(x.count)])
@@ -225,7 +238,7 @@ export default function Analytics() {
     return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[type] || paths.chart}/></svg>
   }
   const PageTitle = <span style={{ display:'inline-flex', alignItems:'center', gap:'10px', minWidth:0 }}><span style={{ width:'46px', height:'46px', borderRadius:'13px', display:'grid', placeItems:'center', color:'#FF6A00', background:'linear-gradient(145deg,#FFF0EB,#FFE3D2)', border:'1px solid #FFD4BE', flexShrink:0 }}><Icon type="chart" size={21}/></span><span style={{ display:'flex', flexDirection:'column', gap:'3px', minWidth:0 }}><strong style={{ fontSize:isMobile?'17px':'20px', fontWeight:'900', letterSpacing:'-0.02em' }}>التحليلات</strong><small style={{ fontSize:isMobile?'10px':'11px', color:'#6B7280', fontWeight:'600', whiteSpace:'nowrap' }}>رؤية عملية لاتخاذ قرارات أفضل</small></span></span>
-  const Card = ({ children, style }) => <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden', ...style }}>{children}</div>
+  const Card = ({ children, style }) => <div style={{ background:'white', borderRadius:'14px', border:'1px solid #E7E9ED', boxShadow:'0 2px 10px rgba(17,24,39,0.035)', overflow:'hidden', ...style }}>{children}</div>
   const CardHead = ({ children }) => <div style={{ padding:'14px 16px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>{children}</div>
   const Empty = ({ title='لا توجد بيانات بعد', text, action, onAction }) => <div style={{ padding:isMobile?'18px 12px':'24px 18px', textAlign:'center', color:'#9CA3AF', fontSize:'12px' }}><div style={{ width:'32px', height:'32px', borderRadius:'10px', background:'#F8F9FB', display:'grid', placeItems:'center', margin:'0 auto 8px', color:'#9CA3AF' }}>∅</div><strong style={{ display:'block', color:'#374151', fontSize:'12px', marginBottom:'4px' }}>{title}</strong><span>{text || 'ستظهر البيانات هنا بعد توفر نشاط كافٍ خلال الفترة.'}</span>{action && <button onClick={onAction} style={{ display:'block', margin:'10px auto 0', border:0, background:'transparent', color:'#FF6A00', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'800', cursor:'pointer' }}>{action} →</button>}</div>
   const ErrorState = () => <div style={{ padding:'24px 18px', textAlign:'center', color:'#B91C1C', fontSize:'12px' }}><strong style={{ display:'block', color:'#7F1D1D', marginBottom:'5px' }}>تعذر تحميل البيانات</strong><span style={{ display:'block', marginBottom:'10px' }}>حاول مرة أخرى.</span><button onClick={fetchAnalytics} style={{ border:'1px solid #FECACA', background:'#FFF7F7', color:'#B91C1C', borderRadius:'8px', padding:'7px 12px', fontFamily:'Tajawal,sans-serif', fontWeight:'800', cursor:'pointer' }}>إعادة المحاولة</button></div>
@@ -286,19 +299,19 @@ export default function Analytics() {
             {/* الرسم البياني */}
             <Card style={{ marginBottom:'14px' }}>
               <div style={{ padding:'14px 16px', borderBottom:'1px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                <div><span style={{ fontSize:'14px', fontWeight:'800', display:'block' }}>📈 أداء المبيعات</span><span style={{ fontSize:'11px', color:'#9CA3AF' }}>الفترة: {periodLabel} · المقياس: {chartMetricLabel}</span></div>
+                <div><span style={{ display:'inline-flex', alignItems:'center', gap:'7px', fontSize:'14px', fontWeight:'900' }}><Icon type="chart" size={15}/> أداء المبيعات</span><span style={{ fontSize:'11px', color:'#9CA3AF' }}>الفترة: {periodLabel} · المقياس: {chartMetricLabel}</span></div>
                 <div style={{ display:'flex', gap:'4px', overflowX:'auto' }}>{[['revenue','المبيعات'],['orders','الطلبات'],['avg','متوسط الطلب']].map(([key,label]) => <button key={key} onClick={() => setChartMetric(key)} style={{ border:`1px solid ${chartMetric===key?'#FF6A00':'#E5E7EB'}`, background:chartMetric===key?'#FFF0EB':'white', color:chartMetric===key?'#FF6A00':'#6B7280', borderRadius:'7px', padding:'5px 8px', fontFamily:'Tajawal,sans-serif', fontSize:'10px', fontWeight:'800', cursor:'pointer', whiteSpace:'nowrap' }}>{label}</button>)}</div>
               </div>
               <div style={{ padding:'16px' }}>
                 {dailyRevenue.length > 0 && dailyRevenue.some(x => x.revenue > 0 || x.orders > 0) ? (
-                  <div style={{ display:'flex', alignItems:'flex-end', gap:'6px', height:'140px' }}>
-                    {dailyRevenue.map((d, i) => (
-                      <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', height:'100%', justifyContent:'flex-end' }}>
-                        <div style={{ fontSize:'10px', color:'#9CA3AF', fontWeight:'700' }}>{chartValue(d) > 0 ? Math.round(chartValue(d)) : ''}</div>
-                        <div style={{ width:'100%', borderRadius:'5px 5px 0 0', background: i === dailyRevenue.length-1 ? '#FF6A00' : 'rgba(255,106,0,0.35)', height:`${Math.max((chartValue(d) / maxRevenue) * 90, chartValue(d) > 0 ? 4 : 0)}%`, minHeight: chartValue(d) > 0 ? '4px' : '0', transition:'height 0.5s ease' }}/>
-                        <div style={{ fontSize:'9px', color:'#9CA3AF', textAlign:'center', whiteSpace:'nowrap', overflow:'hidden', width:'100%', textOverflow:'ellipsis' }}>{d.day}</div>
-                      </div>
-                    ))}
+                  <div style={{ position:'relative', width:'100%', minHeight:isMobile?'190px':'230px' }}>
+                    <svg viewBox="0 0 760 220" role="img" aria-label={`رسم ${chartMetricLabel}`} style={{ display:'block', width:'100%', height:'auto', minHeight:isMobile?'170px':'205px', overflow:'visible' }}>
+                      {[36,82,128,178].map(y => <line key={y} x1="24" x2="736" y1={y} y2={y} stroke="#EEF0F3" strokeWidth="1" strokeDasharray="3 5" />)}
+                      <path d={chartAreaPath} fill="rgba(255,106,0,0.08)" />
+                      <path d={chartLinePath} fill="none" stroke="#FF6A00" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                      {chartPoints.map((point, index) => <g key={index}><circle cx={point.x} cy={point.y} r={index === chartPoints.length - 1 ? 5 : 3.5} fill="white" stroke="#FF6A00" strokeWidth="2" /><title>{`${point.day}: ${point.value}`}</title></g>)}
+                    </svg>
+                    <div style={{ display:'flex', justifyContent:'space-between', gap:'8px', padding:'0 10px', color:'#9CA3AF', fontSize:'10px', direction:'ltr' }}>{dailyRevenue.filter((_, i) => i === 0 || i === dailyRevenue.length - 1 || i === Math.floor(dailyRevenue.length / 2)).map((d, i) => <span key={`${d.day}-${i}`}>{d.day}</span>)}</div>
                   </div>
                 ) : <Empty title="لا توجد بيانات مبيعات بعد" text="ستظهر حركة المبيعات هنا بعد استلام أول طلب." />}
               </div>
@@ -310,40 +323,27 @@ export default function Analytics() {
 
               {/* أكثر الأصناف */}
               <Card>
-                <CardHead>🏆 أكثر الأصناف طلباً</CardHead>
+                <CardHead><span style={{ display:'inline-flex', alignItems:'center', gap:'7px' }}><Icon type="chart" size={14}/> أكثر الأصناف طلباً</span></CardHead>
                 {topProducts.length === 0 ? <Empty /> : (
-                  <div style={{ padding:'12px' }}>
-                    {topProducts.map((p, i) => {
-                      const pct = productRevenueTotal > 0 ? Math.round((p.revenue / productRevenueTotal) * 100) : 0
-                      const medals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣']
-                      return (
-                        <div key={p.name} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'9px 0', borderBottom: i < topProducts.length-1 ? '1px solid #F3F4F6':'none' }}>
-                          <span style={{ fontSize:'16px', flexShrink:0 }}>{medals[i]}</span>
-                          <span style={{ fontSize:'20px', flexShrink:0 }}>{p.emoji}</span>
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:'13px', fontWeight:'700', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</div>
-                            <div style={{ height:'6px', background:'#F3F4F6', borderRadius:'3px', overflow:'hidden' }}><div style={{ height:'100%', width:`${pct}%`, background:'linear-gradient(90deg,#FF6A00,#FF9F6B)', borderRadius:'3px' }}/></div>
-                          </div>
-                          <div style={{ textAlign:'left', flexShrink:0 }}>
-                            <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6A00' }}>{p.count} <span style={{ fontSize:'10px', fontWeight:'700' }}>طلب</span></div>
-                            <div style={{ fontSize:'10px', color:'#6B7280' }}>{money0(p.revenue)} · {pct}% من الإيراد</div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                    {bottomProducts.length > 0 && (
-                      <div style={{ marginTop:'10px', paddingTop:'10px', borderTop:'1px dashed #E5E7EB', fontSize:'11px', color:'#9CA3AF' }}>
-                        📉 الأقل طلباً: {bottomProducts.map(p => `${p.name} (${p.count})`).join('، ')}
+                  <div style={{ padding:'14px' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'16px', direction:'ltr', marginBottom:'14px' }}>
+                      <div style={{ width:isMobile?'112px':'132px', height:isMobile?'112px':'132px', borderRadius:'50%', background:productDonutBackground(topProducts), position:'relative', flexShrink:0, display:'grid', placeItems:'center' }}>
+                        <div style={{ width:isMobile?'66px':'78px', height:isMobile?'66px':'78px', borderRadius:'50%', background:'white', display:'grid', placeItems:'center', textAlign:'center', direction:'rtl', border:'1px solid #F1F2F4' }}><span style={{ fontSize:'10px', color:'#9CA3AF', lineHeight:1.4 }}>أفضل<br/>الأصناف</span></div>
                       </div>
-                    )}
-                    <div style={{ marginTop:'10px', paddingTop:'10px', borderTop:'1px solid #F3F4F6', fontSize:'11px', color:'#6B7280' }}>{topProduct ? `💡 أعلى صنف: ${topProduct.name} — ${topProduct.count} طلب · ${money0(topProduct.revenue)} من الإيراد` : 'لا توجد بيانات كافية لاستخراج Insight للمنتجات.'}</div>
+                      <div style={{ flex:1, minWidth:0, direction:'rtl' }}>
+                        {topProducts.slice(0, 5).map((p, i) => { const pct = productRevenueTotal > 0 ? Math.round((p.revenue / productRevenueTotal) * 100) : 0; return <div key={p.name} style={{ display:'flex', alignItems:'center', gap:'7px', padding:'5px 0', minWidth:0 }}><span style={{ width:'8px', height:'8px', borderRadius:'50%', background:productPalette[i], flexShrink:0 }}/><span style={{ fontSize:'11px', fontWeight:'700', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{p.name}</span><span style={{ fontSize:'10px', color:'#6B7280', direction:'ltr' }}>{pct}%</span></div> })}
+                      </div>
+                    </div>
+                    <div style={{ display:'grid', gap:'6px' }}>{topProducts.slice(0, 4).map((p, i) => <div key={p.name} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'7px 0', borderTop:'1px solid #F3F4F6' }}><span style={{ width:'20px', height:'20px', borderRadius:'6px', background:'#F8F9FB', display:'grid', placeItems:'center', fontSize:'13px', flexShrink:0 }}>{p.emoji}</span><span style={{ flex:1, minWidth:0, fontSize:'12px', fontWeight:'700', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span><span style={{ fontSize:'11px', color:'#6B7280', whiteSpace:'nowrap' }}>{p.count} طلب · {money0(p.revenue)}</span></div>)}</div>
+                    {bottomProducts.length > 0 && <div style={{ marginTop:'10px', paddingTop:'10px', borderTop:'1px dashed #E5E7EB', fontSize:'11px', color:'#9CA3AF' }}>الأقل طلباً: {bottomProducts.map(p => `${p.name} (${p.count})`).join('، ')}</div>}
+                    <div style={{ marginTop:'10px', paddingTop:'10px', borderTop:'1px solid #F3F4F6', fontSize:'11px', color:'#6B7280' }}>{topProduct ? `أعلى صنف: ${topProduct.name} — ${topProduct.count} طلب · ${money0(topProduct.revenue)} من الإيراد` : 'لا توجد بيانات كافية لاستخراج Insight للمنتجات.'}</div>
                   </div>
                 )}
               </Card>
 
               {/* حسب النوع + الفرع */}
               <Card>
-                <CardHead>🍽️ المبيعات حسب النوع</CardHead>
+                <CardHead><span style={{ display:'inline-flex', alignItems:'center', gap:'7px' }}><Icon type="chart" size={14}/> المبيعات حسب النوع</span></CardHead>
                 <div style={{ padding:'12px' }}>
                   {typeEntries.length === 0 ? <Empty /> : typeEntries.map(([t, rawVal]) => {
                     const val = num(rawVal)
@@ -375,7 +375,7 @@ export default function Analytics() {
             {/* الحالة + أسباب الإلغاء */}
             <div style={{ display:'grid', gridTemplateColumns: isDesktop?'1fr 1fr':'1fr', gap:'14px', marginBottom:'14px' }}>
               <Card>
-                <CardHead>📋 الطلبات حسب الحالة</CardHead>
+                <CardHead><span style={{ display:'inline-flex', alignItems:'center', gap:'7px' }}><Icon type="report" size={14}/> الطلبات حسب الحالة</span></CardHead>
                 <div style={{ padding:'12px' }}>
                   {totalOrders === 0 ? <Empty /> : statusEntries.map(([st, rawCount]) => {
                     const count = num(rawCount)
@@ -393,7 +393,7 @@ export default function Analytics() {
               </Card>
 
               <Card>
-                <CardHead>🚫 الإلغاء ({cancelRate}%)</CardHead>
+                <CardHead><span style={{ display:'inline-flex', alignItems:'center', gap:'7px' }}><Icon type="warning" size={14}/> الإلغاء ({cancelRate}%)</span></CardHead>
                 <div style={{ padding:'12px' }}><div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', marginBottom:'8px', borderRadius:'9px', background:cancelledCount > 0 ? '#FFF7F2' : '#F8F9FB', fontSize:'11px', color:'#6B7280' }}><span>معدل الإلغاء</span><strong style={{ color:cancelledCount > 0 ? '#C2410C' : '#6B7280' }}>{cancelRate}% · {cancelledCount} من {totalOrders} طلب</strong></div>
                   {reasons.length === 0 ? <Empty text="لا توجد طلبات ملغاة 🎉" /> : reasons.map(([r, c]) => {
                     const pct = Math.round((c / cancelledCount) * 100)
@@ -510,7 +510,7 @@ export default function Analytics() {
                   {/* أداء الفروع */}
                   {bperf.length > 1 && (
                     <Card>
-                      <CardHead>🏢 أداء الفروع (أفضل ← أسوأ)</CardHead>
+                      <CardHead><span style={{ display:'inline-flex', alignItems:'center', gap:'7px' }}><Icon type="branch" size={14}/> أداء الفروع (أفضل ← أسوأ)</span></CardHead>
                       <div style={{ padding:'6px 16px 14px' }}>
                         {isMobile ? <div style={{ display:'grid', gap:'8px' }}>{bperf.map(b => <div key={b.id} style={{ border:'1px solid #F3F4F6', borderRadius:'11px', padding:'10px', background:'#FAFAFA' }}><div style={{ display:'flex', justifyContent:'space-between', gap:'8px', marginBottom:'8px' }}><strong style={{ fontSize:'13px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{b.is_primary ? '🏠' : '🏢'} {b.name}</strong><span style={{ color:'#FF6A00', fontFamily:'Tajawal,sans-serif', fontWeight:'900', whiteSpace:'nowrap' }}>{money0(b.revenue)}</span></div><div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'6px', fontSize:'10px', color:'#6B7280' }}><div><span style={{ display:'block', color:'#9CA3AF' }}>الطلبات</span><strong style={{ color:'#374151' }}>{num(b.orders)}</strong></div><div><span style={{ display:'block', color:'#9CA3AF' }}>متوسط الطلب</span><strong style={{ color:'#374151' }}>{num(b.orders) > 0 ? money0(num(b.revenue) / num(b.orders)) : '—'}</strong></div><div><span style={{ display:'block', color:'#9CA3AF' }}>التقييم</span><strong style={{ color:'#F59E0B' }}>{b.avg_rating == null ? '—' : `${num(b.avg_rating)} ⭐`}</strong></div><div><span style={{ display:'block', color:'#9CA3AF' }}>الشكاوى</span><strong style={{ color:num(b.complaints) > 0 ? '#EF4444' : '#374151' }}>{num(b.complaints)}</strong></div></div></div>)}</div> : <div style={{ overflowX:'auto' }}><table style={{ width:'100%', borderCollapse:'collapse', fontSize:'12.5px', minWidth:'560px' }}><thead><tr style={{ color:'#9CA3AF', fontSize:'11.5px', textAlign:'right' }}><th style={{ padding:'8px 4px', fontWeight:'700' }}>الفرع</th><th style={{ padding:'8px 4px', fontWeight:'700' }}>الإيراد</th><th style={{ padding:'8px 4px', fontWeight:'700' }}>الطلبات</th><th style={{ padding:'8px 4px', fontWeight:'700' }}>متوسط الطلب</th><th style={{ padding:'8px 4px', fontWeight:'700' }}>التقييم</th><th style={{ padding:'8px 4px', fontWeight:'700' }}>شكاوى</th></tr></thead><tbody>{bperf.map(b => <tr key={b.id} style={{ borderTop:'1px solid #F3F4F6' }}><td style={{ padding:'10px 4px', fontWeight:'700' }}>{b.is_primary ? '🏠' : '🏢'} {b.name}</td><td style={{ padding:'10px 4px', fontFamily:'Tajawal,sans-serif', fontWeight:'800', color:'#FF6A00' }}>{money0(b.revenue)}</td><td style={{ padding:'10px 4px' }}>{num(b.orders)}</td><td style={{ padding:'10px 4px', fontFamily:'Tajawal,sans-serif' }}>{num(b.orders) > 0 ? money0(num(b.revenue) / num(b.orders)) : '—'}</td><td style={{ padding:'10px 4px', color:'#F59E0B', fontWeight:'700' }}>{b.avg_rating == null ? '—' : `${num(b.avg_rating)} ⭐`}</td><td style={{ padding:'10px 4px', color:num(b.complaints) > 0 ? '#EF4444' : '#9CA3AF', fontWeight:'700' }}>{num(b.complaints)}</td></tr>)}</tbody></table></div>}
                       </div>
