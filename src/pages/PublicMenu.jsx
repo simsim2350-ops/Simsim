@@ -20,7 +20,7 @@ import { useCartWideIds } from '../features/menu/hooks/useCartWideIds'
 import { useReviews } from '../features/menu/hooks/useReviews'
 import MenuSkeleton from '../features/menu/MenuSkeleton'
 import MenuHeader from '../features/menu/MenuHeader'
-import MenuOffers from '../features/menu/MenuOffers'
+import MenuOffersDrawer from '../features/menu/MenuOffersDrawer'
 import MenuBody from '../features/menu/MenuBody'
 import MenuBranding from '../features/menu/MenuBranding'
 import SearchOverlay from '../features/menu/SearchOverlay'
@@ -114,6 +114,7 @@ function PublicMenuInner() {
   }
   const [editingCartItem, setEditingCartItem] = useState(null) // { item, product, initialOptions } — تعديل صنف من السلة (✎)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [offersOpen, setOffersOpen] = useState(false)
 
   // بثّ أحداث القمع مركزياً (ADR-42/M2) — إطلاق-وانسَ، fail-open، لا يغيّر السلوك.
   const viewedRef = useRef(null)
@@ -137,6 +138,7 @@ function PublicMenuInner() {
   const brandColor = restaurant?.brand_color || '#FF6A00'
   const priceColor = restaurant?.price_color || brandColor
   const bannerDisplay = useMenuBannerDisplay(banners, restaurant?.id, branch?.id)
+  const offersCount = Math.max(banners.length, coupons.length)
   const descColor = restaurant?.description_color || '#9CA3AF'
 
   // تعديل صنف من السلة (✎): يفتح المودال معبّأً بالكمية/الملاحظة/الخيارات المحفوظة
@@ -294,12 +296,12 @@ function PublicMenuInner() {
         onShowOrders={() => setOrderPlaced(true)}
         onShowAllergens={() => setShowAllergensModal(true)}
         onToggleSearch={() => setSearchOpen(true)}
+        hasOffers={offersCount > 0}
+        offersCount={offersCount}
+        onShowOffers={() => setOffersOpen(true)}
         rating={rating}
         loyalty={loyalty}
       />
-
-      {/* العروض والعروض الترويجية — Section مستقل بعد بطاقة المطعم وقبل محتوى المنيو */}
-      <MenuOffers banners={banners} coupons={coupons} brandColor={brandColor} isEn={isEn} />
 
       {/* بانر أعلى المنيو — يظهر كأول عنصر عند اختيار وضع «أعلى المينيو» */}
       <TopMenuBanner banner={bannerDisplay.topBanner} brandColor={brandColor} />
@@ -328,6 +330,9 @@ function PublicMenuInner() {
 
       {/* هوية المنيو «صمم بواسطة سمسم» — من الإعداد المركزي (يظهر أسفل المنيو حسب placement) */}
       <MenuBranding branding={branding} />
+
+      {/* نافذة العروض والكوبونات — لا تُحمّل في المحتوى حتى يطلبها العميل */}
+      <MenuOffersDrawer open={offersOpen} onClose={() => setOffersOpen(false)} banners={banners} coupons={coupons} brandColor={brandColor} isEn={isEn} />
 
       {/* شاشة البحث المستقلة — تفتح من أي زر بحث في الهيدر بغضّ النظر عن موضع التمرير */}
       <SearchOverlay
