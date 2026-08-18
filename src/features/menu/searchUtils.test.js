@@ -2,25 +2,25 @@ import { describe, expect, it } from 'vitest'
 import { rankProducts } from './searchUtils'
 
 describe('rankProducts', () => {
-  it('gives the manual most-ordered flag priority independently from featured', () => {
+  it('gives featured products priority as the most ordered list', () => {
     const products = [
-      { id: 'featured-only', name: 'شاورما مميزة', description: '', is_featured: true, is_most_ordered: false },
-      { id: 'most-ordered-only', name: 'شاورما مطلوبة', description: '', is_featured: false, is_most_ordered: true },
+      { id: 'regular', name: 'شاورما عادية', description: '', is_featured: false },
+      { id: 'featured', name: 'شاورما مميزة', description: '', is_featured: true },
     ]
 
     const result = rankProducts('شاورما', products, { bestSellerIds: new Set() })
 
-    expect(result.map(product => product.id)).toEqual(['most-ordered-only', 'featured-only'])
+    expect(result.map(product => product.id)).toEqual(['featured', 'regular'])
   })
 
-  it('uses actual order popularity only after the manual most-ordered flag', () => {
+  it('uses actual order popularity only after featured products', () => {
     const products = [
-      { id: 'sales-only', name: 'برجر مبيعات', description: '', is_featured: false, is_most_ordered: false },
-      { id: 'most-ordered', name: 'برجر مطلوب', description: '', is_featured: false, is_most_ordered: true },
+      { id: 'sales-only', name: 'برجر مبيعات', description: '', is_featured: false },
+      { id: 'featured', name: 'برجر مميز', description: '', is_featured: true },
     ]
 
     const result = rankProducts('برجر', products, { bestSellerIds: new Set(['sales-only']) })
 
-    expect(result.map(product => product.id)).toEqual(['most-ordered', 'sales-only'])
+    expect(result.map(product => product.id)).toEqual(['featured', 'sales-only'])
   })
 })

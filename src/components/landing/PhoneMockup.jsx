@@ -9,7 +9,7 @@ const localized = (ar, en) => en || ar || ''
 export default function PhoneMockup() {
   const { restaurant, branch, categories, products, rating, loading, notFound } = useMenuData(LANDING_DEMO_RESTAURANT_SLUG)
   const openStatus = useMemo(() => branch ? computeBranchOpenStatus(branch) : null, [branch])
-  const mostOrderedProducts = products.filter((product) => product.is_most_ordered)
+  const mostOrderedProducts = products.filter((product) => product.is_featured)
   const visibleProducts = (mostOrderedProducts.length > 0 ? mostOrderedProducts : products).slice(0, 4)
   const categoryTabs = [
     ...(mostOrderedProducts.length > 0 ? [{ id: 'most-ordered', name: 'الأكثر طلبًا 🔥' }] : []),
@@ -47,7 +47,7 @@ export default function PhoneMockup() {
                 <div className="ss-menuUI__info">
                   <div className="ss-menuUI__name">{localized(product.name, product.name_en)}</div>
                   {product.description && <div className="ss-menuUI__desc">{localized(product.description, product.description_en)}</div>}
-                  {product.is_most_ordered && <span className="ss-menuUI__badge">الأكثر طلبًا 🔥</span>}
+                  {product.is_featured && <span className="ss-menuUI__badge">الأكثر طلبًا 🔥</span>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
                   <span className="ss-menuUI__price">{Number(product.price || 0)} ﷼</span>

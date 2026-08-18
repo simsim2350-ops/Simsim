@@ -189,7 +189,7 @@ function PublicMenuInner() {
   const delivery = effectiveDeliverySettings(branch, restaurant)
   const takeawayEnabled = branch?.takeaway_enabled ?? true
 
-  // محرك الاقتراحات الذكي: قواعد المطعم اليدوية ← نفس القسم ← «الأكثر طلبًا 🔥» اليدوي (ADR-13).
+  // محرك الاقتراحات الذكي: قواعد المطعم اليدوية ← نفس القسم ← المنتجات المميزة/«الأكثر طلبًا 🔥» (ADR-13).
   const cartSuggestions = useSmartSuggestions({ cart, products, restaurant, cartWideIds })
 
   // لا نعرض منيو أو سلة قبل توثيق QR حتى لا ينتقل العميل مؤقتاً إلى فرع آخر.
