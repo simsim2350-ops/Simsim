@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import useInteractiveMenu from './useInteractiveMenu'
+import { LANDING_DEMO_RESTAURANT_SLUG } from '../../../config/landingContent'
 
 const money = (n) => `${Number(n || 0).toFixed(Number(n || 0) % 1 ? 2 : 0)} ﷼`
 
@@ -274,7 +275,7 @@ function MenuApp({ m }) {
 
 /* ------------------------- الغلاف (هاتف مدمج / ملء الشاشة) ------------------------- */
 export default function InteractiveDemo({ controllerRef }) {
-  const m = useInteractiveMenu('gzala')
+  const m = useInteractiveMenu(LANDING_DEMO_RESTAURANT_SLUG)
   const { full, setFull, lang, sheet, setSheet, cartOpen, setCartOpen, t, restaurant } = m
 
   if (controllerRef) controllerRef.current = { openFull: () => setFull(true) }
