@@ -120,7 +120,7 @@ export default function AppShell({ active, title, actions, badges = {}, children
       {/* Main */}
       <main style={{ marginRight: isDesktop ? '240px' : '0', flex:1, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden' }}>
         <div style={{ minHeight:'56px', background:'white', borderBottom:'1px solid #E5E7EB', display:'flex', alignItems:'center', padding:'8px 16px', gap:'10px', flexShrink:0, flexWrap:'wrap' }}>
-          {!isDesktop && <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background:'none', border:'none', fontSize:'22px', cursor:'pointer', padding:'0 2px' }}>☰</button>}
+          {!isDesktop && <button aria-label="فتح القائمة" onClick={() => setSidebarOpen(!sidebarOpen)} style={{ width:'40px', height:'40px', display:'grid', placeItems:'center', background:'white', border:'1px solid #E5E7EB', borderRadius:'10px', cursor:'pointer', padding:0, color:'#374151' }}><span style={{ display:'grid', gap:'4px' }}><i style={{ display:'block', width:'16px', height:'1.5px', background:'currentColor', borderRadius:'2px' }}/><i style={{ display:'block', width:'16px', height:'1.5px', background:'currentColor', borderRadius:'2px' }}/><i style={{ display:'block', width:'16px', height:'1.5px', background:'currentColor', borderRadius:'2px' }}/></span></button>}
           <span style={{ fontSize:'16px', fontWeight:'800', color:'#0B0B0F' }}>{title}</span>
           <div style={{ marginRight:'auto', display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap' }}>
             {actions}
