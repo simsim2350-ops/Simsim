@@ -5,7 +5,7 @@ import HProductCard from './HProductCard'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { InlineMenuBanner } from './BannerDisplays'
 
-// جسم المنيو: شريط الأقسام (مع scroll-spy) + يعجب زبائننا (أفقي) + الأكثر طلباً (عمودي) + الأقسام
+// جسم المنيو: شريط الأقسام + يعجب زبائننا (من المبيعات) + الأكثر طلبًا (اختيار يدوي) + مختارات المطعم + الأقسام.
 export default function MenuBody({
   categories, products, bestSellers,
   activeCategory, setActiveCategory,
@@ -15,7 +15,8 @@ export default function MenuBody({
     ordering = true, // PCR: هل الطلبات أونلاين مفعّلة؟ (false = منيو عرض فقط، بلا إضافة/سلة)
 
 }) {
-  // مختارات المطعم تُقرأ من is_featured، بينما «يعجب زبائننا» أعلاه يعتمد فقط على مبيعات الطلبات الفعلية.
+  // ثلاثة مصادر مستقلة: يعجب زبائننا من المبيعات الفعلية، الأكثر طلبًا من اختيار المالك، ومختارات المطعم من is_featured.
+  const mostOrderedProducts = products.filter(p => p.is_most_ordered).slice(0, 4)
   const featuredProducts = products.filter(p => p.is_featured).slice(0, 4)
   const categoryObserverRef = useRef(null)
   const [catsOpen, setCatsOpen] = useState(false) // قائمة كل الأقسام (زر ☰)
@@ -157,10 +158,24 @@ export default function MenuBody({
           </div>
         )}
 
+        {/* الأكثر طلبًا — اختيار يدوي مستقل لمالك المطعم، ولا يعتمد على المبيعات الفعلية أو المنتجات المميزة. */}
+        {mostOrderedProducts.length > 0 && (
+          <div style={{ marginBottom:'6px' }}>
+            <div style={{ padding:'12px 16px 8px' }}>
+              <h2 style={{ ...TYPE.sectionTitle, color:'#0B0B0F', margin:0 }}>{t('mostOrdered')}</h2>
+            </div>
+            <div className="sm-products" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }}>
+              {mostOrderedProducts.map(prod => (
+                <ProductItem key={prod.id} {...itemProps(prod)} layout="grid" />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* بانر ضمن محتوى المنيو — يظهر فقط عند اختيار وضع «بانر داخل المينيو» */}
         <InlineMenuBanner banner={inlineBanner} brandColor={brandColor} />
 
-        {/* مختارات المطعم — اختيار صاحب المطعم من البيانات الحقيقية، وليست ترتيب المبيعات */}
+        {/* مختارات المطعم — اختيار صاحب المطعم من البيانات الحقيقية، وليست ترتيب المبيعات أو الأكثر طلبًا. */}
         {featuredProducts.length > 0 && (
           <div style={{ marginBottom:'6px' }}>
             <div style={{ padding:'12px 16px 8px' }}>

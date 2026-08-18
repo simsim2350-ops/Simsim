@@ -38,7 +38,7 @@ const TEMPLATES = {
     { key:'desserts', emoji:'🍰', name:'الحلويات', items:[
       { name:'كنافة', price:18, emoji:'🍰' }, { name:'تشيز كيك', price:20, emoji:'🍰' } ] },
     { key:'offers', emoji:'🎯', name:'العروض', items:[] },
-    { key:'popular', emoji:'⭐', name:'الأكثر طلباً', items:[] },
+    { key:'popular', emoji:'🔥', name:'الأكثر طلبًا 🔥', items:[] },
   ],
   cafe: [
     { key:'coffee', emoji:'☕', name:'القهوة', items:[

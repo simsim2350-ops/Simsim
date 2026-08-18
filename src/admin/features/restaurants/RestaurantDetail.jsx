@@ -268,7 +268,7 @@ export default function RestaurantDetail() {
                     </div>
                   )}
                 </Section>
-                <Section title="🏆 الأكثر طلباً">
+                <Section title="الأكثر طلبًا 🔥">
                   {(d.top_products || []).length === 0 ? <Empty msg="لا بيانات" /> : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
                       {d.top_products.map((p, i) => (

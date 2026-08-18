@@ -16,7 +16,7 @@ const UI_COPY = {
     required: 'مطلوب',
     optional: 'اختياري',
     cal: 'سعرة',
-    best: 'الأكثر طلباً',
+    best: 'الأكثر طلبًا 🔥',
     orderDone: 'تمت إضافة طلبك للمعاينة',
     orderDoneSub: 'يمكنك متابعة تصفح أصناف مطعم سمسم.',
     startFree: 'أنشئ منيو مطعمك مجاناً',
@@ -25,7 +25,7 @@ const UI_COPY = {
     noResults: 'لا توجد نتائج',
     close: 'إغلاق',
     minutes: 'د',
-    mostOrdered: 'الأكثر طلباً',
+    mostOrdered: 'الأكثر طلبًا 🔥',
   },
   en: {
     search: 'Search the menu…',
@@ -71,7 +71,7 @@ function normalizeOptions(options) {
   }))
 }
 
-function normalizeProduct(product, bestSellerIds) {
+function normalizeProduct(product, mostOrderedIds) {
   return {
     id: product.id,
     categoryId: product.category_id,
@@ -82,7 +82,7 @@ function normalizeProduct(product, bestSellerIds) {
     options: normalizeOptions(product.options),
     image_url: product.image_url || null,
     emoji: product.emoji || '🍽️',
-    best: bestSellerIds.has(product.id),
+    best: mostOrderedIds.has(product.id),
   }
 }
 
@@ -99,15 +99,15 @@ export default function useInteractiveMenu(slug) {
   const [bump, setBump] = useState(0)
 
   const {
-    restaurant, branch, categories: liveCategories, products: liveProducts, bestSellers: liveBestSellers,
+    restaurant, branch, categories: liveCategories, products: liveProducts,
     loading, notFound, rating, restaurantActiveOrdersCount,
   } = useMenuData(slug)
 
   const t = UI_COPY[lang]
-  const bestSellerIds = useMemo(() => new Set((liveBestSellers || []).map((product) => product.id)), [liveBestSellers])
+  const mostOrderedIds = useMemo(() => new Set((liveProducts || []).filter((product) => product.is_most_ordered).map((product) => product.id)), [liveProducts])
   const products = useMemo(
-    () => (liveProducts || []).map((product) => normalizeProduct(product, bestSellerIds)),
-    [liveProducts, bestSellerIds],
+    () => (liveProducts || []).map((product) => normalizeProduct(product, mostOrderedIds)),
+    [liveProducts, mostOrderedIds],
   )
 
   const productById = useMemo(() => new Map(products.map((product) => [product.id, product])), [products])
@@ -117,11 +117,11 @@ export default function useInteractiveMenu(slug) {
       name: asLocalized(category.name, category.name_en),
       icon: category.emoji || '🍽️',
     }))
-    const mostOrdered = (liveBestSellers || []).filter((product) => productById.has(product.id))
+    const mostOrdered = (liveProducts || []).filter((product) => product.is_most_ordered && productById.has(product.id))
     return mostOrdered.length > 0
       ? [{ id: 'most-ordered', name: asLocalized(t.mostOrdered, 'Most ordered'), icon: '🔥' }, ...actualCategories]
       : actualCategories
-  }, [liveCategories, liveBestSellers, productById, t.mostOrdered])
+  }, [liveCategories, liveProducts, productById, t.mostOrdered])
 
   useEffect(() => {
     const ids = categories.map((category) => category.id)
@@ -136,11 +136,11 @@ export default function useInteractiveMenu(slug) {
     }
 
     if (activeCat === 'most-ordered') {
-      return (liveBestSellers || []).map((product) => productById.get(product.id)).filter(Boolean)
+      return products.filter((product) => product.best)
     }
 
     return products.filter((product) => product.categoryId === activeCat)
-  }, [activeCat, liveBestSellers, productById, products, search])
+  }, [activeCat, products, search])
 
   const cartCount = useMemo(() => cart.reduce((count, item) => count + item.qty, 0), [cart])
   const cartTotal = useMemo(() => cart.reduce((total, item) => total + item.unitPrice * item.qty, 0), [cart])

@@ -16,7 +16,7 @@ export default function CartDrawer({
   const suggestionBadge = {
     curated:    { label: t('reasonCurated'),    bg:'#FFF1E8', fg:'#C8481B' },
     category:   { label: t('reasonCategory'),   bg:'#EAF3FF', fg:'#1E5FBF' },
-    bestseller: { label: t('reasonBestseller'), bg:'#FEF3C7', fg:'#92400E' },
+    mostOrdered: { label: t('reasonMostOrdered'), bg:'#FEF3C7', fg:'#92400E' },
   }
   const discountedSubtotal = Math.max(0, cartTotal - discountAmount)
   const finalTotal = discountedSubtotal + (orderType === 'delivery' ? (Number(deliveryFee) || 0) : 0)
@@ -86,14 +86,14 @@ export default function CartDrawer({
           ))}
         </div>
 
-        {/* محرك الاقتراحات الذكي — قواعد المطعم ← نفس القسم ← الأكثر مبيعاً (بهذا الترتيب) */}
+        {/* محرك الاقتراحات الذكي — قواعد المطعم ← نفس القسم ← الأكثر طلبًا (بهذا الترتيب) */}
         {suggestions.length > 0 && (
           <div style={{ padding:'12px 20px 14px', borderTop:'1px solid #F3F4F6', flexShrink:0 }}>
             <div style={{ fontSize:'13.5px', fontWeight:'800', fontFamily:'Tajawal,sans-serif', marginBottom:'10px' }}>{t('suggestTitle')}</div>
             <div style={{ display:'flex', gap:'10px', overflowX:'auto', paddingBottom:'2px' }}>
               {suggestions.map(({ product: p, reason }) => {
                 const needsConfig = Array.isArray(p.options) && p.options.some(g => g.required)
-                const badge = suggestionBadge[reason] || suggestionBadge.bestseller
+                const badge = suggestionBadge[reason] || suggestionBadge.mostOrdered
                 return (
                   <button
                     type="button"

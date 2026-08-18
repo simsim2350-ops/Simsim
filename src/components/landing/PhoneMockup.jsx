@@ -6,11 +6,12 @@ const localized = (ar, en) => en || ar || ''
 
 // نموذج الهاتف في البطل يعرض نفس بيانات المنيو الحية؛ لا يحتوي على مطعم أو منتجات ثابتة.
 export default function PhoneMockup() {
-  const { restaurant, branch, categories, products, bestSellers, rating, loading, notFound } = useMenuData('gzala')
+  const { restaurant, branch, categories, products, rating, loading, notFound } = useMenuData('gzala')
   const openStatus = useMemo(() => branch ? computeBranchOpenStatus(branch) : null, [branch])
-  const visibleProducts = (bestSellers.length > 0 ? bestSellers : products).slice(0, 4)
+  const mostOrderedProducts = products.filter((product) => product.is_most_ordered)
+  const visibleProducts = (mostOrderedProducts.length > 0 ? mostOrderedProducts : products).slice(0, 4)
   const categoryTabs = [
-    ...(bestSellers.length > 0 ? [{ id: 'most-ordered', name: 'الأكثر طلباً' }] : []),
+    ...(mostOrderedProducts.length > 0 ? [{ id: 'most-ordered', name: 'الأكثر طلبًا 🔥' }] : []),
     ...categories.map((category) => ({ id: category.id, name: category.name })),
   ].slice(0, 4)
 
@@ -45,7 +46,7 @@ export default function PhoneMockup() {
                 <div className="ss-menuUI__info">
                   <div className="ss-menuUI__name">{localized(product.name, product.name_en)}</div>
                   {product.description && <div className="ss-menuUI__desc">{localized(product.description, product.description_en)}</div>}
-                  {bestSellers.some((bestSeller) => bestSeller.id === product.id) && <span className="ss-menuUI__badge">🔥 الأكثر طلباً</span>}
+                  {product.is_most_ordered && <span className="ss-menuUI__badge">الأكثر طلبًا 🔥</span>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
                   <span className="ss-menuUI__price">{Number(product.price || 0)} ﷼</span>

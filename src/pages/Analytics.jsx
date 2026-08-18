@@ -322,7 +322,7 @@ export default function Analytics() {
 
               {/* أكثر الأصناف */}
               <Card>
-                <CardHead><span style={{ display:'inline-flex', alignItems:'center', gap:'7px' }}><Icon type="chart" size={14}/> أكثر الأصناف طلباً</span></CardHead>
+                <CardHead><span style={{ display:'inline-flex', alignItems:'center', gap:'7px' }}><Icon type="chart" size={14}/> الأكثر طلبًا 🔥</span></CardHead>
                 {topProducts.length === 0 ? <Empty /> : (
                   <div style={{ padding:'14px' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:'16px', direction:'ltr', marginBottom:'14px' }}>

@@ -49,7 +49,7 @@ function ProductSheet({ product, lang, t, onAdd, onClose }) {
     <div className="ss-demo__sheet" role="dialog" aria-modal="true" aria-label={productName}>
       <button className="ss-demo__sheet-close" onClick={onClose} aria-label={t.close}>✕</button>
       <ProductMedia product={product} className="ss-demo__sheet-hero" alt={productName}>
-        {product.best && <span className="ss-demo__hot">🔥 {t.best}</span>}
+        {product.best && <span className="ss-demo__hot">{t.best}</span>}
       </ProductMedia>
       <div className="ss-demo__sheet-body">
         <div className="ss-demo__sheet-head">
