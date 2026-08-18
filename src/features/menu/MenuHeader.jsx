@@ -5,47 +5,6 @@ import { estimatedPrepTime } from './helpers'
 // أبعاد الهيرو تُدار الآن عبر Hero Design Tokens في PublicMenu (متغيّرات CSS --hero-*).
 const clamp01 = v => Math.min(1, Math.max(0, v))
 
-function UnifiedOffers({ banners, coupons, brandColor, isEn }) {
-  const banner = banners[0] || null
-  const coupon = coupons[0] || null
-  const [copied, setCopied] = useState(false)
-  if (!banner && !coupon) return null
-
-  const copyCoupon = async () => {
-    if (!coupon?.code) return
-    try {
-      await navigator.clipboard.writeText(coupon.code)
-    } catch {
-      const textarea = document.createElement('textarea')
-      textarea.value = coupon.code
-      textarea.style.position = 'fixed'
-      textarea.style.opacity = '0'
-      document.body.appendChild(textarea)
-      textarea.select()
-      document.execCommand('copy')
-      textarea.remove()
-    }
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 1800)
-  }
-
-  const discount = coupon && (coupon.discount_type === 'percent' ? `${coupon.discount_value}%` : `${coupon.discount_value} ﷼`)
-  return <section aria-label={isEn ? 'Offers' : 'العروض'} style={{ overflow:'hidden', border:`1px solid ${brandColor}2B`, borderRadius:'13px', background:`linear-gradient(130deg, ${brandColor}0C, #FFFFFF 60%)`, boxShadow:'0 2px 8px rgba(15,17,23,.035)' }}>
-    <div style={{ display:'flex', alignItems:'center', gap:'6px', padding:'7px 10px 5px', color:'#344054', fontFamily:'Tajawal,sans-serif', fontSize:'11px', fontWeight:'900' }}><span aria-hidden="true" style={{ color:brandColor, fontSize:'14px' }}>🎟️</span>{isEn ? 'Offers' : 'العروض'}</div>
-    <div style={{ display:'grid', gap:'6px', padding:'0 8px 8px' }}>
-      {banner && <div style={{ minWidth:0, display:'flex', alignItems:'center', gap:'8px', padding:'7px', borderRadius:'10px', background:'white', border:'1px solid #F2F4F7' }}>
-        <div style={{ width:'42px', height:'38px', display:'grid', placeItems:'center', flexShrink:0, overflow:'hidden', borderRadius:'8px', background:`${brandColor}12`, color:brandColor, fontSize:'17px' }}>{banner.image_url ? <img src={banner.image_url} alt={banner.title} style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : '🖼️'}</div>
-        <div style={{ minWidth:0, flex:1 }}><div style={{ color:'#101828', fontFamily:'Tajawal,sans-serif', fontSize:'11.5px', fontWeight:'900', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{banner.title}</div>{banner.subtitle && <div style={{ marginTop:'2px', color:'#667085', fontSize:'10px', lineHeight:1.4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{banner.subtitle}</div>}{coupon && <div style={{ marginTop:'2px', color:brandColor, fontSize:'9.5px', fontWeight:'800' }}>{isEn ? 'Offer with discount code below' : 'استخدم كود الخصم المرفق مع العرض'}</div>}</div>
-      </div>}
-      {coupon && <div style={{ minWidth:0, display:'flex', alignItems:'center', gap:'8px', padding:'7px', borderRadius:'10px', background:'#FFFCF8', border:`1px dashed ${brandColor}55` }}>
-        <span aria-hidden="true" style={{ width:'30px', height:'30px', display:'grid', placeItems:'center', flexShrink:0, borderRadius:'8px', background:`${brandColor}14`, color:brandColor, fontSize:'15px' }}>🎟️</span>
-        <div style={{ minWidth:0, flex:1 }}><div style={{ color:'#101828', fontFamily:'ui-monospace, SFMono-Regular, Menlo, monospace', direction:'ltr', textAlign:'right', fontSize:'12px', fontWeight:'900', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{coupon.code}</div><div style={{ marginTop:'2px', color:'#667085', fontSize:'9.5px', fontWeight:'800' }}>{isEn ? `${discount} off` : `خصم ${discount}`}</div></div>
-        <button type="button" onClick={copyCoupon} aria-label={isEn ? `Copy code ${coupon.code}` : `نسخ كود ${coupon.code}`} style={{ flexShrink:0, minHeight:'34px', padding:'6px 8px', border:'none', borderRadius:'8px', background:brandColor, color:'white', fontFamily:'Tajawal,sans-serif', fontSize:'10.5px', fontWeight:'900', cursor:'pointer' }}>{copied ? (isEn ? 'Copied ✓' : 'تم النسخ ✓') : (isEn ? 'Copy code' : 'نسخ الكود')}</button>
-      </div>}
-    </div>
-  </section>
-}
-
 // هيدر المنيو — الهندسة الجديدة (مستلهمة من تطبيقات التوصيل):
 // هيرو مصوّر بكامل العرض + أزرار عائمة، ثم ورقة بيضاء بزوايا دائرية تحوي:
 // الهوية (شعار/اسم/فرع مع تغيير) + الوصف + الموقع + التواصل + بطاقة الإحصائيات + البحث
@@ -55,7 +14,6 @@ export default function MenuHeader({
   hasOrders, liveOrdersCount, onShowOrders, onShowAllergens,
   onToggleSearch,
   rating, loyalty,
-  banners = [], coupons = [],
 }) {
   // Sticky Morph (مبدأ 6): صفّ الهوية (شعار+اسم+تقييم+حالة) عنصر sticky واحد يبقى مرئياً 100% دائماً
   //   بلا opacity/transform عليه إطلاقاً — لا يمكن أن يختفي. بقية المحتوى (وصف/تواصل/إحصائيات/ولاء)
@@ -252,9 +210,6 @@ export default function MenuHeader({
               )}
             </div>
           )}
-
-          {/* [OFFERS · المستوى 3] البانر والكوبون النشطان في منطقة واحدة، ولا تظهر عند غياب كليهما */}
-          <UnifiedOffers banners={banners} coupons={coupons} brandColor={brandColor} isEn={isEn} />
 
           {/* [LOYALTY · المستوى 3] معلومات الولاء تبقى مستقلة عن العروض */}
           {showLoyalty && (() => {

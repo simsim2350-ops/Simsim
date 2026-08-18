@@ -20,6 +20,7 @@ import { useCartWideIds } from '../features/menu/hooks/useCartWideIds'
 import { useReviews } from '../features/menu/hooks/useReviews'
 import MenuSkeleton from '../features/menu/MenuSkeleton'
 import MenuHeader from '../features/menu/MenuHeader'
+import MenuOffers from '../features/menu/MenuOffers'
 import MenuBody from '../features/menu/MenuBody'
 import MenuBranding from '../features/menu/MenuBranding'
 import SearchOverlay from '../features/menu/SearchOverlay'
@@ -295,9 +296,10 @@ function PublicMenuInner() {
         onToggleSearch={() => setSearchOpen(true)}
         rating={rating}
         loyalty={loyalty}
-        banners={banners}
-        coupons={coupons}
       />
+
+      {/* العروض والعروض الترويجية — Section مستقل بعد بطاقة المطعم وقبل محتوى المنيو */}
+      <MenuOffers banners={banners} coupons={coupons} brandColor={brandColor} isEn={isEn} />
 
       {/* بانر أعلى المنيو — يظهر كأول عنصر عند اختيار وضع «أعلى المينيو» */}
       <TopMenuBanner banner={bannerDisplay.topBanner} brandColor={brandColor} />
