@@ -1,12 +1,13 @@
 import { useMemo } from 'react'
 import { useMenuData } from '../../features/menu/hooks/useMenuData'
 import { computeBranchOpenStatus } from '../../features/menu/helpers'
+import { LANDING_DEMO_RESTAURANT_SLUG } from '../../config/landingContent'
 
 const localized = (ar, en) => en || ar || ''
 
 // نموذج الهاتف في البطل يعرض نفس بيانات المنيو الحية؛ لا يحتوي على مطعم أو منتجات ثابتة.
 export default function PhoneMockup() {
-  const { restaurant, branch, categories, products, rating, loading, notFound } = useMenuData('gzala')
+  const { restaurant, branch, categories, products, rating, loading, notFound } = useMenuData(LANDING_DEMO_RESTAURANT_SLUG)
   const openStatus = useMemo(() => branch ? computeBranchOpenStatus(branch) : null, [branch])
   const mostOrderedProducts = products.filter((product) => product.is_most_ordered)
   const visibleProducts = (mostOrderedProducts.length > 0 ? mostOrderedProducts : products).slice(0, 4)
