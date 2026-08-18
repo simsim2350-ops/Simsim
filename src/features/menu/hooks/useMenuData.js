@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 
-// جلب بيانات المنيو: المطعم + الفرع (مستقل بمنيوه/ساعاته) + الأقسام + الأصناف + الأكثر مبيعاً + عدد الطلبات النشطة (حي)
+// جلب بيانات المنيو: المطعم + الفرع (مستقل بمنيوه/ساعاته) + الأقسام + الأصناف + قائمة «يعجب زبائننا» من الطلبات الفعلية + عدد الطلبات النشطة (حي).
 export function useMenuData(slug, branchId) {
   const [restaurant, setRestaurant] = useState(null)
   const [branch, setBranch] = useState(null)
@@ -131,7 +131,7 @@ export function useMenuData(slug, branchId) {
       setProducts(nextProducts)
       setActiveCategory(previous => nextCategories.some(category => category.id === previous) ? previous : (nextCategories[0]?.id || null))
 
-      // حساب الأصناف الأكثر مبيعاً من الطلبات الفعلية (غير الملغاة) خلال آخر 30 يوماً (عبر RPC آمن)
+      // حساب قائمة «يعجب زبائننا» من الطلبات الفعلية غير الملغاة خلال آخر 30 يومًا (عبر RPC آمن)، وهي مستقلة عن is_most_ordered اليدوي.
       const { data: pastOrders } = await supabase.rpc('get_recent_order_items', { p_restaurant_id: rest.id })
 
       if (pastOrders && nextProducts.length > 0) {

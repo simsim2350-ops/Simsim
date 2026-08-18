@@ -50,15 +50,15 @@ function scoreProduct(query, product) {
   return 0
 }
 
-// ترتيب الأصناف حسب جودة المطابقة، ثم تفضيل "الأكثر طلباً" (is_featured) ثم "الأكثر مبيعاً" (bestSellerIds)
+// ترتيب الأصناف حسب جودة المطابقة، ثم «الأكثر طلبًا» اليدوي، ثم الأصناف المحبوبة وفق المبيعات الفعلية.
 export function rankProducts(query, products, { bestSellerIds } = {}) {
   return products
     .map(p => ({ p, s: scoreProduct(query, p) }))
     .filter(x => x.s > 0)
     .sort((a, b) => {
       if (b.s !== a.s) return b.s - a.s
-      const aHot = !!a.p.is_featured, bHot = !!b.p.is_featured
-      if (aHot !== bHot) return aHot ? -1 : 1
+      const aMostOrdered = !!a.p.is_most_ordered, bMostOrdered = !!b.p.is_most_ordered
+      if (aMostOrdered !== bMostOrdered) return aMostOrdered ? -1 : 1
       const aBest = !!bestSellerIds?.has(a.p.id), bBest = !!bestSellerIds?.has(b.p.id)
       if (aBest !== bBest) return aBest ? -1 : 1
       return 0

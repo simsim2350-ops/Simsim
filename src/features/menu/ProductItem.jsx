@@ -35,6 +35,15 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
     )
   }
   const qtyControl = renderQtyControl()
+  const renderTags = (position = {}) => {
+    if (!product.is_most_ordered && !product.is_featured) return null
+    return (
+      <div style={{ position:'absolute', top:'8px', right:'8px', display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'4px', zIndex:1, ...position }}>
+        {product.is_most_ordered && <span style={{ fontSize:'9px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px', whiteSpace:'nowrap' }}>{isEn ? 'Most Ordered 🔥' : 'الأكثر طلبًا 🔥'}</span>}
+        {product.is_featured && <span style={{ fontSize:'9px', fontWeight:'800', color:'#1E5FBF', background:'#EAF3FF', padding:'2px 7px', borderRadius:'100px', whiteSpace:'nowrap' }}>{isEn ? 'Featured' : 'مميز'}</span>}
+      </div>
+    )
+  }
 
   if (layout === 'circles') {
     return (
@@ -49,9 +58,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
               ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
               : product.emoji}
           </div>
-          {product.is_featured && (
-            <span style={{ position:'absolute', top:'-2px', right:'-2px', fontSize:'11px', fontWeight:'800', padding:'1px 5px', borderRadius:'100px', boxShadow:'0 2px 6px rgba(0,0,0,0.12)', background:'#FEF3C7' }}>🔥</span>
-          )}
+          {renderTags({ top:'-2px', right:'-2px', transform:'scale(.82)', transformOrigin:'top right' })}
           <div style={{ position:'absolute', bottom:'-2px', left:'50%', transform:'translateX(50%)' }}>
             {qtyControl}
           </div>
@@ -74,9 +81,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
               ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
               : product.emoji}
           </div>
-          {product.is_featured && (
-            <span style={{ position:'absolute', top:'8px', right:'8px', fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>{isEn ? 'Featured' : 'مميز'}</span>
-          )}
+          {renderTags()}
           {qtyControl}
         </div>
         <div onClick={onAdd} style={{ padding:'10px 12px', cursor:'pointer' }}>
@@ -99,9 +104,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
               ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
               : product.emoji}
           </div>
-          {product.is_featured && (
-            <span style={{ position:'absolute', top:'8px', right:'8px', fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>{isEn ? 'Featured' : 'مميز'}</span>
-          )}
+          {renderTags()}
           {qtyControl}
         </div>
         <div onClick={onAdd} style={{ padding:'12px 14px', cursor:'pointer' }}>
@@ -142,9 +145,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
             ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
             : product.emoji}
         </div>
-        {product.is_featured && (
-          <span style={{ position:'absolute', top:'8px', right:'8px', fontSize:'10px', fontWeight:'800', color:'#92400E', background:'#FEF3C7', padding:'2px 7px', borderRadius:'100px' }}>{isEn ? 'Featured' : 'مميز'}</span>
-        )}
+        {renderTags()}
         {renderQtyControl(-9, true)}
       </div>
     </div>

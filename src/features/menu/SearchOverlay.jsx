@@ -15,7 +15,7 @@ const chipStyle = {
 }
 
 // شاشة بحث مستقلة (Overlay) — تفتح من زر البحث في الهيرو أو الهيدر المصغّر الدائم، بغضّ النظر عن موضع التمرير.
-// قبل الكتابة: اقتراحات (الأكثر طلباً / عمليات بحث سابقة / الأقسام). أثناء الكتابة: نتائج حيّة مرتّبة بالأهمية.
+// قبل الكتابة: اقتراحات «الأكثر طلبًا» اليدوية / عمليات بحث سابقة / الأقسام. أثناء الكتابة: نتائج حيّة مرتّبة بالأهمية.
 export default function SearchOverlay({
   open, onClose, products, categories, bestSellers,
   cart, addToCart, removeFromCart, onOpenProduct,
@@ -45,7 +45,7 @@ export default function SearchOverlay({
     saveRecent(next)
   }
 
-  const mostOrdered = products.filter(p => p.is_featured).slice(0, 6)
+  const mostOrdered = products.filter(p => p.is_most_ordered).slice(0, 6)
   const bestSellerIds = new Set(bestSellers.map(p => p.id))
   const results = query.trim() ? rankProducts(query, products, { bestSellerIds }) : []
 

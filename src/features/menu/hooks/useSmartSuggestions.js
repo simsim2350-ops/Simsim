@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 
 // محرك الاقتراحات الذكي لقسم السلة العام — سلسلة أولويات تتوقف حين يكتمل العدد المطلوب:
-// 1) قائمة السلة العامة المُنسَّقة يدوياً (مستقلة تماماً عن قواعد الأصناف الفردية) 2) نفس القسم 3) الأكثر طلباً (شبكة أمان أخيرة)
-// كل اقتراح يحمل reason لعرض شارة السبب في الواجهة (curated | category | bestseller)
+// 1) قائمة السلة العامة المُنسَّقة يدوياً (مستقلة تماماً عن قواعد الأصناف الفردية) 2) نفس القسم 3) الأكثر طلبًا اليدوي (شبكة أمان أخيرة)
+// كل اقتراح يحمل reason لعرض شارة السبب في الواجهة (curated | category | mostOrdered)
 export function useSmartSuggestions({ cart, products, restaurant, cartWideIds = [] }) {
   const cartKey = cart.map(i => i.id).sort().join(',') // تغيّر الكمية فقط لا يُعيد الحساب
   const enabled = restaurant?.recommendations_enabled !== false
@@ -19,7 +19,7 @@ export function useSmartSuggestions({ cart, products, restaurant, cartWideIds = 
       picked.set(product.id, { product, reason })
     }
 
-    // 1) قائمة السلة العامة — يختارها صاحب المطعم بمعزل عن قواعد الأصناف الفردية وعن is_featured
+    // 1) قائمة السلة العامة — يختارها صاحب المطعم بمعزل عن قواعد الأصناف الفردية وعن وسمي «مميز» و«الأكثر طلبًا».
     for (const pid of cartWideIds) {
       if (picked.size >= count) break
       tryAdd(products.find(p => p.id === pid), 'curated')
@@ -39,11 +39,11 @@ export function useSmartSuggestions({ cart, products, restaurant, cartWideIds = 
       }
     }
 
-    // 3) الأكثر مبيعاً — آخر خيار وليس الأول
+    // 3) الأكثر طلبًا اليدوي — آخر خيار وليس الأول، ومستقل عن is_featured.
     if (picked.size < count) {
-      for (const p of products.filter(p => p.is_featured)) {
+      for (const p of products.filter(p => p.is_most_ordered)) {
         if (picked.size >= count) break
-        tryAdd(p, 'bestseller')
+        tryAdd(p, 'mostOrdered')
       }
     }
 
