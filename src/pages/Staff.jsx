@@ -72,7 +72,7 @@ function Icon({ type, size = 16 }) {
     power: 'M12 2v10m5.66-6.34a8 8 0 1 1-11.32 0', close: 'm18 6-12 12M6 6l12 12',
     branch: 'M4 20V4h16v16M8 8h2M14 8h2M8 12h2M14 12h2M8 16h2M14 16h2',
     clock: 'M12 6v6l4 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0', shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
-    check: 'm5 12 4 4L19 6', info: 'M12 8h.01M11 12h1v4h1M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z',
+    check: 'm5 12 4 4L19 6', external: 'M15 3h6v6M14 10l7-7M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5', info: 'M12 8h.01M11 12h1v4h1M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z',
   }
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[type] || paths.users} /></svg>
 }
@@ -117,6 +117,7 @@ export default function Staff() {
   const [confirmToggle, setConfirmToggle] = useState(null)
   const [permissionView, setPermissionView] = useState(null)
   const [togglingId, setTogglingId] = useState(null)
+  const [loginLinkCopied, setLoginLinkCopied] = useState(false)
 
   useBodyScrollLock(modalOpen || !!confirmDelete || !!confirmToggle || !!permissionView)
 
@@ -344,6 +345,8 @@ export default function Staff() {
         document.execCommand('copy')
         document.body.removeChild(field)
       }
+      setLoginLinkCopied(true)
+      window.setTimeout(() => setLoginLinkCopied(false), 2200)
       toast.success('تم نسخ رابط دخول الموظفين')
     } catch {
       toast.error('تعذّر النسخ، انسخه يدويًا')
@@ -359,7 +362,22 @@ export default function Staff() {
       headerStacked
       actions={<button onClick={openAdd} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px', minHeight: '42px', padding: '10px 15px', borderRadius: '11px', border: 'none', background: '#FF6A00', color: 'white', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '13px', cursor: 'pointer', boxShadow: '0 6px 16px rgba(255,106,0,.22)', whiteSpace: 'nowrap' }}><Icon type="plus" size={16} /> إضافة موظف</button>}
     >
-      <style>{`@media (max-width:640px){.staff-filter-scroll{margin-left:-16px;margin-right:-16px;padding:0 16px}.staff-card-actions{width:100%;justify-content:flex-end}.staff-page-grid{grid-template-columns:1fr!important}.staff-modal-sheet{border-radius:22px 22px 0 0!important;max-height:92dvh!important}.staff-login-card{align-items:flex-start!important}.staff-login-actions{width:100%;justify-content:space-between!important}}`}</style>
+      <style>{`
+        .staff-login-link-box:hover { border-color: rgba(255, 176, 136, .5) !important; background: rgba(255,255,255,.09) !important; }
+        .staff-login-link-box:focus-visible, .staff-login-copy:focus-visible, .staff-login-open:focus-visible { outline: 3px solid rgba(255, 176, 136, .88); outline-offset: 3px; }
+        .staff-login-copy, .staff-login-open { transition: transform 160ms ease-out, background 160ms ease-out, border-color 160ms ease-out, box-shadow 160ms ease-out; }
+        .staff-login-copy:active, .staff-login-open:active { transform: scale(.97); }
+        .staff-login-open:hover { background: rgba(255,255,255,.12) !important; border-color: rgba(255,255,255,.44) !important; }
+        @media (max-width:640px){
+          .staff-filter-scroll{margin-left:-16px;margin-right:-16px;padding:0 16px}
+          .staff-card-actions{width:100%;justify-content:flex-end}
+          .staff-page-grid{grid-template-columns:1fr!important}
+          .staff-modal-sheet{border-radius:22px 22px 0 0!important;max-height:92dvh!important}
+          .staff-login-card{padding:16px!important}
+          .staff-login-actions{width:100%;max-width:none!important;justify-content:stretch!important}
+          .staff-login-actions > *{flex:1 1 0!important;min-width:0!important}
+        }
+      `}</style>
       <div style={{ maxWidth: '1020px', paddingBottom: '32px' }}>
         <section style={{ marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
@@ -381,17 +399,48 @@ export default function Staff() {
           </div>
         </section>
 
-        <section className="staff-login-card" style={{ background: '#0B0B0F', borderRadius: '15px', padding: isMobile ? '14px' : '14px 16px', marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap', border: '1px solid rgba(255,255,255,.07)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-            <span style={{ width: '36px', height: '36px', borderRadius: '10px', display: 'grid', placeItems: 'center', color: '#FFB088', background: 'rgba(255,106,0,.14)', flexShrink: 0 }}><Icon type="link" size={18} /></span>
+        <section className="staff-login-card" aria-labelledby="staff-login-link-title" style={{ background: '#0B0B0F', borderRadius: '18px', padding: isMobile ? '16px' : '18px', marginBottom: '14px', display: 'grid', gap: '14px', border: '1px solid rgba(255,255,255,.09)', boxShadow: '0 10px 26px rgba(16,24,40,.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '11px', minWidth: 0 }}>
+            <span style={{ width: '40px', height: '40px', borderRadius: '12px', display: 'grid', placeItems: 'center', color: '#FFB088', background: 'rgba(255,106,0,.16)', border: '1px solid rgba(255,176,136,.16)', flexShrink: 0 }}><Icon type="link" size={19} /></span>
             <div style={{ minWidth: 0 }}>
-              <div style={{ color: 'white', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '13px' }}>رابط دخول الموظفين</div>
-              <div style={{ direction: 'ltr', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isMobile ? '235px' : '420px', color: 'rgba(255,255,255,.54)', fontSize: '11px', marginTop: '3px' }}>/staff-login/{restaurant.slug}</div>
+              <div id="staff-login-link-title" style={{ color: 'white', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '15px', lineHeight: 1.4 }}>رابط دخول الموظفين</div>
+              <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,.64)', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', lineHeight: 1.65 }}>استخدم هذا الرابط لتمكين موظفيك من تسجيل الدخول إلى لوحة العمل.</p>
             </div>
           </div>
-          <div className="staff-login-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <a href={staffLoginLink} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 11px', borderRadius: '9px', border: '1px solid rgba(255,255,255,.18)', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '900', textDecoration: 'none' }}>فتح الرابط</a>
-            <button onClick={copyLoginLink} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 12px', borderRadius: '9px', border: '1px solid rgba(255,176,136,.28)', background: 'rgba(255,106,0,.16)', color: '#FFD0BA', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '900', cursor: 'pointer' }}><Icon type="copy" size={14} /> نسخ الرابط</button>
+
+          <button
+            type="button"
+            className="staff-login-link-box"
+            onClick={copyLoginLink}
+            aria-label="نسخ رابط دخول الموظفين"
+            title="اضغط لنسخ الرابط"
+            style={{ width: '100%', minHeight: '48px', display: 'flex', alignItems: 'center', gap: '9px', padding: '10px 12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,.14)', background: 'rgba(255,255,255,.055)', color: 'rgba(255,255,255,.84)', fontFamily: 'Tajawal,sans-serif', cursor: 'pointer', textAlign: 'right', boxSizing: 'border-box' }}
+          >
+            <span style={{ color: '#FFB088', display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon type="link" size={16} /></span>
+            <span dir="ltr" style={{ minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: isMobile ? '11px' : '12px', fontWeight: '700' }}>{staffLoginLink}</span>
+            <span style={{ color: 'rgba(255,255,255,.48)', fontSize: '10px', fontWeight: '800', whiteSpace: 'nowrap', flexShrink: 0 }}>اضغط للنسخ</span>
+          </button>
+
+          <div className="staff-login-actions" style={{ width: '100%', maxWidth: '390px', display: 'flex', gap: '9px', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="staff-login-copy"
+              onClick={copyLoginLink}
+              aria-live="polite"
+              style={{ flex: 1, minWidth: '138px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '10px 13px', borderRadius: '11px', border: '1px solid #FF6A00', background: '#FF6A00', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 6px 16px rgba(255,106,0,.22)', whiteSpace: 'nowrap' }}
+            >
+              <Icon type={loginLinkCopied ? 'check' : 'copy'} size={15} /> {loginLinkCopied ? 'تم النسخ' : 'نسخ الرابط'}
+            </button>
+            <a
+              className="staff-login-open"
+              href={staffLoginLink}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="فتح رابط دخول الموظفين في تبويب جديد"
+              style={{ flex: 1, minWidth: '138px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '10px 13px', boxSizing: 'border-box', borderRadius: '11px', border: '1px solid rgba(255,255,255,.3)', background: 'rgba(255,255,255,.055)', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '900', textDecoration: 'none', whiteSpace: 'nowrap' }}
+            >
+              <Icon type="external" size={15} /> فتح الرابط
+            </a>
           </div>
         </section>
 
