@@ -9,6 +9,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { fetchBranches } from '../lib/branchesApi'
 import { fetchAllTables, createTable, updateTable, deleteTable, regenerateTableQr } from '../lib/tablesApi'
+import { printReport } from '../lib/exportUtils'
 
 function Icon({ type, size = 16 }) {
   const paths = {
@@ -259,14 +260,24 @@ export default function Tables() {
 
   const printQr = () => {
     const canvas = canvasRef.current
-    if (!canvas || !qrTable) return
+    if (!canvas || !qrTable || !canvas.width || !canvas.height) {
+      toast.error('انتظر حتى يكتمل إنشاء QR ثم حاول الطباعة مجددًا')
+      return
+    }
+
     const url = tableQrUrl(qrTable)
     const branchName = selectedBranch?.name || 'الفرع'
-    const popup = window.open('', '_blank', 'noopener,noreferrer,width=520,height=720')
-    if (!popup) { toast.error('اسمح بالنوافذ المنبثقة لطباعة QR'); return }
+    const qrImage = canvas.toDataURL('image/png')
 
-    popup.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>QR ${escapeHtml(qrTable.table_number)}</title><style>@page{size:auto;margin:12mm}*{box-sizing:border-box}body{margin:0;font-family:Tajawal,Arial,sans-serif;color:#111827;background:#fff}.card{max-width:360px;margin:0 auto;border:1.5px solid #F1D2BF;border-radius:24px;overflow:hidden;text-align:center}.top{background:linear-gradient(135deg,#FF6A00,#E05D00);padding:26px 20px 22px;color:#fff}.brand{font-size:22px;font-weight:900;line-height:1.25}.branch{margin-top:5px;font-size:12px;opacity:.82}.body{padding:24px 22px 22px}.label{display:inline-block;padding:5px 10px;border-radius:999px;background:#FFF0EB;color:#C2410C;font-size:11px;font-weight:800;margin-bottom:9px}.table{font-size:28px;font-weight:900;margin-bottom:5px}.copy{color:#6B7280;font-size:13px;line-height:1.6;margin:0 auto 18px;max-width:240px}.qr{width:238px;height:238px;display:block;margin:0 auto 18px}.url{direction:ltr;word-break:break-all;color:#9CA3AF;font-size:8px;line-height:1.45;border-top:1px solid #F0F2F4;padding-top:12px}.foot{margin-top:14px;color:#9CA3AF;font-size:10px}@media print{body{background:#fff}}</style></head><body><main class="card"><section class="top"><div class="brand">${escapeHtml(restaurant?.name || 'مطعمك')}</div><div class="branch">${escapeHtml(branchName)}</div></section><section class="body"><div class="label">QR الطاولة</div><div class="table">${escapeHtml(qrTable.table_number)}</div><p class="copy">امسح الكود لفتح المنيو والطلب من هذه الطاولة</p><img class="qr" src="${canvas.toDataURL('image/png')}" alt="QR للطاولة"><div class="url">${escapeHtml(url)}</div><div class="foot">SimSim — طلبك يصل للطاولة مباشرة</div></section></main><script>window.onload=()=>{window.focus();window.print()}</script></body></html>`)
-    popup.document.close()
+    // لا نستخدم window.open: بعض متصفحات الهاتف تفتح about:blank ولا تسمح بتحميل محتوى النافذة.
+    // iframe يفتح واجهة الطباعة الأصلية في السياق الحالي، بما يدعم الطباعة أو الحفظ كـ PDF بلا تبويب أبيض.
+    printReport({
+      title: `QR — ${qrTable.table_number}`,
+      subtitle: `${restaurant?.name || 'مطعمك'} · ${branchName}`,
+      sections: [{
+        html: `<style>@page{size:auto;margin:12mm}.table-qr-print{max-width:360px;margin:0 auto;border:1.5px solid #F1D2BF;border-radius:24px;overflow:hidden;text-align:center}.table-qr-print__top{background:linear-gradient(135deg,#FF6A00,#E05D00);padding:26px 20px 22px;color:#fff}.table-qr-print__brand{font-size:22px;font-weight:900;line-height:1.25}.table-qr-print__branch{margin-top:5px;font-size:12px;opacity:.82}.table-qr-print__body{padding:24px 22px 22px}.table-qr-print__label{display:inline-block;padding:5px 10px;border-radius:999px;background:#FFF0EB;color:#C2410C;font-size:11px;font-weight:800;margin-bottom:9px}.table-qr-print__table{font-size:28px;font-weight:900;margin-bottom:5px}.table-qr-print__copy{color:#6B7280;font-size:13px;line-height:1.6;margin:0 auto 18px;max-width:240px}.table-qr-print__image{width:238px;height:238px;display:block;margin:0 auto 18px}.table-qr-print__url{direction:ltr;word-break:break-all;color:#9CA3AF;font-size:8px;line-height:1.45;border-top:1px solid #F0F2F4;padding-top:12px}.table-qr-print__foot{margin-top:14px;color:#9CA3AF;font-size:10px}</style><main class="table-qr-print"><section class="table-qr-print__top"><div class="table-qr-print__brand">${escapeHtml(restaurant?.name || 'مطعمك')}</div><div class="table-qr-print__branch">${escapeHtml(branchName)}</div></section><section class="table-qr-print__body"><div class="table-qr-print__label">QR الطاولة</div><div class="table-qr-print__table">${escapeHtml(qrTable.table_number)}</div><p class="table-qr-print__copy">امسح الكود لفتح المنيو والطلب من هذه الطاولة</p><img class="table-qr-print__image" src="${qrImage}" alt="QR للطاولة"><div class="table-qr-print__url">${escapeHtml(url)}</div><div class="table-qr-print__foot">SimSim — طلبك يصل للطاولة مباشرة</div></section></main>`,
+      }],
+    })
   }
 
   const PageTitle = (
