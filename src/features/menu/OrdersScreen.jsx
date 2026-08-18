@@ -13,7 +13,7 @@ export default function OrdersScreen({
   activeOrders, liveOrdersCount, loyalty, prepTime,
   reviewedIds, reviewDraft, setDraft, submitReview, submittingReview,
   reviewsEnabled = true, ordering = true,
-  cancelOrderByCustomer, onBack, onReorder, onMessage,
+  cancelOrderByCustomer, onClearStoredOrders, onBack, onReorder, onMessage,
 }) {
   const [filter, setFilter] = useState('all')   // all | active | completed | cancelled
   const [q, setQ] = useState('')                // بحث برقم الطلب
@@ -85,6 +85,15 @@ export default function OrdersScreen({
           >
             {t('browseMenu')}
           </button>
+          {onClearStoredOrders && (
+            <button
+              type="button"
+              onClick={() => { if (window.confirm(isEn ? 'Clear order data from this device?' : 'مسح بيانات الطلبات من هذا الجهاز؟')) onClearStoredOrders() }}
+              style={{ padding:'13px 10px', borderRadius:'13px', border:'1px solid #FECACA', background:'#FFF7F7', color:'#B91C1C', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'11px', cursor:'pointer' }}
+            >
+              {isEn ? 'Clear data' : 'مسح البيانات'}
+            </button>
+          )}
         </div>
 
         {/* فلاتر لاصقة + بحث برقم الطلب */}

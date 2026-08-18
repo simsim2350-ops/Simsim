@@ -5,12 +5,10 @@ import { supabase } from '../../../lib/supabase'
 // ويُعاد الجلب عند تغيّر الطلبات لتحديث الرصيد (لو البرنامج مفعّل)
 export function useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone }) {
   const [loyalty, setLoyalty] = useState(null) // معلومات نقاط الزبون (لو البرنامج مفعّل)
-  const PHONE_STORAGE_KEY = `simsim_phone_${slug}`
 
   useEffect(() => {
     if (!restaurant) return
-    let phone = customerPhone.replace(/[^\d]/g, '')
-    if (!phone) { try { phone = localStorage.getItem(PHONE_STORAGE_KEY) || '' } catch { phone = '' } }
+    const phone = customerPhone.replace(/[^\d]/g, '')
     if (!phone) { setLoyalty(null); return }
     supabase.rpc('get_customer_loyalty', { rest_id: restaurant.id, phone })
       .then(({ data }) => {
@@ -18,7 +16,7 @@ export function useLoyalty({ slug, restaurant, orderPlaced, activeOrders, custom
         setLoyalty(info && info.enabled ? info : null)
       })
       .catch(() => setLoyalty(null))
-  }, [orderPlaced, restaurant, activeOrders])
+  }, [customerPhone, orderPlaced, restaurant, activeOrders])
 
   return loyalty
 }

@@ -30,6 +30,7 @@ export function useCart(slug, t) {
   // selectedOptions: [{ groupName, choiceName, price }] — قائمة مفسّرة من الخيارات المختارة
   // silent: يكتم توست الإضافة (يُستخدم عند إعادة الطلب لتفادي عشرات التوستات — ملخّص واحد بدلها)
   const addToCart = (product, qty = 1, note = '', selectedOptions = [], silent = false) => {
+    const safeQty = Math.min(99, Math.max(1, Number(qty) || 1))
     const optionsPrice = selectedOptions.reduce((s, o) => s + (o.price || 0), 0)
     const finalPrice = product.price + optionsPrice
     // مفتاح فريد للعنصر: نفس الصنف بخيارات مختلفة = عنصر سلة مختلف
@@ -38,10 +39,10 @@ export function useCart(slug, t) {
 
     setCart(prev => {
       const existing = prev.find(i => i.cartKey === cartKey)
-      if (existing) return prev.map(i => i.cartKey === cartKey ? { ...i, qty: i.qty + qty } : i)
+      if (existing) return prev.map(i => i.cartKey === cartKey ? { ...i, qty: Math.min(99, i.qty + safeQty) } : i)
       return [...prev, {
         cartKey, id: product.id, name: product.name, emoji: product.emoji, image_url: product.image_url,
-        price: finalPrice, basePrice: product.price, qty, note,
+        price: finalPrice, basePrice: product.price, qty: safeQty, note,
         selectedOptions,
       }]
     })
@@ -58,7 +59,7 @@ export function useCart(slug, t) {
   }
 
   const incrementCartItem = (cartKey) => {
-    setCart(prev => prev.map(i => i.cartKey === cartKey ? { ...i, qty: i.qty + 1 } : i))
+    setCart(prev => prev.map(i => i.cartKey === cartKey ? { ...i, qty: Math.min(99, i.qty + 1) } : i))
   }
 
   // حذف السطر بالكامل مهما كانت الكمية (زر 🗑 في السلة)

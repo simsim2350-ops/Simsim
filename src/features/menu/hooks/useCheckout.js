@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../../../lib/supabase'
-import { vatBreakdown } from '../../../lib/pricing'
 import { computeBranchOpenStatus, effectiveDeliverySettings } from '../helpers'
+import { buildOrderPayload, previewOrderTotal } from '../orderPayload'
 
 // بيانات نموذج الطلب + إنشاء الطلب في قاعدة البيانات (ADR-1: الأسعار شاملة الضريبة، تُفكّ للخلف)
 export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, appliedCoupon, discountAmount = 0, removeCoupon }) {
@@ -14,8 +14,7 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
   const [orderNote, setOrderNote] = useState('') // ملاحظة عامة على الطلب كله (اختيارية)
   const [orderNumber, setOrderNumber] = useState('')
   const [submitting, setSubmitting] = useState(false) // أثناء إرسال الطلب — يمنع الضغط المكرّر
-
-  const PHONE_STORAGE_KEY = `simsim_phone_${slug}`       // آخر رقم جوال استخدمه الزبون (لعرض نقاطه)
+  const idempotencyRef = useRef({ fingerprint: null, key: null })
 
   // Place order
   const placeOrder = async () => {
@@ -37,23 +36,34 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
     }
     const cleanPhone = customerPhone
 
-    const items = cart.map(i => ({
-      id: i.id, name: i.name, emoji: i.emoji, image_url: i.image_url,
-      price: i.price, qty: i.qty, notes: i.note,
-      selectedOptions: i.selectedOptions || [],
-    }))
+    // العميل يرسل معرفات المنتج والخيارات فقط؛ الأسعار والأسماء النهائية يعيد الخادم قراءتها وحسابها.
+    const items = buildOrderPayload(cart)
 
-    const deliveryFee = orderType === 'delivery' ? (Number(effectiveDeliverySettings(branch, restaurant).fee) || 0) : 0
-    // الخصم يُطبَّق على المجموع الفرعي قبل رسوم التوصيل (الكوبون لا يخفّض رسوم التوصيل)
-    const discountedSubtotal = Math.max(0, cartTotal - discountAmount)
-    // الأسعار المعروضة شاملة ض.ق.م 15% — نفكّ الضريبة للخلف (lib/pricing)، محسوبة بعد الخصم
-    const { net, tax } = vatBreakdown(discountedSubtotal)
-    const total = discountedSubtotal + deliveryFee
+    const previewDeliveryFee = orderType === 'delivery' ? (Number(effectiveDeliverySettings(branch, restaurant).fee) || 0) : 0
+    const previewTotal = previewOrderTotal(cartTotal, discountAmount, previewDeliveryFee)
+    const requestFingerprint = JSON.stringify({
+      restaurantId: restaurant.id,
+      branchId: branch?.id,
+      tableNumber: orderType === 'dine_in' ? tableNumber : null,
+      deliveryAddress: orderType === 'delivery' ? deliveryAddress.trim() : null,
+      customerName: customerName.trim() || null,
+      customerPhone: cleanPhone,
+      orderType,
+      items,
+      notes: orderNote.trim(),
+      couponCode: appliedCoupon?.code || null,
+      clientTotal: previewTotal,
+    })
+    if (idempotencyRef.current.fingerprint !== requestFingerprint) {
+      idempotencyRef.current = {
+        fingerprint: requestFingerprint,
+        key: crypto.randomUUID(),
+      }
+    }
+    const idempotencyKey = idempotencyRef.current.key
 
     setSubmitting(true)
-    // عبر RPC آمنة لا عبر إدخال مباشر + .select() — الأخير يحتاج قراءة الصف بعد إدخاله (RETURNING)،
-    // وهذا يصطدم بسياسة SELECT المغلقة عمداً أمام الزبون العابر (ADR-9). الدالة تتجاوز ذلك من الداخل
-    // بأمان وترجع فقط رقم الطلب ومعرّفه، بلا أي كشف لبيانات عملاء آخرين.
+    // RPC server-authoritative: لا يثق في أسعار أو ضريبة أو خصم قادمة من المتصفح.
     const { data, error } = await supabase.rpc('create_order', {
       p_restaurant_id: restaurant.id,
       p_branch_id: branch?.id,
@@ -63,13 +73,10 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
       p_customer_phone: cleanPhone,
       p_type: orderType,
       p_items: items,
-      p_subtotal: net,
-      p_tax: tax,
-      p_delivery_fee: deliveryFee,
-      p_total: total,
       p_notes: orderNote.trim(),
       p_coupon_code: appliedCoupon?.code || null,
-      p_discount_amount: discountAmount,
+      p_client_total: previewTotal,
+      p_idempotency_key: idempotencyKey,
     }).single()
 
     if (error) {
@@ -79,18 +86,24 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
       return
     }
 
+    if (data.price_changed) {
+      setSubmitting(false)
+      toast.error(t('priceChanged') || 'تغيرت أسعار بعض الأصناف، راجع السلة وحاول مرة أخرى')
+      return
+    }
+
     setOrderNumber(data.order_number)
-    try { localStorage.setItem(PHONE_STORAGE_KEY, cleanPhone) } catch { /* تجاهل */ }
     setOrderPlaced(true)
     setCart([])
     setCartOpen(false)
     setOrderNote('')
     setSubmitting(false)
+    idempotencyRef.current = { fingerprint: null, key: null }
     removeCoupon?.()
 
     // إضافة الطلب الجديد فوق قائمة الطلبات النشطة (الأحدث أولاً) — الاشتراك في تحديثاته يحصل تلقائياً
     setActiveOrders(prev => [
-      { id: data.id, orderNumber: data.order_number, status: 'pending', items, total, tableNumber, orderType, deliveryAddress, createdAt: Date.now() },
+      { id: data.id, orderNumber: data.order_number, accessToken: data.access_token, status: 'pending', items: cart, total: Number(data.total), tableNumber, orderType, deliveryAddress, createdAt: Date.now() },
       ...prev,
     ])
   }

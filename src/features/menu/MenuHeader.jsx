@@ -101,7 +101,7 @@ export default function MenuHeader({
         <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, rgba(0,0,0,0.12), transparent 30%, transparent 70%, rgba(0,0,0,0.18))', pointerEvents:'none' }}/>
 
         {/* زر اللغة — عائم */}
-        <button onClick={toggleLang} style={{ position:'absolute', top:'12px', left:'14px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', color:'#374151', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <button aria-label={isEn ? 'Switch to Arabic' : 'التبديل إلى الإنجليزية'} onClick={toggleLang} style={{ position:'absolute', top:'12px', left:'14px', width:'40px', height:'40px', borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.95)', boxShadow:'0 4px 14px rgba(0,0,0,0.28)', cursor:'pointer', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', color:'#374151', display:'flex', alignItems:'center', justifyContent:'center' }}>
           {isEn ? 'ع' : 'EN'}
         </button>
 
@@ -112,7 +112,7 @@ export default function MenuHeader({
 
         {/* زر طلباتي — عائم بعداد حي */}
         {hasOrders && (
-          <button onClick={onShowOrders} style={{ position:'absolute', top:'12px', right:'14px', padding:'10px 15px', borderRadius:'100px', border:'none', background:brandColor, color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', boxShadow:`0 6px 18px ${brandColor}66` }}>
+          <button aria-label={`${t('myOrders')}${liveOrdersCount > 0 ? ` (${liveOrdersCount})` : ''}`} onClick={onShowOrders} style={{ position:'absolute', top:'12px', right:'14px', padding:'10px 15px', borderRadius:'100px', border:'none', background:brandColor, color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', gap:'6px', boxShadow:`0 6px 18px ${brandColor}66` }}>
             📋 {t('myOrders')}
             {liveOrdersCount > 0 && (
               <span style={{ background:'rgba(255,255,255,0.3)', borderRadius:'100px', padding:'1px 7px', fontSize:'11px' }}>{liveOrdersCount}</span>

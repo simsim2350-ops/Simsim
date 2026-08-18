@@ -19,7 +19,7 @@ export function useActiveOrders(slug, t) {
     try {
       const saved = JSON.parse(localStorage.getItem(ORDERS_STORAGE_KEY) || '[]')
       // إخفاء الطلبات المكتملة/الملغاة القديمة جداً (أكثر من 12 ساعة) لتجنب تراكم لا نهائي
-      const recent = saved.filter(o => Date.now() - (o.createdAt || 0) < 12 * 60 * 60 * 1000)
+      const recent = saved.filter(o => o.accessToken && Date.now() - (o.createdAt || 0) < 12 * 60 * 60 * 1000)
       setActiveOrders(recent)
 
       // تحديد الشاشة الافتراضية: لو هذه أول فتحة في الجلسة الحالية (تبويب/مسح QR جديد) → المنيو دائماً
@@ -45,19 +45,22 @@ export function useActiveOrders(slug, t) {
   // حفظ activeOrders في localStorage عند أي تغيير، والاشتراك في تحديثات أي طلب جديد لم يُشترك له بعد
   useEffect(() => {
     if (!slug) return
-    localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(activeOrders))
+    const persistedOrders = activeOrders.map(({ id, orderNumber, accessToken, status, items, total, tableNumber, orderType, createdAt, cancelledBy }) => ({
+      id, orderNumber, accessToken, status,
+      items: Array.isArray(items) ? items.map(({ id, name, name_en, emoji, image_url, price, qty, note, selectedOptions, unavailable }) => ({ id, name, name_en, emoji, image_url, price, qty, note, selectedOptions, unavailable })) : [],
+      total, tableNumber, orderType, createdAt, cancelledBy,
+    }))
+    try { localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(persistedOrders)) } catch { /* تجاهل امتلاء التخزين */ }
     activeOrdersRef.current = activeOrders
     activeOrders.forEach(order => {
       if (orderChannelsRef.current[order.id]) return // مشترك بالفعل
-      // Realtime Broadcast — بديل عن الاشتراك المباشر بالجدول (لا يعمل للزبون العابر أصلاً لأنه
-      // يحتاج صلاحية قراءة مغلقة عمداً). القناة خاصة بهذا الطلب تحديداً (معرفة الـ UUID = صلاحية المتابعة)
-      const ch = supabase.channel(`order-status:${order.id}`, { config: { private: true } })
+      // القناة تتطلب access token خاصًا بالطلب؛ UUID وحده لا يمنح صلاحية المتابعة.
+      const ch = supabase.channel(`order-status:${order.id}:${order.accessToken}`, { config: { private: true } })
         .on('broadcast', { event: 'UPDATE' }, (payload) => {
-          const newRow = payload.payload?.record
-          if (!newRow) return
-          const newItems = Array.isArray(newRow.items) ? newRow.items : []
-          const newStatus = newRow.status
-          const newCancelledBy = newRow.cancelled_by
+          const update = payload.payload || {}
+          const newItems = Array.isArray(update.items) ? update.items : []
+          const newStatus = update.status
+          const newCancelledBy = update.cancelled_by
           setActiveOrders(prev => prev.map(o => {
             if (o.id !== order.id) return o
             if (newStatus === 'cancelled' && o.status !== 'cancelled') {
@@ -71,7 +74,7 @@ export function useActiveOrders(slug, t) {
                 }
               })
             }
-            return { ...o, status: newStatus, cancelledBy: newCancelledBy, items: newItems, total: Number(newRow.total) || 0 }
+            return { ...o, status: newStatus, cancelledBy: newCancelledBy, items: newItems.length > 0 ? o.items.map((item, idx) => ({ ...item, unavailable: newItems[idx]?.unavailable ?? item.unavailable })) : o.items }
           }))
         }).subscribe()
       orderChannelsRef.current[order.id] = ch
@@ -93,7 +96,8 @@ export function useActiveOrders(slug, t) {
       .map(o => o.id)
     if (ids.length === 0) return
     try {
-      const { data, error } = await supabase.rpc('get_orders_status', { order_ids: ids })
+      const requests = list.filter(o => ids.includes(o.id)).map(o => ({ id: o.id, access_token: o.accessToken }))
+      const { data, error } = await supabase.rpc('get_orders_status_secure', { p_orders: requests })
       if (error || !data) return
       setActiveOrders(prev => prev.map(o => {
         const fresh = data.find(d => d.id === o.id)
@@ -132,22 +136,22 @@ export function useActiveOrders(slug, t) {
   // إلغاء الطلب من جهة العميل نفسه — متاح فقط وهو لا يزال "انتظار" قبل أن يبدأ المطعم التحضير
   // التأكيد يحصل داخل المنصّة قبل استدعاء هذه الدالة (OrderCardActive) — وليس هنا
   const cancelOrderByCustomer = async (order) => {
-    const { error } = await supabase
-      .from('orders')
-      .update({ status: 'cancelled', cancelled_by: 'customer' })
-      .eq('id', order.id)
-      .eq('status', 'pending') // حماية إضافية: لا يُنفَّذ إلا لو لسه pending فعلياً في قاعدة البيانات
+    const { data: cancelled, error } = await supabase.rpc('cancel_order_by_customer', {
+      p_order_id: order.id,
+      p_access_token: order.accessToken,
+    })
 
     if (error) {
       toast.error(t('tCancelFail3'))
       return
     }
 
-    // التأكد من الحالة الحقيقية: update().eq() لا يُرجع خطأ لو لم يُطابق أي صف
-    // (أي لو المطعم بدأ التحضير فعلاً) — لذلك نتحقق بدل افتراض النجاح
-    let confirmedCancelled = true
+    // RPC تعيد صفًا فقط عند انتقال pending إلى cancelled فعليًا.
+    let confirmedCancelled = Array.isArray(cancelled) ? cancelled.length > 0 : !!cancelled
     try {
-      const { data } = await supabase.rpc('get_orders_status', { order_ids: [order.id] })
+      const { data } = await supabase.rpc('get_orders_status_secure', {
+        p_orders: [{ id: order.id, access_token: order.accessToken }],
+      })
       const fresh = data && data[0]
       if (fresh) {
         confirmedCancelled = fresh.status === 'cancelled'
@@ -157,7 +161,7 @@ export function useActiveOrders(slug, t) {
             : o))
         }
       }
-    } catch { /* تعذّر التحقق — نفترض النجاح ما دام لم يُرجع خطأ */ }
+    } catch { /* تعذّر التحقق — لا نغيّر الحالة محليًا دون إثبات */ }
 
     if (confirmedCancelled) {
       setActiveOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'cancelled', cancelledBy:'customer' } : o))
@@ -167,8 +171,17 @@ export function useActiveOrders(slug, t) {
     }
   }
 
+  const clearStoredOrders = () => {
+    try { localStorage.removeItem(ORDERS_STORAGE_KEY) } catch { /* تجاهل */ }
+    try { sessionStorage.removeItem(SCREEN_SESSION_KEY) } catch { /* تجاهل */ }
+    Object.values(orderChannelsRef.current).forEach(ch => supabase.removeChannel(ch))
+    orderChannelsRef.current = {}
+    setActiveOrders([])
+    setOrderPlaced(false)
+  }
+
   // عدد الطلبات النشطة فعلياً (انتظار/تحضير/جاهز) — لا يشمل المكتملة أو الملغاة
   const liveOrdersCount = activeOrders.filter(o => ['pending','preparing','ready'].includes(o.status)).length
 
-  return { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer }
+  return { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer, clearStoredOrders }
 }
