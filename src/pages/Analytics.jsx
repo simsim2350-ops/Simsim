@@ -234,7 +234,7 @@ export default function Analytics() {
   }
 
   const Icon = ({ type, size=15 }) => {
-    const paths = { chart:'M3 17l4-5 3 3 5-7 4 4', download:'M12 3v12m0 0l-4-4m4 4l4-4M5 21h14', report:'M6 3h9l3 3v15H6zM9 12h6M9 16h6M9 8h3', menu:'M4 6h16M4 12h16M4 18h16', branch:'M4 20V4h16v16M8 8h2M14 8h2M8 12h2M14 12h2M8 16h2M14 16h2', calendar:'M6 3v4m12-4v4M4 9h16M5 5h14a1 1 0 011 1v14H4V6a1 1 0 011-1z', warning:'M12 3l9 17H3L12 3zm0 6v4m0 3h.01' }
+    const paths = { chart:'M3 17l4-5 3 3 5-7 4 4', money:'M4 7h16v10H4zM16 12h.01', cart:'M3 4h2l2 11h10l2-7H6M9 20h.01M17 20h.01', receipt:'M6 3h9l3 3v15H6zM9 12h6M9 16h6M9 8h3', success:'M20 6L9 17l-5-5', cancel:'M12 8v4m0 4h.01M12 3l9 17H3L12 3z', download:'M12 3v12m0 0l-4-4m4 4l4-4M5 21h14', report:'M6 3h9l3 3v15H6zM9 12h6M9 16h6M9 8h3', menu:'M4 6h16M4 12h16M4 18h16', branch:'M4 20V4h16v16M8 8h2M14 8h2M8 12h2M14 12h2M8 16h2M14 16h2', calendar:'M6 3v4m12-4v4M4 9h16M5 5h14a1 1 0 011 1v14H4V6a1 1 0 011-1z', warning:'M12 3l9 17H3L12 3zm0 6v4m0 3h.01' }
     return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[type] || paths.chart}/></svg>
   }
   const PageTitle = <span style={{ display:'inline-flex', alignItems:'center', gap:'10px', minWidth:0 }}><span style={{ width:'46px', height:'46px', borderRadius:'13px', display:'grid', placeItems:'center', color:'#FF6A00', background:'linear-gradient(145deg,#FFF0EB,#FFE3D2)', border:'1px solid #FFD4BE', flexShrink:0 }}><Icon type="chart" size={21}/></span><span style={{ display:'flex', flexDirection:'column', gap:'3px', minWidth:0 }}><strong style={{ fontSize:isMobile?'17px':'20px', fontWeight:'900', letterSpacing:'-0.02em' }}>التحليلات</strong><small style={{ fontSize:isMobile?'10px':'11px', color:'#6B7280', fontWeight:'600', whiteSpace:'nowrap' }}>رؤية عملية لاتخاذ قرارات أفضل</small></span></span>
@@ -280,18 +280,17 @@ export default function Analytics() {
             {/* البطاقات الرئيسية */}
             <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(2,1fr)':isDesktop?'repeat(6,1fr)':'repeat(3,1fr)', gap: isMobile?'10px':'12px', marginBottom:'14px' }}>
               {[
-                { icon:'💰', val:money(revenue), label:'إجمالي المبيعات', sub:<GrowthBadge v={revGrowth} currentValue={revenue} previousValue={prevRevenue} />, color:'#FF6A00', bg:'rgba(255,106,0,0.1)' },
-                { icon:'🛒', val:totalOrders, label:'عدد الطلبات', sub:<GrowthBadge v={ordGrowth} currentValue={totalOrders} previousValue={prevTotalOrders} />, color:'#3B82F6', bg:'rgba(59,130,246,0.1)' },
-                { icon:'🧾', val:completedCount > 0 ? money0(avgOrder) : '—', label:'متوسط الطلب', sub:completedCount > 0 ? 'من الطلبات المكتملة فقط' : 'لا توجد طلبات خلال الفترة', color:'#10B981', bg:'rgba(16,185,129,0.1)' },
-                { icon:'🏛️', val:money(taxCollected), label:'ض.ق.م المحصّلة', sub:hasRevenueData ? `صافي ${money0(netSales)}` : 'لا توجد مبيعات خلال الفترة', color:'#8B5CF6', bg:'rgba(139,92,246,0.1)' },
-                { icon:'✅', val:totalOrders > 0 ? `${completionRate}%` : '—', label:'معدل الإتمام', sub:totalOrders > 0 ? `${completedCount} من ${totalOrders} طلب` : 'لا توجد طلبات خلال الفترة', color:'#059669', bg:'rgba(5,150,105,0.1)' },
-                { icon:'⚠️', val:totalOrders > 0 ? `${cancelRate}%` : '—', label:'معدل الإلغاء', sub:totalOrders > 0 ? `${cancelledCount} من ${totalOrders} طلب` : 'لا توجد طلبات خلال الفترة', color:'#DC2626', bg:'rgba(220,38,38,0.1)' },
+                { icon:'money', val:money(revenue), label:'إجمالي المبيعات', sub:<GrowthBadge v={revGrowth} currentValue={revenue} previousValue={prevRevenue} />, color:'#FF6A00', bg:'rgba(255,106,0,0.1)' },
+                { icon:'cart', val:totalOrders, label:'عدد الطلبات', sub:<GrowthBadge v={ordGrowth} currentValue={totalOrders} previousValue={prevTotalOrders} />, color:'#3B82F6', bg:'rgba(59,130,246,0.1)' },
+                { icon:'receipt', val:completedCount > 0 ? money0(avgOrder) : '—', label:'متوسط الطلب', sub:completedCount > 0 ? 'من الطلبات المكتملة فقط' : 'لا توجد طلبات خلال الفترة', color:'#10B981', bg:'rgba(16,185,129,0.1)' },
+                { icon:'money', val:hasRevenueData ? money0(netSales) : '—', label:'صافي المبيعات', sub:hasRevenueData ? `ض.ق.م ${money0(taxCollected)}` : 'لا توجد مبيعات خلال الفترة', color:'#8B5CF6', bg:'rgba(139,92,246,0.1)' },
+                { icon:'success', val:totalOrders > 0 ? `${completionRate}%` : '—', label:'معدل الإتمام', sub:totalOrders > 0 ? `${completedCount} من ${totalOrders} طلب` : 'لا توجد طلبات خلال الفترة', color:'#059669', bg:'rgba(5,150,105,0.1)' },
+                { icon:'cancel', val:totalOrders > 0 ? `${cancelRate}%` : '—', label:'معدل الإلغاء', sub:totalOrders > 0 ? `${cancelledCount} من ${totalOrders} طلب` : 'لا توجد طلبات خلال الفترة', color:'#DC2626', bg:'rgba(220,38,38,0.1)' },
               ].map(s => (
-                <div key={s.label} style={{ background:'white', borderRadius:'14px', border:'1px solid #E5E7EB', padding: isMobile?'14px':'18px' }}>
-                  <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', marginBottom:'10px' }}>{s.icon}</div>
-                  <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize: isMobile?'18px':'22px', color:s.color, marginBottom:'3px', lineHeight:1.1 }}>{s.val}</div>
-                  <div style={{ fontSize:'12px', color:'#374151', fontWeight:'700', marginBottom:'2px' }}>{s.label}</div>
-                  <div style={{ fontSize:'11px', color:'#9CA3AF' }}>{s.sub}</div>
+                <div key={s.label} style={{ background:'white', borderRadius:'14px', border:'1px solid #E7E9ED', boxShadow:'0 2px 10px rgba(17,24,39,0.035)', padding: isMobile?'12px':'14px', minHeight:isMobile?'128px':'142px', display:'flex', flexDirection:'column' }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px', marginBottom:'12px' }}><span style={{ width:'31px', height:'31px', borderRadius:'9px', background:s.bg, color:s.color, display:'grid', placeItems:'center' }}><Icon type={s.icon} size={15}/></span><span style={{ fontSize:'11px', color:'#6B7280', fontWeight:'800', textAlign:'left' }}>{s.label}</span></div>
+                  <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize: isMobile?'18px':'22px', color:'#111827', marginBottom:'5px', lineHeight:1.1 }}>{s.val}</div>
+                  <div style={{ fontSize:'10px', color:'#9CA3AF', marginTop:'auto', minHeight:'16px' }}>{s.sub}</div>
                 </div>
               ))}
             </div>
@@ -304,8 +303,8 @@ export default function Analytics() {
               </div>
               <div style={{ padding:'16px' }}>
                 {dailyRevenue.length > 0 && dailyRevenue.some(x => x.revenue > 0 || x.orders > 0) ? (
-                  <div style={{ position:'relative', width:'100%', minHeight:isMobile?'190px':'230px' }}>
-                    <svg viewBox="0 0 760 220" role="img" aria-label={`رسم ${chartMetricLabel}`} style={{ display:'block', width:'100%', height:'auto', minHeight:isMobile?'170px':'205px', overflow:'visible' }}>
+                  <div style={{ position:'relative', width:'100%', minHeight:isMobile?'230px':'310px' }}>
+                    <svg viewBox="0 0 760 220" role="img" aria-label={`رسم ${chartMetricLabel}`} style={{ display:'block', width:'100%', height:isMobile?'210px':'286px', overflow:'visible' }}>
                       {[36,82,128,178].map(y => <line key={y} x1="24" x2="736" y1={y} y2={y} stroke="#EEF0F3" strokeWidth="1" strokeDasharray="3 5" />)}
                       <path d={chartAreaPath} fill="rgba(255,106,0,0.08)" />
                       <path d={chartLinePath} fill="none" stroke="#FF6A00" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
@@ -334,7 +333,7 @@ export default function Analytics() {
                         {topProducts.slice(0, 5).map((p, i) => { const pct = productRevenueTotal > 0 ? Math.round((p.revenue / productRevenueTotal) * 100) : 0; return <div key={p.name} style={{ display:'flex', alignItems:'center', gap:'7px', padding:'5px 0', minWidth:0 }}><span style={{ width:'8px', height:'8px', borderRadius:'50%', background:productPalette[i], flexShrink:0 }}/><span style={{ fontSize:'11px', fontWeight:'700', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{p.name}</span><span style={{ fontSize:'10px', color:'#6B7280', direction:'ltr' }}>{pct}%</span></div> })}
                       </div>
                     </div>
-                    <div style={{ display:'grid', gap:'6px' }}>{topProducts.slice(0, 4).map((p, i) => <div key={p.name} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'7px 0', borderTop:'1px solid #F3F4F6' }}><span style={{ width:'20px', height:'20px', borderRadius:'6px', background:'#F8F9FB', display:'grid', placeItems:'center', fontSize:'13px', flexShrink:0 }}>{p.emoji}</span><span style={{ flex:1, minWidth:0, fontSize:'12px', fontWeight:'700', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span><span style={{ fontSize:'11px', color:'#6B7280', whiteSpace:'nowrap' }}>{p.count} طلب · {money0(p.revenue)}</span></div>)}</div>
+                    <div style={{ display:'grid', gap:'2px' }}>{topProducts.slice(0, 4).map((p, i) => { const pct = productRevenueTotal > 0 ? Math.round((p.revenue / productRevenueTotal) * 100) : 0; return <div key={p.name} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'8px 0', borderTop:'1px solid #F3F4F6' }}><span style={{ width:'22px', height:'22px', borderRadius:'7px', background:i === 0 ? '#FFF0EB' : '#F8F9FB', color:i === 0 ? '#FF6A00' : '#6B7280', display:'grid', placeItems:'center', fontSize:'11px', fontWeight:'900', flexShrink:0 }}>{i + 1}</span><span style={{ flex:1, minWidth:0, fontSize:'12px', fontWeight:'800', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span><span style={{ fontSize:'10px', color:'#6B7280', whiteSpace:'nowrap', textAlign:'left' }}>{p.count} طلب · {pct}% · {money0(p.revenue)}</span></div> })}</div>
                     {bottomProducts.length > 0 && <div style={{ marginTop:'10px', paddingTop:'10px', borderTop:'1px dashed #E5E7EB', fontSize:'11px', color:'#9CA3AF' }}>الأقل طلباً: {bottomProducts.map(p => `${p.name} (${p.count})`).join('، ')}</div>}
                     <div style={{ marginTop:'10px', paddingTop:'10px', borderTop:'1px solid #F3F4F6', fontSize:'11px', color:'#6B7280' }}>{topProduct ? `أعلى صنف: ${topProduct.name} — ${topProduct.count} طلب · ${money0(topProduct.revenue)} من الإيراد` : 'لا توجد بيانات كافية لاستخراج Insight للمنتجات.'}</div>
                   </div>
@@ -521,18 +520,18 @@ export default function Analytics() {
             })() : advancedError ? <Card><CardHead><span style={{ display:'inline-flex', alignItems:'center', gap:'7px' }}><Icon type="chart" size={14}/> تحليلات متقدمة</span></CardHead><ErrorState /></Card> : <Card><CardHead><span style={{ display:'inline-flex', alignItems:'center', gap:'7px' }}><Icon type="chart" size={14}/> تحليلات متقدمة</span></CardHead><Empty title="لا توجد بيانات كافية للتحليلات المتقدمة" text="ستظهر رؤى الولاء والعملاء والفروع بعد توفر نشاط كافٍ." /></Card>}
 
             {/* ملخص */}
-            <div style={{ background:'linear-gradient(135deg,#0B0B0F,#1A1A2E)', borderRadius:'16px', padding:'20px' }}>
-              <div style={{ display:'inline-flex', alignItems:'center', gap:'8px', fontSize:'14px', fontWeight:'900', color:'white', marginBottom:'14px' }}><Icon type="report" size={15}/> ملخص الفترة</div>
-              <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(2,1fr)':'repeat(4,1fr)', gap:'12px' }}>
+            <div style={{ background:'#111827', borderRadius:'16px', border:'1px solid rgba(255,255,255,0.08)', boxShadow:'0 8px 20px rgba(17,24,39,0.14)', padding:isMobile?'16px':'18px' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', marginBottom:'14px' }}><div style={{ display:'inline-flex', alignItems:'center', gap:'8px', fontSize:'14px', fontWeight:'900', color:'white' }}><Icon type="report" size={15}/> ملخص الفترة</div><span style={{ fontSize:'10px', color:'rgba(255,255,255,0.42)' }}>{periodLabel}</span></div>
+              <div style={{ display:'grid', gridTemplateColumns: isMobile?'repeat(2,1fr)':'repeat(4,1fr)', gap:'10px' }}>
                 {[
                   { label:'صافي المبيعات (قبل الضريبة)', val:hasRevenueData ? money0(netSales) : '—' },
                   { label:'عملاء فريدون', val:uniqueCustomers },
                   { label:'متوسط وقت التحضير', val: avgPrep != null ? `${avgPrep} دقيقة` : 'بيانات غير كافية' },
                   { label:'ساعة الذروة', val:peakHourLabel },
                 ].map(s => (
-                  <div key={s.label} style={{ background:'rgba(255,255,255,0.05)', borderRadius:'12px', padding:'12px' }}>
-                    <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.5)', marginBottom:'4px' }}>{s.label}</div>
-                    <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'17px', color:'#FF6A00' }}>{s.val}</div>
+                  <div key={s.label} style={{ background:'rgba(255,255,255,0.045)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'11px', padding:isMobile?'10px':'12px' }}>
+                    <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.48)', marginBottom:'5px' }}>{s.label}</div>
+                    <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:isMobile?'15px':'17px', color:'#FF8A42', lineHeight:1.25 }}>{s.val}</div>
                   </div>
                 ))}
               </div>
