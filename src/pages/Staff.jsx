@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
@@ -105,6 +105,7 @@ export default function Staff() {
   const [members, setMembers] = useState([])
   const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -113,9 +114,11 @@ export default function Staff() {
   const [filter, setFilter] = useState('all')
   const [openMenuId, setOpenMenuId] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [confirmToggle, setConfirmToggle] = useState(null)
+  const [permissionView, setPermissionView] = useState(null)
   const [togglingId, setTogglingId] = useState(null)
 
-  useBodyScrollLock(modalOpen || !!confirmDelete)
+  useBodyScrollLock(modalOpen || !!confirmDelete || !!confirmToggle || !!permissionView)
 
   useEffect(() => {
     if (!restaurant?.id) return
@@ -125,6 +128,7 @@ export default function Staff() {
   const fetchAll = async () => {
     if (!restaurant?.id) return
     setLoading(true)
+    setLoadError(null)
     try {
       const [{ data: mem, error: memberError }, branchList] = await Promise.all([
         supabase.from('restaurant_members').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false }),
@@ -134,7 +138,9 @@ export default function Staff() {
       setMembers(mem || [])
       setBranches(branchList || [])
     } catch (err) {
-      toast.error(err.message || 'تعذّر تحميل الموظفين')
+      const message = err.message || 'تعذّر تحميل الموظفين'
+      toast.error(message)
+      setLoadError(message)
       setMembers([])
     } finally {
       setLoading(false)
@@ -145,19 +151,27 @@ export default function Staff() {
     total: members.length,
     active: members.filter(member => member.is_active).length,
     inactive: members.filter(member => !member.is_active).length,
+    manager: members.filter(member => member.role === 'manager').length,
+    cashier: members.filter(member => member.role === 'cashier').length,
+    staff: members.filter(member => member.role === 'staff').length,
   }), [members])
 
   const visibleMembers = useMemo(() => {
     const keyword = search.trim().toLowerCase()
     return members.filter(member => {
-      const matchesSearch = !keyword || member.username?.toLowerCase().includes(keyword) || ROLE_LABELS[member.role]?.includes(search.trim())
+      const selectedBranchNames = member.branch_scope === 'all' || (!member.branch_scope && !(member.branch_ids || []).length)
+        ? ['كل الفروع']
+        : (member.branch_ids || []).map(id => branches.find(branch => branch.id === id)?.name).filter(Boolean)
+      const statusWords = member.is_active ? ['مفعل', 'نشط', 'active'] : ['معطل', 'متوقف', 'inactive']
+      const haystack = [member.username, ROLE_LABELS[member.role], ...selectedBranchNames, ...statusWords].filter(Boolean).join(' ').toLowerCase()
+      const matchesSearch = !keyword || haystack.includes(keyword)
       const matchesFilter = filter === 'all'
         || filter === member.role
         || (filter === 'active' && member.is_active)
         || (filter === 'inactive' && !member.is_active)
       return matchesSearch && matchesFilter
     })
-  }, [members, search, filter])
+  }, [members, branches, search, filter])
 
   const getBranchIds = (member) => Array.isArray(member.branch_ids) ? member.branch_ids : []
   const branchNames = (member) => {
@@ -236,7 +250,7 @@ export default function Staff() {
     const pages = form.all_pages ? ['all'] : form.allowed_pages
     if (!pages.length) { toast.error('اختر صفحة واحدة على الأقل'); return }
     if (form.branch_mode === 'selected' && !form.branch_ids.length) { toast.error('اختر فرعًا واحدًا على الأقل'); return }
-    if (!editing && form.password.length < 6) { toast.error('كلمة المرور 6 أحرف على الأقل'); return }
+    if (!editing && getPasswordStrength(form.password).level < 3) { toast.error('اختر كلمة مرور قوية: 8 أحرف أو أكثر مع رقم ورمز وحروف متنوعة'); return }
 
     const accessPayload = {
       role: form.role || 'staff',
@@ -314,8 +328,10 @@ export default function Staff() {
     }
   }
 
+  const staffLoginLink = `${window.location.origin}/staff-login/${restaurant.slug}`
+
   const copyLoginLink = async () => {
-    const link = `${window.location.origin}/staff-login/${restaurant.slug}`
+    const link = staffLoginLink
     try {
       if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(link)
       else {
@@ -355,9 +371,12 @@ export default function Staff() {
               <p style={{ margin: 0, color: '#667085', fontSize: '13px', lineHeight: 1.6 }}>أضف الموظفين وحدد أدوارهم وصلاحياتهم ونطاق الفروع بأمان.</p>
             </div>
             <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
-              <SummaryChip label="موظفين" value={summary.total} color="#344054" bg="#F2F4F7" />
+              <SummaryChip label="إجمالي" value={summary.total} color="#344054" bg="#F2F4F7" />
               <SummaryChip label="مفعلين" value={summary.active} color="#027A48" bg="#ECFDF3" />
               <SummaryChip label="معطلين" value={summary.inactive} color="#667085" bg="#F2F4F7" />
+              <SummaryChip label="مديرون" value={summary.manager} color="#175CD3" bg="#EEF4FF" />
+              <SummaryChip label="كاشير" value={summary.cashier} color="#C2410C" bg="#FFF7ED" />
+              <SummaryChip label="موظفون" value={summary.staff} color="#475467" bg="#F2F4F7" />
             </div>
           </div>
         </section>
@@ -371,6 +390,7 @@ export default function Staff() {
             </div>
           </div>
           <div className="staff-login-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <a href={staffLoginLink} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 11px', borderRadius: '9px', border: '1px solid rgba(255,255,255,.18)', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '900', textDecoration: 'none' }}>فتح الرابط</a>
             <button onClick={copyLoginLink} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 12px', borderRadius: '9px', border: '1px solid rgba(255,176,136,.28)', background: 'rgba(255,106,0,.16)', color: '#FFD0BA', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '900', cursor: 'pointer' }}><Icon type="copy" size={14} /> نسخ الرابط</button>
           </div>
         </section>
@@ -388,7 +408,9 @@ export default function Staff() {
           </div>
         </section>
 
-        {members.length === 0 ? (
+        {loadError ? (
+          <LoadErrorState message={loadError} onRetry={fetchAll} />
+        ) : members.length === 0 ? (
           <EmptyState onAdd={openAdd} />
         ) : visibleMembers.length === 0 ? (
           <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E7EAEE', padding: '34px 20px', textAlign: 'center' }}>
@@ -418,8 +440,9 @@ export default function Staff() {
                     <div style={{ position: 'relative' }}>
                       <button aria-label={`إجراءات ${member.username}`} onClick={() => setOpenMenuId(isOpen ? null : member.id)} style={{ width: '32px', height: '32px', borderRadius: '9px', border: '1px solid #E4E7EC', background: isOpen ? '#F9FAFB' : 'white', color: '#667085', display: 'grid', placeItems: 'center', cursor: 'pointer' }}><Icon type="more" size={17} /></button>
                       {isOpen && <div style={{ position: 'absolute', left: 0, top: '38px', zIndex: 8, minWidth: '154px', padding: '5px', background: 'white', border: '1px solid #E4E7EC', borderRadius: '11px', boxShadow: '0 10px 26px rgba(16,24,40,.14)' }}>
-                        <MenuAction icon="edit" label="تعديل" onClick={() => openEdit(member)} />
-                        <MenuAction icon="power" label={active ? (togglingId === member.id ? 'جارٍ التعطيل...' : 'تعطيل') : (togglingId === member.id ? 'جارٍ التفعيل...' : 'تفعيل')} onClick={() => toggleActive(member)} disabled={togglingId === member.id} />
+                        <MenuAction icon="edit" label="تعديل الموظف" onClick={() => openEdit(member)} />
+                        <MenuAction icon="shield" label="عرض الصلاحيات" onClick={() => { setPermissionView(member); setOpenMenuId(null) }} />
+                        <MenuAction icon="power" label={active ? (togglingId === member.id ? 'جارٍ التعطيل...' : 'تعطيل الموظف') : (togglingId === member.id ? 'جارٍ التفعيل...' : 'إعادة التفعيل')} onClick={() => active ? (setConfirmToggle(member), setOpenMenuId(null)) : toggleActive(member)} disabled={togglingId === member.id} />
                         <MenuAction icon="trash" label="حذف" danger onClick={() => { setConfirmDelete(member); setOpenMenuId(null) }} />
                       </div>}
                     </div>
@@ -431,7 +454,7 @@ export default function Staff() {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '10px' }}>
                     <CompactMetric icon="clock" label="آخر دخول" value={lastLogin || 'لم يسجل دخولًا بعد'} />
-                    <CompactMetric icon="info" label="آخر نشاط" value={lastActivity || 'غير متوفر بعد'} />
+                    <CompactMetric icon="info" label="آخر نشاط" value={lastActivity || 'لا يوجد نشاط مسجل'} />
                   </div>
                 </article>
               )
@@ -453,6 +476,25 @@ export default function Staff() {
         onTogglePage={togglePage}
         onToggleBranch={toggleBranch}
       />}
+
+      <PermissionDialog
+        member={permissionView}
+        branchNames={permissionView ? branchNames(permissionView) : []}
+        pageNames={permissionView ? pageNames(permissionView) : []}
+        onClose={() => setPermissionView(null)}
+      />
+
+      <ConfirmDialog
+        open={!!confirmToggle}
+        icon="⏸️"
+        title="هل تريد تعطيل هذا الموظف؟"
+        body={`لن يتمكن ${confirmToggle?.username || 'الموظف'} من تسجيل الدخول حتى إعادة تفعيله، ولن تُحذف بياناته أو سجل نشاطه.`}
+        confirmLabel="تعطيل الموظف"
+        cancelLabel="إلغاء"
+        danger={false}
+        onCancel={() => setConfirmToggle(null)}
+        onConfirm={async () => { const member = confirmToggle; setConfirmToggle(null); if (member) await toggleActive(member) }}
+      />
 
       <ConfirmDialog
         open={!!confirmDelete}
@@ -494,52 +536,131 @@ function MenuAction({ icon, label, onClick, danger = false, disabled = false }) 
   return <button disabled={disabled} onClick={onClick} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '9px', border: 'none', borderRadius: '8px', background: 'transparent', color: danger ? '#D92D20' : '#344054', fontFamily: 'Tajawal,sans-serif', fontSize: '12px', fontWeight: '800', cursor: disabled ? 'default' : 'pointer', textAlign: 'right', opacity: disabled ? .6 : 1 }}><Icon type={icon} size={14} />{label}</button>
 }
 
+function LoadErrorState({ message, onRetry }) {
+  return <div style={{ background: 'white', border: '1px solid #FECACA', borderRadius: '16px', padding: '34px 20px', textAlign: 'center' }}><span style={{ width: '44px', height: '44px', display: 'grid', placeItems: 'center', borderRadius: '13px', background: '#FEF2F2', color: '#D92D20', margin: '0 auto 10px' }}><Icon type="info" size={22} /></span><div style={{ color: '#B42318', fontFamily: 'Tajawal,sans-serif', fontSize: '15px', fontWeight: '900' }}>تعذّر تحميل الموظفين</div><p style={{ margin: '6px auto 14px', maxWidth: '360px', color: '#7A271A', fontSize: '12px', lineHeight: 1.7 }}>{message}</p><button onClick={onRetry} style={{ ...softButton, borderColor: '#FECACA', color: '#B42318' }}>إعادة المحاولة</button></div>
+}
+
 function EmptyState({ onAdd }) {
   return <div style={{ background: 'white', border: '1px solid #E7EAEE', borderRadius: '18px', padding: '48px 22px', textAlign: 'center', boxShadow: '0 4px 12px rgba(16,24,40,.025)' }}><span style={{ width: '58px', height: '58px', borderRadius: '17px', display: 'grid', placeItems: 'center', color: '#FF6A00', background: '#FFF0EB', margin: '0 auto 14px' }}><Icon type="users" size={27} /></span><div style={{ color: '#101828', fontFamily: 'Tajawal,sans-serif', fontSize: '16px', fontWeight: '900', marginBottom: '5px' }}>لا يوجد موظفون بعد</div><p style={{ maxWidth: '330px', margin: '0 auto 18px', color: '#667085', fontSize: '13px', lineHeight: 1.7 }}>أضف أعضاء فريقك وحدد صلاحياتهم ونطاق الفروع لإدارة المطعم بأمان.</p><button onClick={onAdd} style={{ padding: '10px 14px', borderRadius: '11px', border: 'none', background: '#FF6A00', color: 'white', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', cursor: 'pointer' }}>+ إضافة موظف</button></div>
 }
 
+function PermissionDialog({ member, branchNames, pageNames, onClose }) {
+  if (!member) return null
+  const pages = pageNames[0] === 'كل الصفحات' ? ['كل الصفحات التشغيلية المتاحة'] : pageNames
+  return <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 110, padding: '18px', background: 'rgba(16,24,40,.48)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div onClick={event => event.stopPropagation()} style={{ width: '100%', maxWidth: '390px', background: 'white', borderRadius: '17px', padding: '20px', direction: 'rtl' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '15px' }}><div><div style={{ color: '#101828', fontFamily: 'Tajawal,sans-serif', fontSize: '16px', fontWeight: '900' }}>صلاحيات {member.username}</div><div style={{ color: '#667085', fontSize: '12px', marginTop: '4px' }}>{ROLE_LABELS[member.role] || 'موظف'} · {member.is_active ? 'حساب مفعل' : 'حساب معطل'}</div></div><button aria-label="إغلاق" onClick={onClose} style={{ width: '32px', height: '32px', display: 'grid', placeItems: 'center', border: '1px solid #E4E7EC', borderRadius: '9px', background: 'white', color: '#667085', cursor: 'pointer' }}><Icon type="close" size={16} /></button></div><div style={{ display: 'grid', gap: '12px' }}><PermissionSummary title="الفروع المسموحة" items={branchNames} /><PermissionSummary title="الصفحات المفعلة" items={pages.length ? pages : ['بدون صلاحيات صفحات']} /></div><button onClick={onClose} style={{ width: '100%', minHeight: '43px', marginTop: '18px', border: 'none', borderRadius: '11px', background: '#FF6A00', color: 'white', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', cursor: 'pointer' }}>تم</button></div></div>
+}
+
+function PermissionSummary({ title, items }) {
+  return <div style={{ padding: '12px', border: '1px solid #EAECF0', borderRadius: '12px', background: '#FCFCFD' }}><div style={{ color: '#475467', fontSize: '11px', fontWeight: '900', marginBottom: '8px' }}>{title}</div><div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>{items.map(item => <span key={item} style={{ padding: '4px 7px', borderRadius: '999px', background: '#FFF0EB', color: '#9A3412', fontSize: '11px', fontWeight: '800' }}>{item}</span>)}</div></div>
+}
+
 function StaffModal({ isMobile, editing, form, branches, saving, onClose, onSave, onForm, onRole, onTogglePage, onToggleBranch }) {
+  const [activeTab, setActiveTab] = useState('info')
+  const [showPassword, setShowPassword] = useState(false)
   const isAllPages = form.all_pages
+  const rolePreset = ROLE_PRESETS[form.role] || []
+  const presetPages = rolePreset.includes('all') ? MANAGEABLE_PAGE_KEYS : rolePreset
+  const enabledPages = isAllPages ? MANAGEABLE_PAGE_KEYS : form.allowed_pages
+  const addedPages = enabledPages.filter(page => !presetPages.includes(page))
+  const removedPages = presetPages.filter(page => !enabledPages.includes(page))
+  const manualCount = addedPages.length + removedPages.length
+  const strength = getPasswordStrength(form.password)
+  const tabs = [
+    { key: 'info', label: 'معلومات الموظف' },
+    { key: 'permissions', label: 'الصلاحيات' },
+    { key: 'branches', label: 'الفروع' },
+    { key: 'security', label: 'الحساب والأمان' },
+  ]
+  const setGroupPages = (group, checked) => {
+    const groupKeys = group.pages.map(page => page.key)
+    onForm(current => ({
+      ...current,
+      allowed_pages: checked
+        ? [...new Set([...current.allowed_pages, ...groupKeys])]
+        : current.allowed_pages.filter(page => !groupKeys.includes(page)),
+    }))
+  }
+  const selectAllBranches = () => onForm(current => ({ ...current, branch_ids: branches.map(branch => branch.id) }))
+  const clearBranches = () => onForm(current => ({ ...current, branch_ids: [] }))
+
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, padding: isMobile ? 0 : '16px', background: 'rgba(16,24,40,.48)', display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}>
-      <div className="staff-modal-sheet" onClick={event => event.stopPropagation()} style={{ width: '100%', maxWidth: '610px', maxHeight: '88vh', overflowY: 'auto', background: 'white', borderRadius: '18px', padding: isMobile ? '18px 16px calc(18px + env(safe-area-inset-bottom))' : '22px', direction: 'rtl' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', marginBottom: '19px' }}>
-          <div><h2 style={{ margin: 0, color: '#101828', fontFamily: 'Tajawal,sans-serif', fontSize: '18px', fontWeight: '900' }}>{editing ? `تعديل ${editing.username}` : 'إضافة موظف'}</h2><p style={{ margin: '4px 0 0', color: '#667085', fontSize: '12px', lineHeight: 1.55 }}>حدد الدور والصلاحيات والفروع التي يمكن للموظف العمل فيها.</p></div>
+      <div className="staff-modal-sheet" onClick={event => event.stopPropagation()} style={{ width: '100%', maxWidth: '640px', maxHeight: '88vh', overflowY: 'auto', background: 'white', borderRadius: '18px', padding: isMobile ? '18px 16px calc(18px + env(safe-area-inset-bottom))' : '22px', direction: 'rtl' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', marginBottom: '15px' }}>
+          <div><h2 style={{ margin: 0, color: '#101828', fontFamily: 'Tajawal,sans-serif', fontSize: '18px', fontWeight: '900' }}>{editing ? 'تعديل الموظف' : 'إضافة موظف'}</h2><p style={{ margin: '4px 0 0', color: '#667085', fontSize: '12px', lineHeight: 1.55 }}>{editing ? `تعديل دور وصلاحيات وفروع ${editing.username}.` : 'أنشئ حسابًا وحدد الدور والصلاحيات ونطاق الفروع بأمان.'}</p></div>
           <button aria-label="إغلاق" onClick={onClose} style={{ width: '34px', height: '34px', borderRadius: '9px', border: '1px solid #E4E7EC', background: 'white', color: '#667085', display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0 }}><Icon type="close" size={17} /></button>
         </div>
 
-        {!editing && <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '15px' }}>
-          <div><label style={labelStyle}>اسم المستخدم *</label><input style={{ ...inputStyle, direction: 'ltr', textAlign: 'left' }} value={form.username} onChange={event => onForm(current => ({ ...current, username: event.target.value }))} placeholder="e.g. ahmad_muruj" autoCapitalize="none" autoCorrect="off" /></div>
-          <div><label style={labelStyle}>كلمة المرور *</label><input type="password" style={{ ...inputStyle, direction: 'ltr', textAlign: 'left' }} value={form.password} onChange={event => onForm(current => ({ ...current, password: event.target.value }))} placeholder="6 أحرف على الأقل" autoComplete="new-password" /></div>
-        </div>}
+        <div role="tablist" aria-label="أقسام إدارة الموظف" style={{ display: 'flex', gap: '5px', overflowX: 'auto', paddingBottom: '9px', borderBottom: '1px solid #EAECF0', marginBottom: '16px', scrollbarWidth: 'none' }}>
+          {tabs.map(tab => <button type="button" role="tab" aria-selected={activeTab === tab.key} key={tab.key} onClick={() => setActiveTab(tab.key)} style={{ flexShrink: 0, padding: '8px 10px', border: 'none', borderRadius: '9px', background: activeTab === tab.key ? '#FFF0EB' : 'transparent', color: activeTab === tab.key ? '#C2410C' : '#667085', fontFamily: 'Tajawal,sans-serif', fontSize: '11px', fontWeight: '900', cursor: 'pointer' }}>{tab.label}</button>)}
+        </div>
 
-        <section style={{ marginBottom: '16px' }}>
+        {activeTab === 'info' && <section>
+          {editing ? <div style={{ padding: '12px', border: '1px solid #EAECF0', borderRadius: '12px', background: '#FCFCFD', marginBottom: '15px' }}><div style={{ color: '#98A2B3', fontSize: '10px', fontWeight: '900', marginBottom: '3px' }}>اسم المستخدم</div><div style={{ direction: 'ltr', textAlign: 'right', color: '#344054', fontWeight: '900', fontSize: '14px' }}>{editing.username}</div></div> : <div style={{ marginBottom: '15px' }}><label style={labelStyle}>اسم المستخدم *</label><input style={{ ...inputStyle, direction: 'ltr', textAlign: 'left' }} value={form.username} onChange={event => onForm(current => ({ ...current, username: event.target.value }))} placeholder="e.g. ahmad_muruj" autoCapitalize="none" autoCorrect="off" autoComplete="username" /><p style={{ margin: '6px 0 0', color: '#98A2B3', fontSize: '11px' }}>3 أحرف إنجليزية على الأقل، من دون مسافات.</p></div>}
           <label style={labelStyle}>الدور *</label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: '8px' }}>
-            {MEMBER_ROLES.map(role => {
-              const selected = form.role === role
-              return <button type="button" key={role} onClick={() => onRole(role)} style={{ padding: '10px 7px', borderRadius: '11px', cursor: 'pointer', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '12px', border: `1.5px solid ${selected ? '#FFD0B5' : '#E4E7EC'}`, background: selected ? '#FFF0EB' : 'white', color: selected ? '#C2410C' : '#475467' }}>{ROLE_LABELS[role]}</button>
-            })}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: '8px' }}>{MEMBER_ROLES.map(role => { const selected = form.role === role; return <button type="button" key={role} onClick={() => onRole(role)} style={{ padding: '11px 7px', borderRadius: '11px', cursor: 'pointer', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '12px', border: `1.5px solid ${selected ? '#FFD0B5' : '#E4E7EC'}`, background: selected ? '#FFF0EB' : 'white', color: selected ? '#C2410C' : '#475467' }}>{ROLE_LABELS[role]}</button> })}</div>
+          <div style={{ display: 'flex', gap: '7px', marginTop: '10px', color: '#667085', fontSize: '11px', lineHeight: 1.6 }}><Icon type="info" size={14} />اختيار الدور يطبق الصلاحيات الافتراضية، ويمكن تخصيصها من تبويب الصلاحيات.</div>
+        </section>}
+
+        {activeTab === 'permissions' && <section>
+          <div style={{ padding: '12px', border: '1px solid #E4E7EC', background: '#FCFCFD', borderRadius: '12px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}><div><div style={{ color: '#344054', fontSize: '12px', fontWeight: '900' }}>ملخص الصلاحيات</div><div style={{ color: '#667085', fontSize: '11px', marginTop: '3px' }}>{isAllPages ? 'كل الصفحات التشغيلية مفعلة' : `${enabledPages.length} صلاحيات مفعلة`} {manualCount ? ` · ${manualCount} مخصصة` : ''}</div></div><span style={{ padding: '4px 7px', borderRadius: '999px', background: manualCount ? '#FFF7ED' : '#ECFDF3', color: manualCount ? '#C2410C' : '#027A48', fontSize: '10px', fontWeight: '900' }}>{manualCount ? 'مخصصة' : 'الصلاحيات الافتراضية'}</span></div>
+            <div style={{ marginTop: '10px' }}><div style={{ color: '#98A2B3', fontSize: '10px', fontWeight: '900', marginBottom: '5px' }}>الصلاحيات الافتراضية</div><PermissionChips items={presetPages.length ? presetPages.map(key => pageByKey.get(key)?.name || key) : ['لا توجد صلاحيات افتراضية']} muted /></div>
+            {manualCount > 0 && <div style={{ marginTop: '9px' }}><div style={{ color: '#98A2B3', fontSize: '10px', fontWeight: '900', marginBottom: '5px' }}>التخصيصات اليدوية</div><PermissionChips items={[...addedPages.map(key => `+ ${pageByKey.get(key)?.name || key}`), ...removedPages.map(key => `− ${pageByKey.get(key)?.name || key}`)]} /></div>}
           </div>
-          <p style={{ margin: '6px 0 0', color: '#98A2B3', fontSize: '11px', lineHeight: 1.5 }}>الدور يطبق قالبًا ابتدائيًا، ويمكنك تعديل الصلاحيات يدويًا في أي وقت.</p>
-        </section>
+          <div style={{ display: 'flex', gap: '7px', marginBottom: '9px' }}><button type="button" onClick={() => onForm(current => ({ ...current, all_pages: true, allowed_pages: [] }))} style={{ ...softButton, flex: 1, borderColor: isAllPages ? '#FFD0B5' : '#E4E7EC', background: isAllPages ? '#FFF0EB' : 'white', color: isAllPages ? '#C2410C' : '#475467' }}>كل الصفحات</button><button type="button" onClick={() => onForm(current => ({ ...current, all_pages: false, allowed_pages: current.allowed_pages }))} style={{ ...softButton, flex: 1, borderColor: !isAllPages ? '#FFD0B5' : '#E4E7EC', background: !isAllPages ? '#FFF0EB' : 'white', color: !isAllPages ? '#C2410C' : '#475467' }}>تخصيص يدوي</button></div>
+          {!isAllPages && <><div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', alignItems: 'center', marginBottom: '9px' }}><label style={{ ...labelStyle, margin: 0 }}>الصلاحيات *</label><div style={{ display: 'flex', gap: '6px' }}><button type="button" onClick={() => onForm(current => ({ ...current, allowed_pages: [...MANAGEABLE_PAGE_KEYS] }))} style={{ border: 0, background: 'transparent', color: '#C2410C', fontFamily: 'Tajawal,sans-serif', fontSize: '11px', fontWeight: '900', cursor: 'pointer' }}>تحديد الكل</button><button type="button" onClick={() => onForm(current => ({ ...current, allowed_pages: [] }))} style={{ border: 0, background: 'transparent', color: '#667085', fontFamily: 'Tajawal,sans-serif', fontSize: '11px', fontWeight: '900', cursor: 'pointer' }}>إلغاء الكل</button></div></div><div style={{ display: 'grid', gap: '9px' }}>{PERMISSION_GROUPS.map(group => <PermissionGroup key={group.key} group={group} selectedPages={form.allowed_pages} onTogglePage={onTogglePage} onSetGroup={setGroupPages} isMobile={isMobile} />)}<OwnerOnlyGroup /></div></>}
+        </section>}
 
-        <section style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '8px' }}><label style={{ ...labelStyle, marginBottom: 0 }}>الصلاحيات *</label>{!isAllPages && <div style={{ display: 'flex', gap: '6px' }}><button type="button" onClick={() => onForm(current => ({ ...current, allowed_pages: [...MANAGEABLE_PAGE_KEYS] }))} style={{ border: 0, background: 'transparent', color: '#C2410C', fontFamily: 'Tajawal,sans-serif', fontSize: '11px', fontWeight: '900', cursor: 'pointer' }}>تحديد الكل</button><button type="button" onClick={() => onForm(current => ({ ...current, allowed_pages: [] }))} style={{ border: 0, background: 'transparent', color: '#667085', fontFamily: 'Tajawal,sans-serif', fontSize: '11px', fontWeight: '900', cursor: 'pointer' }}>إلغاء الكل</button></div>}</div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '11px 12px', borderRadius: '11px', background: isAllPages ? '#FFF0EB' : '#FCFCFD', border: `1.5px solid ${isAllPages ? '#FFD0B5' : '#E4E7EC'}`, cursor: 'pointer', marginBottom: '8px' }}><input type="checkbox" checked={isAllPages} onChange={event => onForm(current => ({ ...current, all_pages: event.target.checked, allowed_pages: event.target.checked ? [] : current.allowed_pages }))} /><span style={{ display: 'grid', placeItems: 'center', color: '#C2410C' }}><Icon type="shield" size={15} /></span><span style={{ color: '#C2410C', fontSize: '12px', fontWeight: '900' }}>كل الصفحات — صلاحية كاملة</span></label>
-          {!isAllPages && <div style={{ display: 'grid', gap: '10px' }}>{PERMISSION_GROUPS.map(group => <div key={group.key} style={{ border: '1px solid #EAECF0', borderRadius: '12px', overflow: 'hidden' }}><div style={{ padding: '8px 11px', background: '#F9FAFB', color: '#475467', fontSize: '11px', fontWeight: '900' }}>{group.label}</div><div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1px', background: '#EAECF0' }}>{group.pages.map(page => { const checked = form.allowed_pages.includes(page.key); return <label key={page.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 11px', background: checked ? '#FFF9F5' : 'white', cursor: 'pointer' }}><input type="checkbox" checked={checked} onChange={() => onTogglePage(page.key)} /><span style={{ fontSize: '12px', fontWeight: '800', color: checked ? '#9A3412' : '#475467' }}>{page.name}</span></label> })}</div></div>)}</div>}
-        </section>
+        {activeTab === 'branches' && <section>
+          <label style={labelStyle}>الفروع *</label><div style={{ display: 'flex', gap: '7px', marginBottom: '10px' }}>{[{ key: 'all', label: 'كل الفروع' }, { key: 'selected', label: 'فروع محددة' }].map(option => <button type="button" key={option.key} onClick={() => onForm(current => ({ ...current, branch_mode: option.key, branch_ids: option.key === 'all' ? [] : current.branch_ids }))} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: `1.5px solid ${form.branch_mode === option.key ? '#FFD0B5' : '#E4E7EC'}`, background: form.branch_mode === option.key ? '#FFF0EB' : 'white', color: form.branch_mode === option.key ? '#C2410C' : '#475467', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '12px', cursor: 'pointer' }}>{option.label}</button>)}</div>
+          {form.branch_mode === 'all' ? <div style={{ display: 'flex', gap: '7px', padding: '12px', borderRadius: '12px', background: '#FCFCFD', border: '1px solid #EAECF0', color: '#667085', fontSize: '11px', lineHeight: 1.6 }}><Icon type="info" size={14} />هذا الموظف يرى ويعمل على كل فروع المطعم ضمن صفحاته المسموحة.</div> : <><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}><span style={{ color: '#667085', fontSize: '11px', fontWeight: '800' }}>{form.branch_ids.length} من {branches.length} فروع محددة</span><div style={{ display: 'flex', gap: '6px' }}><button type="button" onClick={selectAllBranches} style={{ border: 0, background: 'transparent', color: '#C2410C', fontFamily: 'Tajawal,sans-serif', fontSize: '11px', fontWeight: '900', cursor: 'pointer' }}>تحديد الكل</button><button type="button" onClick={clearBranches} style={{ border: 0, background: 'transparent', color: '#667085', fontFamily: 'Tajawal,sans-serif', fontSize: '11px', fontWeight: '900', cursor: 'pointer' }}>إلغاء الكل</button></div></div><div style={{ display: 'grid', gap: '7px' }}>{branches.map(branch => { const checked = form.branch_ids.includes(branch.id); return <label key={branch.id} style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '11px', borderRadius: '10px', border: `1px solid ${checked ? '#FFD0B5' : '#EAECF0'}`, background: checked ? '#FFF9F5' : 'white', cursor: 'pointer' }}><input type="checkbox" checked={checked} onChange={() => onToggleBranch(branch.id)} style={{ accentColor: '#FF6A00', width: '16px', height: '16px' }} /><span style={{ display: 'grid', color: '#98A2B3' }}><Icon type="branch" size={14} /></span><span style={{ color: '#344054', fontSize: '12px', fontWeight: '800' }}>{branch.name}{branch.is_primary ? ' · الرئيسي' : ''}</span></label> })}</div><p style={{ margin: '8px 0 0', color: form.branch_ids.length ? '#667085' : '#B42318', fontSize: '11px' }}>{form.branch_ids.length ? 'البيانات في الطلبات والطاولات تُحجب خادميًا عن الفروع غير المحددة.' : 'اختر فرعًا واحدًا على الأقل.'}</p></>}
+        </section>}
 
-        <section style={{ marginBottom: '20px' }}>
-          <label style={labelStyle}>الفروع *</label>
-          <div style={{ display: 'flex', gap: '7px', marginBottom: '9px' }}>
-            {[{ key: 'all', label: 'كل الفروع' }, { key: 'selected', label: 'فروع محددة' }].map(option => <button type="button" key={option.key} onClick={() => onForm(current => ({ ...current, branch_mode: option.key, branch_ids: option.key === 'all' ? [] : current.branch_ids }))} style={{ flex: 1, padding: '9px 10px', borderRadius: '10px', border: `1.5px solid ${form.branch_mode === option.key ? '#FFD0B5' : '#E4E7EC'}`, background: form.branch_mode === option.key ? '#FFF0EB' : 'white', color: form.branch_mode === option.key ? '#C2410C' : '#475467', fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '12px', cursor: 'pointer' }}>{option.label}</button>)}
-          </div>
-          {form.branch_mode === 'all' ? <div style={{ display: 'flex', gap: '7px', color: '#667085', fontSize: '11px', lineHeight: 1.6 }}><Icon type="info" size={14} />هذا الموظف يرى ويعمل على كل فروع المطعم ضمن صفحاته المسموحة.</div> : <><div style={{ display: 'grid', gap: '7px' }}>{branches.map(branch => { const checked = form.branch_ids.includes(branch.id); return <label key={branch.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 11px', borderRadius: '10px', border: `1px solid ${checked ? '#FFD0B5' : '#EAECF0'}`, background: checked ? '#FFF9F5' : 'white', cursor: 'pointer' }}><input type="checkbox" checked={checked} onChange={() => onToggleBranch(branch.id)} /><span style={{ display: 'grid', color: '#98A2B3' }}><Icon type="branch" size={14} /></span><span style={{ color: '#344054', fontSize: '12px', fontWeight: '800' }}>{branch.name}{branch.is_primary ? ' · الرئيسي' : ''}</span></label> })}</div><p style={{ margin: '7px 0 0', color: '#98A2B3', fontSize: '11px' }}>{form.branch_ids.length === 1 ? 'هذا الموظف يرى ويعمل على هذا الفرع فقط.' : form.branch_ids.length > 1 ? `هذا الموظف يرى ويعمل على ${form.branch_ids.length} فروع.` : 'اختر فرعًا واحدًا على الأقل.'}</p></>}
-        </section>
+        {activeTab === 'security' && <section>
+          {!editing ? <><label style={labelStyle}>كلمة المرور *</label><div style={{ position: 'relative' }}><input type={showPassword ? 'text' : 'password'} style={{ ...inputStyle, direction: 'ltr', textAlign: 'left', paddingLeft: '46px' }} value={form.password} onChange={event => onForm(current => ({ ...current, password: event.target.value }))} placeholder="كلمة مرور قوية" autoComplete="new-password" /><button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'} style={{ position: 'absolute', left: '7px', top: '50%', transform: 'translateY(-50%)', minWidth: '34px', height: '32px', border: 'none', borderRadius: '8px', background: '#F2F4F7', color: '#475467', fontFamily: 'Tajawal,sans-serif', fontSize: '10px', fontWeight: '900', cursor: 'pointer' }}>{showPassword ? 'إخفاء' : 'إظهار'}</button></div><PasswordStrength strength={strength} /></> : <div style={{ display: 'grid', gap: '10px' }}><SecurityInfo title="حالة الحساب" value={editing.is_active ? 'مفعل' : 'معطل'} good={!!editing.is_active} /><SecurityInfo title="كلمة المرور" value="لا تتغير من هذه الصفحة حفاظًا على أمان الحساب." /><SecurityInfo title="تسجيل الدخول والنشاط" value="تعرض بطاقة الموظف القيم الحقيقية عند توفر مصدر بيانات لها؛ لا يتم إنشاء سجل وهمي." /></div>}
+          <div style={{ display: 'flex', gap: '7px', marginTop: '12px', padding: '11px', borderRadius: '11px', border: '1px solid #FEF3F2', background: '#FFFAF8', color: '#9A3412', fontSize: '11px', lineHeight: 1.6 }}><Icon type="shield" size={14} />الصلاحيات ونطاق الفروع مطبقان على مستوى Authorization وRLS، وليس بإخفاء عناصر الواجهة فقط.</div>
+        </section>}
 
-        <div style={{ display: 'flex', gap: '9px' }}><button onClick={onClose} disabled={saving} style={{ ...softButton, flex: 1, minHeight: '46px' }}>إلغاء</button><button onClick={onSave} disabled={saving} style={{ flex: 2, minHeight: '46px', borderRadius: '11px', border: 'none', background: saving ? '#98A2B3' : '#FF6A00', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '13px', fontWeight: '900', cursor: saving ? 'default' : 'pointer' }}>{saving ? 'جارٍ الحفظ...' : editing ? 'حفظ التعديلات' : 'إنشاء الموظف'}</button></div>
+        <div style={{ position: 'sticky', bottom: 0, display: 'flex', gap: '9px', paddingTop: '15px', marginTop: '17px', background: 'linear-gradient(180deg,rgba(255,255,255,0),#fff 22%)' }}><button onClick={onClose} disabled={saving} style={{ ...softButton, flex: 1, minHeight: '46px', background: 'white' }}>إلغاء</button><button onClick={onSave} disabled={saving} style={{ flex: 2, minHeight: '46px', borderRadius: '11px', border: 'none', background: saving ? '#98A2B3' : '#FF6A00', color: 'white', fontFamily: 'Tajawal,sans-serif', fontSize: '13px', fontWeight: '900', cursor: saving ? 'default' : 'pointer' }}>{saving ? 'جارٍ الحفظ...' : editing ? 'حفظ التعديلات' : 'إنشاء الموظف'}</button></div>
       </div>
     </div>
   )
+}
+
+function PermissionGroup({ group, selectedPages, onTogglePage, onSetGroup, isMobile }) {
+  const groupKeys = group.pages.map(page => page.key)
+  const selectedCount = groupKeys.filter(key => selectedPages.includes(key)).length
+  return <div style={{ border: '1px solid #EAECF0', borderRadius: '12px', overflow: 'hidden' }}><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '9px', padding: '9px 11px', background: '#F9FAFB', color: '#475467' }}><span style={{ fontSize: '11px', fontWeight: '900' }}>{group.label}</span><GroupToggle checked={selectedCount === groupKeys.length} indeterminate={selectedCount > 0 && selectedCount < groupKeys.length} label={`${selectedCount}/${groupKeys.length}`} onChange={checked => onSetGroup(group, checked)} /></div><div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1px', background: '#EAECF0' }}>{group.pages.map(page => { const checked = selectedPages.includes(page.key); return <label key={page.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 11px', background: checked ? '#FFF9F5' : 'white', cursor: 'pointer' }}><input type="checkbox" checked={checked} onChange={() => onTogglePage(page.key)} style={{ accentColor: '#FF6A00', width: '16px', height: '16px' }} /><span style={{ fontSize: '12px', fontWeight: '800', color: checked ? '#9A3412' : '#475467' }}>{page.name}</span></label> })}</div></div>
+}
+
+function GroupToggle({ checked, indeterminate, label, onChange }) {
+  const inputRef = useRef(null)
+  useEffect(() => { if (inputRef.current) inputRef.current.indeterminate = indeterminate }, [indeterminate])
+  return <label style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '10px', fontWeight: '900' }}><span>{label}</span><input ref={inputRef} type="checkbox" checked={checked} onChange={event => onChange(event.target.checked)} style={{ accentColor: '#FF6A00', width: '15px', height: '15px' }} /></label>
+}
+
+function OwnerOnlyGroup() {
+  return <div style={{ padding: '11px', border: '1px dashed #D0D5DD', borderRadius: '12px', background: '#FCFCFD' }}><div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#667085', fontSize: '11px', fontWeight: '900' }}><Icon type="shield" size={14} />الإدارة <span style={{ padding: '2px 6px', borderRadius: '999px', background: '#F2F4F7', fontSize: '9px' }}>للمالك فقط</span></div><p style={{ margin: '5px 0 0', color: '#98A2B3', fontSize: '10px', lineHeight: 1.55 }}>إدارة الموظفين وإعدادات المطعم والتكاملات تبقى محمية ولا يمكن منحها من هنا.</p></div>
+}
+
+function PermissionChips({ items, muted = false }) {
+  return <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>{items.map(item => <span key={item} style={{ padding: '3px 6px', borderRadius: '999px', background: muted ? '#F2F4F7' : '#FFF0EB', color: muted ? '#667085' : '#9A3412', fontSize: '10px', fontWeight: '800' }}>{item}</span>)}</div>
+}
+
+function PasswordStrength({ strength }) {
+  const colors = ['#EAECF0', '#D92D20', '#F79009', '#12B76A']
+  return <div style={{ marginTop: '9px' }}><div style={{ display: 'flex', gap: '4px' }}>{[1, 2, 3].map(level => <span key={level} style={{ height: '4px', flex: 1, borderRadius: '99px', background: strength.level >= level ? colors[strength.level] : '#EAECF0' }} />)}</div><div style={{ marginTop: '5px', color: strength.level ? colors[strength.level] : '#98A2B3', fontSize: '11px', fontWeight: '800' }}>{strength.label}</div><div style={{ marginTop: '2px', color: '#98A2B3', fontSize: '10px' }}>استخدم 8 أحرف أو أكثر مع رقم ورمز لزيادة الحماية.</div></div>
+}
+
+function getPasswordStrength(password) {
+  if (!password) return { level: 0, label: 'أدخل كلمة المرور' }
+  const score = Number(password.length >= 8) + Number(/[A-Z]/.test(password)) + Number(/[a-z]/.test(password)) + Number(/\d/.test(password)) + Number(/[^A-Za-z0-9]/.test(password))
+  if (score <= 2) return { level: 1, label: 'كلمة المرور ضعيفة' }
+  if (score <= 3) return { level: 2, label: 'كلمة المرور متوسطة' }
+  return { level: 3, label: 'كلمة المرور قوية' }
+}
+
+function SecurityInfo({ title, value, good = false }) {
+  return <div style={{ padding: '12px', border: '1px solid #EAECF0', borderRadius: '11px', background: '#FCFCFD' }}><div style={{ color: '#98A2B3', fontSize: '10px', fontWeight: '900', marginBottom: '4px' }}>{title}</div><div style={{ color: good ? '#027A48' : '#475467', fontSize: '12px', lineHeight: 1.55, fontWeight: '800' }}>{value}</div></div>
 }
