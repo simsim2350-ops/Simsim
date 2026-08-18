@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { fetchActiveCartWideIds } from '../../../lib/recommendationsApi'
 
 // معرّفات أصناف قسم "أكمل وجبتك" العام في السلة — قائمة مستقلة لكل فرع ينسّقها صاحب المطعم بمعزل
-// عن قواعد الأصناف الفردية (product_recommendations) وعن «الأكثر طلبًا 🔥» (is_most_ordered) و«مميز» (is_featured).
+// عن قواعد الأصناف الفردية (product_recommendations) وعن حالة «مميز» التي تغذي قائمة «الأكثر طلبًا 🔥».
 export function useCartWideIds(restaurant, branch) {
   const [ids, setIds] = useState([])
 

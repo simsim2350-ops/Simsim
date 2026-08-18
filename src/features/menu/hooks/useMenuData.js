@@ -131,7 +131,7 @@ export function useMenuData(slug, branchId) {
       setProducts(nextProducts)
       setActiveCategory(previous => nextCategories.some(category => category.id === previous) ? previous : (nextCategories[0]?.id || null))
 
-      // حساب قائمة «يعجب زبائننا» من الطلبات الفعلية غير الملغاة خلال آخر 30 يومًا (عبر RPC آمن)، وهي مستقلة عن is_most_ordered اليدوي.
+      // حساب قائمة «يعجب زبائننا» من الطلبات الفعلية غير الملغاة خلال آخر 30 يومًا (عبر RPC آمن)، وهي مستقلة عن المنتجات المميزة.
       const { data: pastOrders } = await supabase.rpc('get_recent_order_items', { p_restaurant_id: rest.id })
 
       if (pastOrders && nextProducts.length > 0) {

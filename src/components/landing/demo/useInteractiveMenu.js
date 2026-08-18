@@ -71,7 +71,7 @@ function normalizeOptions(options) {
   }))
 }
 
-function normalizeProduct(product, mostOrderedIds) {
+function normalizeProduct(product) {
   return {
     id: product.id,
     categoryId: product.category_id,
@@ -82,7 +82,7 @@ function normalizeProduct(product, mostOrderedIds) {
     options: normalizeOptions(product.options),
     image_url: product.image_url || null,
     emoji: product.emoji || '🍽️',
-    best: mostOrderedIds.has(product.id),
+    best: Boolean(product.is_featured),
   }
 }
 
@@ -104,10 +104,9 @@ export default function useInteractiveMenu(slug) {
   } = useMenuData(slug)
 
   const t = UI_COPY[lang]
-  const mostOrderedIds = useMemo(() => new Set((liveProducts || []).filter((product) => product.is_most_ordered).map((product) => product.id)), [liveProducts])
   const products = useMemo(
-    () => (liveProducts || []).map((product) => normalizeProduct(product, mostOrderedIds)),
-    [liveProducts, mostOrderedIds],
+    () => (liveProducts || []).map((product) => normalizeProduct(product)),
+    [liveProducts],
   )
 
   const productById = useMemo(() => new Map(products.map((product) => [product.id, product])), [products])
@@ -117,7 +116,7 @@ export default function useInteractiveMenu(slug) {
       name: asLocalized(category.name, category.name_en),
       icon: category.emoji || '🍽️',
     }))
-    const mostOrdered = (liveProducts || []).filter((product) => product.is_most_ordered && productById.has(product.id))
+    const mostOrdered = (liveProducts || []).filter((product) => product.is_featured && productById.has(product.id))
     return mostOrdered.length > 0
       ? [{ id: 'most-ordered', name: asLocalized(t.mostOrdered, 'Most ordered'), icon: '🔥' }, ...actualCategories]
       : actualCategories
