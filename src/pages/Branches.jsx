@@ -207,13 +207,13 @@ export default function Branches() {
     }
   }
 
-  const PageTitle = <span style={{ display:'inline-flex', alignItems:'center', gap:'10px', minWidth:0 }}><span style={{ width:'46px', height:'46px', borderRadius:'13px', display:'grid', placeItems:'center', color:'#FF6A00', background:'#FFF0EB', border:'1px solid #FFD4BE', flexShrink:0 }}><Icon type="branch" size={21}/></span><span style={{ display:'flex', flexDirection:'column', gap:'3px', minWidth:0 }}><strong style={{ fontSize:isMobile?'18px':'21px', fontWeight:'900', letterSpacing:'-0.02em' }}>الفروع</strong><small style={{ fontSize:isMobile?'10px':'11px', color:'#6B7280', fontWeight:'600', whiteSpace:'nowrap' }}>إدارة فروع المطعم ومنيوهاتها</small></span></span>
+  const PageTitle = <span style={{ display:'inline-flex', alignItems:'center', gap:'10px', minWidth:0 }}><span style={{ width:isMobile?'42px':'44px', height:isMobile?'42px':'44px', borderRadius:'12px', display:'grid', placeItems:'center', color:'#FF6A00', background:'#FFF0EB', border:'1px solid #FFD4BE', flexShrink:0 }}><Icon type="branch" size={20}/></span><span style={{ display:'flex', flexDirection:'column', gap:'2px', minWidth:0 }}><strong style={{ fontSize:isMobile?'18px':'22px', fontWeight:'900', letterSpacing:'-0.025em', lineHeight:1.15 }}>الفروع</strong><small style={{ fontSize:isMobile?'10px':'11px', color:'#9CA3AF', fontWeight:'600', whiteSpace:'nowrap' }}>إدارة فروع المطعم ومنيوهاتها</small></span></span>
 
   const BranchCard = ({ branch }) => {
     const branchIsLive = branch.is_active && !branch.is_paused
     const isMenuOpen = openMenuId === branch.id
     const runMenuAction = action => { setOpenMenuId(null); action() }
-    return <div style={{ position:'relative', background:'white', borderRadius:'15px', border:branch.is_primary?'1px solid #FFD4BE':'1px solid #E7E9ED', boxShadow:'0 2px 10px rgba(17,24,39,0.035)', padding:isMobile?'14px':'16px', display:'flex', flexDirection:'column', minHeight:isDesktop?'252px':'auto' }}>
+    return <div style={{ position:'relative', background:'white', borderRadius:'15px', border:branch.is_primary?'1px solid #FFD4BE':'1px solid #E7E9ED', boxShadow:'0 2px 10px rgba(17,24,39,0.035)', padding:isMobile?'14px':'16px', display:'flex', flexDirection:'column', minHeight:isDesktop?'246px':'auto' }}>
       <div style={{ display:'flex', alignItems:'flex-start', gap:'10px', marginBottom:'14px' }}>
         <span style={{ width:'38px', height:'38px', borderRadius:'11px', display:'grid', placeItems:'center', color:branch.is_primary?'#FF6A00':'#5B6472', background:branch.is_primary?'#FFF0EB':'#F4F6F8', flexShrink:0 }}><Icon type="branch" size={18}/></span>
         <div style={{ flex:1, minWidth:0 }}>
@@ -226,7 +226,7 @@ export default function Branches() {
         <div style={{ display:'flex', alignItems:'center', gap:'7px', color:'#6B7280', fontSize:'12px', minWidth:0 }}><Icon type="pin" size={14}/><span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{branch.address || 'العنوان غير مضاف'}</span></div>
         <div style={{ display:'flex', alignItems:'center', gap:'7px', color:'#6B7280', fontSize:'12px', minWidth:0 }}><Icon type="phone" size={14}/><span dir="ltr">{branch.phone || 'رقم الهاتف غير مضاف'}</span></div>
       </div>
-      <div style={{ display:'flex', alignItems:'center', gap:'7px', marginTop:'auto' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:'7px', marginTop:'auto', paddingTop:'12px', borderTop:'1px solid #F1F3F5' }}>
         <button onClick={() => previewBranchMenu(branch)} style={{ minHeight:'38px', flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'6px', borderRadius:'10px', border:'1px solid #FF6A00', background:'#FF6A00', color:'white', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'900', cursor:'pointer' }}><Icon type="eye" size={14}/> فتح المنيو</button>
         <button onClick={() => copyBranchURL(branch)} style={{ minHeight:'38px', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'6px', borderRadius:'10px', border:'1px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'800', cursor:'pointer', padding:'7px 10px' }}><Icon type="copy" size={14}/> نسخ الرابط</button>
       </div>
@@ -249,10 +249,10 @@ export default function Branches() {
       </div>}
     >
         <div style={{ flex:1, overflowY:'auto', padding:isDesktop?'24px':'16px', background:'#F8F9FB' }} onClick={() => openMenuId && setOpenMenuId(null)}>
-          <div style={{ maxWidth:'1120px', margin:'0 auto' }}>
-            <div style={{ display:'flex', alignItems:'flex-start', gap:'10px', padding:'12px 14px', marginBottom:'16px', borderRadius:'12px', background:'#FFF7ED', border:'1px solid #FED7AA', color:'#9A3412' }}>
-              <span style={{ width:'26px', height:'26px', display:'grid', placeItems:'center', borderRadius:'8px', background:'#FFEDD5', flexShrink:0 }}><Icon type="info" size={14}/></span>
-              <div><strong style={{ display:'block', fontSize:'12px', marginBottom:'3px' }}>نسخ المنيو تلقائيًا</strong><span style={{ fontSize:'11px', lineHeight:1.6 }}>عند إضافة فرع جديد يتم نسخ منيو الفرع الرئيسي إليه بالكامل، ثم يصبح قابلًا للتعديل بحرية تامة دون أي تأثير على الفروع الأخرى.</span></div>
+          <div style={{ maxWidth:'1120px', margin:'0 auto', paddingBottom:isMobile?'8px':'12px' }}>
+            <div style={{ display:'flex', alignItems:'flex-start', gap:'9px', padding:'10px 12px', marginBottom:'14px', borderRadius:'12px', background:'#FFF9F4', border:'1px solid #FDE2CD', color:'#9A3412' }}>
+              <span style={{ width:'24px', height:'24px', display:'grid', placeItems:'center', borderRadius:'7px', background:'#FFF0E6', flexShrink:0 }}><Icon type="info" size={13}/></span>
+              <div><strong style={{ display:'block', fontSize:'11.5px', marginBottom:'2px' }}>نسخ المنيو تلقائيًا</strong><span style={{ fontSize:'10.5px', lineHeight:1.55, color:'#A8551E' }}>عند إضافة فرع جديد يتم نسخ منيو الفرع الرئيسي إليه بالكامل، ثم يصبح قابلًا للتعديل بحرية تامة دون أي تأثير على الفروع الأخرى.</span></div>
             </div>
             {branches.length === 0 ? <div style={{ minHeight:'260px', display:'grid', placeItems:'center', textAlign:'center', background:'white', border:'1px dashed #D8DCE3', borderRadius:'16px', padding:'30px' }}><div><span style={{ width:'48px', height:'48px', display:'grid', placeItems:'center', margin:'0 auto 12px', borderRadius:'14px', background:'#FFF0EB', color:'#FF6A00' }}><Icon type="branch" size={22}/></span><strong style={{ display:'block', fontSize:'15px', marginBottom:'5px' }}>لا توجد فروع بعد</strong><span style={{ display:'block', fontSize:'12px', color:'#6B7280', marginBottom:'14px' }}>أضف أول فرع لبدء إدارة منيوهات فروعك.</span><button onClick={openAdd} style={{ minHeight:'38px', display:'inline-flex', alignItems:'center', gap:'6px', padding:'7px 13px', borderRadius:'10px', border:'1px solid #FF6A00', background:'#FF6A00', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'12px', cursor:'pointer' }}><Icon type="plus" size={14}/> إضافة فرع</button></div></div> : <div style={{ display:'grid', gridTemplateColumns:isDesktop?'repeat(auto-fit,minmax(300px,1fr))':'1fr', gap:isMobile?'12px':'14px' }}>{branches.map(branch => <BranchCard key={branch.id} branch={branch} />)}</div>}
           </div>
