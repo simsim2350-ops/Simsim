@@ -26,12 +26,11 @@ describe('email verification flow contract', () => {
     expect(verifyEmail).toContain('إعادة إرسال البريد')
   })
 
-  it('يعالج callback عبر PKCE أو hash session ويستأنف المطعم إلى الوجهة الصحيحة', () => {
+  it('يعالج callback عبر PKCE أو hash session ويستأنف المطعم عبر bootstrap موحّد قبل تقرير الوجهة', () => {
     expect(callback).toContain('exchangeCodeForSession(code)')
     expect(callback).toContain("event === 'SIGNED_IN' || event === 'INITIAL_SESSION'")
-    expect(callback).toContain('resumePendingRestaurant()')
-    expect(callback).toContain("navigate('/onboarding', { replace:true })")
-    expect(callback).toContain("navigate('/dashboard', { replace:true })")
+    expect(callback).toContain("completeAuthSession(session, { source: 'email_confirmation_callback' })")
+    expect(callback).toContain('navigate(destination, { replace:true })')
     expect(callback).toContain('رابط التأكيد غير صالح أو انتهت صلاحيته')
     expect(app).toContain('path="/auth/callback"')
     expect(app).toContain('path="/verify-email"')

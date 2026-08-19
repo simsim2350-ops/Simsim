@@ -95,9 +95,11 @@ export default function Onboarding() {
   const navigate = useNavigate()
   const { user, restaurant, fetchRestaurant } = useAuthStore()
 
-  const [stage, setStage] = useState('loading') // loading | welcome | create | info | type | categories | items | minimum | preview | share | done
+  const [stage, setStage] = useState('loading') // loading | error | welcome | create | info | type | categories | items | minimum | preview | share | done
   const [rest, setRest] = useState(restaurant || null)
   const [saving, setSaving] = useState(false)
+  const [loadError, setLoadError] = useState('')
+  const [loadAttempt, setLoadAttempt] = useState(0)
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768)
   const [readiness, setReadiness] = useState(null)
 
@@ -111,6 +113,8 @@ export default function Onboarding() {
   const [selectedItems, setSelectedItems] = useState(new Set())
   const dragFrom = useRef(null)
   const qrRef = useRef(null)
+  const createRestaurantInFlight = useRef(false)
+  const createMenuInFlight = useRef(false)
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768)
@@ -119,26 +123,38 @@ export default function Onboarding() {
   }, [])
 
   useEffect(() => {
+    let cancelled = false
     const load = async () => {
-      let r = restaurant
-      if (!r && user) {
-        const { data } = await supabase.from('restaurants').select('*').eq('owner_id', user.id).maybeSingle()
-        r = data || null
+      setStage('loading')
+      setLoadError('')
+      try {
+        let r = restaurant
+        if (!r && user) {
+          const { data, error } = await supabase.from('restaurants').select('*').eq('owner_id', user.id).maybeSingle()
+          if (error) throw error
+          r = data || null
+        }
+        if (cancelled) return
+        setRest(r)
+        if (!r) { setStage('create'); return }
+        // من أكمل الإعداد لا تُعاد عليه الرحلة.
+        if (r.onboarding_completed) { navigate('/dashboard', { replace:true }); return }
+        setInfo({ description: r.description || '', phone: r.phone || '', address: r.address || '' })
+        const resumed = RESUME_MAP[r.onboarding_step] || 'welcome'
+        if (resumed === 'categories' && r.type) setCats(getTemplate(r.type).slice(0, 5).map(c => ({ ...c })))
+        trackOwnerEvent('onboarding_started', { restaurantId: r.id, props: { resumed: Boolean(r.onboarding_step) } })
+        setStage(resumed)
+      } catch (error) {
+        console.error('Onboarding load error:', error)
+        if (!cancelled) {
+          setLoadError('حدث خطأ أثناء تجهيز حسابك. تحقق من اتصالك ثم أعد المحاولة.')
+          setStage('error')
+        }
       }
-      setRest(r)
-      if (!r) { setStage('create'); return }
-      // من أكمل الإعداد لا تُعاد عليه الرحلة
-      if (r.onboarding_completed) { navigate('/dashboard', { replace:true }); return }
-      // استئناف من آخر خطوة محفوظة (وإلا شاشة الترحيب)
-      setInfo({ description: r.description || '', phone: r.phone || '', address: r.address || '' })
-      const resumed = RESUME_MAP[r.onboarding_step] || 'welcome'
-      // عند الاستئناف لمرحلة الأقسام: نعيد اشتقاق القوالب من النوع المحفوظ
-      if ((resumed === 'categories') && r.type) setCats(getTemplate(r.type).slice(0, 5).map(c => ({ ...c })))
-      trackOwnerEvent('onboarding_started', { restaurantId: r.id, props: { resumed: Boolean(r.onboarding_step) } })
-      setStage(resumed)
     }
-    load()
-  }, []) // eslint-disable-line
+    void load()
+    return () => { cancelled = true }
+  }, [loadAttempt]) // eslint-disable-line
 
   useEffect(() => {
     if (rest?.id) refreshReadiness(rest.id)
@@ -195,19 +211,37 @@ export default function Onboarding() {
   // حفظ خطوة التقدّم في قاعدة البيانات (للاستئناف عند الإغلاق/التحديث) — صامت وغير كاسر
   const saveStep = async (step) => {
     if (!rest?.id) return
-    try { await supabase.from('restaurants').update({ onboarding_step: step }).eq('id', rest.id) } catch { /* غير كاسر */ }
+    try {
+      const { error } = await supabase.from('restaurants').update({ onboarding_step: step }).eq('id', rest.id)
+      if (error) throw error
+    } catch (error) {
+      console.error('Onboarding step persistence error:', error)
+    }
   }
   const goStage = (step) => { setStage(step); saveStep(step) }
 
   // ===== إنشاء المطعم (احتياطي: يُستخدم فقط لو وصل للأونبوردنغ بلا مطعم) =====
   const createRestaurant = async () => {
+    if (saving || createRestaurantInFlight.current) return
     if (!cForm.name.trim()) { toast.error('أدخل اسم المطعم'); return }
     let slug = cForm.slug || slugify(cForm.name)
     if (!slug) slug = `store-${Math.random().toString(36).slice(2, 7)}`
+    createRestaurantInFlight.current = true
     setSaving(true)
     try {
-      const { data: taken } = await supabase.from('restaurants').select('id').eq('slug', slug).maybeSingle()
-      if (taken) { toast.error('الرابط مستخدم، عدّله'); setSaving(false); return }
+      const { data: existingRestaurant, error: existingError } = await supabase
+        .from('restaurants').select('*').eq('owner_id', user.id).maybeSingle()
+      if (existingError) throw existingError
+      if (existingRestaurant) {
+        setRest(existingRestaurant)
+        await fetchRestaurant(user.id)
+        setStage(existingRestaurant.onboarding_completed ? 'done' : (RESUME_MAP[existingRestaurant.onboarding_step] || 'welcome'))
+        return
+      }
+
+      const { data: taken, error: slugError } = await supabase.from('restaurants').select('id').eq('slug', slug).maybeSingle()
+      if (slugError) throw slugError
+      if (taken) { toast.error('الرابط مستخدم، عدّله'); return }
       const { data, error } = await supabase.from('restaurants').insert({
         owner_id: user.id, name: cForm.name.trim(), slug, type:'restaurant', brand_color:'#FF6A00', is_active:true, onboarding_step:'info',
       }).select().single()
@@ -216,7 +250,13 @@ export default function Onboarding() {
       setRest(data)
       trackOwnerMilestone('restaurant_created', { restaurantId: data.id, props: { source: 'onboarding_fallback' } })
       setStage('info')
-    } catch (err) { toast.error(err.message || 'تعذّر إنشاء المطعم') } finally { setSaving(false) }
+    } catch (error) {
+      console.error('Fallback restaurant creation error:', error)
+      toast.error(error?.code === '23505' ? 'لديك مطعم قائم بالفعل. نتابع إعدادك.' : 'تعذّر إنشاء المطعم. حاول مرة أخرى.')
+    } finally {
+      createRestaurantInFlight.current = false
+      setSaving(false)
+    }
   }
 
   // ===== معلومات المطعم (اختيارية — قابلة للتخطّي) =====
@@ -309,11 +349,23 @@ export default function Onboarding() {
 
   // ===== إنشاء المنيو (يربط الأقسام/الأصناف بالفرع الرئيسي — إصلاح جوهري ليظهر المنيو للزبون) =====
   const finish = async (itemsSet = selectedItems) => {
+    if (saving || createMenuInFlight.current) return
     if (cats.length === 0) { toast.error('أضف قسماً واحداً على الأقل'); return }
+    createMenuInFlight.current = true
     setSaving(true)
     try {
-      // منيو العميل يُقرأ عبر branch_id → لا بد من ربط كل شيء بالفرع الرئيسي
+      // منيو العميل يُقرأ عبر branch_id → لا بد من ربط كل شيء بالفرع الرئيسي.
       const branch = await ensurePrimaryBranch(rest.id)
+      const { data: existingCategories, error: existingCategoriesError } = await supabase
+        .from('categories').select('id').eq('branch_id', branch.id).limit(1)
+      if (existingCategoriesError) throw existingCategoriesError
+      if (existingCategories?.length) {
+        await refreshReadiness(rest.id)
+        toast('يوجد منيو قائم بالفعل. نكمل من المرحلة المناسبة.', { icon: 'ℹ️' })
+        goStage('preview')
+        return
+      }
+
       const catRows = cats.map((c, i) => ({ restaurant_id: rest.id, branch_id: branch.id, name:c.name, emoji:c.emoji, is_visible:true, sort_order:i }))
       const { data: insertedCats, error: catErr } = await supabase.from('categories').insert(catRows).select()
       if (catErr) throw catErr
@@ -328,17 +380,23 @@ export default function Onboarding() {
         })
       })
       if (productRows.length) {
-        const { error: prodErr } = await supabase.from('products').insert(productRows)
-        if (prodErr) throw prodErr
+        const { error: productError } = await supabase.from('products').insert(productRows)
+        if (productError) throw productError
       }
-      toast.success(`🎉 تم إنشاء منيوك (${cats.length} أقسام، ${productRows.length} صنف)!`)
+      toast.success(`تم إنشاء منيوك (${cats.length} أقسام، ${productRows.length} صنف).`)
       trackOwnerMilestone('category_created', { restaurantId: rest.id, branchId: branch.id, props: { count: cats.length, source: 'onboarding_template' } })
       if (productRows.length > 0) trackOwnerMilestone('first_product_created', { restaurantId: rest.id, branchId: branch.id, props: { count: productRows.length, source: 'onboarding_template' } })
       const nextReadiness = await refreshReadiness(rest.id)
       if (nextReadiness?.minimumReady) trackOwnerMilestone('menu_minimum_ready', { restaurantId: rest.id, branchId: branch.id, props: { source: 'onboarding' } })
       trackOwnerEvent('menu_preview_opened', { restaurantId: rest.id, props: { source: 'onboarding_auto' } })
       goStage('preview')
-    } catch (err) { toast.error(err.message || 'تعذّر إنشاء المنيو') } finally { setSaving(false) }
+    } catch (error) {
+      console.error('Menu creation error:', error)
+      toast.error('تعذّر إنشاء المنيو. لم ننتقل قبل تأكيد حفظ البيانات، جرّب مرة أخرى.')
+    } finally {
+      createMenuInFlight.current = false
+      setSaving(false)
+    }
   }
 
   // تخطّي بناء المنيو لم يعد يدّعي نجاحاً: يضمن الفرع ثم يعرض ما ينقص قبل أي مشاركة.
@@ -430,6 +488,20 @@ export default function Onboarding() {
       <div style={{ ...bg, alignItems:'center' }}>
         <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    )
+  }
+
+  if (stage === 'error') {
+    return (
+      <div style={{ ...bg, alignItems:'center' }}>
+        <div style={{ ...card, maxWidth:'460px', textAlign:'center' }} role="alert">
+          <div style={{ width:'48px', height:'48px', display:'grid', placeItems:'center', margin:'0 auto 14px', borderRadius:'14px', background:'#FEF2F2', color:'#B91C1C', fontSize:'24px', fontWeight:'900' }}>!</div>
+          <h1 style={{ margin:'0 0 8px', fontSize:'21px', fontWeight:'900', fontFamily:'Tajawal,sans-serif' }}>حدث خطأ أثناء تجهيز حسابك</h1>
+          <p style={{ margin:'0 0 20px', color:'#6B7280', fontSize:'14px', lineHeight:'1.8' }}>{loadError || 'تعذر تحميل بيانات الإعداد. حاول مرة أخرى.'}</p>
+          <button type="button" onClick={() => setLoadAttempt(value => value + 1)} style={{ ...primaryBtn, width:'100%' }}>إعادة المحاولة</button>
+          <button type="button" onClick={() => navigate('/login')} style={{ ...skipLink, marginTop:'12px' }}>العودة لتسجيل الدخول</button>
+        </div>
       </div>
     )
   }
