@@ -7,23 +7,15 @@ import { has as featureHas, state as featureState, accessStatus } from './lib/fe
 import RootErrorBoundary from './components/RootErrorBoundary'
 import RequirePlatformAdmin from './admin/RequirePlatformAdmin'
 
-// تحميل كسول مع إعادة محاولة: إن فشل تحميل chunk (غالباً بعد نشر جديد ببصمات مختلفة)،
-// نعيد تحميل الصفحة مرة واحدة تلقائياً لجلب أحدث نسخة بدل شاشة بيضاء، ثم نمسح العلم عند أول نجاح
-// (فلا حلقة إعادة تحميل لا نهائية لو كان الـchunk معطوباً فعلاً — يظهر عندها خطأ المصيدة).
-const CHUNK_RELOAD_KEY = 'chunk_reload_attempted'
+// فشل تحميل chunk يجب أن يصل إلى RootErrorBoundary فورًا؛ لا نعيد التحميل قسرًا ولا نرجع
+// Promise معلقة لأن أيًا منهما يخفي التشخيص ويُبقي المستخدم على شاشة تحميل لا تنتهي.
 function lazyWithRetry(importer) {
   return lazy(async () => {
     try {
-      const mod = await importer()
-      sessionStorage.removeItem(CHUNK_RELOAD_KEY)
-      return mod
-    } catch (err) {
-      if (!sessionStorage.getItem(CHUNK_RELOAD_KEY)) {
-        sessionStorage.setItem(CHUNK_RELOAD_KEY, '1')
-        window.location.reload()
-        return new Promise(() => {}) // لن تُحلّ — الصفحة قيد إعادة التحميل
-      }
-      throw err
+      return await importer()
+    } catch (error) {
+      console.error('[Route chunk] ERROR', error)
+      throw error
     }
   })
 }
@@ -68,32 +60,42 @@ const AdminCatalog = lazyWithRetry(() => import('./admin/features/catalog/Catalo
 const AdminBranding = lazyWithRetry(() => import('./admin/features/branding/Branding'))
 
 // نفس شاشة التحميل المعتمدة في ProtectedRoute — تُعرض أثناء جلب chunk الصفحة
-function PageLoader() {
+function PageLoader({ phase = 'AUTH_SESSION' }) {
   return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Tajawal,sans-serif' }}>
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'12px', fontFamily:'Tajawal,sans-serif' }} role="status" aria-live="polite">
       <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      جارٍ التحميل...
+      <strong style={{ fontSize:'16px' }}>جارٍ تجهيز حسابك…</strong>
+      <span style={{ color:'#B7BBC3', fontSize:'12px' }}>مرحلة التهيئة: {phase}</span>
+    </div>
+  )
+}
+
+function AuthBootstrapError({ error, onRetry }) {
+  return (
+    <div dir="rtl" style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0B0B0F', padding:'24px', fontFamily:'Tajawal,sans-serif' }}>
+      <div role="alert" style={{ width:'100%', maxWidth:'420px', background:'white', borderRadius:'18px', padding:'26px', textAlign:'center' }}>
+        <div aria-hidden="true" style={{ width:'46px', height:'46px', display:'grid', placeItems:'center', margin:'0 auto 12px', borderRadius:'14px', background:'#FEF2F2', color:'#B91C1C', fontSize:'24px', fontWeight:'900' }}>!</div>
+        <h1 style={{ margin:'0 0 8px', color:'#111827', fontSize:'20px', fontWeight:'900' }}>تعذر تجهيز حسابك</h1>
+        <p style={{ margin:'0 0 18px', color:'#6B7280', fontSize:'14px', lineHeight:'1.75' }}>لم تكتمل تهيئة بيانات الحساب. تحقق من اتصالك ثم أعد المحاولة.</p>
+        <button type="button" onClick={onRetry} style={{ width:'100%', minHeight:'46px', border:0, borderRadius:'12px', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'inherit', fontWeight:'900', cursor:'pointer' }}>إعادة المحاولة</button>
+        {error?.code && <div style={{ marginTop:'10px', color:'#9CA3AF', fontSize:'11px' }}>رمز التشخيص: {error.code}</div>}
+      </div>
     </div>
   )
 }
 
 function ProtectedRoute({ children }) {
-  const { user, loading } = useAuthStore()
-  if (loading) return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'16px', fontFamily:'Tajawal,sans-serif' }}>
-      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      جارٍ التحميل...
-    </div>
-  )
+  const { user, loading, authState, authError, bootstrapStage, initialize } = useAuthStore()
+  if (authState === 'ERROR') return <AuthBootstrapError error={authError} onRetry={() => void initialize()} />
+  if (loading) return <PageLoader phase={bootstrapStage} />
   if (!user) return <Navigate to="/login" replace />
   return children
 }
 
 function PublicRoute({ children }) {
-  const { user, loading, resolveUserDestination } = useAuthStore()
-  if (loading) return <PageLoader />
+  const { user, loading, bootstrapStage, resolveUserDestination } = useAuthStore()
+  if (loading) return <PageLoader phase={bootstrapStage} />
   if (user) return <Navigate to={resolveUserDestination()} replace />
   return children
 }

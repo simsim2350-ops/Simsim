@@ -1,13 +1,17 @@
 import { supabase } from './supabase'
+import { withTimeout } from './asyncTimeout'
 
 // طبقة وصول بيانات موحّدة لجدول branches + عملية نسخ المنيو عند إنشاء فرع جديد
 
 export async function fetchBranches(restaurantId) {
-  const { data, error } = await supabase
-    .from('branches')
-    .select('*')
-    .eq('restaurant_id', restaurantId)
-    .order('sort_order')
+  const { data, error } = await withTimeout(
+    supabase
+      .from('branches')
+      .select('*')
+      .eq('restaurant_id', restaurantId)
+      .order('sort_order'),
+    { operation: 'branches_fetch' },
+  )
   if (error) throw error
   return data || []
 }
@@ -22,11 +26,14 @@ export async function ensurePrimaryBranch(restaurantId) {
 }
 
 export async function createBranch(restaurantId, fields) {
-  const { data, error } = await supabase
-    .from('branches')
-    .insert({ restaurant_id: restaurantId, ...fields })
-    .select()
-    .single()
+  const { data, error } = await withTimeout(
+    supabase
+      .from('branches')
+      .insert({ restaurant_id: restaurantId, ...fields })
+      .select()
+      .single(),
+    { operation: 'branch_create' },
+  )
   if (error) throw error
   return data
 }
