@@ -3,56 +3,157 @@ import { supabase } from '../lib/supabase'
 import { fetchEffectiveFeatures } from '../lib/featuresApi'
 import { has as featuresHas, value as featuresValue } from '../lib/features'
 
-export const useAuthStore = create((set, get) => ({
+const emptyAuthContext = {
   user: null,
   session: null,
   restaurant: null,
-  membership: null,   // سجل عضوية الموظف (null لصاحب المطعم)
-  isOwner: false,     // هل المستخدم الحالي صاحب المطعم؟
-  isPlatformAdmin: false, // هل هو مشرف منصّة؟ (طبقة منفصلة تماماً عن المطعم)
-  platformRole: null,     // دور المشرف (super_admin / read_only)
-  features: {},           // خريطة القدرات الفعّالة (PCR — ADR-40): تُحمَّل مرة عند الدخول
+  membership: null,
+  isOwner: false,
+  isPlatformAdmin: false,
+  platformRole: null,
+  features: {},
+}
+
+// StrictMode قد يستدعي initialize مرتين في التطوير. تحفظ هذه المراجع مستمعًا واحدًا
+// وbootstrap واحدًا لكل جلسة بدل تكرار RPC أو إنشاء مطعم متوازٍ في الواجهة.
+let initializePromise = null
+let authSubscription = null
+let sessionBootstrapPromise = null
+let sessionBootstrapUserId = null
+let authBootstrapVersion = 0
+let restaurantFetchVersion = 0
+let platformStatusVersion = 0
+let featureLoadVersion = 0
+
+const invalidateAuthRequests = () => {
+  authBootstrapVersion += 1
+  restaurantFetchVersion += 1
+  platformStatusVersion += 1
+  featureLoadVersion += 1
+  sessionBootstrapPromise = null
+  sessionBootstrapUserId = null
+}
+
+export const useAuthStore = create((set, get) => ({
+  ...emptyAuthContext,
   loading: true,
+  authState: 'INITIALIZING', // INITIALIZING | UNAUTHENTICATED | AUTHENTICATED | LOADING_DATA | READY | ERROR
+  authError: null,
 
+  // نقطة الدخول الوحيدة للجلسة: لا تنتقل أي صفحة قبل تحميل سياق المطعم والقدرات.
   initialize: async () => {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      
-      if (error) {
-        console.error('Session error:', error)
-        set({ loading: false })
-        return
+    if (initializePromise) return initializePromise
+
+    initializePromise = (async () => {
+      set({ loading: true, authState: 'INITIALIZING', authError: null })
+
+      if (!authSubscription) {
+        const { data } = supabase.auth.onAuthStateChange((event, session) => {
+          if (!session?.user) {
+            if (event === 'SIGNED_OUT') {
+              invalidateAuthRequests()
+              set({ ...emptyAuthContext, loading: false, authState: 'UNAUTHENTICATED', authError: null })
+            }
+            return
+          }
+
+          // لا ننتظر عمليات Supabase داخل callback نفسه؛ ذلك قد يحجز قفل عميل Auth.
+          // التنفيذ في microtask يترك callback ينهي دورته أولًا ثم يستأنف نفس الجلسة بأمان.
+          if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+            Promise.resolve().then(() => get().completeAuthSession(session, { source: `auth_${event.toLowerCase()}` }))
+              .catch((error) => console.error('Auth session bootstrap error:', error))
+          }
+        })
+        authSubscription = data.subscription
       }
 
-      if (session?.user) {
-        set({ user: session.user, session })
-        // عند فتح التطبيق بجلسة مؤكدة (بعد البريد مثلاً)، نستأنف نية المطعم مرة واحدة قبل تحميله.
-        await get().resumePendingRestaurant()
-        await Promise.all([ get().fetchRestaurant(session.user.id), get().fetchPlatformStatus() ])
-        await get().loadFeatures()
+      const { data: { session }, error } = await supabase.auth.getSession()
+      if (error) throw error
+
+      if (!session?.user) {
+        invalidateAuthRequests()
+        set({ ...emptyAuthContext, loading: false, authState: 'UNAUTHENTICATED', authError: null })
+        return { destination: '/login', restaurant: null }
       }
-    } catch (err) {
-      console.error('Init error:', err)
+
+      return get().completeAuthSession(session, { source: 'initialize' })
+    })()
+
+    try {
+      return await initializePromise
+    } catch (error) {
+      console.error('Auth initialization error:', error)
+      set({ loading: false, authState: 'ERROR', authError: error })
+      return { destination: '/login', restaurant: null, error }
     } finally {
-      set({ loading: false })
+      initializePromise = null
+    }
+  },
+
+  // يستقبل AuthCallback أو INITIAL_SESSION جلسة مؤكدة ويهيئ كل سياق التطبيق قبل تقرير الوجهة.
+  // RPC الاستئناف idempotent ويعتمد auth.uid() فقط؛ الحارس المحلي يمنع الاستدعاءات المتوازية غير اللازمة.
+  completeAuthSession: async (session, { source = 'unknown' } = {}) => {
+    if (!session?.user) {
+      invalidateAuthRequests()
+      set({ ...emptyAuthContext, loading: false, authState: 'UNAUTHENTICATED', authError: null })
+      return { destination: '/login', restaurant: null }
     }
 
-    supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        set({ user: session.user, session })
-        // قد تصل Session من رابط التأكيد بعد اكتمال initialize. استئناف النية هنا
-        // ضروري كي لا يعلق المستخدم في صفحة الدخول أو يفقد سياق المطعم عند SIGNED_IN.
-        await get().resumePendingRestaurant()
-        await Promise.all([ get().fetchRestaurant(session.user.id), get().fetchPlatformStatus() ])
-        await get().loadFeatures()
-      } else {
-        set({ user: null, session: null, restaurant: null, membership: null, isOwner: false, isPlatformAdmin: false, platformRole: null, features: {} })
+    if (sessionBootstrapPromise && sessionBootstrapUserId === session.user.id) return sessionBootstrapPromise
+
+    sessionBootstrapUserId = session.user.id
+    const bootstrapVersion = ++authBootstrapVersion
+    const isCurrentBootstrap = () => (
+      bootstrapVersion === authBootstrapVersion && get().session?.user?.id === session.user.id
+    )
+    sessionBootstrapPromise = (async () => {
+      set({ user: session.user, session, loading: true, authState: 'LOADING_DATA', authError: null })
+
+      const { restaurant: resumedRestaurant, error: resumeError } = await get().resumePendingRestaurant()
+      if (resumeError) throw resumeError
+      if (!isCurrentBootstrap()) return { destination: '/login', restaurant: null, cancelled: true }
+
+      await Promise.all([
+        get().fetchRestaurant(session.user.id),
+        get().fetchPlatformStatus(),
+      ])
+      if (!isCurrentBootstrap()) return { destination: '/login', restaurant: null, cancelled: true }
+
+      await get().loadFeatures()
+      if (!isCurrentBootstrap()) return { destination: '/login', restaurant: null, cancelled: true }
+
+      const restaurant = resumedRestaurant || get().restaurant
+      const destination = get().resolveUserDestination()
+      set({ loading: false, authState: 'READY', authError: null })
+      return { destination, restaurant, source }
+    })()
+
+    try {
+      return await sessionBootstrapPromise
+    } catch (error) {
+      if (bootstrapVersion === authBootstrapVersion && get().session?.user?.id === session.user.id) {
+        set({ loading: false, authState: 'ERROR', authError: error })
       }
-    })
+      throw error
+    } finally {
+      if (bootstrapVersion === authBootstrapVersion) {
+        sessionBootstrapPromise = null
+        sessionBootstrapUserId = null
+      }
+    }
+  },
+
+  // مصدر واحد للحقيقة لوجهة المالك/الموظف بعد اكتمال session + restaurant context.
+  resolveUserDestination: () => {
+    const { user, restaurant, membership, isOwner } = get()
+    if (!user) return '/login'
+    if (!restaurant && !membership) return '/onboarding'
+    if (isOwner && restaurant?.onboarding_completed === false) return '/onboarding'
+    return '/dashboard'
   },
 
   // استئناف آمن ومتعمد لإنشاء المطعم بعد تأكيد البريد.
-  // الـRPC يعتمد auth.uid() ويعيد مطعماً قائماً إن وجد، فلا ينشئ سجلات مكررة.
+  // الـRPC يعتمد auth.uid() ويعيد مطعماً قائمًا إن وجد، فلا ينشئ سجلات مكررة.
   resumePendingRestaurant: async () => {
     try {
       const { data, error } = await supabase.rpc('resume_pending_restaurant')
@@ -64,66 +165,80 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  // تحميل خريطة القدرات الفعّالة للمطعم الحالي (PCR — ADR-40): fail-safe: عند أي خطأ
-  // تبقى {} فيعمل fail-open في طبقة features.has (طرح غير كاسر — لا تُخفى أي ميزة).
+  // تحميل خريطة القدرات الفعّالة للمطعم الحالي. عند الخطأ تبقى فارغة لتفادي حجب ميزة سليمة.
   loadFeatures: async () => {
+    const requestVersion = ++featureLoadVersion
     try {
-      const rid = get().restaurant?.id
-      set({ features: rid ? await fetchEffectiveFeatures(rid) : {} })
-    } catch (err) {
-      console.error('Features load error:', err)
-      set({ features: {} })
+      const restaurantId = get().restaurant?.id
+      const features = restaurantId ? await fetchEffectiveFeatures(restaurantId) : {}
+      if (requestVersion === featureLoadVersion) set({ features })
+    } catch (error) {
+      console.error('Features load error:', error)
+      if (requestVersion === featureLoadVersion) set({ features: {} })
     }
   },
 
-  // فحص قدرة من الواجهة (يمرّ عبر طبقة Domain — ADR-40 حوكمة 9)
   hasFeature: (key) => featuresHas(get().features, key),
   featureValue: (key) => featuresValue(get().features, key),
 
+  // يجلب سياق المطعم بعد معرفة user.id فقط. يعيد null للحسابات الجديدة من دون أن يترك حالة قديمة.
   fetchRestaurant: async (userId) => {
-    try {
-      // 1) هل المستخدم صاحب مطعم؟
-      const { data: owned } = await supabase
-        .from('restaurants')
-        .select('*')
-        .eq('owner_id', userId)
-        .maybeSingle()
-      if (owned) {
-        set({ restaurant: owned, membership: null, isOwner: true })
-        return
-      }
-      // 2) هل هو موظف (عضو فعّال)؟
-      const { data: mem } = await supabase
-        .from('restaurant_members')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .maybeSingle()
-      if (mem) {
-        const { data: rest } = await supabase
-          .from('restaurants')
-          .select('*')
-          .eq('id', mem.restaurant_id)
-          .maybeSingle()
-        if (rest) set({ restaurant: rest, membership: mem, isOwner: false })
-      }
-    } catch (err) {
-      console.error('Restaurant error:', err)
+    const requestVersion = ++restaurantFetchVersion
+    const isCurrentRequest = () => requestVersion === restaurantFetchVersion
+    set({ restaurant: null, membership: null, isOwner: false })
+
+    const { data: owned, error: ownedError } = await supabase
+      .from('restaurants')
+      .select('*')
+      .eq('owner_id', userId)
+      .maybeSingle()
+    if (ownedError) throw ownedError
+
+    if (owned) {
+      if (isCurrentRequest()) set({ restaurant: owned, membership: null, isOwner: true })
+      return isCurrentRequest() ? owned : null
     }
+
+    const { data: member, error: memberError } = await supabase
+      .from('restaurant_members')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .maybeSingle()
+    if (memberError) throw memberError
+
+    if (!member || !isCurrentRequest()) return null
+
+    const { data: memberRestaurant, error: memberRestaurantError } = await supabase
+      .from('restaurants')
+      .select('*')
+      .eq('id', member.restaurant_id)
+      .maybeSingle()
+    if (memberRestaurantError) throw memberRestaurantError
+
+    if (memberRestaurant && isCurrentRequest()) {
+      set({ restaurant: memberRestaurant, membership: member, isOwner: false })
+      return memberRestaurant
+    }
+    return null
   },
 
-  // حالة مشرف المنصّة (طبقة منفصلة عن المطعم) — عبر دوال RPC مبوّبة بـ is_platform_admin()
   fetchPlatformStatus: async () => {
+    const requestVersion = ++platformStatusVersion
+    const isCurrentRequest = () => requestVersion === platformStatusVersion
     try {
-      const { data: isAdmin } = await supabase.rpc('is_platform_admin')
+      const { data: isAdmin, error } = await supabase.rpc('is_platform_admin')
+      if (error) throw error
       if (isAdmin) {
-        const { data: role } = await supabase.rpc('platform_admin_role')
-        set({ isPlatformAdmin: true, platformRole: role || null })
+        const { data: role, error: roleError } = await supabase.rpc('platform_admin_role')
+        if (roleError) throw roleError
+        if (isCurrentRequest()) set({ isPlatformAdmin: true, platformRole: role || null })
       } else {
-        set({ isPlatformAdmin: false, platformRole: null })
+        if (isCurrentRequest()) set({ isPlatformAdmin: false, platformRole: null })
       }
-    } catch {
-      set({ isPlatformAdmin: false, platformRole: null })
+    } catch (error) {
+      console.error('Platform status error:', error)
+      if (isCurrentRequest()) set({ isPlatformAdmin: false, platformRole: null })
     }
   },
 
@@ -157,17 +272,16 @@ export const useAuthStore = create((set, get) => ({
   },
 
   signIn: async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
     return data
   },
 
   signOut: async () => {
-    await supabase.auth.signOut()
-    set({ user: null, session: null, restaurant: null, membership: null, isOwner: false, isPlatformAdmin: false, platformRole: null, features: {} })
+    invalidateAuthRequests()
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
+    set({ ...emptyAuthContext, loading: false, authState: 'UNAUTHENTICATED', authError: null })
   },
 
   resetPassword: async (email) => {

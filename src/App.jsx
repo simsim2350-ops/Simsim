@@ -92,9 +92,9 @@ function ProtectedRoute({ children }) {
 }
 
 function PublicRoute({ children }) {
-  const { user, loading } = useAuthStore()
+  const { user, loading, resolveUserDestination } = useAuthStore()
   if (loading) return <PageLoader />
-  if (user) return <Navigate to="/dashboard" replace />
+  if (user) return <Navigate to={resolveUserDestination()} replace />
   return children
 }
 

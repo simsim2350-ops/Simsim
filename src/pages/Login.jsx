@@ -7,7 +7,7 @@ import { trackOwnerMilestone } from '../lib/analytics'
 
 export default function Login() {
   const navigate = useNavigate()
-  const { signIn, fetchRestaurant, resumePendingRestaurant } = useAuthStore()
+  const { signIn, completeAuthSession } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -28,28 +28,18 @@ export default function Login() {
     }
     setLoading(true)
     try {
-      await signIn(email, password)
-      // نكمل نية التسجيل المؤكدة قبل تقرير الوجهة. الدالة idempotent ولا تقبل owner من العميل.
-      const { data: { user } } = await supabase.auth.getUser()
-      const pending = user?.user_metadata?.pending_restaurant
-      let hasRestaurant = false
-      if (user) {
-        const { restaurant: resumed, error: resumeError } = await resumePendingRestaurant()
-        if (resumeError?.code === '23505') {
-          toast.error('رابط المنيو المحفوظ أصبح مستخدمًا. عدّله لإكمال إنشاء مطعمك.')
-          navigate('/onboarding')
-          return
-        }
-        if (resumed?.id && pending?.name && pending?.slug) {
-          trackOwnerMilestone('registration_completed', { restaurantId: resumed.id, props: { email_confirmation: true } })
-          trackOwnerMilestone('restaurant_created', { restaurantId: resumed.id, props: { source: 'email_confirmation' } })
-        }
-        const { data: rest } = await supabase.from('restaurants').select('id').eq('owner_id', user.id).maybeSingle()
-        hasRestaurant = !!rest
-        if (hasRestaurant) await fetchRestaurant(user.id)
+      const { data: signInData } = await signIn(email, password)
+      const session = signInData?.session || (await supabase.auth.getSession()).data.session
+      if (!session?.user) throw new Error('session_not_available')
+
+      const pending = session.user.user_metadata?.pending_restaurant
+      const { restaurant, destination } = await completeAuthSession(session, { source: 'password_login' })
+      if (restaurant?.id && pending?.name && pending?.slug) {
+        trackOwnerMilestone('registration_completed', { restaurantId: restaurant.id, props: { email_confirmation: true } })
+        trackOwnerMilestone('restaurant_created', { restaurantId: restaurant.id, props: { source: 'password_login' } })
       }
       toast.success('مرحباً بك! 👋')
-      navigate(hasRestaurant ? '/dashboard' : '/onboarding')
+      navigate(destination, { replace:true })
     } catch (err) {
       const message = String(err?.message || '').toLowerCase()
       if (message.includes('email not confirmed') || message.includes('email not verified')) {

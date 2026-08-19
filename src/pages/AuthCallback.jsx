@@ -12,35 +12,27 @@ function callbackError() {
 
 export default function AuthCallback() {
   const navigate = useNavigate()
-  const { fetchRestaurant, resumePendingRestaurant } = useAuthStore()
+  const completeAuthSession = useAuthStore((state) => state.completeAuthSession)
   const [status, setStatus] = useState('processing')
   const [message, setMessage] = useState('نتحقق من رابط التأكيد ونجهّز حسابك…')
 
   useEffect(() => {
     let cancelled = false
+    let subscription = null
 
     const finish = async (session) => {
       if (cancelled || !session?.user) return false
       try {
         const pendingRestaurant = session.user.user_metadata?.pending_restaurant
-        const { restaurant: resumed, error } = await resumePendingRestaurant()
+        const { restaurant, destination } = await completeAuthSession(session, { source: 'email_confirmation_callback' })
         if (cancelled) return true
-        if (error) throw error
 
-        await fetchRestaurant(session.user.id)
-        if (cancelled) return true
-        const restaurant = resumed || useAuthStore.getState().restaurant
-
-        if (resumed?.id && pendingRestaurant?.name && pendingRestaurant?.slug) {
-          trackOwnerMilestone('registration_completed', { restaurantId: resumed.id, props: { email_confirmation: true } })
-          trackOwnerMilestone('restaurant_created', { restaurantId: resumed.id, props: { source: 'email_confirmation' } })
+        if (restaurant?.id && pendingRestaurant?.name && pendingRestaurant?.slug) {
+          trackOwnerMilestone('registration_completed', { restaurantId: restaurant.id, props: { email_confirmation: true } })
+          trackOwnerMilestone('restaurant_created', { restaurantId: restaurant.id, props: { source: 'email_confirmation' } })
         }
 
-        if (restaurant?.onboarding_completed) {
-          navigate('/dashboard', { replace:true })
-        } else {
-          navigate('/onboarding', { replace:true })
-        }
+        navigate(destination, { replace:true })
         return true
       } catch (error) {
         if (cancelled) return true
@@ -48,7 +40,8 @@ export default function AuthCallback() {
         if (error?.code === '23505' || text.includes('pending_restaurant_slug_taken')) {
           setMessage('رابط المنيو المحفوظ أصبح مستخدمًا. سجّل الدخول لإكمال إعداد مطعمك واختيار رابط جديد.')
         } else {
-          setMessage('تعذر إكمال تأكيد البريد الآن. جرّب طلب رابط تأكيد جديد.')
+          console.error('Email confirmation callback error:', error)
+          setMessage('حدث خطأ أثناء تجهيز حسابك. أعد طلب رابط تأكيد جديد ثم حاول مرة أخرى.')
         }
         setStatus('error')
         return true
@@ -78,30 +71,38 @@ export default function AuthCallback() {
         if (await finish(data.session)) return
       }
 
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
       if (await finish(session)) return
 
-      // رابط callback بلا code أو access token لا يملك دليلاً يمكن استبداله بجلسة.
+      // في مسار hash قد تصل Session بعد mount؛ نستمع مرة واحدة بدل أي refresh أو polling.
       if (!hash.get('access_token')) {
         setMessage('رابط التأكيد غير صالح أو انتهت صلاحيته. اطلب رابطًا جديدًا ثم حاول مرة أخرى.')
         setStatus('error')
         return
       }
 
-      const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
-        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') finish(nextSession)
+      const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+          void finish(nextSession)
+        }
       })
-
-      return () => listener.subscription.unsubscribe()
+      subscription = data.subscription
     }
 
-    let cleanup
-    start().then((unsubscribe) => { cleanup = unsubscribe })
+    start().catch((error) => {
+      console.error('Auth callback startup error:', error)
+      if (!cancelled) {
+        setMessage('حدث خطأ أثناء تجهيز حسابك. اطلب رابط تأكيد جديدًا ثم حاول مرة أخرى.')
+        setStatus('error')
+      }
+    })
+
     return () => {
       cancelled = true
-      cleanup?.()
+      subscription?.unsubscribe()
     }
-  }, [fetchRestaurant, navigate, resumePendingRestaurant])
+  }, [completeAuthSession, navigate])
 
   return (
     <div style={styles.page} dir="rtl">
