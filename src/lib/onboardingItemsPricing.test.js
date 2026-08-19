@@ -41,8 +41,10 @@ describe('عقد أسعار وأصناف Onboarding', () => {
     expect(onboarding).toContain("overflowWrap:'anywhere'")
     expect(onboarding).toContain('السعر يضاف بعد التحديد')
     expect(onboarding).toContain('dir="rtl"')
-    expect(onboarding).toContain("width:'100%', minWidth:0")
+    expect(onboarding).toContain("gridTemplateColumns:'minmax(0, 1fr) auto'")
+    expect(onboarding).toContain("minWidth:'58px'")
     expect(onboarding).toContain("minHeight:'46px'")
+    expect(onboarding).not.toContain("position:'absolute', insetInlineEnd:'14px'")
     expect(onboarding).not.toContain("width:'132px'")
   })
 
