@@ -23,53 +23,53 @@ const slugify = (name) =>
     .split('').map(ch => (ch in AR_MAP ? AR_MAP[ch] : ch)).join('')
     .replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
 
-// قوالب الأقسام والأصناف الجاهزة حسب نوع النشاط (الأسعار مقترحة وقابلة للتعديل لاحقاً)
+// قوالب أسماء وأيقونات فقط حسب نوع النشاط؛ لا تحمل هذه القوالب أسعارًا ولا تُعامل كبيانات المطعم الحقيقية.
 const TEMPLATES = {
   restaurant: [
     { key:'appetizers', emoji:'🥗', name:'المقبلات', items:[
-      { name:'سلطة خضراء', price:15, emoji:'🥗' }, { name:'حمص', price:12, emoji:'🥣' }, { name:'شوربة', price:18, emoji:'🍜' } ] },
+      { name:'سلطة خضراء', emoji:'🥗' }, { name:'حمص', emoji:'🥣' }, { name:'شوربة', emoji:'🍜' } ] },
     { key:'mains', emoji:'🍔', name:'الوجبات الرئيسية', items:[
-      { name:'برجر لحم', price:30, emoji:'🍔' }, { name:'دجاج مشوي', price:35, emoji:'🍗' }, { name:'شاورما', price:25, emoji:'🌯' }, { name:'بيتزا', price:40, emoji:'🍕' } ] },
+      { name:'برجر لحم', emoji:'🍔' }, { name:'دجاج مشوي', emoji:'🍗' }, { name:'شاورما', emoji:'🌯' }, { name:'بيتزا', emoji:'🍕' } ] },
     { key:'grills', emoji:'🥩', name:'المشويات', items:[
-      { name:'كباب', price:35, emoji:'🍢' }, { name:'ريش', price:45, emoji:'🥩' }, { name:'تكة', price:30, emoji:'🍢' } ] },
+      { name:'كباب', emoji:'🍢' }, { name:'ريش', emoji:'🥩' }, { name:'تكة', emoji:'🍢' } ] },
     { key:'sides', emoji:'🍟', name:'وجبات جانبية', items:[
-      { name:'بطاطس مقلية', price:10, emoji:'🍟' }, { name:'أجنحة دجاج', price:20, emoji:'🍗' } ] },
+      { name:'بطاطس مقلية', emoji:'🍟' }, { name:'أجنحة دجاج', emoji:'🍗' } ] },
     { key:'salads', emoji:'🥗', name:'سلطات', items:[
-      { name:'سلطة سيزر', price:18, emoji:'🥗' }, { name:'فتوش', price:15, emoji:'🥗' } ] },
+      { name:'سلطة سيزر', emoji:'🥗' }, { name:'فتوش', emoji:'🥗' } ] },
     { key:'cold', emoji:'🧊', name:'مشروبات باردة', items:[
-      { name:'عصير طازج', price:12, emoji:'🧃' }, { name:'مشروب غازي', price:5, emoji:'🥤' }, { name:'ماء', price:2, emoji:'💧' } ] },
+      { name:'عصير طازج', emoji:'🧃' }, { name:'مشروب غازي', emoji:'🥤' }, { name:'ماء', emoji:'💧' } ] },
     { key:'hot', emoji:'☕', name:'مشروبات ساخنة', items:[
-      { name:'شاي', price:5, emoji:'🍵' }, { name:'قهوة', price:8, emoji:'☕' } ] },
+      { name:'شاي', emoji:'🍵' }, { name:'قهوة', emoji:'☕' } ] },
     { key:'desserts', emoji:'🍰', name:'الحلويات', items:[
-      { name:'كنافة', price:18, emoji:'🍰' }, { name:'تشيز كيك', price:20, emoji:'🍰' } ] },
+      { name:'كنافة', emoji:'🍰' }, { name:'تشيز كيك', emoji:'🍰' } ] },
     { key:'offers', emoji:'🎯', name:'العروض', items:[] },
   ],
   cafe: [
     { key:'coffee', emoji:'☕', name:'القهوة', items:[
-      { name:'إسبريسو', price:10, emoji:'☕' }, { name:'لاتيه', price:15, emoji:'☕' }, { name:'كابتشينو', price:15, emoji:'☕' }, { name:'أمريكانو', price:12, emoji:'☕' } ] },
+      { name:'إسبريسو', emoji:'☕' }, { name:'لاتيه', emoji:'☕' }, { name:'كابتشينو', emoji:'☕' }, { name:'أمريكانو', emoji:'☕' } ] },
     { key:'tea', emoji:'🍵', name:'الشاي', items:[
-      { name:'شاي أحمر', price:8, emoji:'🍵' }, { name:'شاي أخضر', price:10, emoji:'🍵' }, { name:'نعناع', price:8, emoji:'🌿' } ] },
+      { name:'شاي أحمر', emoji:'🍵' }, { name:'شاي أخضر', emoji:'🍵' }, { name:'نعناع', emoji:'🌿' } ] },
     { key:'cold', emoji:'🧋', name:'مشروبات باردة', items:[
-      { name:'آيس لاتيه', price:18, emoji:'🧊' }, { name:'فرابتشينو', price:20, emoji:'🥤' }, { name:'موهيتو', price:16, emoji:'🍹' } ] },
+      { name:'آيس لاتيه', emoji:'🧊' }, { name:'فرابتشينو', emoji:'🥤' }, { name:'موهيتو', emoji:'🍹' } ] },
     { key:'pastries', emoji:'🥐', name:'المعجنات', items:[
-      { name:'كرواسون', price:12, emoji:'🥐' }, { name:'دونات', price:10, emoji:'🍩' } ] },
+      { name:'كرواسون', emoji:'🥐' }, { name:'دونات', emoji:'🍩' } ] },
     { key:'sweets', emoji:'🍰', name:'الحلويات', items:[
-      { name:'تشيز كيك', price:20, emoji:'🍰' }, { name:'براوني', price:15, emoji:'🍫' } ] },
+      { name:'تشيز كيك', emoji:'🍰' }, { name:'براوني', emoji:'🍫' } ] },
     { key:'breakfast', emoji:'🍳', name:'الإفطار', items:[
-      { name:'بيض', price:15, emoji:'🍳' }, { name:'بان كيك', price:22, emoji:'🥞' } ] },
+      { name:'بيض', emoji:'🍳' }, { name:'بان كيك', emoji:'🥞' } ] },
     { key:'offers', emoji:'🎯', name:'العروض', items:[] },
   ],
   truck: [
     { key:'burgers', emoji:'🍔', name:'برغر', items:[
-      { name:'برجر كلاسيك', price:25, emoji:'🍔' }, { name:'دبل تشيز', price:35, emoji:'🍔' } ] },
+      { name:'برجر كلاسيك', emoji:'🍔' }, { name:'دبل تشيز', emoji:'🍔' } ] },
     { key:'sandwiches', emoji:'🥪', name:'سندويتشات', items:[
-      { name:'شاورما', price:20, emoji:'🌯' }, { name:'هوت دوج', price:18, emoji:'🌭' }, { name:'دجاج مقرمش', price:24, emoji:'🍗' } ] },
+      { name:'شاورما', emoji:'🌯' }, { name:'هوت دوج', emoji:'🌭' }, { name:'دجاج مقرمش', emoji:'🍗' } ] },
     { key:'sides', emoji:'🍟', name:'وجبات جانبية', items:[
-      { name:'بطاطس', price:10, emoji:'🍟' }, { name:'أجنحة', price:20, emoji:'🍗' }, { name:'ناتشوز', price:18, emoji:'🧀' } ] },
+      { name:'بطاطس', emoji:'🍟' }, { name:'أجنحة', emoji:'🍗' }, { name:'ناتشوز', emoji:'🧀' } ] },
     { key:'cold', emoji:'🥤', name:'المشروبات', items:[
-      { name:'مشروب غازي', price:5, emoji:'🥤' }, { name:'عصير', price:12, emoji:'🧃' } ] },
+      { name:'مشروب غازي', emoji:'🥤' }, { name:'عصير', emoji:'🧃' } ] },
     { key:'desserts', emoji:'🍦', name:'الحلويات', items:[
-      { name:'آيس كريم', price:10, emoji:'🍦' } ] },
+      { name:'آيس كريم', emoji:'🍦' } ] },
     { key:'offers', emoji:'🎯', name:'العروض', items:[] },
   ],
 }
@@ -136,6 +136,11 @@ export default function Onboarding() {
   const [categoryFormError, setCategoryFormError] = useState('')
   const [categoryDeleteTarget, setCategoryDeleteTarget] = useState(null)
   const [selectedItems, setSelectedItems] = useState(new Set())
+  const [itemPrices, setItemPrices] = useState({})
+  const [customItems, setCustomItems] = useState([])
+  const [itemsError, setItemsError] = useState('')
+  const [itemModalOpen, setItemModalOpen] = useState(false)
+  const [customItemForm, setCustomItemForm] = useState({ categoryId:'', name:'', emoji:'🍽️', price:'' })
   const dragFrom = useRef(null)
   const qrRef = useRef(null)
   const createRestaurantInFlight = useRef(false)
@@ -144,8 +149,9 @@ export default function Onboarding() {
   const typeSaveInFlight = useRef(false)
   const categoryActionInFlight = useRef(false)
   const categoryReorderInFlight = useRef(false)
+  const itemsSelectionInitialized = useRef(false)
 
-  useBodyScrollLock(categoryModalOpen)
+  useBodyScrollLock(categoryModalOpen || itemModalOpen)
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768)
@@ -418,11 +424,15 @@ export default function Onboarding() {
     if (savedType) void saveStep('type_selected')
   }
 
-  // ===== الأقسام =====
+  // ===== الأقسام والأصناف المقترحة =====
   const normalizeCategoryName = (name) => name.trim().replace(/\s+/g, ' ')
   const templateForCategory = (category) => template.find(item => normalizeCategoryName(item.name) === normalizeCategoryName(category.name)) || null
-  const categoryItems = (category) => templateForCategory(category)?.items || []
-  const categoryItemKey = (category, item) => `${category.id}::${item.name}`
+  // عناصر القالب مجرد اقتراحات أسماء/أيقونات؛ أسعارها الاسترشادية القديمة لا تدخل رحلة الحفظ.
+  const categoryItems = (category) => [
+    ...(templateForCategory(category)?.items || []).map(item => ({ ...item, source:'template' })),
+    ...customItems.filter(item => item.categoryId === category.id),
+  ]
+  const categoryItemKey = (category, item) => `${category.id}::${item.id || item.name}`
   const isTemplateAdded = (item) => cats.some(category => normalizeCategoryName(category.name) === normalizeCategoryName(item.name))
 
   const loadOnboardingCategories = async (restaurantRecord = rest) => {
@@ -605,17 +615,79 @@ export default function Onboarding() {
 
   const goToItems = () => {
     if (cats.length === 0) { toast.error('أضف قسمًا واحدًا على الأقل للمتابعة.'); return }
-    const suggestedItems = new Set()
-    cats.forEach(category => categoryItems(category).forEach(item => suggestedItems.add(categoryItemKey(category, item))))
-    setSelectedItems(suggestedItems)
-    const hasItems = cats.some(category => categoryItems(category).length > 0)
-    if (!hasItems) { finish(new Set()); return }
+    // نهيئ الاختيار مرة واحدة فقط؛ التنقل بين الأقسام لا يلغي ما اختاره المالك.
+    if (!itemsSelectionInitialized.current) {
+      const initialSelection = new Set()
+      cats.forEach(category => categoryItems(category).forEach(item => initialSelection.add(categoryItemKey(category, item))))
+      setSelectedItems(initialSelection)
+      itemsSelectionInitialized.current = true
+    }
+    setItemsError('')
     goStage('items')
   }
 
   const toggleItem = (key) => setSelectedItems(previous => {
     const next = new Set(previous); next.has(key) ? next.delete(key) : next.add(key); return next
   })
+
+  const setCategorySelection = (category, shouldSelect) => {
+    const itemKeys = categoryItems(category).map(item => categoryItemKey(category, item))
+    setSelectedItems(previous => {
+      const next = new Set(previous)
+      itemKeys.forEach(key => shouldSelect ? next.add(key) : next.delete(key))
+      return next
+    })
+  }
+
+  const selectedItemsForCategory = (category) => categoryItems(category).filter(item => selectedItems.has(categoryItemKey(category, item))).length
+  const selectedItemCount = cats.reduce((count, category) => count + selectedItemsForCategory(category), 0)
+  const getItemPrice = (category, item) => itemPrices[categoryItemKey(category, item)] ?? ''
+  const isValidItemPrice = (value) => {
+    const normalized = String(value ?? '').trim().replace('٫', '.').replace(',', '.')
+    if (!normalized) return false
+    const price = Number(normalized)
+    return Number.isFinite(price) && price >= 0
+  }
+  const updateItemPrice = (category, item, value) => {
+    setItemPrices(previous => ({ ...previous, [categoryItemKey(category, item)]: value }))
+    setItemsError('')
+  }
+
+  const openItemModal = () => {
+    setCustomItemForm({ categoryId: cats[0]?.id || '', name:'', emoji:'🍽️', price:'' })
+    setItemsError('')
+    setItemModalOpen(true)
+  }
+
+  const addCustomItem = () => {
+    const name = customItemForm.name.trim()
+    const category = cats.find(item => item.id === customItemForm.categoryId)
+    if (!category || !name) {
+      const message = 'اختر القسم وأدخل اسم الصنف أولًا.'
+      setItemsError(message)
+      toast.error(message)
+      return
+    }
+    if (!isValidItemPrice(customItemForm.price)) {
+      const message = 'أدخل السعر الحقيقي للصنف المخصص قبل إضافته.'
+      setItemsError(message)
+      toast.error(message)
+      return
+    }
+    if (categoryItems(category).some(item => normalizeCategoryName(item.name) === normalizeCategoryName(name))) {
+      const message = 'هذا الصنف موجود بالفعل في القسم المحدد.'
+      setItemsError(message)
+      toast.error(message)
+      return
+    }
+    const item = { id:`custom-${Date.now()}`, categoryId:category.id, name, emoji:customItemForm.emoji || '🍽️', source:'custom' }
+    const key = categoryItemKey(category, item)
+    setCustomItems(previous => [...previous, item])
+    setSelectedItems(previous => new Set([...previous, key]))
+    setItemPrices(previous => ({ ...previous, [key]:customItemForm.price }))
+    setItemModalOpen(false)
+    toast.success(`تمت إضافة "${name}" إلى ${category.name}`)
+  }
 
   // ===== إنشاء المنيو =====
   // الأقسام تحفظ قبل هذه المرحلة؛ هنا ننشئ الأصناف المختارة فقط وربطها بمعرّفات الأقسام الحقيقية.
@@ -649,26 +721,40 @@ export default function Onboarding() {
         return
       }
 
-      const productRows = []
+      const selectedCandidates = []
       storedCategories.forEach(category => {
         categoryItems(category).forEach((item, index) => {
-          if (!itemsSet.has(categoryItemKey(category, item))) return
-          productRows.push({
-            restaurant_id: rest.id,
-            branch_id: branch.id,
-            category_id: category.id,
-            name: item.name,
-            price: item.price,
-            emoji: item.emoji || '🍽️',
-            is_available: true,
-            sort_order: index,
-          })
+          if (itemsSet.has(categoryItemKey(category, item))) selectedCandidates.push({ category, item, index })
         })
       })
-      if (productRows.length) {
-        const { error: productError } = await supabase.from('products').insert(productRows)
-        if (productError) throw productError
+      if (selectedCandidates.length === 0) {
+        const message = 'اختر صنفًا واحدًا على الأقل قبل إنشاء المنيو.'
+        setItemsError(message)
+        setStage('items')
+        toast.error(message)
+        return
       }
+      const candidatesMissingPrice = selectedCandidates.filter(({ category, item }) => !isValidItemPrice(getItemPrice(category, item)))
+      if (candidatesMissingPrice.length) {
+        const message = 'أدخل السعر الحقيقي لكل صنف محدد قبل إنشاء المنيو.'
+        setItemsError(message)
+        setStage('items')
+        toast.error(message)
+        return
+      }
+
+      const productRows = selectedCandidates.map(({ category, item, index }) => ({
+        restaurant_id: rest.id,
+        branch_id: branch.id,
+        category_id: category.id,
+        name: item.name,
+        price: Number(String(getItemPrice(category, item)).trim().replace('٫', '.').replace(',', '.')),
+        emoji: item.emoji || '🍽️',
+        is_available: true,
+        sort_order: index,
+      }))
+      const { error: productError } = await supabase.from('products').insert(productRows)
+      if (productError) throw productError
       setCategoryBranch(branch)
       setCats(storedCategories)
       toast.success(`تم إنشاء منيوك (${storedCategories.length} أقسام، ${productRows.length} صنف).`)
@@ -991,39 +1077,92 @@ export default function Onboarding() {
           </section>
         )}
 
-        {/* اختيار الأصناف */}
+        {/* اختيار الأصناف — القوالب اقتراحات أسماء فقط، والسعر يُدخل صراحةً من المالك قبل الحفظ. */}
         {stage === 'items' && (
-          <>
-            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>اختر أصنافك 🍽️</h2>
-            <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'16px' }}>الأصناف والأسعار مقترحة — عدّلها لاحقاً من صفحة الأصناف.</p>
-
-            <div style={{ maxHeight: isMobile ? '46vh' : '50vh', overflowY:'auto', marginBottom:'16px', paddingLeft:'4px' }}>
-              {cats.filter(category => categoryItems(category).length > 0).map(category => (
-                <div key={category.id} style={{ marginBottom:'16px' }}>
-                  <div style={{ fontSize:'13px', fontWeight:'800', marginBottom:'8px', color:'#374151' }}>{category.emoji} {category.name}</div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:'7px' }}>
-                    {categoryItems(category).map(item => {
-                      const key = categoryItemKey(category, item)
-                      const on = selectedItems.has(key)
-                      return (
-                        <button type="button" key={key} onClick={() => toggleItem(key)} aria-pressed={on} style={{ width:'100%', display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', borderRadius:'12px', border:`1.5px solid ${on ? '#FF6A00' : '#E5E7EB'}`, background: on ? 'rgba(255,106,0,0.06)' : 'white', cursor:'pointer', textAlign:'right' }}>
-                          <span aria-hidden="true" style={{ width:'20px', height:'20px', borderRadius:'6px', border:`1.5px solid ${on ? '#FF6A00' : '#D1D5DB'}`, background: on ? '#FF6A00' : 'white', color:'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', flexShrink:0 }}>{on ? '✓' : ''}</span>
-                          <span style={{ fontSize:'18px' }}>{item.emoji}</span>
-                          <span style={{ flex:1, fontSize:'13px', fontWeight:'700' }}>{item.name}</span>
-                          <span style={{ fontSize:'13px', fontWeight:'800', color:'#6B7280', direction:'ltr' }}>{item.price} ﷼</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
+          <section id="onboarding-items" aria-busy={saving}>
+            <div style={{ display:'flex', alignItems:'flex-start', gap:'11px', marginBottom:'15px' }}>
+              <div aria-hidden="true" style={{ width:'38px', height:'38px', flexShrink:0, display:'grid', placeItems:'center', borderRadius:'12px', background:'#FFF0E8', color:'#FF6A00', fontSize:'19px', fontWeight:'900' }}>+</div>
+              <div>
+                <h2 style={{ fontSize:'23px', fontWeight:'900', margin:'0 0 4px', fontFamily:'Tajawal,sans-serif', color:'#111827' }}>اختر أصنافك</h2>
+                <p style={{ fontSize:'13px', color:'#6B7280', lineHeight:'1.65', margin:0 }}>اختر الأصناف التي تريد إضافتها. يمكنك تعديل الأسماء والأسعار لاحقًا.</p>
+              </div>
             </div>
 
-            <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={() => goStage('categories')} style={ghostBtn}>→ رجوع</button>
-              <button onClick={() => finish()} disabled={saving} style={{ ...primaryBtn, opacity: saving?0.7:1 }}>{saving ? 'جارٍ الإنشاء...' : `🎉 إنشاء منيوي (${selectedItems.size})`}</button>
+            <div role="note" style={{ marginBottom:'16px', padding:'11px 12px', borderRadius:'14px', border:'1px solid #F6D9C6', background:'#FFF8F3', color:'#7C3A15', fontSize:'12px', lineHeight:'1.7' }}>
+              <strong style={{ fontWeight:'900' }}>هذه أصناف مقترحة وليست منيو مطعمك الحالي.</strong> أدخل السعر الحقيقي لكل صنف تختاره قبل إنشاء المنيو.
             </div>
-          </>
+
+            {cats.filter(category => categoryItems(category).length > 0).length === 0 ? (
+              <div style={{ marginBottom:'16px', padding:'22px 16px', borderRadius:'16px', border:'1.5px dashed #D7DCE3', background:'#FAFBFC', textAlign:'center' }}>
+                <div aria-hidden="true" style={{ width:'40px', height:'40px', margin:'0 auto 9px', display:'grid', placeItems:'center', borderRadius:'12px', background:'white', color:'#9CA3AF', fontSize:'20px' }}>+</div>
+                <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', color:'#374151', marginBottom:'4px' }}>لا توجد أصناف مقترحة لهذه الأقسام</div>
+                <p style={{ margin:'0 0 11px', fontSize:'12px', color:'#6B7280', lineHeight:'1.6' }}>أضف صنفك الأول ليظهر في منيو مطعمك.</p>
+                <button type="button" onClick={openItemModal} style={{ ...ghostBtn, padding:'10px 14px', fontSize:'13px' }}>+ إضافة صنف مخصص</button>
+              </div>
+            ) : (
+              <div style={{ marginBottom:'12px' }}>
+                {cats.filter(category => categoryItems(category).length > 0).map(category => {
+                  const items = categoryItems(category)
+                  const selectedCount = selectedItemsForCategory(category)
+                  const allSelected = items.length > 0 && selectedCount === items.length
+                  return (
+                    <section key={category.id} style={{ marginBottom:'18px' }} aria-label={`أصناف ${category.name}`}>
+                      <div style={{ position:'sticky', top:0, zIndex:1, display:'flex', alignItems:'center', gap:'8px', padding:'8px 0', background:'linear-gradient(180deg,#FFFFFF 70%,rgba(255,255,255,0))' }}>
+                        <span aria-hidden="true" style={{ width:'28px', height:'28px', display:'grid', placeItems:'center', borderRadius:'9px', background:'#FFF7F2', fontSize:'15px' }}>{category.emoji || '🍽️'}</span>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontFamily:'Tajawal,sans-serif', fontSize:'14px', fontWeight:'900', color:'#1F2937', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{category.name}</div>
+                          <div style={{ fontSize:'11px', color:'#9CA3AF' }}>{selectedCount}/{items.length} أصناف محددة</div>
+                        </div>
+                        <button type="button" onClick={() => setCategorySelection(category, !allSelected)} style={{ minHeight:'34px', padding:'6px 9px', borderRadius:'9px', border:'1px solid #F0D4C2', background:'white', color:'#A94400', fontFamily:'Tajawal,sans-serif', fontSize:'11px', fontWeight:'900', cursor:'pointer' }}>{allSelected ? 'إلغاء الكل' : 'تحديد الكل'}</button>
+                      </div>
+
+                      <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+                        {items.map(item => {
+                          const key = categoryItemKey(category, item)
+                          const selected = selectedItems.has(key)
+                          const price = getItemPrice(category, item)
+                          return (
+                            <article key={key} style={{ padding:'11px', borderRadius:'14px', border:`1.5px solid ${selected ? '#FF6A00' : '#E5E7EB'}`, background:selected ? 'rgba(255,106,0,0.055)' : 'white', boxShadow:selected ? '0 5px 14px rgba(255,106,0,0.08)' : 'none' }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                                <button type="button" onClick={() => toggleItem(key)} aria-pressed={selected} aria-label={`${selected ? 'إلغاء اختيار' : 'اختيار'} ${item.name}`} style={{ width:'28px', height:'28px', display:'grid', placeItems:'center', flexShrink:0, borderRadius:'8px', border:`1.5px solid ${selected ? '#FF6A00' : '#C9D0D9'}`, background:selected ? '#FF6A00' : 'white', color:'white', fontSize:'14px', fontWeight:'900', cursor:'pointer' }}>{selected ? '✓' : ''}</button>
+                                <span aria-hidden="true" style={{ width:'37px', height:'37px', display:'grid', placeItems:'center', flexShrink:0, borderRadius:'11px', background:'#F8F9FB', fontSize:'18px' }}>{item.emoji || '🍽️'}</span>
+                                <div style={{ flex:1, minWidth:0 }}>
+                                  <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', color:'#1F2937', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.name}</div>
+                                  <div style={{ marginTop:'2px', fontSize:'11px', color:item.source === 'custom' ? '#15803D' : '#8A5A36' }}>{item.source === 'custom' ? 'صنف مخصص' : 'صنف مقترح'}</div>
+                                </div>
+                                {!selected && <span style={{ fontSize:'11px', color:'#9CA3AF', whiteSpace:'nowrap' }}>السعر يضاف بعد التحديد</span>}
+                              </div>
+                              {selected && (
+                                <div style={{ display:'flex', alignItems:'center', gap:'9px', marginTop:'10px', paddingTop:'10px', borderTop:'1px solid #F3E6DE' }}>
+                                  <label htmlFor={`item-price-${key}`} style={{ flex:1, fontSize:'12px', fontWeight:'800', color:'#4B5563' }}>السعر الحقيقي</label>
+                                  <div style={{ position:'relative', width:'132px' }}>
+                                    <input id={`item-price-${key}`} type="number" min="0" step="0.01" inputMode="decimal" value={price} onChange={event => updateItemPrice(category, item, event.target.value)} placeholder="أدخل السعر" aria-label={`السعر الحقيقي لـ ${item.name}`} style={{ ...inputStyle, width:'100%', padding:'9px 33px 9px 9px', direction:'ltr', textAlign:'left', background:'white', borderColor:isValidItemPrice(price) ? '#CFE7D6' : '#F6C9B0' }} />
+                                    <span aria-hidden="true" style={{ position:'absolute', insetInlineEnd:'9px', top:'50%', transform:'translateY(-50%)', fontSize:'11px', color:'#6B7280' }}>{rest?.currency || 'SAR'}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </article>
+                          )
+                        })}
+                      </div>
+                    </section>
+                  )
+                })}
+              </div>
+            )}
+
+            {itemsError && <div role="alert" aria-live="assertive" style={{ margin:'12px 0', padding:'11px 12px', borderRadius:'12px', background:'#FEF2F2', border:'1px solid #FECACA', color:'#B91C1C', fontSize:'13px', fontWeight:'700', lineHeight:'1.65' }}>{itemsError}</div>}
+
+            <button type="button" onClick={openItemModal} disabled={saving} style={{ width:'100%', minHeight:'46px', marginBottom:'14px', borderRadius:'13px', border:'1.5px dashed #C9D0D9', background:'white', color:'#4B5563', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px', cursor:saving ? 'default' : 'pointer', opacity:saving ? 0.65 : 1 }}>+ إضافة صنف مخصص</button>
+
+            <div style={{ position:'sticky', bottom:isMobile ? '-20px' : '-34px', zIndex:2, padding:'12px 0 3px', background:'linear-gradient(180deg,rgba(255,255,255,0),#FFFFFF 22%)' }}>
+              <div style={{ display:'flex', gap:'10px' }}>
+                <button type="button" onClick={() => goStage('categories')} disabled={saving} style={{ ...ghostBtn, opacity:saving ? 0.6 : 1 }}>→ رجوع</button>
+                <button type="button" onClick={() => void finish()} disabled={saving || selectedItemCount === 0} style={{ ...primaryBtn, opacity:saving || selectedItemCount === 0 ? 0.6 : 1, cursor:saving || selectedItemCount === 0 ? 'not-allowed' : 'pointer' }}>{saving ? 'جاري إنشاء المنيو...' : `إنشاء المنيو — ${selectedItemCount} صنف`}</button>
+              </div>
+              <div style={{ marginTop:'8px', textAlign:'center', color:'#9CA3AF', fontSize:'11px' }}>اختيار الأصناف ← مراجعة الأسعار ← إنشاء المنيو</div>
+            </div>
+          </section>
         )}
 
         {/* بوابة الحد الأدنى: لا تعرض رابطاً أو QR كنجاح قبل وجود قسم مرئي وصنف متاح بسعر. */}
@@ -1127,6 +1266,42 @@ export default function Onboarding() {
                 {saving && <span aria-hidden="true" style={{ width:'14px', height:'14px', border:'2px solid rgba(255,255,255,0.45)', borderTopColor:'white', borderRadius:'50%', animation:'onboarding-inline-spin .75s linear infinite' }} />}
                 {saving ? 'جاري الإضافة...' : 'إضافة القسم'}
               </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {itemModalOpen && (
+        <div style={{ position:'fixed', inset:0, zIndex:181, display:'flex', alignItems:isMobile ? 'flex-end' : 'center', justifyContent:'center', padding:isMobile ? 0 : '20px', direction:'rtl' }}>
+          <div onClick={() => !saving && setItemModalOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(11,11,15,0.56)' }} />
+          <form id="onboarding-item-modal" onSubmit={event => { event.preventDefault(); addCustomItem() }} noValidate aria-busy={saving} style={{ position:'relative', width:'100%', maxWidth:isMobile ? '100%' : '440px', padding:isMobile ? '22px 20px calc(22px + env(safe-area-inset-bottom))' : '24px', borderRadius:isMobile ? '24px 24px 0 0' : '22px', background:'white', boxShadow:'0 -18px 60px rgba(0,0,0,0.25)' }}>
+            <div style={{ width:'42px', height:'4px', margin:'0 auto 16px', borderRadius:'100px', background:'#E5E7EB' }} aria-hidden="true" />
+            <h3 style={{ margin:'0 0 5px', fontFamily:'Tajawal,sans-serif', fontSize:'19px', fontWeight:'900', color:'#111827' }}>إضافة صنف مخصص</h3>
+            <p style={{ margin:'0 0 16px', fontSize:'13px', color:'#6B7280', lineHeight:'1.65' }}>أدخل اسم الصنف وسعره الحقيقي قبل إضافة المنيو.</p>
+            <div style={{ marginBottom:'12px' }}>
+              <label htmlFor="onboarding-item-category" style={labelStyle}>القسم</label>
+              <select id="onboarding-item-category" value={customItemForm.categoryId} onChange={event => setCustomItemForm(previous => ({ ...previous, categoryId:event.target.value }))} style={{ ...inputStyle, background:'white' }}>
+                {cats.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+              </select>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 82px', gap:'9px', marginBottom:'12px', alignItems:'end' }}>
+              <div>
+                <label htmlFor="onboarding-custom-item-name" style={labelStyle}>اسم الصنف</label>
+                <input id="onboarding-custom-item-name" autoFocus value={customItemForm.name} onChange={event => { setCustomItemForm(previous => ({ ...previous, name:event.target.value })); setItemsError('') }} placeholder="مثال: برجر دجاج" maxLength={80} style={{ ...inputStyle, background:'white' }} />
+              </div>
+              <div>
+                <label htmlFor="onboarding-custom-item-icon" style={labelStyle}>الأيقونة</label>
+                <input id="onboarding-custom-item-icon" value={customItemForm.emoji} onChange={event => setCustomItemForm(previous => ({ ...previous, emoji:event.target.value }))} maxLength={8} style={{ ...inputStyle, textAlign:'center', background:'white' }} aria-label="أيقونة الصنف اختيارية" />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="onboarding-custom-item-price" style={labelStyle}>السعر الحقيقي</label>
+              <input id="onboarding-custom-item-price" type="number" min="0" step="0.01" inputMode="decimal" value={customItemForm.price} onChange={event => { setCustomItemForm(previous => ({ ...previous, price:event.target.value })); setItemsError('') }} placeholder="مثال: 25" style={{ ...inputStyle, direction:'ltr', textAlign:'left', background:'white' }} />
+              <p style={{ margin:'6px 0 0', fontSize:'11px', color:'#9CA3AF' }}>لن يُستخدم أي سعر استرشادي من القوالب.</p>
+            </div>
+            <div style={{ display:'flex', gap:'10px', marginTop:'18px' }}>
+              <button type="button" onClick={() => setItemModalOpen(false)} style={{ ...ghostBtn, flex:1 }}>إلغاء</button>
+              <button type="submit" style={{ ...primaryBtn, flex:1 }}>إضافة الصنف</button>
             </div>
           </form>
         </div>
