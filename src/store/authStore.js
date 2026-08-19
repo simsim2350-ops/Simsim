@@ -40,6 +40,9 @@ export const useAuthStore = create((set, get) => ({
     supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         set({ user: session.user, session })
+        // قد تصل Session من رابط التأكيد بعد اكتمال initialize. استئناف النية هنا
+        // ضروري كي لا يعلق المستخدم في صفحة الدخول أو يفقد سياق المطعم عند SIGNED_IN.
+        await get().resumePendingRestaurant()
         await Promise.all([ get().fetchRestaurant(session.user.id), get().fetchPlatformStatus() ])
         await get().loadFeatures()
       } else {
@@ -135,10 +138,22 @@ export const useAuthStore = create((set, get) => ({
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: metadata },
+      options: {
+        data: metadata,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
     })
     if (error) throw error
     return data
+  },
+
+  resendVerificationEmail: async (email) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    })
+    if (error) throw error
   },
 
   signIn: async (email, password) => {
