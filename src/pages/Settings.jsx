@@ -6,6 +6,7 @@ import { compressAndUploadImage } from '../lib/uploadImage'
 import { useAuthStore } from '../store/authStore'
 import { useFeature } from '../hooks/useFeature'
 import { setMenuBrandingHidden } from '../lib/brandingApi'
+import { deleteOwnedRestaurant } from '../lib/restaurantDeletion'
 import AppShell from '../components/AppShell'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { Accordion, AccordionItem } from '../components/Accordion'
@@ -33,7 +34,7 @@ const COMMON_ALLERGENS = [
 
 export default function Settings() {
   const navigate = useNavigate()
-  const { user, restaurant, fetchRestaurant, loadFeatures } = useAuthStore()
+  const { user, restaurant, fetchRestaurant, loadFeatures, signOut } = useAuthStore()
   // هوية المنيو: هل تسمح الباقة للمطعم بإخفاء «صمم بواسطة سمسم»؟ وهل هي مخفية حالياً؟
   const brandingHideable = useFeature('branding_hideable')
   const brandingHidden = useFeature('branding_hidden')
@@ -51,6 +52,7 @@ export default function Settings() {
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
+  const [deletingRestaurant, setDeletingRestaurant] = useState(false)
   const { isMobile } = useBreakpoint()
   // Restaurant form
   const [restForm, setRestForm] = useState({
@@ -248,6 +250,35 @@ export default function Settings() {
     if (error) { toast.error(error.message); return }
     await fetchRestaurant(user.id)
     toast.success(restaurant.is_active ? 'تم إيقاف المطعم مؤقتاً' : 'تم تفعيل المطعم ✅')
+  }
+
+  const canDeleteRestaurant = Boolean(restaurant?.id && user?.id && restaurant.owner_id === user.id)
+
+  const deleteRestaurantData = async () => {
+    if (deletingRestaurant) return
+    if (!canDeleteRestaurant) {
+      toast.error('حذف بيانات المطعم متاح لمالك المطعم فقط')
+      setConfirmDeleteAll(false)
+      return
+    }
+
+    setDeletingRestaurant(true)
+    try {
+      await deleteOwnedRestaurant({ restaurantId: restaurant.id, ownerId: user.id })
+      setConfirmDeleteAll(false)
+      await signOut()
+      navigate('/', { replace:true })
+      toast.success('تم حذف بيانات المطعم وتسجيل خروجك بنجاح')
+    } catch (err) {
+      console.error('Restaurant deletion failed:', err)
+      if (err?.code === 'not_owner_or_missing') {
+        toast.error('تعذر الحذف: لا تملك صلاحية هذا المطعم أو لم يعد موجودًا')
+      } else {
+        toast.error(err?.message || 'تعذر حذف بيانات المطعم. لم يتم تسجيل خروجك.')
+      }
+    } finally {
+      setDeletingRestaurant(false)
+    }
   }
 
   const inputStyle = { width:'100%', padding:'11px 13px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', color:'#0B0B0F', background:'#F8F9FB', outline:'none', textAlign:'right', direction:'rtl', boxSizing:'border-box' }
@@ -853,10 +884,12 @@ export default function Settings() {
                     </div>
                     <button
                       onClick={() => setConfirmDeleteAll(true)}
-                      style={{ padding:'12px', borderRadius:'12px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', color:'#EF4444', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}
+                      disabled={!canDeleteRestaurant || deletingRestaurant}
+                      style={{ padding:'12px', borderRadius:'12px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', color:'#EF4444', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px', cursor:canDeleteRestaurant && !deletingRestaurant ? 'pointer' : 'default', opacity:canDeleteRestaurant ? 1 : 0.55 }}
                     >
                       🗑️ حذف بيانات المطعم
                     </button>
+                    {!canDeleteRestaurant && <div style={{ fontSize:'12px', color:'#9CA3AF', lineHeight:'1.6' }}>هذا الإجراء متاح لمالك المطعم فقط.</div>}
                   </div>
                 </div>
                 )}
@@ -872,9 +905,10 @@ export default function Settings() {
         icon="⚠️"
         title="حذف بيانات المطعم"
         body="هل أنت متأكد من حذف كل بيانات المطعم؟ لا يمكن التراجع!"
-        confirmLabel="حذف نهائياً"
-        onCancel={() => setConfirmDeleteAll(false)}
-        onConfirm={() => { setConfirmDeleteAll(false); toast.error('حذف المطعم غير متاح الآن') }}
+        confirmLabel={deletingRestaurant ? 'جارٍ الحذف...' : 'حذف نهائياً'}
+        loading={deletingRestaurant}
+        onCancel={() => { if (!deletingRestaurant) setConfirmDeleteAll(false) }}
+        onConfirm={deleteRestaurantData}
       />
     </AppShell>
   )
