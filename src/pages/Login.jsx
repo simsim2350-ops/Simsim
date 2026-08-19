@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
-import { trackOwnerEvent } from '../lib/analytics'
+import { trackOwnerMilestone } from '../lib/analytics'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -41,8 +41,8 @@ export default function Login() {
           return
         }
         if (resumed?.id && pending?.name && pending?.slug) {
-          trackOwnerEvent('registration_completed', { props: { email_confirmation: true } })
-          trackOwnerEvent('restaurant_created', { restaurantId: resumed.id, props: { source: 'email_confirmation' } })
+          trackOwnerMilestone('registration_completed', { restaurantId: resumed.id, props: { email_confirmation: true } })
+          trackOwnerMilestone('restaurant_created', { restaurantId: resumed.id, props: { source: 'email_confirmation' } })
         }
         const { data: rest } = await supabase.from('restaurants').select('id').eq('owner_id', user.id).maybeSingle()
         hasRestaurant = !!rest

@@ -6,6 +6,7 @@ import AppShell from '../components/AppShell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import QRCode from 'qrcode'
 import { fetchBranches } from '../lib/branchesApi'
+import { trackOwnerMilestone } from '../lib/analytics'
 
 const QR_COLORS = ['#0B0B0F','#FF6A00','#10B981','#3B82F6','#8B5CF6','#EC4899','#F59E0B','#EF4444']
 
@@ -67,6 +68,7 @@ export default function QRCodePage() {
     link.download = `qr-${restaurant?.slug || 'menu'}${selectedBranch ? `-${selectedBranch}` : ''}.png`
     link.href = canvas.toDataURL('image/png')
     link.click()
+    trackOwnerMilestone('qr_downloaded', { restaurantId: restaurant?.id, branchId: selectedBranch || null, props: { source: 'qr_page', format: 'png' } })
     toast.success('تم تحميل QR Code ✅')
   }
 
@@ -162,6 +164,7 @@ export default function QRCodePage() {
     try {
       link.href = out.toDataURL('image/png')
       link.click()
+      trackOwnerMilestone('qr_downloaded', { restaurantId: restaurant?.id, branchId: selectedBranch || null, props: { source: 'qr_page', format: 'card' } })
       toast.success('تم تحميل الكارت ✅')
     } catch (err) {
       console.error('Card export failed:', err)
@@ -186,6 +189,7 @@ export default function QRCodePage() {
         document.body.removeChild(textarea)
         if (!ok) throw new Error('execCommand failed')
       }
+      trackOwnerMilestone('menu_link_copied', { restaurantId: restaurant?.id, branchId: selectedBranch || null, props: { source: 'qr_page' } })
       toast.success('تم نسخ الرابط! 📋')
     } catch (err) {
       console.error('Copy failed:', err)
@@ -194,6 +198,7 @@ export default function QRCodePage() {
   }
 
   const shareWhatsApp = () => {
+    trackOwnerMilestone('menu_shared', { restaurantId: restaurant?.id, branchId: selectedBranch || null, props: { source: 'qr_page', channel: 'whatsapp' } })
     window.open(`https://wa.me/?text=${encodeURIComponent(`تفضل منيونا الرقمي 👇\n${menuURL}`)}`, '_blank')
   }
 

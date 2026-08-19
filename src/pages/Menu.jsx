@@ -11,6 +11,9 @@ import { useFeature } from '../hooks/useFeature'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { fetchRecommendationsForProduct, addRecommendation, removeRecommendation, updateRecommendationPriority, fetchCartWideList, addCartWideItem, removeCartWideItem, updateCartWidePriority, toggleCartWideActive } from '../lib/recommendationsApi'
 import { fetchBranches } from '../lib/branchesApi'
+import { calculateMenuReadiness } from '../lib/menuReadiness'
+import { isFirstOwnerContentItem } from '../lib/ownerActivation'
+import { trackOwnerMilestone } from '../lib/analytics'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -76,6 +79,7 @@ export default function Menu() {
   const [loading, setLoading] = useState(true)
   const [branches, setBranches] = useState([])
   const [currentBranchId, setCurrentBranchId] = useState(null) // الفرع الذي يُحرَّر منيوه حالياً
+  const currentBranch = branches.find(branch => branch.id === currentBranchId) || null
 
   // Modals
   const [catModal, setCatModal] = useState(false)
@@ -204,6 +208,13 @@ export default function Menu() {
           sort_order: categories.length,
         })
         if (error) throw error
+        if (isFirstOwnerContentItem(categories.length)) {
+          trackOwnerMilestone('category_created', {
+            restaurantId: restaurant.id,
+            branchId: currentBranchId,
+            props: { source: 'menu_admin' },
+          })
+        }
         toast.success('تم إضافة القسم 🎉')
       }
       setCatModal(false)
@@ -496,7 +507,30 @@ export default function Menu() {
       } else {
         const { error } = await supabase.from('products').insert(data)
         if (error) throw error
+        if (isFirstOwnerContentItem(products.length)) {
+          trackOwnerMilestone('first_product_created', {
+            restaurantId: restaurant.id,
+            branchId: currentBranchId,
+            props: { source: 'menu_admin' },
+          })
+        }
         toast.success('تم إضافة الصنف 🎉')
+      }
+      const nextProducts = editingProd
+        ? products.map(product => product.id === editingProd.id ? { ...product, ...data } : product)
+        : [...products, data]
+      const readiness = calculateMenuReadiness({
+        restaurant,
+        branch: currentBranch,
+        categories,
+        products: nextProducts,
+      })
+      if (readiness.minimumReady) {
+        trackOwnerMilestone('menu_minimum_ready', {
+          restaurantId: restaurant.id,
+          branchId: currentBranchId,
+          props: { source: 'menu_admin' },
+        })
       }
       setProdModal(false)
       fetchAll()

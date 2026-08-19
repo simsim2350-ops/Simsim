@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
-import { trackOwnerEvent, trackRegistrationEvent } from '../lib/analytics'
+import { trackOwnerMilestone, trackRegistrationEvent } from '../lib/analytics'
 
 // خريطة تحويل الحروف العربية إلى لاتينية لتوليد رابط منيو صالح من اسم عربي
 const AR_MAP = {
@@ -91,8 +91,8 @@ export default function Register() {
       }
 
       await fetchRestaurant(user.id)
-      trackOwnerEvent('registration_completed', { props: { email_confirmation: false } })
-      trackOwnerEvent('restaurant_created', { restaurantId: restaurant.id, props: { source: 'immediate_session' } })
+      trackOwnerMilestone('registration_completed', { restaurantId: restaurant.id, props: { email_confirmation: false } })
+      trackOwnerMilestone('restaurant_created', { restaurantId: restaurant.id, props: { source: 'immediate_session' } })
       toast.success('🎉 تم إنشاء مطعمك! خلينا نجهّز المنيو')
       navigate('/onboarding')
     } catch (err) {

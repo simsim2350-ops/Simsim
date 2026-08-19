@@ -10,6 +10,7 @@ import AppShell from '../components/AppShell'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { Accordion, AccordionItem } from '../components/Accordion'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { trackOwnerMilestone } from '../lib/analytics'
 
 const BRAND_COLORS = ['#FF6A00','#E05D00','#10B981','#3B82F6','#8B5CF6','#EC4899','#F59E0B','#0B0B0F']
 const CURRENCIES = ['SAR - ريال سعودي','AED - درهم إماراتي','KWD - دينار كويتي','BHD - دينار بحريني','QAR - ريال قطري','OMR - ريال عماني','EGP - جنيه مصري']
@@ -811,6 +812,7 @@ export default function Settings() {
                             document.body.removeChild(textarea)
                             if (!ok) throw new Error('execCommand failed')
                           }
+                          trackOwnerMilestone('menu_link_copied', { restaurantId: restaurant?.id, props: { source: 'settings' } })
                           toast.success('تم النسخ!')
                         } catch (err) {
                           console.error('Copy failed:', err)

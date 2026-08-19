@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/authStore'
 import AppShell from '../components/AppShell'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { calculateMenuReadiness } from '../lib/menuReadiness'
+import { trackOwnerMilestone } from '../lib/analytics'
 
 const PERIODS = { today: 1, week: 7, month: 30, quarter: 90 }
 const STATUS = {
@@ -157,7 +158,7 @@ export default function Dashboard() {
   const topProducts = (summary?.products || []).slice(0, 5)
   const timeAgo = iso => { const minutes = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60000)); return minutes < 1 ? 'الآن' : minutes < 60 ? `منذ ${minutes} د` : `منذ ${Math.floor(minutes / 60)} س` }
   const go = (path, state) => navigate(path, state ? { state } : undefined)
-  const shareMenu = async () => { const url = `${window.location.origin}/menu/${restaurant?.slug}`; try { await navigator.clipboard.writeText(url); toast.success('تم نسخ رابط المنيو') } catch { toast.error('تعذر نسخ الرابط') } }
+  const shareMenu = async () => { const url = `${window.location.origin}/menu/${restaurant?.slug}`; try { await navigator.clipboard.writeText(url); trackOwnerMilestone('menu_link_copied', { restaurantId: restaurant?.id, props: { source: 'dashboard' } }); toast.success('تم نسخ رابط المنيو') } catch { toast.error('تعذر نسخ الرابط') } }
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 'بك'
 
   const CSS = `

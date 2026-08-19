@@ -7,7 +7,7 @@ import { useAuthStore } from '../store/authStore'
 import { ensurePrimaryBranch } from '../lib/branchesApi'
 import { calculateMenuReadiness } from '../lib/menuReadiness'
 import MenuReadinessCard from '../components/MenuReadinessCard'
-import { trackOwnerEvent } from '../lib/analytics'
+import { trackOwnerEvent, trackOwnerMilestone } from '../lib/analytics'
 
 // تحويل الاسم العربي إلى رابط لاتيني صالح
 const AR_MAP = {
@@ -214,7 +214,7 @@ export default function Onboarding() {
       if (error) throw error
       await fetchRestaurant(user.id)
       setRest(data)
-      trackOwnerEvent('restaurant_created', { restaurantId: data.id, props: { source: 'onboarding_fallback' } })
+      trackOwnerMilestone('restaurant_created', { restaurantId: data.id, props: { source: 'onboarding_fallback' } })
       setStage('info')
     } catch (err) { toast.error(err.message || 'تعذّر إنشاء المطعم') } finally { setSaving(false) }
   }
@@ -332,10 +332,10 @@ export default function Onboarding() {
         if (prodErr) throw prodErr
       }
       toast.success(`🎉 تم إنشاء منيوك (${cats.length} أقسام، ${productRows.length} صنف)!`)
-      trackOwnerEvent('category_created', { restaurantId: rest.id, props: { count: cats.length, source: 'onboarding_template' } })
-      if (productRows.length > 0) trackOwnerEvent('first_product_created', { restaurantId: rest.id, props: { count: productRows.length, source: 'onboarding_template' } })
+      trackOwnerMilestone('category_created', { restaurantId: rest.id, branchId: branch.id, props: { count: cats.length, source: 'onboarding_template' } })
+      if (productRows.length > 0) trackOwnerMilestone('first_product_created', { restaurantId: rest.id, branchId: branch.id, props: { count: productRows.length, source: 'onboarding_template' } })
       const nextReadiness = await refreshReadiness(rest.id)
-      if (nextReadiness?.minimumReady) trackOwnerEvent('menu_minimum_ready', { restaurantId: rest.id, props: { source: 'onboarding' } })
+      if (nextReadiness?.minimumReady) trackOwnerMilestone('menu_minimum_ready', { restaurantId: rest.id, branchId: branch.id, props: { source: 'onboarding' } })
       trackOwnerEvent('menu_preview_opened', { restaurantId: rest.id, props: { source: 'onboarding_auto' } })
       goStage('preview')
     } catch (err) { toast.error(err.message || 'تعذّر إنشاء المنيو') } finally { setSaving(false) }
@@ -379,11 +379,11 @@ export default function Onboarding() {
         document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta)
       }
       toast.success('تم نسخ الرابط! 📋')
-      trackOwnerEvent('menu_link_copied', { restaurantId: rest.id, props: { source: 'onboarding' } })
+      trackOwnerMilestone('menu_link_copied', { restaurantId: rest.id, props: { source: 'onboarding' } })
     } catch { toast.error('تعذّر النسخ، انسخ الرابط يدوياً') }
   }
   const shareWhatsApp = () => {
-    trackOwnerEvent('menu_shared', { restaurantId: rest?.id, props: { channel: 'whatsapp', source: 'onboarding' } })
+    trackOwnerMilestone('menu_shared', { restaurantId: rest?.id, props: { channel: 'whatsapp', source: 'onboarding' } })
     window.open(`https://wa.me/?text=${encodeURIComponent(`تفضل منيونا الرقمي 👇\n${menuURL}`)}`, '_blank')
   }
 
@@ -395,7 +395,7 @@ export default function Onboarding() {
       link.download = `simsim-${rest?.slug || 'menu'}-qr.png`
       link.href = canvas.toDataURL('image/png')
       link.click()
-      trackOwnerEvent('qr_downloaded', { restaurantId: rest?.id, props: { source: 'onboarding' } })
+      trackOwnerMilestone('qr_downloaded', { restaurantId: rest?.id, props: { source: 'onboarding' } })
     } catch {
       toast.error('تعذّر تحميل رمز QR، جرّب مرة أخرى')
     }

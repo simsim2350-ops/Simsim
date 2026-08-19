@@ -7,6 +7,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { fetchBranches, createBranch, updateBranch, deleteBranch, cloneMenuToBranch } from '../lib/branchesApi'
+import { trackOwnerMilestone } from '../lib/analytics'
 
 function Icon({ type, size=16 }) {
   const paths = {
@@ -229,6 +230,7 @@ export default function Branches() {
         document.execCommand('copy')
         document.body.removeChild(textarea)
       }
+      trackOwnerMilestone('menu_link_copied', { restaurantId: restaurant?.id, branchId: branch.id, props: { source: 'branches' } })
       toast.success('تم نسخ رابط الفرع 📋')
     } catch {
       toast.error('تعذّر النسخ، انسخه يدوياً')

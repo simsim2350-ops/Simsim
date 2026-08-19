@@ -8,6 +8,7 @@
 //   • النوع يُتحقَّق منه في الخادم (allowlist)؛ هنا مجرد تمرير.
 // ملاحظة: لا منتِج فعلي في M1 — التوصيل يبدأ في M2. هذا هو العقد الجاهز.
 import { supabase } from './supabase'
+import { ownerMilestoneDedupeKey } from './ownerActivation'
 
 const SESSION_KEY = 'simsim_analytics_sid'
 
@@ -45,21 +46,29 @@ export function track(eventType, opts = {}) {
   } catch { /* لا يكسر الواجهة أبداً */ }
 }
 
-// أحداث مالك المطعم ضمن Funnel التفعيل. يتحقق الخادم من الحساب والمطعم ونوع الحدث.
+// أحداث مالك المطعم ضمن Funnel التفعيل. يتحقق الخادم من الحساب والمطعم والفرع ونوع الحدث.
 // props يجب أن تكون تقنية/تجميعية فقط؛ لا تمرر البريد أو الهاتف أو أسماء العملاء.
 export function trackOwnerEvent(eventType, opts = {}) {
   try {
-    const { restaurantId = null, props = {} } = opts
+    const { restaurantId = null, branchId = null, props = {}, dedupeKey = null } = opts
     if (!eventType) return
     const sessionId = getSessionId()
     if (!sessionId) return
     supabase.rpc('track_owner_event', {
       p_event_type: eventType,
       p_restaurant_id: restaurantId,
+      p_branch_id: branchId,
       p_session_id: sessionId,
       p_props: props || {},
+      p_dedupe_key: dedupeKey,
     }).then(() => {}, () => {})
   } catch { /* لا يكسر الواجهة أبداً */ }
+}
+
+// Milestones رحلة المالك: مفتاح ثابت لكل مطعم يمنع التكرار من refresh أو retry أو navigation.
+export function trackOwnerMilestone(eventType, opts = {}) {
+  const { restaurantId = null, dedupeKey = ownerMilestoneDedupeKey(eventType, restaurantId), ...rest } = opts
+  trackOwnerEvent(eventType, { ...rest, restaurantId, dedupeKey })
 }
 
 // حدثا بداية التسجيل وطلب تأكيد البريد فقط يمكن إرسالهما قبل المصادقة.
@@ -67,12 +76,16 @@ export function trackRegistrationEvent(eventType, props = {}) {
   try {
     const sessionId = getSessionId()
     if (!sessionId) return
+    const dedupeKey = eventType === 'registration_started'
+      ? `milestone:${eventType}:session:${sessionId}`
+      : null
     supabase.rpc('track_registration_event', {
       p_event_type: eventType,
       p_session_id: sessionId,
       p_props: props || {},
+      p_dedupe_key: dedupeKey,
     }).then(() => {}, () => {})
   } catch { /* لا يكسر الواجهة أبداً */ }
 }
 
-export default { track, trackOwnerEvent, trackRegistrationEvent, getSessionId }
+export default { track, trackOwnerEvent, trackOwnerMilestone, trackRegistrationEvent, getSessionId }
