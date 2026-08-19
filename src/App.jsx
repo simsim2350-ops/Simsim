@@ -91,7 +91,7 @@ function ProtectedRoute({ children }) {
 
 function PublicRoute({ children }) {
   const { user, loading } = useAuthStore()
-  if (loading) return null
+  if (loading) return <PageLoader />
   if (user) return <Navigate to="/dashboard" replace />
   return children
 }
@@ -127,8 +127,14 @@ function FeatureUnavailable({ page, features }) {
 //     تُحجب فعلياً. fail-open: قدرة غير مسجّلة/خريطة غير محمّلة = مسموح (غير كاسر).
 function RequirePage({ page, children }) {
   const { user, loading, isOwner, membership, features, restaurant } = useAuthStore()
-  if (loading) return null
+  if (loading) return <PageLoader />
   if (!user) return <Navigate to="/login" replace />
+  // مستخدم مُصادَق لكنه ليس صاحب مطعم محمَّلاً ولا موظفاً (بلا عضوية) — سياق المطعم لم يُحلّ بعد.
+  // يحدث مباشرة بعد التسجيل: مستمع onAuthStateChange يضبط user قبل أن يُنشأ/يُحمّل المطعم،
+  // فتصبح perms بلا صلاحيات و firstAllowedPath = null فيُوجَّه لـ/login، و/login (PublicRoute)
+  // يُعيده لـ/dashboard → حلقة توجيه لا نهائية = شاشة بيضاء. الوجهة الصحيحة هي الإعداد
+  // (idempotent؛ يُعيد التوجيه للوحة تلقائياً إن كان الإعداد مكتملاً) — لا حلقة ولا شاشة بيضاء.
+  if (!isOwner && !membership) return <Navigate to="/onboarding" replace />
   // بوابة الأونبوردنغ: صاحب مطعم لم يُكمل الإعداد يُوجَّه لإكماله (لا يُطبَّق على الموظفين).
   // شرط صريح === false: لا نوجّه قبل تحميل بيانات المطعم أو للمطاعم القديمة (completed=true).
   if (isOwner && restaurant && restaurant.onboarding_completed === false) {
