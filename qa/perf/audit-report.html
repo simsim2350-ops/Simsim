@@ -1,0 +1,937 @@
+<title>تشخيص أداء منيو سمسم</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root {
+  /* أرضية دافئة منحازة قليلاً نحو برتقالي سمسم — محايد مختار لا موروث */
+  --ground:      #FBFAF8;
+  --surface:     #FFFFFF;
+  --surface-sub: #F4F1ED;
+  --ink:         #17130E;
+  --ink-2:       #4A4239;
+  --muted:       #7B7166;
+  --line:        #E6E0D7;
+  --line-soft:   #F0EBE4;
+
+  /* برتقالي سمسم — محجوز للتوصية والتشديد البنيوي فقط */
+  --brand:       #FF6A00;
+  --brand-ink:   #B24A00;
+  --brand-wash:  #FFF2E8;
+
+  /* سُلّم التشخيص: حار = عاجل، بارد = أقل إلحاحاً. منفصل عن لون الهوية عمداً */
+  --sev-crit:    #B3123C;
+  --sev-crit-bg: #FDECF0;
+  --sev-high:    #B45309;
+  --sev-high-bg: #FDF3E4;
+  --sev-med:     #45657A;
+  --sev-med-bg:  #EDF2F6;
+  --ok:          #2F6B4F;
+  --ok-bg:       #EAF3EE;
+
+  /* ألوان مسارات الشلال */
+  --ph-shell:    #8A8177;
+  --ph-chunk:    #B45309;
+  --ph-api:      #B3123C;
+  --ph-menu:     #FF6A00;
+
+  --measure: 68ch;
+  --r: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:      #131110;
+    --surface:     #1C1917;
+    --surface-sub: #232020;
+    --ink:         #F5F0EA;
+    --ink-2:       #CFC6BA;
+    --muted:       #998E80;
+    --line:        #332E2A;
+    --line-soft:   #262220;
+
+    --brand:       #FF8534;
+    --brand-ink:   #FFA76A;
+    --brand-wash:  #2E1B0C;
+
+    --sev-crit:    #FF6B8A;
+    --sev-crit-bg: #33131D;
+    --sev-high:    #E9A23B;
+    --sev-high-bg: #2E2110;
+    --sev-med:     #8FB4CC;
+    --sev-med-bg:  #172329;
+    --ok:          #6FC79A;
+    --ok-bg:       #14251C;
+
+    --ph-shell:    #6F675E;
+    --ph-chunk:    #E9A23B;
+    --ph-api:      #FF6B8A;
+    --ph-menu:     #FF8534;
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground:      #131110;
+  --surface:     #1C1917;
+  --surface-sub: #232020;
+  --ink:         #F5F0EA;
+  --ink-2:       #CFC6BA;
+  --muted:       #998E80;
+  --line:        #332E2A;
+  --line-soft:   #262220;
+
+  --brand:       #FF8534;
+  --brand-ink:   #FFA76A;
+  --brand-wash:  #2E1B0C;
+
+  --sev-crit:    #FF6B8A;
+  --sev-crit-bg: #33131D;
+  --sev-high:    #E9A23B;
+  --sev-high-bg: #2E2110;
+  --sev-med:     #8FB4CC;
+  --sev-med-bg:  #172329;
+  --ok:          #6FC79A;
+  --ok-bg:       #14251C;
+
+  --ph-shell:    #6F675E;
+  --ph-chunk:    #E9A23B;
+  --ph-api:      #FF6B8A;
+  --ph-menu:     #FF8534;
+}
+
+* { box-sizing: border-box; }
+
+html { direction: rtl; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: "IBM Plex Sans Arabic", "Tajawal", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 24px 96px;
+}
+
+/* ===== الترويسة ===== */
+.masthead {
+  padding: 64px 0 40px;
+  border-bottom: 2px solid var(--ink);
+}
+.eyebrow {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 18px;
+}
+h1 {
+  font-family: "Readex Pro", "IBM Plex Sans Arabic", sans-serif;
+  font-weight: 600;
+  font-size: clamp(30px, 5.5vw, 50px);
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  margin: 0 0 20px;
+  text-wrap: balance;
+}
+.verdict {
+  font-size: clamp(16px, 2.2vw, 19px);
+  line-height: 1.7;
+  color: var(--ink-2);
+  max-width: var(--measure);
+  margin: 0 0 28px;
+}
+.verdict b { color: var(--ink); font-weight: 600; }
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.meta span { white-space: nowrap; }
+
+/* ===== الأقسام ===== */
+section { padding-top: 60px; }
+h2 {
+  font-family: "Readex Pro", sans-serif;
+  font-weight: 600;
+  font-size: clamp(21px, 3vw, 27px);
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+  text-wrap: balance;
+}
+.sec-note {
+  color: var(--muted);
+  font-size: 14.5px;
+  max-width: var(--measure);
+  margin: 0 0 28px;
+}
+h3 {
+  font-family: "Readex Pro", sans-serif;
+  font-weight: 500;
+  font-size: 17px;
+  margin: 0 0 10px;
+}
+p { max-width: var(--measure); margin: 0 0 16px; }
+.lead { font-size: 17px; color: var(--ink-2); }
+strong { font-weight: 600; }
+
+/* ===== بطاقات الأرقام الرئيسية ===== */
+.profiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.pcard {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 22px 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pcard.is-worst { border-color: var(--sev-crit); border-width: 1.5px; }
+.pcard.is-dev   { border-color: var(--ok); border-width: 1.5px; }
+.pcard-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.pcard-name { font-family: "Readex Pro", sans-serif; font-weight: 500; font-size: 15px; }
+.pcard-tag {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+.tag-crit { background: var(--sev-crit-bg); color: var(--sev-crit); }
+.tag-ok   { background: var(--ok-bg); color: var(--ok); }
+.pcard-hero { display: flex; align-items: baseline; gap: 7px; }
+.pcard-num {
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 600;
+  font-size: 42px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+.pcard-unit { font-family: "IBM Plex Mono", monospace; font-size: 15px; color: var(--muted); }
+.pcard-label { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-top: -6px; }
+.pcard-rows { display: flex; flex-direction: column; gap: 5px; border-top: 1px solid var(--line-soft); padding-top: 13px; }
+.prow { display: flex; justify-content: space-between; font-size: 13px; gap: 10px; }
+.prow span:first-child { color: var(--muted); }
+.prow span:last-child { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+.is-bad { color: var(--sev-crit); font-weight: 600; }
+.is-good { color: var(--ok); font-weight: 600; }
+
+.callout {
+  border-right: 3px solid var(--brand);
+  background: var(--brand-wash);
+  border-radius: 0 var(--r) var(--r) 0;
+  padding: 18px 20px;
+  margin: 0 0 8px;
+}
+.callout p { margin: 0; max-width: none; font-size: 15.5px; line-height: 1.75; }
+.callout b { color: var(--brand-ink); }
+
+/* ===== الشلال ===== */
+.chart {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 26px 24px 20px;
+  overflow-x: auto;
+}
+.chart-inner { min-width: 620px; }
+.axis {
+  display: grid;
+  grid-template-columns: 178px 1fr;
+  gap: 14px;
+  align-items: end;
+  margin-bottom: 6px;
+}
+.axis-ticks {
+  position: relative;
+  height: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.tick {
+  position: absolute;
+  bottom: 0;
+  transform: translateX(50%);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.tick::after {
+  content: "";
+  position: absolute;
+  right: 50%;
+  bottom: -5px;
+  width: 1px;
+  height: 4px;
+  background: var(--line);
+}
+
+.wf-row {
+  display: grid;
+  grid-template-columns: 178px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 2.5px 0;
+}
+.wf-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11.5px;
+  color: var(--ink-2);
+  text-align: left;
+  direction: ltr;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wf-track { position: relative; height: 17px; }
+.wf-track::before {
+  content: "";
+  position: absolute;
+  inset: 8px 0 auto 0;
+  height: 1px;
+  background: var(--line-soft);
+}
+.bar {
+  position: absolute;
+  top: 3px;
+  height: 11px;
+  border-radius: 2px;
+  min-width: 3px;
+}
+.bar-shell { background: var(--ph-shell); }
+.bar-chunk { background: var(--ph-chunk); }
+.bar-api   { background: var(--ph-api); }
+.bar-menu  { background: var(--ph-menu); box-shadow: 0 0 0 2.5px var(--brand-wash); }
+
+.wf-row.is-menu .wf-label { color: var(--brand-ink); font-weight: 600; }
+
+.phase-head {
+  display: grid;
+  grid-template-columns: 178px 1fr;
+  gap: 14px;
+  align-items: center;
+  margin: 16px 0 5px;
+}
+.phase-title {
+  font-family: "Readex Pro", sans-serif;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: left;
+  direction: rtl;
+}
+.phase-cost {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.phase-cost b { color: var(--sev-crit); font-weight: 600; }
+
+.finish {
+  display: grid;
+  grid-template-columns: 178px 1fr;
+  gap: 14px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+  align-items: center;
+}
+.finish-label {
+  font-family: "Readex Pro", sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+}
+.finish-val {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 18px;
+  padding-top: 15px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.swatch { width: 13px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+
+/* ===== الاختناقات ===== */
+.bottlenecks { display: flex; flex-direction: column; gap: 12px; }
+.bn {
+  display: grid;
+  grid-template-columns: 96px 1fr 132px;
+  gap: 18px;
+  align-items: start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 18px 20px;
+}
+.bn-sev {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 4px 9px;
+  border-radius: 100px;
+  text-align: center;
+  white-space: nowrap;
+}
+.sev-crit { background: var(--sev-crit-bg); color: var(--sev-crit); }
+.sev-high { background: var(--sev-high-bg); color: var(--sev-high); }
+.sev-med  { background: var(--sev-med-bg);  color: var(--sev-med); }
+.bn-body p { margin: 0; max-width: none; font-size: 14.5px; line-height: 1.7; }
+.bn-body code {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  background: var(--surface-sub);
+  padding: 1px 5px;
+  border-radius: 4px;
+  direction: ltr;
+  display: inline-block;
+}
+.bn-cost {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  color: var(--ink-2);
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.6;
+}
+.bn-cost b { display: block; font-size: 18px; font-weight: 600; }
+
+/* ===== قوائم ===== */
+ul.clean { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 11px; max-width: var(--measure); }
+ul.clean li { padding-right: 22px; position: relative; font-size: 15px; line-height: 1.72; }
+ul.clean li::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 11px;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--ok);
+}
+ul.warn li::before { background: var(--sev-med); }
+ul.clean code {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  background: var(--surface-sub);
+  padding: 1px 5px;
+  border-radius: 4px;
+  direction: ltr;
+  display: inline-block;
+}
+
+/* ===== الخيارات ===== */
+.options { display: grid; grid-template-columns: repeat(auto-fit, minmax(272px, 1fr)); gap: 14px; }
+.opt {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.opt.is-pick {
+  border: 1.5px solid var(--brand);
+  background: var(--brand-wash);
+}
+.opt-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.opt-name { font-family: "Readex Pro", sans-serif; font-weight: 600; font-size: 16px; }
+.opt-pick-tag {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  background: var(--brand);
+  color: #fff;
+  padding: 3px 9px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+.opt p { margin: 0; max-width: none; font-size: 14px; line-height: 1.7; color: var(--ink-2); }
+.opt-stats { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--line-soft); padding-top: 13px; margin-top: auto; }
+.opt.is-pick .opt-stats { border-top-color: rgba(255,106,0,0.22); }
+.ostat { display: flex; justify-content: space-between; font-size: 13px; gap: 10px; }
+.ostat span:first-child { color: var(--muted); }
+.ostat span:last-child { font-family: "IBM Plex Mono", monospace; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ===== جداول ===== */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 520px; }
+th, td { padding: 12px 16px; text-align: right; border-bottom: 1px solid var(--line-soft); font-size: 14px; }
+th {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--surface-sub);
+  white-space: nowrap;
+}
+tbody tr:last-child td { border-bottom: none; }
+td.num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td code { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; direction: ltr; display: inline-block; }
+
+.footer {
+  margin-top: 72px;
+  padding-top: 26px;
+  border-top: 1px solid var(--line);
+  font-size: 13.5px;
+  color: var(--muted);
+  max-width: var(--measure);
+}
+
+@media (max-width: 620px) {
+  .bn { grid-template-columns: 1fr; gap: 11px; }
+  .bn-cost { text-align: right; }
+  .wrap { padding: 0 18px 72px; }
+  .masthead { padding-top: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Performance Audit · PHASE 1–4</p>
+  <h1>لماذا يفتح منيو سمسم ببطء على الجوال</h1>
+  <p class="verdict">
+    المنيو يحتاج <b>7.0 ثانية</b> ليصبح قابلاً للاستخدام على جوال بإنترنت متوسط،
+    مقابل <b>0.9 ثانية</b> على جهاز مكتبي سريع. السبب ليس قاعدة البيانات ولا حجم البيانات —
+    بل <b>شلال من عشر موجات متسلسلة</b> من الطلبات، تنتظر كل واحدة سابقتها،
+    وبيانات المنيو نفسها في نهايته لا في بدايته.
+  </p>
+  <div class="meta">
+    <span>مطعم القياس: simsim — ٩ أقسام · ٤٨ صنفاً</span>
+    <span>وسيط ٥ تشغيلات</span>
+    <span>زيارة أولى بلا كاش</span>
+  </div>
+</header>
+
+<section>
+  <h2>الأرقام</h2>
+  <p class="sec-note">
+    الزمن حتى يصبح المنيو قابلاً للاستخدام فعلياً — أي حتى يظهر أول صنف على الشاشة،
+    لا حتى يظهر مؤشر تحميل.
+  </p>
+
+  <div class="profiles">
+    <div class="pcard is-worst">
+      <div class="pcard-top">
+        <span class="pcard-name">جوال · Slow 4G</span>
+        <span class="pcard-tag tag-crit">الأسوأ</span>
+      </div>
+      <div>
+        <div class="pcard-hero">
+          <span class="pcard-num">7.0</span><span class="pcard-unit">ثانية</span>
+        </div>
+        <div class="pcard-label">حتى ظهور أول صنف</div>
+      </div>
+      <div class="pcard-rows">
+        <div class="prow"><span>LCP</span><span class="is-bad">7560ms</span></div>
+        <div class="prow"><span>FCP</span><span>2088ms</span></div>
+        <div class="prow"><span>TBT</span><span class="is-bad">829ms</span></div>
+        <div class="prow"><span>CLS</span><span class="is-good">0</span></div>
+      </div>
+    </div>
+
+    <div class="pcard">
+      <div class="pcard-top">
+        <span class="pcard-name">جوال · Fast 4G</span>
+      </div>
+      <div>
+        <div class="pcard-hero">
+          <span class="pcard-num">3.7</span><span class="pcard-unit">ثانية</span>
+        </div>
+        <div class="pcard-label">حتى ظهور أول صنف</div>
+      </div>
+      <div class="pcard-rows">
+        <div class="prow"><span>LCP</span><span class="is-bad">6100ms</span></div>
+        <div class="prow"><span>FCP</span><span>1112ms</span></div>
+        <div class="prow"><span>TBT</span><span class="is-bad">780ms</span></div>
+        <div class="prow"><span>CLS</span><span class="is-good">0</span></div>
+      </div>
+    </div>
+
+    <div class="pcard is-dev">
+      <div class="pcard-top">
+        <span class="pcard-name">جهاز مكتبي</span>
+        <span class="pcard-tag tag-ok">ما تراه أنت</span>
+      </div>
+      <div>
+        <div class="pcard-hero">
+          <span class="pcard-num">0.9</span><span class="pcard-unit">ثانية</span>
+        </div>
+        <div class="pcard-label">حتى ظهور أول صنف</div>
+      </div>
+      <div class="pcard-rows">
+        <div class="prow"><span>LCP</span><span>1924ms</span></div>
+        <div class="prow"><span>FCP</span><span class="is-good">252ms</span></div>
+        <div class="prow"><span>TBT</span><span>116ms</span></div>
+        <div class="prow"><span>CLS</span><span class="is-good">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p>
+      <b>هذه الفجوة هي أصل المشكلة:</b> على جهاز التطوير السريع يفتح المنيو في أقل من ثانية،
+      فتبدو التجربة سليمة تماماً. الزبون الذي يمسح رمز QR على الطاولة بجوال متوسط
+      يرى الرقم الآخر — سبعة أضعاف. المشكلة مقاسة، لا انطباعية.
+    </p>
+  </div>
+</section>
+
+<section>
+  <h2>الشلال — أين تذهب السبع ثوانٍ</h2>
+  <p class="sec-note">
+    شلال الشبكة الفعلي المُلتقط على Slow 4G. الزمن يسير من اليمين إلى اليسار،
+    وكل شريط طلب حقيقي بزمن بدايته ونهايته.
+  </p>
+
+  <div class="chart">
+    <div class="chart-inner">
+
+      <div class="axis">
+        <div></div>
+        <div class="axis-ticks">
+          <span class="tick" style="right:0%">0</span>
+          <span class="tick" style="right:14.3%">1s</span>
+          <span class="tick" style="right:28.6%">2s</span>
+          <span class="tick" style="right:42.9%">3s</span>
+          <span class="tick" style="right:57.1%">4s</span>
+          <span class="tick" style="right:71.4%">5s</span>
+          <span class="tick" style="right:85.7%">6s</span>
+          <span class="tick" style="right:100%">7s</span>
+        </div>
+      </div>
+
+      <div class="phase-head">
+        <div class="phase-title">أ · تحميل هيكل التطبيق</div>
+        <div class="phase-cost">‏1.6 ثانية — لا مفرّ منها كلياً</div>
+      </div>
+      <div class="wf-row"><div class="wf-label">index.js</div><div class="wf-track"><div class="bar bar-shell" style="right:4.9%;width:11.2%"></div></div></div>
+      <div class="wf-row"><div class="wf-label">vendor-react</div><div class="wf-track"><div class="bar bar-shell" style="right:4.9%;width:22.1%"></div></div></div>
+      <div class="wf-row"><div class="wf-label">vendor-supabase</div><div class="wf-track"><div class="bar bar-shell" style="right:4.9%;width:22.5%"></div></div></div>
+      <div class="wf-row"><div class="wf-label">index.css</div><div class="wf-track"><div class="bar bar-shell" style="right:4.9%;width:5.3%"></div></div></div>
+      <div class="wf-row"><div class="wf-label">└ fonts/css2 (مُقيَّد بـ CSS)</div><div class="wf-track"><div class="bar bar-shell" style="right:10.3%;width:0.5%"></div></div></div>
+
+      <div class="phase-head">
+        <div class="phase-title">ب · تحميل كود صفحة المنيو</div>
+        <div class="phase-cost">‏0.9 ثانية — لا يبدأ إلا بعد انتهاء «أ»</div>
+      </div>
+      <div class="wf-row"><div class="wf-label">PublicMenu chunk</div><div class="wf-track"><div class="bar bar-chunk" style="right:28.9%;width:12.3%"></div></div></div>
+      <div class="wf-row"><div class="wf-label">+ ٩ ملفات مساندة</div><div class="wf-track"><div class="bar bar-chunk" style="right:28.9%;width:10.7%"></div></div></div>
+
+      <div class="phase-head">
+        <div class="phase-title">ج · شلال Supabase</div>
+        <div class="phase-cost"><b>‏4.0 ثانية</b> — ‏57٪ من الزمن كله</div>
+      </div>
+      <div class="wf-row"><div class="wf-label">restaurants</div><div class="wf-track"><div class="bar bar-api" style="right:41.9%;width:4.9%"></div></div></div>
+      <div class="wf-row"><div class="wf-label">branches</div><div class="wf-track"><div class="bar bar-api" style="right:46.9%;width:5.0%"></div></div></div>
+      <div class="wf-row"><div class="wf-label">get_active_orders_count</div><div class="wf-track"><div class="bar bar-api" style="right:52.0%;width:4.6%"></div></div></div>
+      <div class="wf-row"><div class="wf-label">get_restaurant_rating</div><div class="wf-track"><div class="bar bar-api" style="right:56.7%;width:5.0%"></div></div></div>
+      <div class="wf-row"><div class="wf-label">menu_capabilities</div><div class="wf-track"><div class="bar bar-api" style="right:61.9%;width:4.8%"></div></div></div>
+      <div class="wf-row"><div class="wf-label">menu_branding</div><div class="wf-track"><div class="bar bar-api" style="right:66.9%;width:5.0%"></div></div></div>
+      <div class="wf-row"><div class="wf-label">loyalty_programs</div><div class="wf-track"><div class="bar bar-api" style="right:71.9%;width:4.4%"></div></div></div>
+      <div class="wf-row"><div class="wf-label">banners + coupons</div><div class="wf-track"><div class="bar bar-api" style="right:76.5%;width:4.8%"></div></div></div>
+      <div class="wf-row is-menu"><div class="wf-label">★ categories + products</div><div class="wf-track"><div class="bar bar-menu" style="right:81.4%;width:11.9%"></div></div></div>
+      <div class="wf-row"><div class="wf-label">get_recent_order_items</div><div class="wf-track"><div class="bar bar-api" style="right:93.4%;width:5.0%"></div></div></div>
+
+      <div class="finish">
+        <div class="finish-label">المنيو قابل للاستخدام</div>
+        <div class="finish-val">6999ms</div>
+      </div>
+
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--ph-shell)"></i> هيكل التطبيق</span>
+        <span><i class="swatch" style="background:var(--ph-chunk)"></i> كود صفحة المنيو</span>
+        <span><i class="swatch" style="background:var(--ph-api)"></i> طلبات Supabase</span>
+        <span><i class="swatch" style="background:var(--ph-menu)"></i> بيانات المنيو الفعلية</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>قراءة الشلال</h2>
+  <p class="lead">
+    في <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;direction:ltr;display:inline-block;background:var(--surface-sub);padding:1px 6px;border-radius:4px">useMenuData.js</code>
+    تُنفَّذ كل عملية جلب بـ <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;direction:ltr;display:inline-block;background:var(--surface-sub);padding:1px 6px;border-radius:4px">await</code>
+    منفصل بالتتابع، و<code style="font-family:'IBM Plex Mono',monospace;font-size:13px;direction:ltr;display:inline-block;background:var(--surface-sub);padding:1px 6px;border-radius:4px">setLoading(false)</code>
+    لا يُستدعى إلا في النهاية. النتيجة: لا شيء يظهر للعميل حتى تكتمل الموجات العشر كاملة.
+  </p>
+  <p>
+    وأخطر تفصيل يكشفه الرسم: <strong>بيانات المنيو الحقيقية — الأقسام والأصناف — لا تُطلَب إلا بعد ٢٫٨ ثانية</strong>
+    من الانتظار خلف رقم وقت التجهيز التقديري، ونجوم التقييم، وخريطة القدرات، وتذييل «صُمم بواسطة سمسم»،
+    وبرنامج الولاء، والبانرات. ثم يبقى المنيو محجوباً ٣٥٠ مللي ثانية إضافية بانتظار قائمة «يعجب زبائننا».
+  </p>
+  <p>
+    كل هذه الطلبات تعتمد على <strong>معرّف المطعم ومعرّف الفرع فقط</strong> — وكلاهما متوفر بعد الموجة الثانية.
+    لا يوجد بينها أي ترابط حقيقي يبرر انتظار بعضها بعضاً.
+  </p>
+</section>
+
+<section>
+  <h2>أهم خمسة اختناقات</h2>
+  <p class="sec-note">مرتّبة بالأثر المقاس، لا بالانطباع.</p>
+
+  <div class="bottlenecks">
+
+    <div class="bn">
+      <div class="bn-sev sev-crit">CRITICAL</div>
+      <div class="bn-body">
+        <h3>شلال عشر موجات متسلسلة</h3>
+        <p>
+          <code>fetchMenu</code> تنتظر كل طلب قبل بدء التالي، وتحجب العرض كلياً
+          حتى آخر موجة — رغم أن الطلبات مستقلة عن بعضها.
+        </p>
+      </div>
+      <div class="bn-cost"><b>4.0s</b>‏57٪ من الزمن</div>
+    </div>
+
+    <div class="bn">
+      <div class="bn-sev sev-high">HIGH</div>
+      <div class="bn-body">
+        <h3>ميغابايت من الصور غير المُقاسة</h3>
+        <p>
+          صور بعرض 1080px ومتوسط 89KB تُعرض داخل مربعات 108–195px، بلا
+          <code>srcset</code>، وصورة الغلاف والشعار بلا <code>fetchpriority</code>
+          فتتزاحم مع صور الأصناف.
+        </p>
+      </div>
+      <div class="bn-cost"><b>LCP 7.5s</b>‏977KB</div>
+    </div>
+
+    <div class="bn">
+      <div class="bn-sev sev-high">HIGH</div>
+      <div class="bn-body">
+        <h3>جلب البيانات ينتظر تحميل الكود</h3>
+        <p>
+          أول طلب بيانات لا ينطلق إلا بعد اكتمال تحميل chunk صفحة المنيو،
+          فالمرحلتان «ب» و«ج» متسلسلتان بدل أن تتداخلا.
+        </p>
+      </div>
+      <div class="bn-cost"><b>0.9s</b>مهدرة</div>
+    </div>
+
+    <div class="bn">
+      <div class="bn-sev sev-med">MEDIUM</div>
+      <div class="bn-body">
+        <h3>سلسلة خطوط داخل CSS</h3>
+        <p>
+          <code>@import</code> داخل <code>index.css</code> يُنتج سلسلة:
+          CSS ← css2 ← woff2 على أصل ثالث. و<strong>٢٠ وزناً من ٣ عائلات</strong>
+          تُحمَّل بينما المنيو يستخدم Tajawal وحدها.
+        </p>
+      </div>
+      <div class="bn-cost">جولتان<br>إضافيتان</div>
+    </div>
+
+    <div class="bn">
+      <div class="bn-sev sev-med">MEDIUM</div>
+      <div class="bn-body">
+        <h3>أربعة استعلامات قبل أوانها</h3>
+        <p>
+          <code>restaurant_tables</code> و<code>cart_wide_recommendations</code>
+          تلزمان السلة، و<code>product_recommendations</code> تلزم نافذة المنتج،
+          و<code>track_event</code> تحليلات — كلها تُطلق عند الفتح وتزاحم على النطاق.
+        </p>
+      </div>
+      <div class="bn-cost">تزاحم في<br>اللحظة الحرجة</div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2>ما فحصته ووجدته سليماً</h2>
+  <p class="sec-note">لن ألمس أياً من هذه — ذكرها هنا لأن استبعاد المشتبه به جزء من التشخيص.</p>
+  <ul class="clean">
+    <li><strong>قاعدة البيانات ليست بطيئة.</strong> الفهارس موجودة على <code>restaurants(slug)</code> و<code>categories(branch_id)</code> و<code>products(branch_id)</code>، وحجم المنيو الكامل ٢٥ كيلوبايت فقط. المشكلة في <em>عدد الجولات</em> إلى القاعدة، لا في سرعتها.</li>
+    <li><strong>المنيو العام لا يمرّ بـ Auth.</strong> تحققت من الشلال: لا يوجد أي طلب <code>/auth/v1/</code> للزائر المجهول. فصل تجربة الزبون عن لوحة التحكم سليم شبكياً.</li>
+    <li><strong>‏CLS = صفر</strong> على الملفات الثلاثة. لا قفزات تخطيط إطلاقاً.</li>
+    <li><strong>لا سكربتات طرف ثالث</strong> ولا widgets ولا pixels تحجب العرض.</li>
+    <li><strong>Skeleton موجود</strong> — لا شاشة بيضاء. لكنه يُعرض سبع ثوانٍ، وهذا ما نصلحه.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>ملاحظتان خارج نطاق المهمة</h2>
+  <p class="sec-note">أسجّلهما ولا أنفّذهما — قرارهما لك.</p>
+  <ul class="clean warn">
+    <li>قناة <code>menu-data</code> تشترك في تغييرات ستة جداول وتستدعي <code>fetchMenu</code> كاملة عند أي تغيير — أي أن تعديلك لسعر واحد يُعيد تشغيل الموجات العشر لدى كل زبون مفتوح لديه المنيو الآن.</li>
+    <li>الصور مخزّنة بـ <code>cache-control: max-age=3600</code> (ساعة واحدة) رغم أن أسماء ملفاتها فريدة أبدياً — فالزيارة المتكررة بعد ساعة تُعيد تنزيل الميغابايت كاملاً بلا داعٍ.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>خيارات الإصلاح</h2>
+  <p class="sec-note">
+    قيد مهم: حسابك على Supabase <strong>Free plan</strong>، فخدمة تحويل الصور من طرف الخادم
+    (<code style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;direction:ltr;display:inline-block;background:var(--surface-sub);padding:1px 5px;border-radius:4px">/render/image/</code>)
+    غير متاحة. لا يمكن تصغير الصور خادمياً دون ترقية الباقة.
+  </p>
+
+  <div class="options">
+
+    <div class="opt is-pick">
+      <div class="opt-head">
+        <span class="opt-name">الخيار A</span>
+        <span class="opt-pick-tag">التوصية</span>
+      </div>
+      <p>
+        إصلاح جهة العميل فقط: دمج الموجات المستقلة في <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;direction:ltr;display:inline-block">Promise.all</code>
+        فتصير ثلاث موجات بدل عشر، وعرض تدريجي يرفع الحجب فور وصول الأقسام والأصناف،
+        وتأجيل الاستعلامات الأربعة غير الحرجة، وأولوية صريحة لصورة الغلاف،
+        وإخراج الخطوط من <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;direction:ltr;display:inline-block">@import</code> مع تقليل أوزانها.
+      </p>
+      <div class="opt-stats">
+        <div class="ostat"><span>المتوقع</span><span>2.5–3.0s</span></div>
+        <div class="ostat"><span>المخاطر</span><span>منخفضة جداً</span></div>
+        <div class="ostat"><span>قاعدة البيانات</span><span>بلا تغيير</span></div>
+      </div>
+    </div>
+
+    <div class="opt">
+      <div class="opt-head">
+        <span class="opt-name">الخيار B</span>
+      </div>
+      <p>
+        الخيار A، بالإضافة إلى دالة <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;direction:ltr;display:inline-block">SECURITY DEFINER</code>
+        للقراءة فقط تُعيد المطعم والفروع والأقسام والأصناف والقدرات في <strong>جولة واحدة</strong>،
+        بنفس البيانات المسموحة للعامة تماماً — إضافة فقط، بلا تعديل schema ولا RLS.
+      </p>
+      <div class="opt-stats">
+        <div class="ostat"><span>المتوقع</span><span>1.8–2.2s</span></div>
+        <div class="ostat"><span>المخاطر</span><span>متوسطة</span></div>
+        <div class="ostat"><span>قاعدة البيانات</span><span>دالة جديدة</span></div>
+      </div>
+    </div>
+
+    <div class="opt">
+      <div class="opt-head">
+        <span class="opt-name">الخيار C</span>
+      </div>
+      <p>
+        الخيار A، بالإضافة إلى إطلاق طلب المنيو مبكراً من نقطة دخول التطبيق
+        بالتوازي مع تحميل كود الصفحة — فتتداخل المرحلتان «ب» و«ج» بدل أن تتسلسلا.
+      </p>
+      <div class="opt-stats">
+        <div class="ostat"><span>المتوقع</span><span>‏0.8s فوق A</span></div>
+        <div class="ostat"><span>المخاطر</span><span>متوسطة</span></div>
+        <div class="ostat"><span>قاعدة البيانات</span><span>بلا تغيير</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2>لماذا أوصي بـ A وحده أولاً</h2>
+  <p class="lead">
+    الخيار A يعالج الاختناق الحرج كاملاً — وهو ٥٧٪ من الزمن — بأقل تغيير وأقل خطر،
+    ودون أن يمسّ قاعدة الإنتاج أو الأمان أو التصميم. وحده يُنزل الزمن من سبع ثوانٍ
+    إلى نطاق ٢٫٥–٣٫٠ ثانية.
+  </p>
+  <p>
+    بعده نُعيد القياس بنفس الظروف بالضبط، وعلى ضوء الرقم الفعلي نقرر إن كان B أو C
+    يستحق مخاطرته الإضافية. لا داعي لتحمّل مخاطر تعديل قاعدة الإنتاج قبل أن نرى
+    ماذا يعطينا الإصلاح الآمن فعلاً.
+  </p>
+
+  <h3 style="margin-top:36px">الملفات التي ستتغيّر في الخيار A</h3>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>الملف</th><th>التغيير</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>features/menu/hooks/useMenuData.js</code></td><td>دمج الموجات المستقلة + عرض تدريجي — التغيير الأساسي</td></tr>
+        <tr><td><code>features/menu/MenuHeader.jsx</code></td><td>أولوية وأبعاد صريحة لصورة الغلاف والشعار</td></tr>
+        <tr><td><code>pages/PublicMenu.jsx</code></td><td>تأجيل استعلامات الطاولات والتوصيات حتى الحاجة</td></tr>
+        <tr><td><code>index.css</code> · <code>index.html</code></td><td>نقل الخطوط إلى <code>&lt;link&gt;</code> مع <code>preconnect</code> وتقليل الأوزان</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:36px">ما لن يتغيّر</h3>
+  <p>
+    أي ميزة، أي نص، أي لون، التصميم، الأقسام، الأصناف، الصور، البحث، السلة،
+    الطلبات، اللغة، رموز QR، الأمان، سياسات RLS، أو قاعدة البيانات.
+    الهدف تقليل الزمن الحقيقي حتى يصبح المحتوى ظاهراً وقابلاً للاستخدام — لا إخفاء البطء.
+  </p>
+</section>
+
+<section>
+  <h2>كيف قِسْت</h2>
+  <p>
+    الشبكة في بيئة العمل تمنع الوصول المباشر إلى Supabase، فبنيت منصّة قياس معملية
+    في <code style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;direction:ltr;display:inline-block;background:var(--surface-sub);padding:1px 5px;border-radius:4px">qa/perf/</code>
+    تُعيد إنتاج رحلة فتح المنيو بنفس عدد الطلبات وترتيبها وأحجام حمولتها المسحوبة من الإنتاج فعلياً.
+  </p>
+  <ul class="clean">
+    <li><strong>البيانات</strong> بأبعاد مطعم <code>simsim</code> الحقيقية: ٩ أقسام، ٤٨ صنفاً، متوسط وصف ١٥٣ بايت.</li>
+    <li><strong>أحجام الصور</strong> مسحوبة من جدول <code>storage.objects</code> مباشرة: ٨٩ صورة، متوسط ٨٩KB، أقصى ١٨٦KB.</li>
+    <li><strong>المتصفح</strong> Chromium بمحاكاة جوال (390×844، DPR 3) مع خنق معالج ×4 وخنق شبكة عبر CDP، وضغط gzip كما تفعل الاستضافة.</li>
+    <li><strong>كل قياس</strong> زيارة أولى بلا كاش، والنتيجة وسيط خمس تشغيلات.</li>
+  </ul>
+  <p style="margin-top:20px">
+    <strong>تحفّظ يجب ذكره:</strong> نطاق <code style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;direction:ltr;display:inline-block;background:var(--surface-sub);padding:1px 5px;border-radius:4px">fonts.googleapis.com</code>
+    محجوب في بيئة القياس فحاكيته محلياً بزمن ٣٠ مللي ثانية. الواقع أبطأ بكثير
+    (‏DNS ثم TCP ثم TLS لأصل ثالث على شبكة جوال) — أي أن تكلفة سلسلة الخطوط
+    في هذا التقرير <em>أقل من حقيقتها</em>، لا أكثر.
+  </p>
+</section>
+
+<p class="footer">
+  المرحلة الحالية: التشخيص والقياس وخطة الإصلاح (PHASE 1–4). لم يُعدَّل أي سطر من كود المنيو بعد —
+  التنفيذ ينتظر اختيارك بين A و B و C. منصّة القياس والـ Baseline محفوظان في المستودع
+  تحت <code style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;direction:ltr;display:inline-block;background:var(--surface-sub);padding:1px 5px;border-radius:4px">qa/perf/</code>
+  ليُعاد القياس بعد الإصلاح بنفس الظروف تماماً.
+</p>
+
+</div>
