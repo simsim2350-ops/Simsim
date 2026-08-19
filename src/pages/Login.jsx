@@ -88,7 +88,7 @@ export default function Login() {
           </div>
 
           <div style={styles.statsRow}>
-            {[['مجاناً', 'للبدء'], ['0%', 'عمولة'], ['10 د', 'وقت الإعداد']].map(([val, label]) => (
+            {[['مجاناً', 'للبدء'], ['0%', 'عمولة'], ['بسهولة', 'إعداد المنيو']].map(([val, label]) => (
               <div key={label} style={styles.stat}>
                 <span style={styles.statVal}>{val}</span>
                 <span style={styles.statLabel}>{label}</span>

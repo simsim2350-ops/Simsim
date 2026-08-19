@@ -116,7 +116,7 @@ export default function Register() {
           <span style={{ fontFamily:'Poppins,sans-serif', fontWeight:'700', fontSize:'20px' }}>sim<span style={{ color:'#FF6A00' }}>sim</span></span>
         </div>
 
-        <h2 style={{ fontSize:'24px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>أنشئ مطعمك في دقيقة 🚀</h2>
+        <h2 style={{ fontSize:'24px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>أنشئ مطعمك بسهولة 🚀</h2>
         <p style={{ fontSize:'14px', color:'#6B7280', marginBottom:'24px' }}>معلومة واحدة تكفي للبدء — الباقي تكمّله لاحقاً</p>
 
         <div style={{ marginBottom:'14px' }}>
@@ -166,7 +166,7 @@ export default function Register() {
         <div style={{ flex:1, background:'linear-gradient(135deg,#0B0B0F,#1a1a2e)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:'16px', padding:'40px' }}>
           <div style={{ fontSize:'80px' }}>🍕</div>
           <h2 style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'28px', color:'white', textAlign:'center', lineHeight:'1.3' }}>منيو مطعمك الاحترافي<br/><span style={{ color:'#FF6A00' }}>يبدأ من هنا</span></h2>
-          <p style={{ fontSize:'15px', color:'rgba(255,255,255,0.5)', textAlign:'center' }}>منيو رقمي وQR وطلبات — جاهزة في دقيقة</p>
+          <p style={{ fontSize:'15px', color:'rgba(255,255,255,0.5)', textAlign:'center' }}>منيو رقمي وQR وطلبات — جاهزة للمشاركة خطوة بخطوة</p>
         </div>
       )}
     </div>
