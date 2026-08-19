@@ -75,7 +75,7 @@ export function printReport({ title, subtitle, sections = [] }) {
 <html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${esc(title)}</title>
 <style>
   * { box-sizing: border-box; }
-  body { font-family: Tajawal, Cairo, system-ui, sans-serif; direction: rtl; color: #0B0B0F; margin: 24px; }
+  body { font-family: Tajawal, system-ui, sans-serif; direction: rtl; color: #0B0B0F; margin: 24px; }
   h1 { font-size: 20px; margin: 0 0 4px; }
   .sub { color: #6B7280; font-size: 12px; margin-bottom: 18px; }
   h2 { font-size: 14px; margin: 20px 0 8px; padding-bottom: 6px; border-bottom: 2px solid #FF6A00; }
