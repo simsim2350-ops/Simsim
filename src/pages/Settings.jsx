@@ -264,7 +264,7 @@ export default function Settings() {
 
     setDeletingRestaurant(true)
     try {
-      await deleteOwnedRestaurant({ restaurantId: restaurant.id, ownerId: user.id })
+      await deleteOwnedRestaurant({ restaurantId: restaurant.id, ownerId: user.id, client: supabase })
       setConfirmDeleteAll(false)
       await signOut()
       navigate('/', { replace:true })

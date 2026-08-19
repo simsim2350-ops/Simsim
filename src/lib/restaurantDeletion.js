@@ -1,5 +1,3 @@
-import { supabase } from './supabase'
-
 const MEDIA_BUCKET = 'restaurant-media'
 const LIST_PAGE_SIZE = 1000
 
@@ -44,9 +42,12 @@ async function removeMedia(client, restaurantId) {
  * يحذف مطعم المالك الحالي فقط. يعتمد التنفيذ على RLS في restaurants_owner
  * وعلى قيود ON DELETE CASCADE في قاعدة البيانات؛ لا يستخدم service_role أو owner_id من طلب خارجي.
  */
-export async function deleteOwnedRestaurant({ restaurantId, ownerId, client = supabase }) {
+export async function deleteOwnedRestaurant({ restaurantId, ownerId, client }) {
   required(restaurantId, 'معرّف المطعم')
   required(ownerId, 'معرّف المالك')
+  if (!client?.from || !client?.storage?.from) {
+    throw new Error('عميل Supabase مطلوب لإتمام الحذف بأمان')
+  }
 
   // تنظف الوسائط أولًا؛ إذ تعتمد سياسة Storage على وجود سجل المطعم وملكيته.
   const deletedMediaCount = await removeMedia(client, restaurantId)
