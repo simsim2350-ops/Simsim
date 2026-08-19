@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
+import { safeSupabaseRequest } from '../../../lib/safeSupabaseRequest'
 
 const DEFAULT_CAPABILITIES = { online_orders: true, reviews: true, loyalty: true, product_details: true }
 
@@ -10,6 +11,7 @@ export function useMenuData(slug, branchId) {
   const [branchList, setBranchList] = useState([]) // كل الفروع النشطة (لعرض اسم الفرع/تبديله)
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
+  const [contentError, setContentError] = useState(null)
   const [customerFavorites, setCustomerFavorites] = useState([]) // سلوك طلبات فعلي: «يعجب زبائننا»
   const [manualBestSellers, setManualBestSellers] = useState([]) // اختيار المالك اليدوي: «الأكثر مبيعًا»
   const [loading, setLoading] = useState(true)
@@ -48,10 +50,9 @@ export function useMenuData(slug, branchId) {
     const commit = (setter, value) => {
       if (isCurrent()) setter(value)
     }
-    const safeRequest = (request) => request.catch(() => ({ data: null, error: true }))
-
     commit(setLoading, true)
     commit(setNotFound, false)
+    commit(setContentError, null)
     commit(setRating, null)
     commit(setBanners, [])
     commit(setCoupons, [])
@@ -100,44 +101,48 @@ export function useMenuData(slug, branchId) {
       commit(setBranch, resolvedBranch)
 
       // الموجة الثالثة: بيانات العرض الأساسية متوازية. لا ننتظر التحليلات أو البيانات الاختيارية.
-      const categoriesRequest = safeRequest(
+      const categoriesRequest = safeSupabaseRequest(
         supabase.from('categories').select('*').eq('branch_id', resolvedBranch.id).eq('is_visible', true).order('sort_order'),
       )
-      const productsRequest = safeRequest(
+      const productsRequest = safeSupabaseRequest(
         supabase.from('products').select('*').eq('branch_id', resolvedBranch.id).eq('is_available', true).order('sort_order'),
       )
 
       // كل هذه تحسينات للواجهة فقط؛ تبدأ بالتوازي ولا تحجب ظهور الأقسام والأصناف.
-      const activeOrdersRequest = safeRequest(
+      const activeOrdersRequest = safeSupabaseRequest(
         supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id, p_branch_id: resolvedBranch.id }),
       )
-      const ratingRequest = safeRequest(
+      const ratingRequest = safeSupabaseRequest(
         supabase.rpc('get_restaurant_rating', { p_restaurant_id: rest.id }),
       )
-      const capabilitiesRequest = safeRequest(
+      const capabilitiesRequest = safeSupabaseRequest(
         supabase.rpc('menu_capabilities', { p_restaurant_id: rest.id }),
       )
-      const brandingRequest = safeRequest(
+      const brandingRequest = safeSupabaseRequest(
         supabase.rpc('menu_branding', { p_restaurant_id: rest.id }),
       )
-      const loyaltyRequest = safeRequest(
+      const loyaltyRequest = safeSupabaseRequest(
         supabase.from('loyalty_programs').select('enabled').eq('restaurant_id', rest.id).maybeSingle(),
       )
-      const bannersRequest = safeRequest(
+      const bannersRequest = safeSupabaseRequest(
         supabase.from('banners').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('display_priority', { ascending:false }).order('sort_order'),
       )
-      const couponsRequest = safeRequest(
+      const couponsRequest = safeSupabaseRequest(
         supabase.from('coupons').select('*').eq('restaurant_id', rest.id).eq('is_active', true),
       )
-      const pastOrdersRequest = safeRequest(
+      const pastOrdersRequest = safeSupabaseRequest(
         supabase.rpc('get_recent_order_items', { p_restaurant_id: rest.id }),
       )
 
-      const [{ data: cats }, { data: prods }] = await Promise.all([categoriesRequest, productsRequest])
+      const [categoriesResult, productsResult] = await Promise.all([categoriesRequest, productsRequest])
       if (!isCurrent()) return
+      if (categoriesResult.error || productsResult.error) {
+        commit(setContentError, 'تعذر تحميل أقسام المنيو أو أصنافه. حاول مرة أخرى.')
+        return
+      }
 
-      const nextCategories = cats || []
-      const nextProducts = prods || []
+      const nextCategories = categoriesResult.data || []
+      const nextProducts = productsResult.data || []
       commit(setCategories, nextCategories)
       commit(setProducts, nextProducts)
       // Best Sellers قائمة يحددها مالك المطعم فقط؛ لا تستعمل الطلبات أو is_featured أو أي ترتيب تلقائي.
@@ -235,8 +240,9 @@ export function useMenuData(slug, branchId) {
 
   return {
     restaurant, branch, branchList,
-    categories, products, customerFavorites, manualBestSellers, loading, notFound,
+    categories, products, contentError, customerFavorites, manualBestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
     banners, coupons, capabilities, branding,
+    reloadMenu: fetchMenu,
   }
 }
