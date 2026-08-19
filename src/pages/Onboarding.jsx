@@ -72,12 +72,25 @@ const TEMPLATES = {
   ],
 }
 const TYPES = [
-  { key:'restaurant', emoji:'🍽️', label:'مطعم',        desc:'وجبات ومأكولات متنوعة' },
-  { key:'cafe',       emoji:'☕', label:'كافيه / كوفي', desc:'قهوة ومشروبات ومعجنات' },
-  { key:'truck',      emoji:'🚚', label:'فود ترك',      desc:'أكل سريع وسندويتشات' },
-  { key:'cloud',      emoji:'☁️', label:'مطبخ سحابي',   desc:'مطبخ للتوصيل فقط' },
+  { key:'restaurant', icon:'restaurant', label:'مطعم',        desc:'وجبات ومأكولات متنوعة' },
+  { key:'cafe',       icon:'cafe',       label:'كافيه / كوفي', desc:'قهوة ومشروبات ومعجنات' },
+  { key:'truck',      icon:'truck',      label:'فود ترك',      desc:'أكل سريع وسندويتشات' },
+  { key:'cloud',      icon:'cloud',      label:'مطبخ سحابي',   desc:'مطبخ للتوصيل فقط' },
 ]
 const getTemplate = (type) => TEMPLATES[type] || TEMPLATES.restaurant
+const isKnownBusinessType = (type) => TYPES.some(item => item.key === type)
+
+function BusinessTypeIcon({ type, size = 26 }) {
+  const svg = { width:size, height:size, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:1.8, strokeLinecap:'round', strokeLinejoin:'round', 'aria-hidden':true }
+  if (type === 'cafe') return <svg {...svg}><path d="M4 7h12v7a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V7Z"/><path d="M16 9h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M6 3v2M10 3v2"/></svg>
+  if (type === 'truck') return <svg {...svg}><path d="M3 6h11v10H3z"/><path d="M14 10h3l3 3v3h-6z"/><circle cx="7" cy="18" r="1.7"/><circle cx="17" cy="18" r="1.7"/><path d="M4 10h10"/></svg>
+  if (type === 'cloud') return <svg {...svg}><path d="M7 18h10a4 4 0 0 0 .5-7.97A5.5 5.5 0 0 0 7.1 8.7 4.6 4.6 0 0 0 7 18Z"/><path d="M8.5 14h7M10 11.5h4"/></svg>
+  return <svg {...svg}><path d="M3 18h18"/><path d="M5 18v2M19 18v2"/><path d="M6 15h12a6 6 0 0 0-12 0Z"/><path d="M12 9V6M10 6h4"/></svg>
+}
+
+function CheckIcon({ size = 15 }) {
+  return <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m4 10 4 4 8-8"/></svg>
+}
 
 // خطوات الرحلة المعروضة في مؤشر التقدّم (welcome/create/done خارجها — مقدّمة/خاتمة)
 const STEPS = [
@@ -89,7 +102,7 @@ const STEPS = [
   { key:'share',      label:'النشر' },
 ]
 // خريطة استئناف: قيمة onboarding_step المحفوظة → مرحلة العرض
-const RESUME_MAP = { welcome:'welcome', info:'info', type:'type', categories:'categories', items:'categories', preview:'preview', share:'share' }
+const RESUME_MAP = { welcome:'welcome', info:'info', type:'type', type_selected:'type', categories:'categories', items:'categories', preview:'preview', share:'share' }
 
 export default function Onboarding() {
   const navigate = useNavigate()
@@ -98,6 +111,9 @@ export default function Onboarding() {
   const [stage, setStage] = useState('loading') // loading | error | welcome | create | info | type | categories | items | minimum | preview | share | done
   const [rest, setRest] = useState(restaurant || null)
   const [saving, setSaving] = useState(false)
+  const [selectedType, setSelectedType] = useState(null)
+  const [persistedType, setPersistedType] = useState(null)
+  const [typeSaveError, setTypeSaveError] = useState('')
   const [infoSaveError, setInfoSaveError] = useState('')
   const [loadError, setLoadError] = useState('')
   const [loadAttempt, setLoadAttempt] = useState(0)
@@ -117,6 +133,7 @@ export default function Onboarding() {
   const createRestaurantInFlight = useRef(false)
   const createMenuInFlight = useRef(false)
   const infoSaveInFlight = useRef(false)
+  const typeSaveInFlight = useRef(false)
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768)
@@ -142,6 +159,11 @@ export default function Onboarding() {
         // من أكمل الإعداد لا تُعاد عليه الرحلة.
         if (r.onboarding_completed) { navigate('/dashboard', { replace:true }); return }
         setInfo({ description: r.description || '', phone: r.phone || '', address: r.address || '' })
+        // `type` له قيمة افتراضية في قاعدة البيانات؛ لا نعاملها كاختيار فعلي إلا إذا حفظت الخطوة `type_selected`.
+        const hasSavedTypeSelection = r.onboarding_step === 'type_selected' && isKnownBusinessType(r.type)
+        setSelectedType(hasSavedTypeSelection ? r.type : null)
+        setPersistedType(hasSavedTypeSelection ? r.type : null)
+        setTypeSaveError('')
         const resumed = RESUME_MAP[r.onboarding_step] || 'welcome'
         if (resumed === 'categories' && r.type) setCats(getTemplate(r.type).slice(0, 5).map(c => ({ ...c })))
         trackOwnerEvent('onboarding_started', { restaurantId: r.id, props: { resumed: Boolean(r.onboarding_step) } })
@@ -312,19 +334,75 @@ export default function Onboarding() {
   }
 
   // ===== اختيار النوع =====
-  const chooseType = async (typeKey) => {
+  // القيمة تُخزَّن فور اختيارها في `restaurants.type`، ثم يتحقق زر «التالي» من نجاح الحفظ قبل الانتقال.
+  const persistBusinessType = async (typeKey) => {
+    if (!rest?.id || !user?.id || !isKnownBusinessType(typeKey)) {
+      const message = 'تعذر تجهيز نوع النشاط للحفظ. حاول مرة أخرى.'
+      setTypeSaveError(message)
+      toast.error(message)
+      return false
+    }
+    if (typeSaveInFlight.current) return false
+
+    typeSaveInFlight.current = true
     setSaving(true)
+    setTypeSaveError('')
     try {
-      const { error } = await supabase.from('restaurants').update({ type: typeKey }).eq('id', rest.id)
+      const { error } = await supabase
+        .from('restaurants')
+        .update({ type: typeKey, onboarding_step: 'type_selected' })
+        .eq('id', rest.id)
       if (error) throw error
-      const updated = { ...rest, type: typeKey }
-      setRest(updated)
-      await fetchRestaurant(user.id)
-      // نبدأ بأقسام مقترحة جاهزة (أول 5) — يقدر يحذف/يضيف
-      setCats(getTemplate(typeKey).slice(0, 5).map(c => ({ ...c })))
-      trackOwnerEvent('business_type_selected', { restaurantId: rest.id, props: { type: typeKey } })
-      goStage('categories')
-    } catch (err) { toast.error('تعذّر حفظ النوع') } finally { setSaving(false) }
+
+      const refreshedRestaurant = await fetchRestaurant(user.id)
+      if (!refreshedRestaurant?.id || refreshedRestaurant.type !== typeKey) throw new Error('business_type_refresh_failed')
+
+      setRest(refreshedRestaurant)
+      setPersistedType(typeKey)
+      trackOwnerEvent('business_type_selected', { restaurantId: refreshedRestaurant.id, props: { type: typeKey } })
+      return true
+    } catch (error) {
+      console.error('Business type persistence error:', error)
+      const message = 'تعذر حفظ نوع النشاط. حاول مرة أخرى.'
+      setTypeSaveError(message)
+      toast.error(message)
+      return false
+    } finally {
+      typeSaveInFlight.current = false
+      setSaving(false)
+    }
+  }
+
+  const chooseType = async (typeKey) => {
+    if (saving || typeSaveInFlight.current) return
+    setSelectedType(typeKey)
+    await persistBusinessType(typeKey)
+  }
+
+  const continueFromBusinessType = async () => {
+    if (!selectedType) {
+      const message = 'اختر نوع النشاط أولاً للمتابعة.'
+      setTypeSaveError(message)
+      toast.error(message)
+      return
+    }
+    if (saving || typeSaveInFlight.current) return
+
+    const isSaved = persistedType === selectedType || await persistBusinessType(selectedType)
+    if (!isSaved) return
+
+    // نبدأ بأقسام مقترحة مناسبة فقط بعد التأكد من أن النوع المخزن هو الاختيار الحالي.
+    setCats(getTemplate(selectedType).slice(0, 5).map(c => ({ ...c })))
+    goStage('categories')
+  }
+
+  const returnToBusinessType = () => {
+    const savedType = isKnownBusinessType(rest?.type) ? rest.type : null
+    setSelectedType(savedType)
+    setPersistedType(savedType)
+    setTypeSaveError('')
+    setStage('type')
+    if (savedType) void saveStep('type_selected')
   }
 
   // ===== الأقسام =====
@@ -511,11 +589,8 @@ export default function Onboarding() {
       <div style={{ height:'7px', borderRadius:'100px', background:'#F0F2F5', overflow:'hidden' }} aria-hidden="true">
         <div style={{ height:'100%', width:`${((stepIndex + 1) / STEPS.length) * 100}%`, background:'linear-gradient(90deg,#FF6A00,#E05D00)', borderRadius:'100%', transition:'width 0.3s' }}/>
       </div>
-      <div style={{ display:'flex', justifyContent:'space-between', gap:'10px', fontSize:'11px', color:'#9CA3AF', marginTop:'8px' }}>
-        <span style={{ fontWeight:'800', color: readiness?.minimumReady ? '#15803D' : '#6B7280' }}>
-          {readiness?.minimumReady ? 'منيوك جاهز للمشاركة' : 'نبني منيوك الجاهز للمشاركة'}
-        </span>
-        <span>{readiness ? `الأساسيات ${readiness.essentialsDone}/${readiness.essentialsTotal}` : 'الأساسيات'}</span>
+      <div style={{ marginTop:'8px', fontSize:'11px', color:'#9CA3AF', lineHeight:'1.5' }}>
+        أكمل الخطوات بالترتيب لتجهيز منيوك.
       </div>
     </div>
   )
@@ -547,7 +622,7 @@ export default function Onboarding() {
     <div style={bg}>
       <div style={card}>
         <style>{`@keyframes onboarding-inline-spin{to{transform:rotate(360deg)}}
-          #onboarding-info-form input:focus,#onboarding-info-form textarea:focus,#onboarding-info-form button:focus-visible{outline:3px solid rgba(255,106,0,0.28);outline-offset:2px;border-color:#FF6A00!important}
+          #onboarding-info-form input:focus,#onboarding-info-form textarea:focus,#onboarding-info-form button:focus-visible,#onboarding-type-form button:focus-visible{outline:3px solid rgba(255,106,0,0.28);outline-offset:2px;border-color:#FF6A00!important}
         `}</style>
         <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'6px' }}>
           <img src="/simsim-s.svg" alt="" style={{ height:'28px', width:'auto', display:'block' }} />
@@ -622,21 +697,42 @@ export default function Onboarding() {
 
         {/* اختيار النوع */}
         {stage === 'type' && (
-          <>
-            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>شنو نوع نشاطك؟ 🏪</h2>
-            <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'18px' }}>حنجهّز لك أقساماً وأصنافاً مناسبة حسب اختيارك.</p>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'11px' }}>
-              {TYPES.map(t => (
-                <div key={t.key} onClick={() => !saving && chooseType(t.key)} style={{ padding:'18px 14px', borderRadius:'15px', border:'2px solid #E5E7EB', cursor: saving?'default':'pointer', textAlign:'center', opacity: saving?0.6:1, background:'white' }}>
-                  <div style={{ fontSize:'34px', marginBottom:'8px' }}>{t.emoji}</div>
-                  <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'15px', marginBottom:'3px' }}>{t.label}</div>
-                  <div style={{ fontSize:'11px', color:'#9CA3AF' }}>{t.desc}</div>
-                </div>
-              ))}
+          <form id="onboarding-type-form" onSubmit={event => { event.preventDefault(); void continueFromBusinessType() }} noValidate aria-busy={saving}>
+            <div style={{ display:'flex', alignItems:'flex-start', gap:'11px', marginBottom:'16px' }}>
+              <div aria-hidden="true" style={{ width:'38px', height:'38px', flexShrink:0, display:'grid', placeItems:'center', borderRadius:'12px', background:'#FFF0E8', color:'#FF6A00' }}><BusinessTypeIcon type={selectedType || 'restaurant'} size={21} /></div>
+              <div>
+                <h2 style={{ fontSize:'23px', fontWeight:'900', margin:'0 0 4px', fontFamily:'Tajawal,sans-serif', color:'#111827' }}>اختر نوع نشاطك</h2>
+                <p style={{ fontSize:'13px', color:'#6B7280', lineHeight:'1.65', margin:0 }}>سنقترح أقسامًا وأصنافًا مناسبة ويمكنك تعديلها لاحقًا.</p>
+              </div>
             </div>
-                            <button onClick={skipMenu} style={{ ...skipLink, marginTop:'16px' }}>راجع جاهزية المنيو أولاً</button>
 
-          </>
+            <fieldset disabled={saving} style={{ margin:0, padding:0, border:'none' }}>
+              <legend style={{ position:'absolute', width:'1px', height:'1px', padding:0, margin:'-1px', overflow:'hidden', clip:'rect(0, 0, 0, 0)', whiteSpace:'nowrap', border:0 }}>نوع النشاط</legend>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(2, minmax(0, 1fr))', gap:'11px' }}>
+                {TYPES.map(t => {
+                  const isSelected = selectedType === t.key
+                  return (
+                    <button key={t.key} type="button" onClick={() => void chooseType(t.key)} aria-pressed={isSelected} style={{ position:'relative', minHeight:'142px', padding:'17px 12px', borderRadius:'16px', border:`2px solid ${isSelected ? '#FF6A00' : '#E5E7EB'}`, cursor: saving ? 'default' : 'pointer', textAlign:'right', opacity: saving ? 0.65 : 1, background:isSelected ? 'rgba(255,106,0,0.075)' : 'white', color:isSelected ? '#A94400' : '#111827', boxShadow:isSelected ? '0 8px 20px rgba(255,106,0,0.12)' : 'none', transition:'border-color 160ms ease-out, background 160ms ease-out, box-shadow 160ms ease-out' }}>
+                      <span aria-hidden="true" style={{ width:'40px', height:'40px', display:'grid', placeItems:'center', marginBottom:'12px', borderRadius:'12px', background:isSelected ? '#FF6A00' : '#F8F9FB', color:isSelected ? 'white' : '#6B7280' }}><BusinessTypeIcon type={t.icon} /></span>
+                      <span style={{ display:'block', fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'15px', marginBottom:'4px' }}>{t.label}</span>
+                      <span style={{ display:'block', fontSize:'11px', lineHeight:'1.55', color:isSelected ? '#9A4B20' : '#6B7280' }}>{t.desc}</span>
+                      {isSelected && <span aria-label="مختار" style={{ position:'absolute', top:'10px', left:'10px', width:'22px', height:'22px', display:'grid', placeItems:'center', borderRadius:'50%', background:'#FF6A00', color:'white' }}><CheckIcon size={13} /></span>}
+                    </button>
+                  )
+                })}
+              </div>
+            </fieldset>
+
+            {typeSaveError && <div id="onboarding-type-error" role="alert" aria-live="assertive" style={{ marginTop:'12px', padding:'10px 12px', borderRadius:'12px', background:'#FEF2F2', border:'1px solid #FECACA', color:'#B91C1C', fontSize:'13px', fontWeight:'700', lineHeight:'1.6' }}>{typeSaveError}</div>}
+
+            <div style={{ display:'flex', gap:'10px', marginTop:'16px' }}>
+              <button type="button" onClick={() => goStage('info')} disabled={saving} style={{ ...ghostBtn, opacity:saving ? 0.6 : 1 }}>→ رجوع</button>
+              <button type="submit" disabled={!selectedType || saving} style={{ ...primaryBtn, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'8px', opacity:!selectedType || saving ? 0.55 : 1, cursor:!selectedType || saving ? 'not-allowed' : 'pointer' }}>
+                {saving && <span aria-hidden="true" style={{ width:'14px', height:'14px', border:'2px solid rgba(255,255,255,0.45)', borderTopColor:'white', borderRadius:'50%', animation:'onboarding-inline-spin 0.75s linear infinite' }} />}
+                {saving ? 'جاري الحفظ...' : 'التالي: الأقسام ←'}
+              </button>
+            </div>
+          </form>
         )}
 
         {/* اختيار الأقسام — نمط النموذج: قوالب تُضاف لقائمة كروت */}
@@ -699,7 +795,7 @@ export default function Onboarding() {
             <div style={{ fontSize:'12px', color:'#9CA3AF', marginBottom:'18px', lineHeight:'1.7' }}>💡 أضف من 3 إلى 8 أقسام للبداية. رتّبها بالأسهم أو بالسحب.</div>
 
             <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={() => goStage('type')} style={ghostBtn}>→ رجوع</button>
+              <button onClick={returnToBusinessType} style={ghostBtn}>→ رجوع</button>
               <button onClick={goToItems} style={primaryBtn}>التالي: الأصناف ←</button>
             </div>
             <button onClick={skipMenu} style={skipLink}>راجع جاهزية المنيو أولاً</button>
