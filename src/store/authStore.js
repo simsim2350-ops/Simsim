@@ -50,6 +50,14 @@ export const useAuthStore = create((set, get) => ({
   initialize: async () => {
     if (initializePromise) return initializePromise
 
+    // قد يُعاد mount لـApp أو يُستدعى initialize في StrictMode بعد اكتمال الجلسة.
+    // لا نعيد ضبط loading ولا نعيد استعلامات OWNER/RESTAURANT للجلسة الجاهزة نفسها.
+    const readyContext = get()
+    if (readyContext.authState === 'READY' && readyContext.session?.user?.id === readyContext.user?.id) {
+      console.info('[Auth bootstrap] READY reuse', { source: 'initialize', userId: readyContext.user.id })
+      return { destination: get().resolveUserDestination(), restaurant: readyContext.restaurant, reused: true }
+    }
+
     initializePromise = (async () => {
       set({ loading: true, authState: 'INITIALIZING', authError: null, bootstrapStage: 'AUTH_SESSION' })
 
@@ -109,6 +117,20 @@ export const useAuthStore = create((set, get) => ({
     }
 
     if (sessionBootstrapPromise && sessionBootstrapUserId === session.user.id) return sessionBootstrapPromise
+
+    // يعيد Supabase أحياناً INITIAL_SESSION أو SIGNED_IN للجلسة نفسها بعد mount/استعادة التبويب.
+    // الحارس السابق كان يغطي الطلبات المتوازية فقط؛ بعد اكتمال الوعد كان كل حدث لاحق يعيد loading=true
+    // ويشغّل OWNER → RESTAURANT من جديد، وهو ما يظهر كوميض لا نهائي في التسجيل.
+    const currentContext = get()
+    const isSameReadySession = (
+      currentContext.authState === 'READY'
+      && currentContext.user?.id === session.user.id
+      && currentContext.session?.access_token === session.access_token
+    )
+    if (isSameReadySession) {
+      console.info('[Auth bootstrap] READY reuse', { source, userId: session.user.id })
+      return { destination: get().resolveUserDestination(), restaurant: currentContext.restaurant, source, reused: true }
+    }
 
     sessionBootstrapUserId = session.user.id
     const bootstrapVersion = ++authBootstrapVersion
