@@ -88,7 +88,7 @@ export default function MenuHeader({
         pointerEvents: heroOpacity < 0.5 ? 'none' : 'auto',
       }}>
         {restaurant.cover_url && (
-          <img src={restaurant.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+          <img src={restaurant.cover_url} alt="" width="480" height="132" loading="eager" fetchPriority="high" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
         )}
         {/* تظليل خفيف أسفل الهيرو ليبرز انزلاق الورقة */}
         <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, rgba(0,0,0,0.12), transparent 30%, transparent 70%, rgba(0,0,0,0.18))', pointerEvents:'none' }}/>
@@ -130,7 +130,7 @@ export default function MenuHeader({
           <div style={{ display:'flex', alignItems:'center', gap:'11px', padding:'0 16px 5px' }}>
             <div style={{ width:'var(--hero-logo)', height:'var(--hero-logo)', borderRadius:'15px', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'25px', flexShrink:0, overflow:'hidden', boxShadow:'0 5px 14px rgba(15,17,23,0.18)' }}>
               {restaurant.logo_url
-                ? <img src={restaurant.logo_url} alt={restaurant.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                ? <img src={restaurant.logo_url} alt={restaurant.name} width="52" height="52" loading="eager" fetchPriority="high" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 : '🍕'}
             </div>
             <div style={{ flex:1, minWidth:0 }}>

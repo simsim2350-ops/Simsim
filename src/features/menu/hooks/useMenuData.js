@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 
+const DEFAULT_CAPABILITIES = { online_orders: true, reviews: true, loyalty: true, product_details: true }
+
 // جلب بيانات المنيو: المطعم + الفرع (مستقل بمنيوه/ساعاته) + الأقسام + الأصناف + قائمة «يعجب زبائننا» من الطلبات الفعلية + عدد الطلبات النشطة (حي).
 export function useMenuData(slug, branchId) {
   const [restaurant, setRestaurant] = useState(null)
@@ -19,13 +21,18 @@ export function useMenuData(slug, branchId) {
   const [banners, setBanners] = useState([]) // بانرات العروض النشطة (عامة + خاصة بهذا الفرع)
   const [coupons, setCoupons] = useState([]) // الكوبونات النشطة (عامة + خاصة بهذا الفرع)
   // قدرات منيو الزبون من سجل القدرات (PCR — ADR-40) — الافتراضي كله مفعّل (fail-open، غير كاسر)
-  const [capabilities, setCapabilities] = useState({ online_orders: true, reviews: true, loyalty: true, product_details: true })
+  const [capabilities, setCapabilities] = useState(DEFAULT_CAPABILITIES)
   const [branding, setBranding] = useState(null) // هوية المنيو «صمم بواسطة سمسم» — من الإعداد المركزي
   const restaurantLoadChannelRef = useRef(null)
   const menuDataChannelRef = useRef(null)
+  const requestIdRef = useRef(0)
 
   useEffect(() => {
     fetchMenu()
+    return () => {
+      // يمنع نتيجة طلب قديم من الكتابة فوق حالة فرع/رابط أحدث.
+      requestIdRef.current += 1
+    }
   }, [slug, branchId])
 
   useEffect(() => {
@@ -36,15 +43,26 @@ export function useMenuData(slug, branchId) {
   }, [])
 
   const fetchMenu = async () => {
-    setLoading(true)
-    setNotFound(false)
-    setRating(null)
-    setBanners([])
-    setCoupons([])
-    setCustomerFavorites([])
-    setManualBestSellers([])
+    const requestId = ++requestIdRef.current
+    const isCurrent = () => requestId === requestIdRef.current
+    const commit = (setter, value) => {
+      if (isCurrent()) setter(value)
+    }
+    const safeRequest = (request) => request.catch(() => ({ data: null, error: true }))
+
+    commit(setLoading, true)
+    commit(setNotFound, false)
+    commit(setRating, null)
+    commit(setBanners, [])
+    commit(setCoupons, [])
+    commit(setCustomerFavorites, [])
+    commit(setManualBestSellers, [])
+    commit(setLoyaltyEnabled, false)
+    commit(setBranding, null)
+    commit(setCapabilities, DEFAULT_CAPABILITIES)
+
     try {
-      // Fetch restaurant
+      // الموجة الأولى: لا يمكن معرفة الفرع قبل استرجاع المطعم من الرابط.
       const { data: rest, error } = await supabase
         .from('restaurants')
         .select('*')
@@ -52,114 +70,88 @@ export function useMenuData(slug, branchId) {
         .eq('is_active', true)
         .single()
 
-      if (error || !rest) { setNotFound(true); return }
-      // مطعم معلَّق من المنصّة: لا يُفتح منيوه إطلاقاً (يُعامَل كغير متاح، كإيقاف المالك)
-      if (rest.platform_suspended) { setNotFound(true); return }
-      setRestaurant(rest)
+      if (!isCurrent()) return
+      if (error || !rest || rest.platform_suspended) {
+        commit(setNotFound, true)
+        return
+      }
+      commit(setRestaurant, rest)
 
-      // كل الفروع النشطة — لتحديد الفرع الحالي (من الرابط أو الأساسي افتراضياً) ولعرض قائمة التبديل
+      // الموجة الثانية: اختيار الفرع النشط من قائمة فروع المطعم.
       const { data: brs } = await supabase
         .from('branches')
         .select('*')
         .eq('restaurant_id', rest.id)
         .eq('is_active', true)
         .order('sort_order')
-      const list = (brs || []).filter(branch => branch.menu_clone_status !== 'copying' && branch.menu_clone_status !== 'failed')
-      setBranchList(list)
 
-      const resolvedBranch = (branchId && list.find(b => b.id === branchId))
-        || list.find(b => b.is_primary)
+      if (!isCurrent()) return
+      const list = (brs || []).filter(branch => branch.menu_clone_status !== 'copying' && branch.menu_clone_status !== 'failed')
+      commit(setBranchList, list)
+
+      const resolvedBranch = (branchId && list.find(branch => branch.id === branchId))
+        || list.find(branch => branch.is_primary)
         || list[0]
         || null
-      if (!resolvedBranch) { setNotFound(true); return }
-      setBranch(resolvedBranch)
+      if (!resolvedBranch) {
+        commit(setNotFound, true)
+        return
+      }
+      commit(setBranch, resolvedBranch)
 
-      // عدد الطلبات النشطة حالياً لحساب وقت تجهيز تقديري ديناميكي — لهذا الفرع فقط (كل فرع مطبخه مستقل)
-      const { data: activeCount } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id, p_branch_id: resolvedBranch.id })
-      setActiveOrdersCount(activeCount || 0)
-
-      // متوسط تقييم المطعم (RPC آمن — sql/get_restaurant_rating.sql)
-      // لو الدالة غير منفذة في Supabase بعد: نتجاهل بصمت وتُخفى النجوم
-      try {
-        const { data: rt, error: rtErr } = await supabase.rpc('get_restaurant_rating', { p_restaurant_id: rest.id })
-        const row = Array.isArray(rt) ? rt[0] : rt
-        if (!rtErr && row && Number(row.review_count) > 0) {
-          setRating({ avg: Number(row.avg_rating), count: Number(row.review_count) })
-        }
-      } catch { /* تجاهل — النجوم اختيارية */ }
-
-      // قدرات منيو الزبون من السجل (PCR): طلبات أونلاين / تقييمات / ولاء — دالة آمنة لـanon.
-      // fail-open: عند أي خطأ تبقى القيم الافتراضية (كلها مفعّلة) فلا حجب خاطئ.
-      let caps = { online_orders: true, reviews: true, loyalty: true, product_details: true }
-      try {
-        const { data: c } = await supabase.rpc('menu_capabilities', { p_restaurant_id: rest.id })
-        if (c && typeof c === 'object') caps = { ...caps, ...c }
-      } catch { /* تجاهل — fail-open */ }
-      setCapabilities(caps)
-
-      // هوية المنيو «صمم بواسطة سمسم» — من الإعداد المركزي (RPC آمن). fail-safe: لا شيء عند الخطأ.
-      try {
-        const { data: brand } = await supabase.rpc('menu_branding', { p_restaurant_id: rest.id })
-        if (brand && typeof brand === 'object') setBranding(brand)
-      } catch { /* تجاهل — البراندينغ اختياري */ }
-
-      // هل برنامج الولاء مفعّل؟ (إعداد المطعم) — ويُشترَط أيضاً أن قدرة الولاء مفعّلة في الباقة (PCR)
-      try {
-        const { data: loy } = await supabase.from('loyalty_programs').select('enabled').eq('restaurant_id', rest.id).maybeSingle()
-        setLoyaltyEnabled(!!loy?.enabled && caps.loyalty)
-      } catch { /* تجاهل — التشويق اختياري */ }
-
-      // بانرات العروض وكوبونات النشطة — عامة (بلا فرع) + خاصة بهذا الفرع تحديداً
-      try {
-        const now = new Date().toISOString()
-        const [{ data: bnrs }, { data: cpns }] = await Promise.all([
-          supabase.from('banners').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('display_priority', { ascending:false }).order('sort_order'),
-          supabase.from('coupons').select('*').eq('restaurant_id', rest.id).eq('is_active', true),
-        ])
-        const relevant = (row) => !row.branch_id || row.branch_id === resolvedBranch.id
-        setBanners((bnrs || []).filter(b => relevant(b) && (!b.starts_at || b.starts_at <= now) && (!b.ends_at || b.ends_at >= now)))
-        setCoupons((cpns || []).filter(c => relevant(c) && (!c.expires_at || c.expires_at >= now)))
-      } catch { setBanners([]); setCoupons([]) }
-
-      // Fetch categories & products — كل فرع منيوه المستقل الخاص به
-      const [{ data: cats }, { data: prods }] = await Promise.all([
+      // الموجة الثالثة: بيانات العرض الأساسية متوازية. لا ننتظر التحليلات أو البيانات الاختيارية.
+      const categoriesRequest = safeRequest(
         supabase.from('categories').select('*').eq('branch_id', resolvedBranch.id).eq('is_visible', true).order('sort_order'),
+      )
+      const productsRequest = safeRequest(
         supabase.from('products').select('*').eq('branch_id', resolvedBranch.id).eq('is_available', true).order('sort_order'),
-      ])
+      )
+
+      // كل هذه تحسينات للواجهة فقط؛ تبدأ بالتوازي ولا تحجب ظهور الأقسام والأصناف.
+      const activeOrdersRequest = safeRequest(
+        supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id, p_branch_id: resolvedBranch.id }),
+      )
+      const ratingRequest = safeRequest(
+        supabase.rpc('get_restaurant_rating', { p_restaurant_id: rest.id }),
+      )
+      const capabilitiesRequest = safeRequest(
+        supabase.rpc('menu_capabilities', { p_restaurant_id: rest.id }),
+      )
+      const brandingRequest = safeRequest(
+        supabase.rpc('menu_branding', { p_restaurant_id: rest.id }),
+      )
+      const loyaltyRequest = safeRequest(
+        supabase.from('loyalty_programs').select('enabled').eq('restaurant_id', rest.id).maybeSingle(),
+      )
+      const bannersRequest = safeRequest(
+        supabase.from('banners').select('*').eq('restaurant_id', rest.id).eq('is_active', true).order('display_priority', { ascending:false }).order('sort_order'),
+      )
+      const couponsRequest = safeRequest(
+        supabase.from('coupons').select('*').eq('restaurant_id', rest.id).eq('is_active', true),
+      )
+      const pastOrdersRequest = safeRequest(
+        supabase.rpc('get_recent_order_items', { p_restaurant_id: rest.id }),
+      )
+
+      const [{ data: cats }, { data: prods }] = await Promise.all([categoriesRequest, productsRequest])
+      if (!isCurrent()) return
 
       const nextCategories = cats || []
       const nextProducts = prods || []
-      setCategories(nextCategories)
-      setProducts(nextProducts)
+      commit(setCategories, nextCategories)
+      commit(setProducts, nextProducts)
       // Best Sellers قائمة يحددها مالك المطعم فقط؛ لا تستعمل الطلبات أو is_featured أو أي ترتيب تلقائي.
-      setManualBestSellers(nextProducts.filter(product => product.is_best_seller === true).slice(0, 4))
-      setActiveCategory(previous => nextCategories.some(category => category.id === previous) ? previous : (nextCategories[0]?.id || null))
-
-      // «يعجب زبائننا» توصية مستقلة من الطلبات الفعلية غير الملغاة خلال آخر 30 يومًا.
-      const { data: pastOrders } = await supabase.rpc('get_recent_order_items', { p_restaurant_id: rest.id })
-
-      if (pastOrders && nextProducts.length > 0) {
-        const salesCount = {}
-        pastOrders.forEach(o => {
-          const orderItems = Array.isArray(o.items) ? o.items : []
-          orderItems.forEach(it => {
-            if (it.unavailable) return
-            salesCount[it.id] = (salesCount[it.id] || 0) + (it.qty || 1)
-          })
-        })
-        const ranked = nextProducts
-          .filter(p => salesCount[p.id] > 0)
-          .sort((a, b) => salesCount[b.id] - salesCount[a.id])
-          .slice(0, 4)
-        setCustomerFavorites(ranked)
+      commit(setManualBestSellers, nextProducts.filter(product => product.is_best_seller === true).slice(0, 4))
+      if (isCurrent()) {
+        setActiveCategory(previous => nextCategories.some(category => category.id === previous) ? previous : (nextCategories[0]?.id || null))
       }
 
       // تحديث عدد الطلبات النشطة لحظياً مع كل طلب جديد أو تغيّر حالة — عبر Realtime Broadcast
       // (الاشتراك المباشر بالجدول postgres_changes لا يعمل للزبون العابر أصلاً، يحتاج صلاحية قراءة
       // مغلقة عمداً — ADR-9؛ نفس حل تتبّع حالة الطلب، بمعزل عن أي بيانات — restaurant_id ليس سرياً)
       const refreshActiveOrdersCount = async () => {
-        const { data: c } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id, p_branch_id: resolvedBranch.id })
-        setActiveOrdersCount(c || 0)
+        const { data: count } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: rest.id, p_branch_id: resolvedBranch.id })
+        if (isCurrent()) setActiveOrdersCount(count || 0)
       }
       if (restaurantLoadChannelRef.current) supabase.removeChannel(restaurantLoadChannelRef.current)
       restaurantLoadChannelRef.current = supabase.channel(`restaurant-orders:${rest.id}`, { config: { private: true } })
@@ -177,8 +169,67 @@ export function useMenuData(slug, branchId) {
         .on('postgres_changes', { event:'*', schema:'public', table:'banners', filter:`restaurant_id=eq.${rest.id}` }, fetchMenu)
         .on('postgres_changes', { event:'*', schema:'public', table:'coupons', filter:`restaurant_id=eq.${rest.id}` }, fetchMenu)
         .subscribe()
+
+      // تُحدَّث العناصر الاختيارية عند اكتمالها؛ لا تؤخر أول عرض قابل للاستخدام.
+      Promise.all([
+        activeOrdersRequest,
+        ratingRequest,
+        capabilitiesRequest,
+        brandingRequest,
+        loyaltyRequest,
+        bannersRequest,
+        couponsRequest,
+        pastOrdersRequest,
+      ]).then(([
+        { data: activeCount },
+        { data: ratingData, error: ratingError },
+        { data: capabilityData },
+        { data: brandData },
+        { data: loyaltyData },
+        { data: bannerData },
+        { data: couponData },
+        { data: pastOrders },
+      ]) => {
+        if (!isCurrent()) return
+
+        const nextCapabilities = capabilityData && typeof capabilityData === 'object'
+          ? { ...DEFAULT_CAPABILITIES, ...capabilityData }
+          : DEFAULT_CAPABILITIES
+        commit(setActiveOrdersCount, activeCount || 0)
+        commit(setCapabilities, nextCapabilities)
+        if (!ratingError) {
+          const ratingRow = Array.isArray(ratingData) ? ratingData[0] : ratingData
+          if (ratingRow && Number(ratingRow.review_count) > 0) {
+            commit(setRating, { avg: Number(ratingRow.avg_rating), count: Number(ratingRow.review_count) })
+          }
+        }
+        if (brandData && typeof brandData === 'object') commit(setBranding, brandData)
+        commit(setLoyaltyEnabled, !!loyaltyData?.enabled && nextCapabilities.loyalty)
+
+        const now = new Date().toISOString()
+        const relevant = (row) => !row.branch_id || row.branch_id === resolvedBranch.id
+        commit(setBanners, (bannerData || []).filter(banner => relevant(banner) && (!banner.starts_at || banner.starts_at <= now) && (!banner.ends_at || banner.ends_at >= now)))
+        commit(setCoupons, (couponData || []).filter(coupon => relevant(coupon) && (!coupon.expires_at || coupon.expires_at >= now)))
+
+        // «يعجب زبائننا» توصية مستقلة من الطلبات الفعلية غير الملغاة خلال آخر 30 يومًا.
+        if (pastOrders && nextProducts.length > 0) {
+          const salesCount = {}
+          pastOrders.forEach(order => {
+            const orderItems = Array.isArray(order.items) ? order.items : []
+            orderItems.forEach(item => {
+              if (item.unavailable) return
+              salesCount[item.id] = (salesCount[item.id] || 0) + (item.qty || 1)
+            })
+          })
+          const ranked = nextProducts
+            .filter(product => salesCount[product.id] > 0)
+            .sort((a, b) => salesCount[b.id] - salesCount[a.id])
+            .slice(0, 4)
+          commit(setCustomerFavorites, ranked)
+        }
+      })
     } finally {
-      setLoading(false)
+      commit(setLoading, false)
     }
   }
 

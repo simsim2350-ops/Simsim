@@ -38,6 +38,11 @@ function PublicMenuInner() {
   const rawTableQrToken = searchParams.get('table')
   const [tableQr, setTableQr] = useState(null) // { token, tableId, tableName, restaurantId, branchId }
   const [resolvingTableQr, setResolvingTableQr] = useState(Boolean(rawTableQrToken))
+  // حالات الواجهات التي تفتح عند الطلب؛ تُستخدم لتوقيت تحميل بياناتها الثانوية.
+  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [editingCartItem, setEditingCartItem] = useState(null) // { item, product, initialOptions } — تعديل صنف من السلة (✎)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [offersOpen, setOffersOpen] = useState(false)
 
   // رمز الطاولة لا يُوثق من query string وحده: RPC عامة ضيقة النطاق تتحقق من token + slug + حالة الفرع.
   useEffect(() => {
@@ -125,13 +130,12 @@ function PublicMenuInner() {
   // PCR: شريط الولاء يظهر فقط إذا كانت قدرة الولاء مفعّلة في الباقة (loyaltyEnabled) — وإلا لا نمرّره
   const loyaltyRaw = useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone })
   const loyalty = loyaltyEnabled ? loyaltyRaw : null
-  const { tables } = useTables(restaurant, branch)
-  const recommendationsMap = useRecommendationRules(restaurant)
-  const cartWideIds = useCartWideIds(restaurant, branch)
+  // بيانات الطاولات والتوصيات لا تؤثر في أول عرض للمنيو؛ تُجلب فقط عند فتح السلة أو تفاصيل صنف.
+  const { tables } = useTables(cartOpen ? restaurant : null, cartOpen ? branch : null)
+  const recommendationsMap = useRecommendationRules(selectedProduct || editingCartItem ? restaurant : null)
+  const cartWideIds = useCartWideIds(cartOpen ? restaurant : null, cartOpen ? branch : null)
   const { reviewedIds, reviewDraft, setDraft, submitReview, submittingReview } = useReviews({ slug, restaurant, branch, t })
 
-  // حالة عرض محلية للصفحة فقط
-  const [selectedProduct, setSelectedProduct] = useState(null)
   // فتح نافذة المنتج — مُعطَّل تماماً لو قدرة «تفاصيل المنتج» مطفأة (الضغط لا يفتح شيئاً).
   // يبثّ حدث تحليلات عند الفتح الفعلي فقط (ADR-42/M2).
   const openProduct = (p) => {
@@ -139,17 +143,24 @@ function PublicMenuInner() {
     track('menu.product_viewed', { restaurantId: restaurant?.id, branchId: branch?.id, entityType: 'product', entityId: p?.id })
     setSelectedProduct(p)
   }
-  const [editingCartItem, setEditingCartItem] = useState(null) // { item, product, initialOptions } — تعديل صنف من السلة (✎)
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [offersOpen, setOffersOpen] = useState(false)
 
   // بثّ أحداث القمع مركزياً (ADR-42/M2) — إطلاق-وانسَ، fail-open، لا يغيّر السلوك.
   const viewedRef = useRef(null)
   useEffect(() => {
-    if (restaurant?.id && branch?.id && viewedRef.current !== branch.id) {
+    if (!restaurant?.id || !branch?.id || viewedRef.current === branch.id) return
+
+    // التحليلات ليست جزءاً من المحتوى المرئي؛ نؤجلها حتى تهدأ الصفحة حتى لا تنافس تحميل المنيو.
+    const sendViewed = () => {
+      if (viewedRef.current === branch.id) return
       viewedRef.current = branch.id
       track('menu.viewed', { restaurantId: restaurant.id, branchId: branch.id })
     }
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(sendViewed, { timeout: 1500 })
+      return () => window.cancelIdleCallback?.(idleId)
+    }
+    const timeoutId = window.setTimeout(sendViewed, 1200)
+    return () => window.clearTimeout(timeoutId)
   }, [restaurant?.id, branch?.id])
   const orderTrackedRef = useRef(false)
   useEffect(() => {
