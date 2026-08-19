@@ -111,6 +111,14 @@ export const IconBranding = svg(<>
   <circle cx="8.5" cy="8.5" r="1.5" />
 </>)
 
+// أيقونة إدارة الموقع التسويقي (نافذة/تخطيط صفحة).
+export const IconMarketing = svg(<>
+  <rect x="3" y="4" width="18" height="16" rx="2" />
+  <line x1="3" y1="8" x2="21" y2="8" />
+  <line x1="7" y1="12" x2="17" y2="12" />
+  <line x1="7" y1="16" x2="13" y2="16" />
+</>)
+
 // خريطة أيقونات التنقّل — مصدر واحد يستهلكه AdminShell وCommandPalette معاً.
 export const NAV_ICON_MAP = {
   overview: IconOverview,
@@ -120,6 +128,7 @@ export const NAV_ICON_MAP = {
   flags: IconFlag,
   catalog: IconCatalog,
   branding: IconBranding,
+  marketing: IconMarketing,
   announcements: IconAnnouncements,
   admins: IconAdmins,
   audit: IconAudit,
