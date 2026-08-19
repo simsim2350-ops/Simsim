@@ -1,0 +1,201 @@
+{
+  "label": "before",
+  "profile": "slow4g",
+  "runs": 5,
+  "slug": "simsim",
+  "ttfb": 6,
+  "fcp": 2088,
+  "lcp": 7560,
+  "cls": 0,
+  "tbt": 829,
+  "dcl": 1986,
+  "load": 1990,
+  "wall": 10524,
+  "requests": 50,
+  "apiRequests": 16,
+  "imageRequests": 8,
+  "jsRequests": 13,
+  "jsBytes": 167932,
+  "cssBytes": 665,
+  "imageBytes": 1001012,
+  "marks": {
+    "menuFrame": 7028,
+    "brandVisible": 7493,
+    "firstProduct": 7028
+  },
+  "apiSequence": [
+    "/rest/v1/restaurants?select=*&slug=eq.simsim&is_active=eq.true",
+    "/rest/v1/branches?select=*&restaurant_id=eq.04ff6967-95b0-4a59-8f29-f454c412e7c8&is_active=eq.true&order=sort_order.asc",
+    "/rest/v1/product_recommendations?select=source_product_id%2Crecommended_product_id%2Cpriority&restaurant_id=eq.04ff6967-95b0-4a59-8f29-f454c412e7c8&is_active=eq.true&order=priority.asc",
+    "/rest/v1/restaurant_tables?select=id%2Crestaurant_id%2Cbranch_id%2Ctable_number%2Cstatus%2Csort_order&restaurant_id=eq.04ff6967-95b0-4a59-8f29-f454c412e7c8&status=eq.active&order=sort_order.asc&branch_id=eq.d61f2cdf-883c-4f12-8898-7e9b47a7e354",
+    "/rest/v1/cart_wide_recommendations?select=product_id&restaurant_id=eq.04ff6967-95b0-4a59-8f29-f454c412e7c8&branch_id=eq.d61f2cdf-883c-4f12-8898-7e9b47a7e354&is_active=eq.true&order=priority.asc",
+    "/rest/v1/rpc/get_active_orders_count",
+    "/rest/v1/rpc/track_event",
+    "/rest/v1/rpc/get_restaurant_rating",
+    "/rest/v1/rpc/menu_capabilities",
+    "/rest/v1/rpc/menu_branding",
+    "/rest/v1/loyalty_programs?select=enabled&restaurant_id=eq.04ff6967-95b0-4a59-8f29-f454c412e7c8",
+    "/rest/v1/banners?select=*&restaurant_id=eq.04ff6967-95b0-4a59-8f29-f454c412e7c8&is_active=eq.true&order=display_priority.desc%2Csort_order.asc",
+    "/rest/v1/coupons?select=*&restaurant_id=eq.04ff6967-95b0-4a59-8f29-f454c412e7c8&is_active=eq.true",
+    "/rest/v1/categories?select=*&branch_id=eq.d61f2cdf-883c-4f12-8898-7e9b47a7e354&is_visible=eq.true&order=sort_order.asc",
+    "/rest/v1/products?select=*&branch_id=eq.d61f2cdf-883c-4f12-8898-7e9b47a7e354&is_available=eq.true&order=sort_order.asc",
+    "/rest/v1/rpc/get_recent_order_items"
+  ],
+  "timeline": [
+    {
+      "n": "/assets/index-DyNUNEzQ.js",
+      "s": 340,
+      "e": 1128
+    },
+    {
+      "n": "/assets/vendor-react-3-h_h1qq.js",
+      "s": 340,
+      "e": 1895
+    },
+    {
+      "n": "/assets/vendor-supabase-CipMJ7lf.js",
+      "s": 340,
+      "e": 1924
+    },
+    {
+      "n": "/assets/index-DF7PLwjd.css",
+      "s": 341,
+      "e": 710
+    },
+    {
+      "n": "/css2",
+      "s": 714,
+      "e": 754
+    },
+    {
+      "n": "/assets/PublicMenu-CCK74X6Z.js",
+      "s": 2045,
+      "e": 2901
+    },
+    {
+      "n": "/assets/analytics-gp8NPXS7.js",
+      "s": 2046,
+      "e": 2391
+    },
+    {
+      "n": "/assets/ErrBoundary-CgOhyfqF.js",
+      "s": 2047,
+      "e": 2406
+    },
+    {
+      "n": "/assets/helpers-DWqJ4ush.js",
+      "s": 2048,
+      "e": 2481
+    },
+    {
+      "n": "/assets/tablesApi-DK_AGS5T.js",
+      "s": 2048,
+      "e": 2437
+    },
+    {
+      "n": "/assets/recommendationsApi-DsTCjDNy.js",
+      "s": 2049,
+      "e": 2452
+    },
+    {
+      "n": "/assets/useBodyScrollLock-DDTQ3-cf.js",
+      "s": 2050,
+      "e": 2721
+    },
+    {
+      "n": "/assets/MenuBranding-BiSxs1U1.js",
+      "s": 2052,
+      "e": 2752
+    },
+    {
+      "n": "/assets/pricing-Cm-aWfmn.js",
+      "s": 2052,
+      "e": 2782
+    },
+    {
+      "n": "/assets/ConfirmDialog-D4-9GrBI.js",
+      "s": 2054,
+      "e": 2796
+    },
+    {
+      "n": "/rest/v1/restaurants",
+      "s": 2965,
+      "e": 3306
+    },
+    {
+      "n": "/rest/v1/branches",
+      "s": 3313,
+      "e": 3637
+    },
+    {
+      "n": "/rest/v1/product_recommendations",
+      "s": 3320,
+      "e": 3653
+    },
+    {
+      "n": "/rest/v1/rpc/get_active_orders_count",
+      "s": 3644,
+      "e": 4000
+    },
+    {
+      "n": "/rest/v1/rpc/track_event",
+      "s": 3656,
+      "e": 4028
+    },
+    {
+      "n": "/rest/v1/restaurant_tables",
+      "s": 3658,
+      "e": 3968
+    },
+    {
+      "n": "/rest/v1/cart_wide_recommendations",
+      "s": 3658,
+      "e": 3984
+    },
+    {
+      "n": "/rest/v1/rpc/get_restaurant_rating",
+      "s": 4008,
+      "e": 4345
+    },
+    {
+      "n": "/rest/v1/rpc/menu_capabilities",
+      "s": 4353,
+      "e": 4705
+    },
+    {
+      "n": "/rest/v1/rpc/menu_branding",
+      "s": 4714,
+      "e": 5051
+    },
+    {
+      "n": "/rest/v1/loyalty_programs",
+      "s": 5057,
+      "e": 5366
+    },
+    {
+      "n": "/rest/v1/banners",
+      "s": 5376,
+      "e": 5698
+    },
+    {
+      "n": "/rest/v1/coupons",
+      "s": 5377,
+      "e": 5712
+    },
+    {
+      "n": "/rest/v1/categories",
+      "s": 5719,
+      "e": 6101
+    },
+    {
+      "n": "/rest/v1/products",
+      "s": 5720,
+      "e": 6551
+    },
+    {
+      "n": "/rest/v1/rpc/get_recent_order_items",
+      "s": 6563,
+      "e": 6914
+    }
+  ]
+}
