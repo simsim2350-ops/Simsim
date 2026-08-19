@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { SOCIAL_ICONS } from './SocialIcons'
 import { estimatedPrepTime } from './helpers'
 import { OffersIcon } from './MenuOffersDrawer'
+import ResponsiveMenuImage from './ResponsiveMenuImage'
 
 // أبعاد الهيرو تُدار الآن عبر Hero Design Tokens في PublicMenu (متغيّرات CSS --hero-*).
 const clamp01 = v => Math.min(1, Math.max(0, v))
@@ -88,7 +89,7 @@ export default function MenuHeader({
         pointerEvents: heroOpacity < 0.5 ? 'none' : 'auto',
       }}>
         {restaurant.cover_url && (
-          <img src={restaurant.cover_url} alt="" width="480" height="132" loading="eager" fetchPriority="high" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+          <ResponsiveMenuImage src={restaurant.cover_url} alt="" width="480" height="132" widths={[480, 960, 1080]} sizes="(min-width: 480px) 480px, 100vw" quality={76} loading="eager" fetchPriority="auto" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
         )}
         {/* تظليل خفيف أسفل الهيرو ليبرز انزلاق الورقة */}
         <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, rgba(0,0,0,0.12), transparent 30%, transparent 70%, rgba(0,0,0,0.18))', pointerEvents:'none' }}/>
@@ -130,7 +131,7 @@ export default function MenuHeader({
           <div style={{ display:'flex', alignItems:'center', gap:'11px', padding:'0 16px 5px' }}>
             <div style={{ width:'var(--hero-logo)', height:'var(--hero-logo)', borderRadius:'15px', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'25px', flexShrink:0, overflow:'hidden', boxShadow:'0 5px 14px rgba(15,17,23,0.18)' }}>
               {restaurant.logo_url
-                ? <img src={restaurant.logo_url} alt={restaurant.name} width="52" height="52" loading="eager" fetchPriority="high" decoding="async" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                ? <ResponsiveMenuImage src={restaurant.logo_url} alt={restaurant.name} width="52" height="52" widths={[64, 128, 192]} sizes="52px" quality={78} loading="eager" fetchPriority="auto" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
                 : '🍕'}
             </div>
             <div style={{ flex:1, minWidth:0 }}>
@@ -246,7 +247,7 @@ export default function MenuHeader({
       }}>
         <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:`linear-gradient(135deg, ${brandColor}, ${brandColor}CC)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'17px', flexShrink:0, overflow:'hidden', boxShadow:'0 3px 9px rgba(15,17,23,0.16)' }}>
           {restaurant.logo_url
-            ? <img src={restaurant.logo_url} alt={restaurant.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+            ? <ResponsiveMenuImage src={restaurant.logo_url} alt={restaurant.name} width="36" height="36" widths={[64, 128]} sizes="36px" quality={78} loading="eager" fetchPriority="auto" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
             : '🍕'}
         </div>
         <div style={{ flex:1, minWidth:0 }}>

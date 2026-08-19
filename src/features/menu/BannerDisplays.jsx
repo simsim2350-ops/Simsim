@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import ResponsiveMenuImage from './ResponsiveMenuImage'
+
 const DISPLAY_MODES = ['fullscreen', 'popup', 'top', 'inline', 'floating']
 
 function BannerIcon({ type = 'spark', size = 18 }) {
@@ -95,7 +97,7 @@ function useBannerDisplayState({ banners, restaurantId, branchId }) {
 
 function BannerImage({ banner, compact = false }) {
   return banner.image_url
-    ? <img src={banner.image_url} alt={banner.title} style={{ width:compact ? '54px' : '100%', height:compact ? '44px' : '100%', borderRadius:compact ? '10px' : 'inherit', objectFit:'cover', display:'block', flexShrink:0 }} />
+    ? <ResponsiveMenuImage src={banner.image_url} alt={banner.title} width={compact ? 54 : 420} height={compact ? 44 : 220} widths={compact ? [64, 128] : [480, 960]} sizes={compact ? '54px' : 'min(100vw - 40px, 420px)'} quality={74} style={{ width:compact ? '54px' : '100%', height:compact ? '44px' : '100%', borderRadius:compact ? '10px' : 'inherit', objectFit:'cover', display:'block', flexShrink:0 }} />
     : <span style={{ width:compact ? '54px' : '100%', height:compact ? '44px' : '100%', display:'grid', placeItems:'center', color:'#FF6A00', background:'#FFF0EB', borderRadius:compact ? '10px' : 'inherit', flexShrink:0 }}><BannerIcon size={compact ? 19 : 32} /></span>
 }
 
@@ -110,7 +112,7 @@ function FullscreenOffer({ banner, brandColor, onDismiss }) {
   return <div role="dialog" aria-modal="true" aria-label={`عرض ${banner.title}`} style={{ position:'fixed', inset:0, zIndex:140, display:'flex', alignItems:'center', justifyContent:'center', direction:'rtl', background:'rgba(11,11,15,.94)', padding:'20px' }}>
     <section style={{ width:'100%', maxWidth:'420px', overflow:'hidden', borderRadius:'24px', background:'white', boxShadow:'0 24px 70px rgba(0,0,0,.42)' }}>
       <div style={{ position:'relative', minHeight:'190px', background:`linear-gradient(145deg, ${brandColor}, ${brandColor}BB)` }}>
-        {banner.image_url && <img src={banner.image_url} alt={banner.title} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} />}
+        {banner.image_url && <ResponsiveMenuImage src={banner.image_url} alt={banner.title} width="420" height="220" widths={[480, 960]} sizes="min(100vw - 40px, 420px)" quality={76} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', display:'block' }} />}
         <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, rgba(0,0,0,.03), rgba(0,0,0,.44))' }} />
         <button type="button" onClick={onDismiss} aria-label="الدخول إلى المينيو" style={{ position:'absolute', top:'12px', left:'12px', width:'38px', height:'38px', display:'grid', placeItems:'center', borderRadius:'50%', border:'1px solid rgba(255,255,255,.34)', background:'rgba(0,0,0,.2)', color:'white', cursor:'pointer' }}><BannerIcon type="close" size={18} /></button>
         <div style={{ position:'absolute', right:'18px', left:'18px', bottom:'18px', color:'white' }}><div style={{ fontFamily:'Tajawal,sans-serif', fontSize:'23px', lineHeight:1.25, fontWeight:'900' }}>{banner.title}</div>{banner.subtitle && <div style={{ marginTop:'5px', fontSize:'13px', lineHeight:1.55, opacity:.9 }}>{banner.subtitle}</div>}</div>

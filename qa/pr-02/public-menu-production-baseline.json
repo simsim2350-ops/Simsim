@@ -1,0 +1,143 @@
+{
+  "config": {
+    "URL": "https://simsimmenu.com/menu/simsim",
+    "viewport": "390x844",
+    "dpr": 3,
+    "cpuSlowdown": 4,
+    "network": "Slow 4G approximation",
+    "cacheDisabled": true,
+    "runs": 5
+  },
+  "summary": {
+    "fcpMedian": 35792,
+    "lcpMedian": 35792,
+    "clsMedian": 0.00018203290265210483,
+    "firstCategoryMedian": null,
+    "firstProductMedian": null,
+    "firstProductImageMedian": null,
+    "interactiveMedian": null,
+    "transferredBytesMedian": 131952,
+    "imageBytesMedian": 0,
+    "imageRequestCountMedian": 0
+  },
+  "runs": [
+    {
+      "run": 1,
+      "paint": {
+        "first-paint": 24360,
+        "first-contentful-paint": 35792
+      },
+      "lcp": {
+        "startTime": 35792,
+        "url": null,
+        "element": "STRONG"
+      },
+      "cls": 0.00018203290265210483,
+      "timeToFirstCategory": null,
+      "timeToFirstProduct": null,
+      "timeToFirstProductImage": null,
+      "timeToInteractive": null,
+      "performanceObserverInstalled": false,
+      "totalTransferredBytes": 131952,
+      "totalImageBytes": 0,
+      "imageRequestCount": 0,
+      "largestImage": null,
+      "criticalRequests": [],
+      "taskDuration": 0.287912,
+      "scriptDuration": 0.127628,
+      "jsHeapUsedSize": 2383516
+    },
+    {
+      "run": 2,
+      "paint": {},
+      "lcp": null,
+      "cls": 0,
+      "timeToFirstCategory": null,
+      "timeToFirstProduct": null,
+      "timeToFirstProductImage": null,
+      "timeToInteractive": null,
+      "performanceObserverInstalled": false,
+      "totalTransferredBytes": 56560,
+      "totalImageBytes": 0,
+      "imageRequestCount": 0,
+      "largestImage": null,
+      "criticalRequests": [],
+      "taskDuration": 0.046176,
+      "scriptDuration": null,
+      "jsHeapUsedSize": 847340
+    },
+    {
+      "run": 3,
+      "paint": {
+        "first-paint": 55020,
+        "first-contentful-paint": 64084
+      },
+      "lcp": {
+        "startTime": 64084,
+        "url": null,
+        "element": "STRONG"
+      },
+      "cls": 0.00019022304693146823,
+      "timeToFirstCategory": null,
+      "timeToFirstProduct": null,
+      "timeToFirstProductImage": null,
+      "timeToInteractive": null,
+      "performanceObserverInstalled": false,
+      "totalTransferredBytes": 131952,
+      "totalImageBytes": 0,
+      "imageRequestCount": 0,
+      "largestImage": null,
+      "criticalRequests": [],
+      "taskDuration": 0.308607,
+      "scriptDuration": 0.128595,
+      "jsHeapUsedSize": 2671388
+    },
+    {
+      "run": 4,
+      "paint": {
+        "first-paint": 2292,
+        "first-contentful-paint": 10600
+      },
+      "lcp": {
+        "startTime": 10600,
+        "url": null,
+        "element": "STRONG"
+      },
+      "cls": 0.0002523660056850152,
+      "timeToFirstCategory": null,
+      "timeToFirstProduct": null,
+      "timeToFirstProductImage": null,
+      "timeToInteractive": null,
+      "performanceObserverInstalled": false,
+      "totalTransferredBytes": 135995,
+      "totalImageBytes": 0,
+      "imageRequestCount": 0,
+      "largestImage": null,
+      "criticalRequests": [],
+      "taskDuration": 0.334022,
+      "scriptDuration": 0.132558,
+      "jsHeapUsedSize": 2415424
+    },
+    {
+      "run": 5,
+      "paint": {
+        "first-paint": 6692
+      },
+      "lcp": null,
+      "cls": 0,
+      "timeToFirstCategory": null,
+      "timeToFirstProduct": null,
+      "timeToFirstProductImage": null,
+      "timeToInteractive": null,
+      "performanceObserverInstalled": false,
+      "totalTransferredBytes": 75376,
+      "totalImageBytes": 0,
+      "imageRequestCount": 0,
+      "largestImage": null,
+      "criticalRequests": [],
+      "taskDuration": 0.062112,
+      "scriptDuration": null,
+      "jsHeapUsedSize": 1027316
+    }
+  ]
+}
