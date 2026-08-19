@@ -3,7 +3,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 // بطاقة تأكيد موحّدة داخل المنصّة — بديل عن window.confirm() الأصلي بلا هوية بصرية.
 // تُستخدم لأي إجراء يحتاج تأكيداً قبل التنفيذ (حذف/استبدال/إلغاء...) في لوحة التحكم والمنيو العام معاً.
 export default function ConfirmDialog({
-  open, icon = '❓', title, body, confirmLabel, cancelLabel = 'إلغاء', danger = true, onConfirm, onCancel,
+  open, icon = '❓', title, body, confirmLabel, cancelLabel = 'إلغاء', danger = true, loading = false, onConfirm, onCancel,
 }) {
   useBodyScrollLock(open) // يُستدعى دائماً (لا بعد return مبكر) احتراماً لقواعد الخطّافات
   if (!open) return null
@@ -17,11 +17,13 @@ export default function ConfirmDialog({
         <div style={{ display:'flex', gap:'10px' }}>
           <button
             onClick={onCancel}
-            style={{ flex:1, padding:'12px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}
+            disabled={loading}
+            style={{ flex:1, padding:'12px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px', cursor:loading?'default':'pointer', opacity:loading?0.6:1 }}
           >{cancelLabel}</button>
           <button
             onClick={onConfirm}
-            style={{ flex:1, padding:'12px', borderRadius:'12px', border:'none', background: danger ? '#E11D48' : '#FF6A00', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', cursor:'pointer' }}
+            disabled={loading}
+            style={{ flex:1, padding:'12px', borderRadius:'12px', border:'none', background: danger ? '#E11D48' : '#FF6A00', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', cursor:loading?'default':'pointer', opacity:loading?0.7:1 }}
           >{confirmLabel}</button>
         </div>
       </div>
