@@ -5,6 +5,8 @@ import QRCode from 'qrcode'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import { ensurePrimaryBranch } from '../lib/branchesApi'
+import ConfirmDialog from '../components/ConfirmDialog'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { calculateMenuReadiness } from '../lib/menuReadiness'
 import MenuReadinessCard from '../components/MenuReadinessCard'
 import { trackOwnerEvent, trackOwnerMilestone } from '../lib/analytics'
@@ -123,10 +125,16 @@ export default function Onboarding() {
   const [cForm, setCForm] = useState({ name:'', slug:'', slugEdited:false })
   const [info, setInfo] = useState({ description:'', phone:'', address:'' })
 
-  // الأقسام المختارة = مصفوفة مرتّبة من {key, name, emoji, items}
+  // الأقسام هنا هي الصفوف الحقيقية من `public.categories` للفرع الرئيسي، وليست قوالب واجهة مؤقتة.
   const [cats, setCats] = useState([])
-  const [customInput, setCustomInput] = useState('')
-  const [showCustom, setShowCustom] = useState(false)
+  const [categoryBranch, setCategoryBranch] = useState(null)
+  const [categoriesLoading, setCategoriesLoading] = useState(false)
+  const [categoriesError, setCategoriesError] = useState('')
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false)
+  const [categoryName, setCategoryName] = useState('')
+  const [categoryEmoji, setCategoryEmoji] = useState('🍽️')
+  const [categoryFormError, setCategoryFormError] = useState('')
+  const [categoryDeleteTarget, setCategoryDeleteTarget] = useState(null)
   const [selectedItems, setSelectedItems] = useState(new Set())
   const dragFrom = useRef(null)
   const qrRef = useRef(null)
@@ -134,6 +142,10 @@ export default function Onboarding() {
   const createMenuInFlight = useRef(false)
   const infoSaveInFlight = useRef(false)
   const typeSaveInFlight = useRef(false)
+  const categoryActionInFlight = useRef(false)
+  const categoryReorderInFlight = useRef(false)
+
+  useBodyScrollLock(categoryModalOpen)
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768)
@@ -165,7 +177,8 @@ export default function Onboarding() {
         setPersistedType(hasSavedTypeSelection ? r.type : null)
         setTypeSaveError('')
         const resumed = RESUME_MAP[r.onboarding_step] || 'welcome'
-        if (resumed === 'categories' && r.type) setCats(getTemplate(r.type).slice(0, 5).map(c => ({ ...c })))
+        if (resumed === 'categories') await loadOnboardingCategories(r)
+        if (cancelled) return
         trackOwnerEvent('onboarding_started', { restaurantId: r.id, props: { resumed: Boolean(r.onboarding_step) } })
         setStage(resumed)
       } catch (error) {
@@ -391,9 +404,9 @@ export default function Onboarding() {
     const isSaved = persistedType === selectedType || await persistBusinessType(selectedType)
     if (!isSaved) return
 
-    // نبدأ بأقسام مقترحة مناسبة فقط بعد التأكد من أن النوع المخزن هو الاختيار الحالي.
-    setCats(getTemplate(selectedType).slice(0, 5).map(c => ({ ...c })))
+    // القوالب تبقى اقتراحات فقط؛ الأقسام المعروضة في الخطوة التالية تُقرأ من قاعدة البيانات.
     goStage('categories')
+    await loadOnboardingCategories(rest)
   }
 
   const returnToBusinessType = () => {
@@ -406,96 +419,259 @@ export default function Onboarding() {
   }
 
   // ===== الأقسام =====
-  const isAdded = (key) => cats.some(c => c.key === key)
+  const normalizeCategoryName = (name) => name.trim().replace(/\s+/g, ' ')
+  const templateForCategory = (category) => template.find(item => normalizeCategoryName(item.name) === normalizeCategoryName(category.name)) || null
+  const categoryItems = (category) => templateForCategory(category)?.items || []
+  const categoryItemKey = (category, item) => `${category.id}::${item.name}`
+  const isTemplateAdded = (item) => cats.some(category => normalizeCategoryName(category.name) === normalizeCategoryName(item.name))
 
-  const addTemplateCat = (t) => {
-    if (isAdded(t.key)) return
-    setCats(prev => [...prev, { ...t }])
-    toast.success(`تم إضافة "${t.name}"`)
+  const loadOnboardingCategories = async (restaurantRecord = rest) => {
+    if (!restaurantRecord?.id) return []
+    setCategoriesLoading(true)
+    setCategoriesError('')
+    try {
+      const branch = await ensurePrimaryBranch(restaurantRecord.id)
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('branch_id', branch.id)
+        .order('sort_order')
+      if (error) throw error
+      const rows = data || []
+      setCategoryBranch(branch)
+      setCats(rows)
+      return rows
+    } catch (error) {
+      console.error('Onboarding categories load error:', error)
+      const message = 'تعذر تحميل أقسام المنيو. تحقق من الاتصال ثم أعد المحاولة.'
+      setCategoriesError(message)
+      return []
+    } finally {
+      setCategoriesLoading(false)
+    }
   }
 
-  const addCustomCat = () => {
-    const name = customInput.trim()
-    if (!name) return
-    if (cats.some(c => c.name === name)) { toast.error('القسم موجود بالفعل'); return }
-    setCats(prev => [...prev, { key:`custom-${Date.now()}`, name, emoji:'🍽️', items:[] }])
-    toast.success(`تم إضافة "${name}"`)
-    setCustomInput(''); setShowCustom(false)
+  const persistCategory = async ({ name, emoji = '🍽️', source = 'custom' }) => {
+    const normalizedName = normalizeCategoryName(name)
+    if (!normalizedName) {
+      const message = 'أدخل اسم القسم أولاً.'
+      setCategoryFormError(message)
+      toast.error(message)
+      return false
+    }
+    if (!rest?.id || categoryActionInFlight.current) return false
+    if (cats.some(category => normalizeCategoryName(category.name) === normalizedName)) {
+      const message = 'هذا القسم مضاف بالفعل.'
+      setCategoryFormError(message)
+      toast.error(message)
+      return false
+    }
+
+    categoryActionInFlight.current = true
+    setSaving(true)
+    setCategoryFormError('')
+    try {
+      const branch = categoryBranch || await ensurePrimaryBranch(rest.id)
+      const { data: duplicateRows, error: duplicateError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('branch_id', branch.id)
+        .eq('name', normalizedName)
+        .limit(1)
+      if (duplicateError) throw duplicateError
+      if (duplicateRows?.length) {
+        const message = 'هذا القسم مضاف بالفعل.'
+        setCategoryFormError(message)
+        toast.error(message)
+        await loadOnboardingCategories(rest)
+        return false
+      }
+
+      const nextSortOrder = cats.reduce((max, category) => Math.max(max, Number(category.sort_order) || 0), -1) + 1
+      const { data: insertedCategory, error } = await supabase
+        .from('categories')
+        .insert({
+          restaurant_id: rest.id,
+          branch_id: branch.id,
+          name: normalizedName,
+          emoji: emoji || '🍽️',
+          is_visible: true,
+          sort_order: nextSortOrder,
+        })
+        .select()
+        .single()
+      if (error) throw error
+
+      setCategoryBranch(branch)
+      setCats(previous => [...previous, insertedCategory].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)))
+      if (cats.length === 0) trackOwnerMilestone('category_created', { restaurantId: rest.id, branchId: branch.id, props: { source: `onboarding_${source}` } })
+      await refreshReadiness(rest.id)
+      toast.success(`تمت إضافة "${normalizedName}"`)
+      return true
+    } catch (error) {
+      console.error('Onboarding category create error:', error)
+      const message = error?.message || 'تعذر إضافة القسم. حاول مرة أخرى.'
+      setCategoryFormError(message)
+      toast.error(message)
+      return false
+    } finally {
+      categoryActionInFlight.current = false
+      setSaving(false)
+    }
   }
 
-  const removeCat = (i) => setCats(prev => prev.filter((_, idx) => idx !== i))
+  const addTemplateCat = async (item) => {
+    if (saving || isTemplateAdded(item)) return
+    await persistCategory({ name: item.name, emoji: item.emoji, source: 'template' })
+  }
 
-  // إعادة الترتيب بالسحب
-  const onDrop = (to) => {
-    const from = dragFrom.current
-    if (from === null || from === to) return
-    setCats(prev => {
-      const arr = [...prev]
-      const [moved] = arr.splice(from, 1)
-      arr.splice(to, 0, moved)
-      return arr
-    })
+  const openCategoryModal = () => {
+    setCategoryName('')
+    setCategoryEmoji('🍽️')
+    setCategoryFormError('')
+    setCategoryModalOpen(true)
+  }
+
+  const addCustomCat = async () => {
+    const saved = await persistCategory({ name: categoryName, emoji: categoryEmoji, source: 'custom' })
+    if (saved) {
+      setCategoryModalOpen(false)
+      setCategoryName('')
+    }
+  }
+
+  const deleteCategory = async () => {
+    const target = categoryDeleteTarget
+    if (!target || categoryActionInFlight.current) return
+    categoryActionInFlight.current = true
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('categories').delete().eq('id', target.id)
+      if (error) throw error
+      setCats(previous => previous.filter(category => category.id !== target.id))
+      setCategoryDeleteTarget(null)
+      await refreshReadiness(rest?.id)
+      toast.success('تم حذف القسم')
+    } catch (error) {
+      console.error('Onboarding category delete error:', error)
+      toast.error(error?.message || 'تعذر حذف القسم. حاول مرة أخرى.')
+    } finally {
+      categoryActionInFlight.current = false
+      setSaving(false)
+    }
+  }
+
+  const persistCategoryOrder = async (reordered, previous) => {
+    if (categoryReorderInFlight.current) return
+    categoryReorderInFlight.current = true
+    setCats(reordered)
+    try {
+      const results = await Promise.all(
+        reordered.map((category, index) => supabase.from('categories').update({ sort_order: index }).eq('id', category.id))
+      )
+      const failedResult = results.find(result => result.error)
+      if (failedResult) throw failedResult.error
+      await refreshReadiness(rest?.id)
+    } catch (error) {
+      console.error('Onboarding category order error:', error)
+      setCats(previous)
+      toast.error(error?.message || 'تعذر حفظ ترتيب الأقسام. أعد المحاولة.')
+    } finally {
+      categoryReorderInFlight.current = false
+    }
+  }
+
+  const moveCategory = (index, direction) => {
+    const nextIndex = index + direction
+    if (nextIndex < 0 || nextIndex >= cats.length || categoryReorderInFlight.current) return
+    const previous = [...cats]
+    const reordered = [...cats]
+    const [moved] = reordered.splice(index, 1)
+    reordered.splice(nextIndex, 0, moved)
+    void persistCategoryOrder(reordered, previous)
+  }
+
+  // إعادة الترتيب بالسحب على desktop؛ أزرار التحريك تبقى البديل الموثوق على الجوال.
+  const onDrop = (targetIndex) => {
+    const sourceIndex = dragFrom.current
     dragFrom.current = null
+    if (sourceIndex === null || sourceIndex === targetIndex || categoryReorderInFlight.current) return
+    const previous = [...cats]
+    const reordered = [...cats]
+    const [moved] = reordered.splice(sourceIndex, 1)
+    reordered.splice(targetIndex, 0, moved)
+    void persistCategoryOrder(reordered, previous)
   }
-  const move = (i, dir) => setCats(prev => {
-    const j = i + dir
-    if (j < 0 || j >= prev.length) return prev
-    const arr = [...prev]; const t = arr[i]; arr[i] = arr[j]; arr[j] = t; return arr
-  })
 
   const goToItems = () => {
-    if (cats.length === 0) { toast.error('أضف قسماً واحداً على الأقل'); return }
-    const s = new Set()
-    cats.forEach(c => (c.items || []).forEach(it => s.add(`${c.key}::${it.name}`)))
-    setSelectedItems(s)
-    // لو ما في أصناف مقترحة إطلاقاً، ننشئ المنيو مباشرة
-    const hasItems = cats.some(c => (c.items || []).length > 0)
+    if (cats.length === 0) { toast.error('أضف قسمًا واحدًا على الأقل للمتابعة.'); return }
+    const suggestedItems = new Set()
+    cats.forEach(category => categoryItems(category).forEach(item => suggestedItems.add(categoryItemKey(category, item))))
+    setSelectedItems(suggestedItems)
+    const hasItems = cats.some(category => categoryItems(category).length > 0)
     if (!hasItems) { finish(new Set()); return }
     goStage('items')
   }
 
-  const toggleItem = (key) => setSelectedItems(prev => {
-    const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n
+  const toggleItem = (key) => setSelectedItems(previous => {
+    const next = new Set(previous); next.has(key) ? next.delete(key) : next.add(key); return next
   })
 
-  // ===== إنشاء المنيو (يربط الأقسام/الأصناف بالفرع الرئيسي — إصلاح جوهري ليظهر المنيو للزبون) =====
+  // ===== إنشاء المنيو =====
+  // الأقسام تحفظ قبل هذه المرحلة؛ هنا ننشئ الأصناف المختارة فقط وربطها بمعرّفات الأقسام الحقيقية.
   const finish = async (itemsSet = selectedItems) => {
     if (saving || createMenuInFlight.current) return
-    if (cats.length === 0) { toast.error('أضف قسماً واحداً على الأقل'); return }
+    if (cats.length === 0) { toast.error('أضف قسمًا واحدًا على الأقل.'); return }
     createMenuInFlight.current = true
     setSaving(true)
     try {
-      // منيو العميل يُقرأ عبر branch_id → لا بد من ربط كل شيء بالفرع الرئيسي.
-      const branch = await ensurePrimaryBranch(rest.id)
-      const { data: existingCategories, error: existingCategoriesError } = await supabase
-        .from('categories').select('id').eq('branch_id', branch.id).limit(1)
-      if (existingCategoriesError) throw existingCategoriesError
-      if (existingCategories?.length) {
+      const branch = categoryBranch || await ensurePrimaryBranch(rest.id)
+      const { data: storedCategories, error: categoriesError } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('branch_id', branch.id)
+        .order('sort_order')
+      if (categoriesError) throw categoriesError
+      if (!storedCategories?.length) throw new Error('categories_not_persisted')
+
+      // يمنع إنشاء الأصناف مرتين إذا استؤنفت الرحلة بعد وجود منيو محفوظ بالفعل.
+      const { data: existingProducts, error: existingProductsError } = await supabase
+        .from('products')
+        .select('id')
+        .eq('branch_id', branch.id)
+        .limit(1)
+      if (existingProductsError) throw existingProductsError
+      if (existingProducts?.length) {
+        setCats(storedCategories)
         await refreshReadiness(rest.id)
         toast('يوجد منيو قائم بالفعل. نكمل من المرحلة المناسبة.', { icon: 'ℹ️' })
         goStage('preview')
         return
       }
 
-      const catRows = cats.map((c, i) => ({ restaurant_id: rest.id, branch_id: branch.id, name:c.name, emoji:c.emoji, is_visible:true, sort_order:i }))
-      const { data: insertedCats, error: catErr } = await supabase.from('categories').insert(catRows).select()
-      if (catErr) throw catErr
-      const nameToId = {}
-      insertedCats.forEach(c => { nameToId[c.name] = c.id })
-
       const productRows = []
-      cats.forEach(c => {
-        (c.items || []).forEach((it, idx) => {
-          if (!itemsSet.has(`${c.key}::${it.name}`)) return
-          productRows.push({ restaurant_id: rest.id, branch_id: branch.id, category_id: nameToId[c.name] || null, name: it.name, price: it.price, emoji: it.emoji || '🍽️', is_available:true, sort_order: idx })
+      storedCategories.forEach(category => {
+        categoryItems(category).forEach((item, index) => {
+          if (!itemsSet.has(categoryItemKey(category, item))) return
+          productRows.push({
+            restaurant_id: rest.id,
+            branch_id: branch.id,
+            category_id: category.id,
+            name: item.name,
+            price: item.price,
+            emoji: item.emoji || '🍽️',
+            is_available: true,
+            sort_order: index,
+          })
         })
       })
       if (productRows.length) {
         const { error: productError } = await supabase.from('products').insert(productRows)
         if (productError) throw productError
       }
-      toast.success(`تم إنشاء منيوك (${cats.length} أقسام، ${productRows.length} صنف).`)
-      trackOwnerMilestone('category_created', { restaurantId: rest.id, branchId: branch.id, props: { count: cats.length, source: 'onboarding_template' } })
+      setCategoryBranch(branch)
+      setCats(storedCategories)
+      toast.success(`تم إنشاء منيوك (${storedCategories.length} أقسام، ${productRows.length} صنف).`)
       if (productRows.length > 0) trackOwnerMilestone('first_product_created', { restaurantId: rest.id, branchId: branch.id, props: { count: productRows.length, source: 'onboarding_template' } })
       const nextReadiness = await refreshReadiness(rest.id)
       if (nextReadiness?.minimumReady) trackOwnerMilestone('menu_minimum_ready', { restaurantId: rest.id, branchId: branch.id, props: { source: 'onboarding' } })
@@ -503,7 +679,7 @@ export default function Onboarding() {
       goStage('preview')
     } catch (error) {
       console.error('Menu creation error:', error)
-      toast.error('تعذّر إنشاء المنيو. لم ننتقل قبل تأكيد حفظ البيانات، جرّب مرة أخرى.')
+      toast.error('تعذر إنشاء الأصناف. لم ننتقل قبل تأكيد حفظ البيانات، جرّب مرة أخرى.')
     } finally {
       createMenuInFlight.current = false
       setSaving(false)
@@ -622,7 +798,8 @@ export default function Onboarding() {
     <div style={bg}>
       <div style={card}>
         <style>{`@keyframes onboarding-inline-spin{to{transform:rotate(360deg)}}
-          #onboarding-info-form input:focus,#onboarding-info-form textarea:focus,#onboarding-info-form button:focus-visible,#onboarding-type-form button:focus-visible{outline:3px solid rgba(255,106,0,0.28);outline-offset:2px;border-color:#FF6A00!important}
+          @keyframes onboarding-inline-pulse{0%,100%{opacity:.55}50%{opacity:1}}
+          #onboarding-info-form input:focus,#onboarding-info-form textarea:focus,#onboarding-info-form button:focus-visible,#onboarding-type-form button:focus-visible,#onboarding-categories button:focus-visible,#onboarding-category-modal input:focus{outline:3px solid rgba(255,106,0,0.28);outline-offset:2px;border-color:#FF6A00!important}
         `}</style>
         <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'6px' }}>
           <img src="/simsim-s.svg" alt="" style={{ height:'28px', width:'auto', display:'block' }} />
@@ -735,71 +912,83 @@ export default function Onboarding() {
           </form>
         )}
 
-        {/* اختيار الأقسام — نمط النموذج: قوالب تُضاف لقائمة كروت */}
+        {/* الأقسام: الصفوف المعروضة أدناه تأتي من public.categories للفرع الرئيسي فقط. */}
         {stage === 'categories' && (
-          <>
-            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>أقسام منيوك 📋</h2>
-            <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'16px' }}>أضف الأقسام الرئيسية لمنيوك. يمكنك تعديلها لاحقاً في أي وقت.</p>
-
-            {/* قوالب جاهزة */}
-            <div style={{ fontSize:'13px', fontWeight:'800', color:'#374151', marginBottom:'10px' }}>⚡ قوالب جاهزة — انقر للإضافة</div>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:'8px', marginBottom:'18px' }}>
-              {template.map(t => {
-                const added = isAdded(t.key)
-                return (
-                  <button key={t.key} onClick={() => addTemplateCat(t)} disabled={added} style={{
-                    display:'inline-flex', alignItems:'center', gap:'6px', padding:'9px 14px', borderRadius:'100px',
-                    border:`1.5px solid ${added ? '#E5E7EB' : '#FFD9C7'}`, background: added ? '#F3F4F6' : 'white',
-                    color: added ? '#9CA3AF' : '#374151', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'13px',
-                    cursor: added ? 'default' : 'pointer', opacity: added ? 0.7 : 1,
-                  }}>
-                    <span>{t.emoji}</span>{t.name}{added ? ' ✓' : ' +'}
-                  </button>
-                )
-              })}
+          <section id="onboarding-categories" aria-busy={categoriesLoading || saving}>
+            <div style={{ display:'flex', alignItems:'flex-start', gap:'11px', marginBottom:'18px' }}>
+              <div aria-hidden="true" style={{ width:'38px', height:'38px', flexShrink:0, display:'grid', placeItems:'center', borderRadius:'12px', background:'#FFF0E8', color:'#FF6A00', fontSize:'19px', fontWeight:'900' }}>≡</div>
+              <div>
+                <h2 style={{ fontSize:'23px', fontWeight:'900', margin:'0 0 4px', fontFamily:'Tajawal,sans-serif', color:'#111827' }}>أقسام منيوك</h2>
+                <p style={{ fontSize:'13px', color:'#6B7280', lineHeight:'1.65', margin:0 }}>ابدأ بالأقسام المناسبة لنشاطك، ويمكنك تعديلها لاحقًا.</p>
+              </div>
             </div>
 
-            {/* القائمة المختارة (كروت قابلة للترتيب والحذف) */}
-            <div style={{ display:'flex', flexDirection:'column', gap:'9px', marginBottom:'12px' }}>
-              {cats.map((c, i) => (
-                <div key={c.key}
-                  draggable
-                  onDragStart={() => { dragFrom.current = i }}
-                  onDragOver={e => e.preventDefault()}
-                  onDrop={() => onDrop(i)}
-                  style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', borderRadius:'14px', border:'1.5px solid #E5E7EB', background:'#F8F9FB' }}>
-                  <div style={{ display:'flex', flexDirection:'column', color:'#C4C7CE', cursor:'grab', lineHeight:'0.6', fontSize:'15px' }}>⋮⋮</div>
-                  <div style={{ width:'40px', height:'40px', borderRadius:'11px', background:'white', border:'1px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', flexShrink:0 }}>{c.emoji}</div>
-                  <div style={{ flex:1, fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px' }}>{c.name}</div>
-                  {/* أسهم ترتيب (بديل موثوق للسحب على الجوال) */}
-                  <button onClick={() => move(i, -1)} disabled={i===0} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'15px', color: i===0?'#E5E7EB':'#9CA3AF', padding:'2px' }}>▲</button>
-                  <button onClick={() => move(i, 1)} disabled={i===cats.length-1} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'15px', color: i===cats.length-1?'#E5E7EB':'#9CA3AF', padding:'2px' }}>▼</button>
-                  <button onClick={() => removeCat(i)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'18px', color:'#EF4444', padding:'2px 4px' }}>✕</button>
-                </div>
-              ))}
+            <div style={{ padding:'14px', border:'1px solid #F0E7E1', borderRadius:'16px', background:'#FFFDFC', marginBottom:'18px' }}>
+              <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', color:'#374151', marginBottom:'3px' }}>ابدأ بسرعة — قوالب جاهزة</div>
+              <p style={{ fontSize:'12px', lineHeight:'1.6', color:'#6B7280', margin:'0 0 11px' }}>اختر الأقسام المناسبة لنشاطك، ويمكنك تعديلها لاحقًا.</p>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:'8px' }}>
+                {template.map(item => {
+                  const added = isTemplateAdded(item)
+                  return (
+                    <button key={item.key} type="button" onClick={() => void addTemplateCat(item)} disabled={added || saving || categoriesLoading} aria-label={added ? `تمت إضافة ${item.name}` : `إضافة ${item.name}`} style={{ display:'inline-flex', alignItems:'center', gap:'6px', minHeight:'38px', padding:'8px 11px', borderRadius:'100px', border:`1.5px solid ${added ? '#D1E7D4' : '#FFD9C7'}`, background:added ? '#F0FDF4' : 'white', color:added ? '#15803D' : '#8A3900', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', cursor:added || saving || categoriesLoading ? 'default' : 'pointer', opacity:saving || categoriesLoading ? 0.65 : 1 }}>
+                      <span aria-hidden="true" style={{ fontSize:'15px' }}>{item.emoji}</span>
+                      {added ? `تمت إضافة ${item.name}` : `${item.name} +`}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
-            {/* إضافة قسم جديد */}
-            {showCustom ? (
-              <div style={{ display:'flex', gap:'8px', marginBottom:'12px' }}>
-                <input autoFocus style={inputStyle} placeholder="اسم القسم الجديد..." value={customInput}
-                  onChange={e => setCustomInput(e.target.value)} onKeyDown={e => { if (e.key==='Enter') addCustomCat() }} />
-                <button onClick={addCustomCat} style={{ ...primaryBtn, flex:'none', padding:'0 18px' }}>إضافة</button>
+            <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:'10px', marginBottom:'10px' }}>
+              <h3 style={{ margin:0, fontFamily:'Tajawal,sans-serif', fontSize:'16px', fontWeight:'900', color:'#111827' }}>أقسام منيوك — {cats.length} {cats.length === 1 ? 'قسم' : 'أقسام'}</h3>
+              {!categoriesLoading && <span style={{ fontSize:'11px', color:'#9CA3AF' }}>يُحفظ تلقائيًا</span>}
+            </div>
+
+            {categoriesLoading ? (
+              <div aria-label="جاري تحميل الأقسام" style={{ display:'flex', flexDirection:'column', gap:'9px', marginBottom:'12px' }}>
+                {[0, 1, 2].map(index => <div key={index} style={{ height:'64px', borderRadius:'14px', border:'1px solid #EEF0F3', background:'linear-gradient(90deg,#F7F8FA,#FFFFFF,#F7F8FA)', animation:'onboarding-inline-pulse 1.1s ease-in-out infinite' }} />)}
+              </div>
+            ) : categoriesError ? (
+              <div role="alert" style={{ marginBottom:'12px', padding:'12px', borderRadius:'14px', border:'1px solid #FECACA', background:'#FEF2F2', color:'#B91C1C', fontSize:'13px', lineHeight:'1.65' }}>
+                <strong style={{ display:'block', marginBottom:'6px' }}>{categoriesError}</strong>
+                <button type="button" onClick={() => void loadOnboardingCategories()} style={{ background:'transparent', border:'none', padding:0, color:'#B91C1C', fontFamily:'Tajawal,sans-serif', fontWeight:'900', textDecoration:'underline', cursor:'pointer' }}>إعادة المحاولة</button>
+              </div>
+            ) : cats.length === 0 ? (
+              <div style={{ marginBottom:'12px', padding:'20px 16px', borderRadius:'16px', border:'1.5px dashed #D7DCE3', background:'#FAFBFC', textAlign:'center' }}>
+                <div aria-hidden="true" style={{ margin:'0 auto 8px', width:'38px', height:'38px', display:'grid', placeItems:'center', borderRadius:'12px', background:'white', color:'#9CA3AF', fontWeight:'900' }}>+</div>
+                <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', color:'#374151', marginBottom:'4px' }}>لسه ما أضفت أقسام</div>
+                <p style={{ fontSize:'12px', color:'#6B7280', lineHeight:'1.6', margin:'0 0 10px' }}>اختر قالبًا سريعًا أو أنشئ قسمك الأول.</p>
+                <button type="button" onClick={openCategoryModal} style={{ ...ghostBtn, padding:'10px 14px', fontSize:'13px' }}>+ إضافة قسم جديد</button>
               </div>
             ) : (
-              <button onClick={() => setShowCustom(true)} style={{ width:'100%', padding:'13px', borderRadius:'13px', border:'2px dashed #D1D5DB', background:'white', color:'#6B7280', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer', marginBottom:'12px' }}>
-                ＋ إضافة قسم جديد
-              </button>
+              <div style={{ display:'flex', flexDirection:'column', gap:'9px', marginBottom:'12px' }}>
+                {cats.map((category, index) => (
+                  <div key={category.id} draggable={!isMobile && !saving} onDragStart={() => { dragFrom.current = index }} onDragOver={event => event.preventDefault()} onDrop={() => onDrop(index)} style={{ display:'flex', alignItems:'center', gap:'10px', minHeight:'64px', padding:'10px 11px', borderRadius:'14px', border:'1.5px solid #E5E7EB', background:'white', boxShadow:'0 2px 8px rgba(15,23,42,0.035)', opacity:saving ? 0.72 : 1 }}>
+                    <span aria-hidden="true" style={{ width:'22px', color:'#B8BEC8', cursor:isMobile ? 'default' : 'grab', fontSize:'17px', letterSpacing:'-2px' }}>⠿</span>
+                    <span aria-hidden="true" style={{ width:'39px', height:'39px', display:'grid', placeItems:'center', flexShrink:0, borderRadius:'11px', background:'#FFF7F2', color:'#FF6A00', fontSize:'19px' }}>{category.emoji || '🍽️'}</span>
+                    <span style={{ flex:1, minWidth:0, fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', color:'#1F2937', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{category.name}</span>
+                    <div style={{ display:'flex', alignItems:'center', gap:'2px' }}>
+                      <button type="button" onClick={() => moveCategory(index, -1)} disabled={index === 0 || saving} aria-label={`تحريك ${category.name} للأعلى`} title="تحريك للأعلى" style={{ width:'34px', height:'34px', border:'none', borderRadius:'9px', background:'transparent', color:index === 0 ? '#D1D5DB' : '#6B7280', cursor:index === 0 || saving ? 'default' : 'pointer' }}>↑</button>
+                      <button type="button" onClick={() => moveCategory(index, 1)} disabled={index === cats.length - 1 || saving} aria-label={`تحريك ${category.name} للأسفل`} title="تحريك للأسفل" style={{ width:'34px', height:'34px', border:'none', borderRadius:'9px', background:'transparent', color:index === cats.length - 1 ? '#D1D5DB' : '#6B7280', cursor:index === cats.length - 1 || saving ? 'default' : 'pointer' }}>↓</button>
+                      <button type="button" onClick={() => setCategoryDeleteTarget(category)} disabled={saving} aria-label={`حذف ${category.name}`} title="حذف القسم" style={{ width:'34px', height:'34px', border:'none', borderRadius:'9px', background:'transparent', color:'#DC2626', cursor:saving ? 'default' : 'pointer' }}>×</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
 
-            <div style={{ fontSize:'12px', color:'#9CA3AF', marginBottom:'18px', lineHeight:'1.7' }}>💡 أضف من 3 إلى 8 أقسام للبداية. رتّبها بالأسهم أو بالسحب.</div>
+            <button type="button" onClick={openCategoryModal} disabled={saving || categoriesLoading} style={{ width:'100%', minHeight:'46px', marginBottom:'16px', borderRadius:'13px', border:'1.5px dashed #C9D0D9', background:'white', color:'#4B5563', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px', cursor:saving || categoriesLoading ? 'default' : 'pointer', opacity:saving || categoriesLoading ? 0.65 : 1 }}>+ إضافة قسم جديد</button>
 
-            <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={returnToBusinessType} style={ghostBtn}>→ رجوع</button>
-              <button onClick={goToItems} style={primaryBtn}>التالي: الأصناف ←</button>
+            <div style={{ fontSize:'12px', color:'#9CA3AF', marginBottom:'18px', lineHeight:'1.7' }}>رتّب الأقسام بالسحب على الكمبيوتر أو بأسهم التحريك على الجوال. يُحفظ الترتيب مباشرة.</div>
+
+            <div style={{ position:'sticky', bottom:isMobile ? '-20px' : '-34px', padding:'12px 0 3px', background:'linear-gradient(180deg,rgba(255,255,255,0),#FFFFFF 22%)', zIndex:2 }}>
+              <div style={{ display:'flex', gap:'10px' }}>
+                <button type="button" onClick={returnToBusinessType} disabled={saving} style={{ ...ghostBtn, opacity:saving ? 0.6 : 1 }}>→ رجوع</button>
+                <button type="button" onClick={goToItems} disabled={cats.length === 0 || saving || categoriesLoading} style={{ ...primaryBtn, opacity:cats.length === 0 || saving || categoriesLoading ? 0.55 : 1, cursor:cats.length === 0 || saving || categoriesLoading ? 'not-allowed' : 'pointer' }}>التالي: الأصناف ←</button>
+              </div>
+              <button type="button" onClick={skipMenu} disabled={saving} style={{ ...skipLink, opacity:saving ? 0.55 : 1 }}>راجع جاهزية المنيو أولاً</button>
             </div>
-            <button onClick={skipMenu} style={skipLink}>راجع جاهزية المنيو أولاً</button>
-          </>
+          </section>
         )}
 
         {/* اختيار الأصناف */}
@@ -809,20 +998,20 @@ export default function Onboarding() {
             <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'16px' }}>الأصناف والأسعار مقترحة — عدّلها لاحقاً من صفحة الأصناف.</p>
 
             <div style={{ maxHeight: isMobile ? '46vh' : '50vh', overflowY:'auto', marginBottom:'16px', paddingLeft:'4px' }}>
-              {cats.filter(c => (c.items || []).length > 0).map(c => (
-                <div key={c.key} style={{ marginBottom:'16px' }}>
-                  <div style={{ fontSize:'13px', fontWeight:'800', marginBottom:'8px', color:'#374151' }}>{c.emoji} {c.name}</div>
+              {cats.filter(category => categoryItems(category).length > 0).map(category => (
+                <div key={category.id} style={{ marginBottom:'16px' }}>
+                  <div style={{ fontSize:'13px', fontWeight:'800', marginBottom:'8px', color:'#374151' }}>{category.emoji} {category.name}</div>
                   <div style={{ display:'flex', flexDirection:'column', gap:'7px' }}>
-                    {c.items.map(it => {
-                      const key = `${c.key}::${it.name}`
+                    {categoryItems(category).map(item => {
+                      const key = categoryItemKey(category, item)
                       const on = selectedItems.has(key)
                       return (
-                        <div key={key} onClick={() => toggleItem(key)} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', borderRadius:'12px', border:`1.5px solid ${on ? '#FF6A00' : '#E5E7EB'}`, background: on ? 'rgba(255,106,0,0.06)' : 'white', cursor:'pointer' }}>
-                          <span style={{ width:'20px', height:'20px', borderRadius:'6px', border:`1.5px solid ${on ? '#FF6A00' : '#D1D5DB'}`, background: on ? '#FF6A00' : 'white', color:'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', flexShrink:0 }}>{on ? '✓' : ''}</span>
-                          <span style={{ fontSize:'18px' }}>{it.emoji}</span>
-                          <span style={{ flex:1, fontSize:'13px', fontWeight:'700' }}>{it.name}</span>
-                          <span style={{ fontSize:'13px', fontWeight:'800', color:'#6B7280', direction:'ltr' }}>{it.price} ﷼</span>
-                        </div>
+                        <button type="button" key={key} onClick={() => toggleItem(key)} aria-pressed={on} style={{ width:'100%', display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', borderRadius:'12px', border:`1.5px solid ${on ? '#FF6A00' : '#E5E7EB'}`, background: on ? 'rgba(255,106,0,0.06)' : 'white', cursor:'pointer', textAlign:'right' }}>
+                          <span aria-hidden="true" style={{ width:'20px', height:'20px', borderRadius:'6px', border:`1.5px solid ${on ? '#FF6A00' : '#D1D5DB'}`, background: on ? '#FF6A00' : 'white', color:'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'12px', flexShrink:0 }}>{on ? '✓' : ''}</span>
+                          <span style={{ fontSize:'18px' }}>{item.emoji}</span>
+                          <span style={{ flex:1, fontSize:'13px', fontWeight:'700' }}>{item.name}</span>
+                          <span style={{ fontSize:'13px', fontWeight:'800', color:'#6B7280', direction:'ltr' }}>{item.price} ﷼</span>
+                        </button>
                       )
                     })}
                   </div>
@@ -913,6 +1102,47 @@ export default function Onboarding() {
           </div>
         )}
       </div>
+
+      {categoryModalOpen && (
+        <div style={{ position:'fixed', inset:0, zIndex:180, display:'flex', alignItems:isMobile ? 'flex-end' : 'center', justifyContent:'center', padding:isMobile ? 0 : '20px', direction:'rtl' }}>
+          <div onClick={() => !saving && setCategoryModalOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(11,11,15,0.56)' }} />
+          <form id="onboarding-category-modal" onSubmit={event => { event.preventDefault(); void addCustomCat() }} noValidate aria-busy={saving} style={{ position:'relative', width:'100%', maxWidth:isMobile ? '100%' : '420px', padding:isMobile ? '22px 20px calc(22px + env(safe-area-inset-bottom))' : '24px', borderRadius:isMobile ? '24px 24px 0 0' : '22px', background:'white', boxShadow:'0 -18px 60px rgba(0,0,0,0.25)' }}>
+            <div style={{ width:'42px', height:'4px', margin:'0 auto 16px', borderRadius:'100px', background:'#E5E7EB' }} aria-hidden="true" />
+            <h3 style={{ margin:'0 0 5px', fontFamily:'Tajawal,sans-serif', fontSize:'19px', fontWeight:'900', color:'#111827' }}>إضافة قسم جديد</h3>
+            <p style={{ margin:'0 0 16px', fontSize:'13px', color:'#6B7280', lineHeight:'1.65' }}>أضف قسمًا يظهر فور حفظه في منيو مطعمك.</p>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 82px', gap:'9px', alignItems:'end' }}>
+              <div>
+                <label htmlFor="onboarding-category-name" style={labelStyle}>اسم القسم</label>
+                <input id="onboarding-category-name" autoFocus value={categoryName} onChange={event => { setCategoryName(event.target.value); setCategoryFormError('') }} placeholder="مثال: برجر" maxLength={60} style={{ ...inputStyle, background:'white' }} aria-describedby={categoryFormError ? 'onboarding-category-form-error' : undefined} />
+              </div>
+              <div>
+                <label htmlFor="onboarding-category-icon" style={labelStyle}>الأيقونة</label>
+                <input id="onboarding-category-icon" value={categoryEmoji} onChange={event => setCategoryEmoji(event.target.value)} maxLength={8} style={{ ...inputStyle, textAlign:'center', background:'white' }} aria-label="أيقونة القسم اختيارية" />
+              </div>
+            </div>
+            {categoryFormError && <div id="onboarding-category-form-error" role="alert" aria-live="assertive" style={{ marginTop:'10px', padding:'10px 12px', borderRadius:'12px', background:'#FEF2F2', border:'1px solid #FECACA', color:'#B91C1C', fontSize:'13px', fontWeight:'700', lineHeight:'1.6' }}>{categoryFormError}</div>}
+            <div style={{ display:'flex', gap:'10px', marginTop:'18px' }}>
+              <button type="button" onClick={() => setCategoryModalOpen(false)} disabled={saving} style={{ ...ghostBtn, flex:1, opacity:saving ? 0.6 : 1 }}>إلغاء</button>
+              <button type="submit" disabled={saving} style={{ ...primaryBtn, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'8px', opacity:saving ? 0.72 : 1 }}>
+                {saving && <span aria-hidden="true" style={{ width:'14px', height:'14px', border:'2px solid rgba(255,255,255,0.45)', borderTopColor:'white', borderRadius:'50%', animation:'onboarding-inline-spin .75s linear infinite' }} />}
+                {saving ? 'جاري الإضافة...' : 'إضافة القسم'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={Boolean(categoryDeleteTarget)}
+        title="حذف القسم؟"
+        body="سيتم حذف القسم من المنيو. يمكنك إضافة قسم جديد لاحقًا."
+        confirmLabel={saving ? 'جاري الحذف...' : 'حذف'}
+        cancelLabel="إلغاء"
+        danger
+        loading={saving}
+        onConfirm={() => void deleteCategory()}
+        onCancel={() => !saving && setCategoryDeleteTarget(null)}
+      />
     </div>
   )
 }

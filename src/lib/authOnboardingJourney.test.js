@@ -36,7 +36,8 @@ describe('auth and onboarding journey contract', () => {
     expect(onboarding).toContain('إعادة المحاولة')
     expect(onboarding).toContain('createRestaurantInFlight.current')
     expect(onboarding).toContain('createMenuInFlight.current')
-    expect(onboarding).toContain("from('categories').select('id').eq('branch_id', branch.id).limit(1)")
+    expect(onboarding).toContain("const { data: storedCategories, error: categoriesError } = await supabase")
+    expect(onboarding).toContain("if (!storedCategories?.length) throw new Error('categories_not_persisted')")
     expect(onboarding).not.toContain('window.location.reload')
   })
 
@@ -86,8 +87,35 @@ describe('auth and onboarding journey contract', () => {
     expect(onboarding).toContain('if (!selectedType)')
     expect(onboarding).toContain('const isSaved = persistedType === selectedType || await persistBusinessType(selectedType)')
     expect(onboarding).toContain('if (!isSaved) return')
-    expect(onboarding).toContain("setCats(getTemplate(selectedType).slice(0, 5).map(c => ({ ...c })))")
     expect(onboarding).toContain("goStage('categories')")
+    expect(onboarding).toContain("await loadOnboardingCategories(rest)")
+    expect(onboarding).not.toContain("setCats(getTemplate(selectedType).slice(0, 5).map(c => ({ ...c })))")
+  })
+
+  it('يدير أقسام Onboarding الحقيقية عبر الفرع الرئيسي ويستعيدها عند الاستئناف', () => {
+    expect(onboarding).toContain('const loadOnboardingCategories = async')
+    expect(onboarding).toContain('const branch = await ensurePrimaryBranch(restaurantRecord.id)')
+    expect(onboarding).toContain(".from('categories')")
+    expect(onboarding).toContain(".eq('branch_id', branch.id)")
+    expect(onboarding).toContain("if (resumed === 'categories') await loadOnboardingCategories(r)")
+    expect(onboarding).toContain('const [categoryBranch, setCategoryBranch] = useState(null)')
+  })
+
+  it('يحفظ إضافة القسم ويحمي التكرار والحذف والترتيب في قاعدة البيانات', () => {
+    expect(onboarding).toContain('const categoryActionInFlight = useRef(false)')
+    expect(onboarding).toContain(".eq('name', normalizedName)")
+    expect(onboarding).toContain('sort_order: nextSortOrder')
+    expect(onboarding).toContain(".insert({\n          restaurant_id: rest.id,")
+    expect(onboarding).toContain("const { error } = await supabase.from('categories').delete().eq('id', target.id)")
+    expect(onboarding).toContain("reordered.map((category, index) => supabase.from('categories').update({ sort_order: index }).eq('id', category.id))")
+    expect(onboarding).toContain('<ConfirmDialog')
+  })
+
+  it('ينشئ الأصناف على الأقسام المحفوظة فقط ولا يعيد إدراج الأقسام عند إتمام المنيو', () => {
+    expect(onboarding).toContain('category_id: category.id')
+    expect(onboarding).toContain("const { data: existingProducts, error: existingProductsError } = await supabase")
+    expect(onboarding).toContain(".from('products')")
+    expect(onboarding).not.toContain('const catRows = cats.map')
   })
 
   it('يعرض مصدر تقدم واحدًا واختيار نوع قابلًا للوصول بلا رموز Emoji للخيارات', () => {
