@@ -98,6 +98,7 @@ export default function Onboarding() {
   const [stage, setStage] = useState('loading') // loading | error | welcome | create | info | type | categories | items | minimum | preview | share | done
   const [rest, setRest] = useState(restaurant || null)
   const [saving, setSaving] = useState(false)
+  const [infoSaveError, setInfoSaveError] = useState('')
   const [loadError, setLoadError] = useState('')
   const [loadAttempt, setLoadAttempt] = useState(0)
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768)
@@ -115,6 +116,7 @@ export default function Onboarding() {
   const qrRef = useRef(null)
   const createRestaurantInFlight = useRef(false)
   const createMenuInFlight = useRef(false)
+  const infoSaveInFlight = useRef(false)
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768)
@@ -261,21 +263,52 @@ export default function Onboarding() {
 
   // ===== معلومات المطعم (اختيارية — قابلة للتخطّي) =====
   const saveInfo = async (skip = false) => {
-    if (!skip) {
-      setSaving(true)
-      try {
-        await supabase.from('restaurants').update({
+    if (saving || infoSaveInFlight.current) return
+
+    // التخطي متعمد: لا يكتب الحقول الاختيارية في قاعدة البيانات.
+    if (skip) {
+      if (rest?.id) trackOwnerEvent('restaurant_info_completed', { restaurantId: rest.id, props: { skipped: true } })
+      goStage('type')
+      return
+    }
+
+    if (!rest?.id || !user?.id) {
+      const message = 'تعذر تجهيز معلومات المطعم للحفظ. حاول مرة أخرى.'
+      setInfoSaveError(message)
+      toast.error(message)
+      return
+    }
+
+    infoSaveInFlight.current = true
+    setSaving(true)
+    setInfoSaveError('')
+    try {
+      const { error } = await supabase
+        .from('restaurants')
+        .update({
           description: info.description.trim() || null,
           phone: info.phone.trim() || null,
           address: info.address.trim() || null,
-        }).eq('id', rest.id)
-        setRest(r => ({ ...r, ...info }))
-        await fetchRestaurant(user.id)
-        trackOwnerEvent('restaurant_info_completed', { restaurantId: rest.id, props: { skipped: false } })
-      } catch (err) { toast.error('تعذّر حفظ المعلومات') } finally { setSaving(false) }
+        })
+        .eq('id', rest.id)
+      if (error) throw error
+
+      // لا ننتقل قبل أن ينجح تحديث سياق المطعم المركزي بالفعل.
+      const refreshedRestaurant = await fetchRestaurant(user.id)
+      if (!refreshedRestaurant?.id) throw new Error('restaurant_refresh_failed')
+
+      setRest(refreshedRestaurant)
+      trackOwnerEvent('restaurant_info_completed', { restaurantId: refreshedRestaurant.id, props: { skipped: false } })
+      goStage('type')
+    } catch (error) {
+      console.error('Restaurant info persistence error:', error)
+      const message = 'تعذر حفظ معلومات المطعم. حاول مرة أخرى.'
+      setInfoSaveError(message)
+      toast.error(message)
+    } finally {
+      infoSaveInFlight.current = false
+      setSaving(false)
     }
-    if (skip && rest?.id) trackOwnerEvent('restaurant_info_completed', { restaurantId: rest.id, props: { skipped: true } })
-    goStage('type')
   }
 
   // ===== اختيار النوع =====
@@ -460,25 +493,29 @@ export default function Onboarding() {
 
   // ===== أنماط =====
   const bg = { minHeight:'100vh', background:'linear-gradient(135deg,#0B0B0F,#1a1a2e)', display:'flex', alignItems:'flex-start', justifyContent:'center', padding: isMobile ? '18px 12px' : '40px', direction:'rtl' }
-  const card = { width:'100%', maxWidth:'560px', background:'white', borderRadius:'20px', padding: isMobile ? '20px' : '30px', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }
+  const card = { width:'100%', maxWidth:'640px', background:'white', borderRadius:'22px', padding: isMobile ? '20px' : '34px', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }
   const primaryBtn = { flex:1, padding:'14px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'15px', cursor:'pointer' }
   const ghostBtn = { padding:'14px 18px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer', color:'#374151' }
   const inputStyle = { width:'100%', padding:'12px 14px', border:'1.5px solid #E5E7EB', borderRadius:'11px', fontFamily:'Tajawal,sans-serif', fontSize:'14px', outline:'none', textAlign:'right', boxSizing:'border-box' }
   const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }
   const skipLink = { width:'100%', marginTop:'10px', background:'none', border:'none', color:'#9CA3AF', fontFamily:'Tajawal,sans-serif', fontSize:'13px', cursor:'pointer' }
 
-  // يعرض المؤشر أساسيات المشاركة فقط؛ لا تدخل التحسينات الاختيارية في حالة الجاهزية.
+  // يعرض المؤشر خطوة الرحلة الحالية والجاهزية الفعلية؛ لا تدخل التحسينات الاختيارية في حالة الجاهزية.
   const stepIndex = STEPS.findIndex(s => s.key === stage)
   const Progress = () => stepIndex < 0 ? null : (
-    <div style={{ margin:'12px 0 18px' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', gap:'10px', fontSize:'11px', color:'#9CA3AF', marginBottom:'7px' }}>
-        <span style={{ fontWeight:'800', color: readiness?.minimumReady ? '#15803D' : '#FF6A00' }}>
+    <div style={{ margin:'14px 0 20px', padding:'12px 13px', border:'1px solid #F0E7E1', borderRadius:'14px', background:'#FFFDFC' }} aria-label={`الخطوة ${stepIndex + 1} من ${STEPS.length}: ${STEPS[stepIndex].label}`}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', gap:'10px', marginBottom:'7px', fontFamily:'Tajawal,sans-serif' }}>
+        <span style={{ fontSize:'13px', fontWeight:'900', color:'#111827' }}>الخطوة {stepIndex + 1} من {STEPS.length}</span>
+        <span style={{ fontSize:'12px', fontWeight:'800', color:'#FF6A00' }}>{STEPS[stepIndex].label}</span>
+      </div>
+      <div style={{ height:'7px', borderRadius:'100px', background:'#F0F2F5', overflow:'hidden' }} aria-hidden="true">
+        <div style={{ height:'100%', width:`${((stepIndex + 1) / STEPS.length) * 100}%`, background:'linear-gradient(90deg,#FF6A00,#E05D00)', borderRadius:'100%', transition:'width 0.3s' }}/>
+      </div>
+      <div style={{ display:'flex', justifyContent:'space-between', gap:'10px', fontSize:'11px', color:'#9CA3AF', marginTop:'8px' }}>
+        <span style={{ fontWeight:'800', color: readiness?.minimumReady ? '#15803D' : '#6B7280' }}>
           {readiness?.minimumReady ? 'منيوك جاهز للمشاركة' : 'نبني منيوك الجاهز للمشاركة'}
         </span>
         <span>{readiness ? `الأساسيات ${readiness.essentialsDone}/${readiness.essentialsTotal}` : 'الأساسيات'}</span>
-      </div>
-      <div style={{ height:'6px', borderRadius:'100px', background:'#F0F2F5', overflow:'hidden' }}>
-        <div style={{ height:'100%', width: readiness ? `${(readiness.essentialsDone / readiness.essentialsTotal) * 100}%` : '0%', background:readiness?.minimumReady ? 'linear-gradient(90deg,#16A34A,#22C55E)' : 'linear-gradient(90deg,#FF6A00,#E05D00)', borderRadius:'100px', transition:'width 0.3s' }}/>
       </div>
     </div>
   )
@@ -509,6 +546,9 @@ export default function Onboarding() {
   return (
     <div style={bg}>
       <div style={card}>
+        <style>{`@keyframes onboarding-inline-spin{to{transform:rotate(360deg)}}
+          #onboarding-info-form input:focus,#onboarding-info-form textarea:focus,#onboarding-info-form button:focus-visible{outline:3px solid rgba(255,106,0,0.28);outline-offset:2px;border-color:#FF6A00!important}
+        `}</style>
         <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'6px' }}>
           <img src="/simsim-s.svg" alt="" style={{ height:'28px', width:'auto', display:'block' }} />
           <span style={{ fontFamily:'Poppins,sans-serif', fontWeight:'700', fontSize:'18px' }}>sim<span style={{ color:'#FF6A00' }}>sim</span></span>
@@ -543,29 +583,41 @@ export default function Onboarding() {
 
         {/* معلومات المطعم (اختيارية) */}
         {stage === 'info' && (
-          <>
-            <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>عرّف بمطعمك ✨</h2>
-            <p style={{ fontSize:'13px', color:'#6B7280', marginBottom:'18px' }}>معلومات تظهر للزبون في منيوك. كلها اختيارية — تقدر تكمّلها لاحقاً.</p>
-
-            <div style={{ marginBottom:'14px' }}>
-              <label style={labelStyle}>نبذة قصيرة <span style={{ color:'#9CA3AF', fontWeight:'400' }}>(اختياري)</span></label>
-              <textarea style={{ ...inputStyle, minHeight:'70px', resize:'vertical' }} placeholder="ألذ المأكولات الطازجة يومياً..." value={info.description} onChange={e => setInfo(f => ({ ...f, description:e.target.value }))} />
-            </div>
-            <div style={{ marginBottom:'14px' }}>
-              <label style={labelStyle}>رقم التواصل <span style={{ color:'#9CA3AF', fontWeight:'400' }}>(اختياري)</span></label>
-              <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} type="tel" placeholder="05xxxxxxxx" value={info.phone} onChange={e => setInfo(f => ({ ...f, phone:e.target.value }))} />
-            </div>
-            <div style={{ marginBottom:'18px' }}>
-              <label style={labelStyle}>العنوان <span style={{ color:'#9CA3AF', fontWeight:'400' }}>(اختياري)</span></label>
-              <input style={inputStyle} placeholder="الرياض — حي..." value={info.address} onChange={e => setInfo(f => ({ ...f, address:e.target.value }))} />
+          <form id="onboarding-info-form" onSubmit={event => { event.preventDefault(); void saveInfo(false) }} noValidate aria-busy={saving}>
+            <div style={{ display:'flex', alignItems:'flex-start', gap:'11px', marginBottom:'16px' }}>
+              <div aria-hidden="true" style={{ width:'38px', height:'38px', flexShrink:0, display:'grid', placeItems:'center', borderRadius:'12px', background:'#FFF0E8', color:'#FF6A00', fontSize:'18px' }}>✦</div>
+              <div>
+                <h2 style={{ fontSize:'23px', fontWeight:'900', margin:'0 0 4px', fontFamily:'Tajawal,sans-serif', color:'#111827' }}>عرّف بمطعمك ✨</h2>
+                <p style={{ fontSize:'13px', color:'#6B7280', lineHeight:'1.65', margin:0 }}>أضف معلومات بسيطة تظهر لعملائك في منيو مطعمك.</p>
+              </div>
             </div>
 
-            <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={() => goStage('welcome')} style={ghostBtn}>→ رجوع</button>
-              <button onClick={() => saveInfo(false)} disabled={saving} style={{ ...primaryBtn, opacity: saving?0.7:1 }}>{saving ? 'جارٍ الحفظ...' : 'التالي ←'}</button>
+            <div style={{ padding:'15px', border:'1px solid #EDEFF3', borderRadius:'16px', background:'#FCFDFE' }}>
+              <div style={{ marginBottom:'15px' }}>
+                <label htmlFor="onboarding-description" style={labelStyle}>نبذة قصيرة <span style={{ color:'#9CA3AF', fontWeight:'500' }}>اختياري</span></label>
+                <textarea id="onboarding-description" aria-describedby={infoSaveError ? 'onboarding-info-error' : undefined} style={{ ...inputStyle, minHeight:'88px', resize:'vertical', background:'white' }} placeholder="مثال: نقدم أشهى الوجبات والمشروبات الطازجة يوميًا 🍽️" value={info.description} onChange={e => setInfo(f => ({ ...f, description:e.target.value }))} />
+              </div>
+              <div style={{ marginBottom:'15px' }}>
+                <label htmlFor="onboarding-phone" style={labelStyle}>رقم التواصل <span style={{ color:'#9CA3AF', fontWeight:'500' }}>اختياري</span></label>
+                <input id="onboarding-phone" aria-describedby={infoSaveError ? 'onboarding-info-error' : undefined} style={{ ...inputStyle, direction:'ltr', textAlign:'left', background:'white' }} type="tel" inputMode="tel" autoComplete="tel" placeholder="مثال: 05xxxxxxxx" value={info.phone} onChange={e => setInfo(f => ({ ...f, phone:e.target.value }))} />
+              </div>
+              <div>
+                <label htmlFor="onboarding-address" style={labelStyle}>عنوان المطعم <span style={{ color:'#9CA3AF', fontWeight:'500' }}>اختياري</span></label>
+                <input id="onboarding-address" aria-describedby={infoSaveError ? 'onboarding-info-error' : undefined} style={{ ...inputStyle, background:'white' }} autoComplete="street-address" placeholder="مثال: الرياض – حي الملقا" value={info.address} onChange={e => setInfo(f => ({ ...f, address:e.target.value }))} />
+              </div>
             </div>
-            <button onClick={() => saveInfo(true)} style={skipLink}>تخطّي الآن</button>
-          </>
+
+            {infoSaveError && <div id="onboarding-info-error" role="alert" aria-live="assertive" style={{ marginTop:'12px', padding:'10px 12px', borderRadius:'12px', background:'#FEF2F2', border:'1px solid #FECACA', color:'#B91C1C', fontSize:'13px', fontWeight:'700', lineHeight:'1.6' }}>{infoSaveError}</div>}
+
+            <div style={{ display:'flex', gap:'10px', marginTop:'16px' }}>
+              <button type="button" onClick={() => goStage('welcome')} disabled={saving} style={{ ...ghostBtn, opacity: saving ? 0.6 : 1 }}>→ رجوع</button>
+              <button type="submit" disabled={saving} style={{ ...primaryBtn, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'8px', opacity: saving ? 0.72 : 1 }}>
+                {saving && <span aria-hidden="true" style={{ width:'14px', height:'14px', border:'2px solid rgba(255,255,255,0.45)', borderTopColor:'white', borderRadius:'50%', animation:'onboarding-inline-spin 0.75s linear infinite' }} />}
+                {saving ? 'جاري الحفظ...' : 'حفظ والمتابعة ←'}
+              </button>
+            </div>
+            <button type="button" onClick={() => saveInfo(true)} disabled={saving} style={{ ...skipLink, opacity: saving ? 0.55 : 1 }}>تخطّى الآن</button>
+          </form>
         )}
 
         {/* اختيار النوع */}
