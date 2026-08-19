@@ -10,6 +10,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { calculateMenuReadiness } from '../lib/menuReadiness'
 import MenuReadinessCard from '../components/MenuReadinessCard'
 import { trackOwnerEvent, trackOwnerMilestone } from '../lib/analytics'
+import { isTimeoutError, withTimeout } from '../lib/asyncTimeout'
 
 // تحويل الاسم العربي إلى رابط لاتيني صالح
 const AR_MAP = {
@@ -119,6 +120,9 @@ export default function Onboarding() {
   const [infoSaveError, setInfoSaveError] = useState('')
   const [loadError, setLoadError] = useState('')
   const [loadAttempt, setLoadAttempt] = useState(0)
+  // AUTH_SESSION | RESTAURANT | CATEGORIES | ITEMS | READY | EMPTY | ERROR
+  // مراحل تشخيص مؤقتة تكشف الموضع الذي توقفت عنده التهيئة في بيئات الاختبار والإنتاج.
+  const [initializationPhase, setInitializationPhase] = useState('AUTH_SESSION')
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768)
   const [readiness, setReadiness] = useState(null)
 
@@ -164,16 +168,29 @@ export default function Onboarding() {
     const load = async () => {
       setStage('loading')
       setLoadError('')
+      setInitializationPhase('AUTH_SESSION')
+      console.info('[Onboarding init] AUTH_SESSION', { hasUser: Boolean(user), hasRestaurant: Boolean(restaurant) })
       try {
+        if (!user && !restaurant) throw new Error('onboarding_session_missing')
         let r = restaurant
         if (!r && user) {
-          const { data, error } = await supabase.from('restaurants').select('*').eq('owner_id', user.id).maybeSingle()
+          setInitializationPhase('RESTAURANT')
+          console.info('[Onboarding init] RESTAURANT', { userId: user.id })
+          const { data, error } = await withTimeout(
+            supabase.from('restaurants').select('*').eq('owner_id', user.id).maybeSingle(),
+            { operation: 'onboarding_restaurant' },
+          )
           if (error) throw error
           r = data || null
         }
         if (cancelled) return
         setRest(r)
-        if (!r) { setStage('create'); return }
+        if (!r) {
+          console.info('[Onboarding init] EMPTY', { reason: 'restaurant_missing' })
+          setInitializationPhase('EMPTY')
+          setStage('create')
+          return
+        }
         // من أكمل الإعداد لا تُعاد عليه الرحلة.
         if (r.onboarding_completed) { navigate('/dashboard', { replace:true }); return }
         setInfo({ description: r.description || '', phone: r.phone || '', address: r.address || '' })
@@ -183,14 +200,25 @@ export default function Onboarding() {
         setPersistedType(hasSavedTypeSelection ? r.type : null)
         setTypeSaveError('')
         const resumed = RESUME_MAP[r.onboarding_step] || 'welcome'
-        if (resumed === 'categories') await loadOnboardingCategories(r)
+        if (resumed === 'categories') {
+          setInitializationPhase('CATEGORIES')
+          console.info('[Onboarding init] CATEGORIES', { restaurantId: r.id })
+          await loadOnboardingCategories(r, { failFast: true })
+        }
         if (cancelled) return
         trackOwnerEvent('onboarding_started', { restaurantId: r.id, props: { resumed: Boolean(r.onboarding_step) } })
+        console.info('[Onboarding init] READY', { restaurantId: r.id, stage: resumed })
+        setInitializationPhase('READY')
         setStage(resumed)
       } catch (error) {
         console.error('Onboarding load error:', error)
         if (!cancelled) {
-          setLoadError('حدث خطأ أثناء تجهيز حسابك. تحقق من اتصالك ثم أعد المحاولة.')
+          console.error('[Onboarding init] ERROR', error)
+          const message = isTimeoutError(error)
+            ? 'استغرق تجهيز حسابك وقتًا أطول من المتوقع. تحقق من الاتصال ثم أعد المحاولة.'
+            : 'حدث خطأ أثناء تجهيز حسابك. تحقق من اتصالك ثم أعد المحاولة.'
+          setInitializationPhase('ERROR')
+          setLoadError(message)
           setStage('error')
         }
       }
@@ -435,26 +463,40 @@ export default function Onboarding() {
   const categoryItemKey = (category, item) => `${category.id}::${item.id || item.name}`
   const isTemplateAdded = (item) => cats.some(category => normalizeCategoryName(category.name) === normalizeCategoryName(item.name))
 
-  const loadOnboardingCategories = async (restaurantRecord = rest) => {
+  const loadOnboardingCategories = async (restaurantRecord = rest, { failFast = false } = {}) => {
     if (!restaurantRecord?.id) return []
+    setInitializationPhase('CATEGORIES')
+    console.info('[Onboarding init] CATEGORIES', { restaurantId: restaurantRecord.id })
     setCategoriesLoading(true)
     setCategoriesError('')
     try {
-      const branch = await ensurePrimaryBranch(restaurantRecord.id)
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('branch_id', branch.id)
-        .order('sort_order')
+      const branch = await withTimeout(
+        ensurePrimaryBranch(restaurantRecord.id),
+        { operation: 'onboarding_primary_branch' },
+      )
+      const { data, error } = await withTimeout(
+        supabase
+          .from('categories')
+          .select('*')
+          .eq('branch_id', branch.id)
+          .order('sort_order'),
+        { operation: 'onboarding_categories' },
+      )
       if (error) throw error
       const rows = data || []
       setCategoryBranch(branch)
       setCats(rows)
+      console.info('[Onboarding init] READY', { restaurantId: restaurantRecord.id, resource: 'categories', count: rows.length })
+      setInitializationPhase('READY')
       return rows
     } catch (error) {
-      console.error('Onboarding categories load error:', error)
-      const message = 'تعذر تحميل أقسام المنيو. تحقق من الاتصال ثم أعد المحاولة.'
+      console.error('[Onboarding init] ERROR during CATEGORIES', error)
+      const message = isTimeoutError(error)
+        ? 'استغرق تحميل الأقسام وقتًا أطول من المتوقع. تحقق من الاتصال ثم أعد المحاولة.'
+        : 'تعذر تحميل أقسام المنيو. تحقق من الاتصال ثم أعد المحاولة.'
+      setInitializationPhase('ERROR')
       setCategoriesError(message)
+      if (failFast) throw error
       return []
     } finally {
       setCategoriesLoading(false)
@@ -623,7 +665,10 @@ export default function Onboarding() {
       itemsSelectionInitialized.current = true
     }
     setItemsError('')
+    console.info('[Onboarding init] ITEMS', { categoryCount: cats.length })
+    setInitializationPhase('ITEMS')
     goStage('items')
+    setInitializationPhase('READY')
   }
 
   const toggleItem = (key) => setSelectedItems(previous => {
@@ -859,9 +904,11 @@ export default function Onboarding() {
 
   if (stage === 'loading') {
     return (
-      <div style={{ ...bg, alignItems:'center' }}>
+      <div style={{ ...bg, alignItems:'center', flexDirection:'column', gap:'12px' }} role="status" aria-live="polite" data-onboarding-phase={initializationPhase}>
         <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <strong style={{ color:'white', fontFamily:'Tajawal,sans-serif', fontSize:'16px' }}>جارٍ تجهيز حسابك…</strong>
+        <span style={{ color:'#C9CDD4', fontFamily:'Tajawal,sans-serif', fontSize:'12px' }}>مرحلة التهيئة: {initializationPhase}</span>
       </div>
     )
   }
@@ -872,7 +919,8 @@ export default function Onboarding() {
         <div style={{ ...card, maxWidth:'460px', textAlign:'center' }} role="alert">
           <div style={{ width:'48px', height:'48px', display:'grid', placeItems:'center', margin:'0 auto 14px', borderRadius:'14px', background:'#FEF2F2', color:'#B91C1C', fontSize:'24px', fontWeight:'900' }}>!</div>
           <h1 style={{ margin:'0 0 8px', fontSize:'21px', fontWeight:'900', fontFamily:'Tajawal,sans-serif' }}>حدث خطأ أثناء تجهيز حسابك</h1>
-          <p style={{ margin:'0 0 20px', color:'#6B7280', fontSize:'14px', lineHeight:'1.8' }}>{loadError || 'تعذر تحميل بيانات الإعداد. حاول مرة أخرى.'}</p>
+          <p style={{ margin:'0 0 8px', color:'#6B7280', fontSize:'14px', lineHeight:'1.8' }}>{loadError || 'تعذر تحميل بيانات الإعداد. حاول مرة أخرى.'}</p>
+          <div style={{ margin:'0 0 20px', color:'#9CA3AF', fontSize:'11px', fontFamily:'Tajawal,sans-serif' }}>مرحلة التشخيص: {initializationPhase}</div>
           <button type="button" onClick={() => setLoadAttempt(value => value + 1)} style={{ ...primaryBtn, width:'100%' }}>إعادة المحاولة</button>
           <button type="button" onClick={() => navigate('/login')} style={{ ...skipLink, marginTop:'12px' }}>العودة لتسجيل الدخول</button>
         </div>

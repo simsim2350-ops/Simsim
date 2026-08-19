@@ -18,10 +18,10 @@ export default class RootErrorBoundary extends Component {
           <div style={{ fontSize:'44px' }}>😕</div>
           <div style={{ fontSize:'18px', fontWeight:'800' }}>حدث خطأ غير متوقّع</div>
           <div style={{ fontSize:'14px', color:'#9CA3AF', maxWidth:'320px', lineHeight:1.7 }}>
-            نعتذر عن ذلك. جرّب إعادة تحميل الصفحة — إن استمرّ الخطأ تواصل مع الدعم.
+            نعتذر عن ذلك. جرّب مرة أخرى — إن استمرّ الخطأ تواصل مع الدعم.
           </div>
-          <button onClick={() => window.location.reload()} style={{ padding:'12px 28px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer' }}>
-            🔄 إعادة تحميل
+          <button onClick={() => this.setState({ err: null })} style={{ padding:'12px 28px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'14px', cursor:'pointer' }}>
+            حاول مرة أخرى
           </button>
         </div>
       )
