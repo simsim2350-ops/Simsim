@@ -353,12 +353,11 @@ export default function Onboarding() {
     } finally { setSaving(false) }
   }
 
-  // ===== إنهاء الرحلة: الإكمال مستقل عن جاهزية/نشر المنيو =====
-  const completeOnboarding = async (dest = '/dashboard', published = false) => {
+  // ===== إنهاء الإعداد: لا توجد حالة «نشر» مستقلة؛ الجاهزية تقاس عبر minimumReady. =====
+  const completeOnboarding = async (dest = '/dashboard') => {
     try {
       await supabase.from('restaurants').update({ onboarding_completed:true, onboarding_step:'done' }).eq('id', rest.id)
       await fetchRestaurant(user.id)
-      if (published) trackOwnerEvent('menu_published', { restaurantId: rest.id, props: { source: 'onboarding' } })
     } catch { /* غير كاسر */ }
     navigate(dest, { replace:true })
   }
@@ -410,7 +409,7 @@ export default function Onboarding() {
   const labelStyle = { display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'6px' }
   const skipLink = { width:'100%', marginTop:'10px', background:'none', border:'none', color:'#9CA3AF', fontFamily:'Tajawal,sans-serif', fontSize:'13px', cursor:'pointer' }
 
-  // التقدم يعكس قيمة المنيو، لا عدد الشاشات. تبقى المرحلة الحالية مرئية كنص مساعد فقط.
+  // يعرض المؤشر أساسيات المشاركة فقط؛ لا تدخل التحسينات الاختيارية في حالة الجاهزية.
   const stepIndex = STEPS.findIndex(s => s.key === stage)
   const Progress = () => stepIndex < 0 ? null : (
     <div style={{ margin:'12px 0 18px' }}>
@@ -418,10 +417,10 @@ export default function Onboarding() {
         <span style={{ fontWeight:'800', color: readiness?.minimumReady ? '#15803D' : '#FF6A00' }}>
           {readiness?.minimumReady ? 'منيوك جاهز للمشاركة' : 'نبني منيوك الجاهز للمشاركة'}
         </span>
-        <span>{readiness?.completionPercent || 0}% مكتمل</span>
+        <span>{readiness ? `الأساسيات ${readiness.essentialsDone}/${readiness.essentialsTotal}` : 'الأساسيات'}</span>
       </div>
       <div style={{ height:'6px', borderRadius:'100px', background:'#F0F2F5', overflow:'hidden' }}>
-        <div style={{ height:'100%', width:`${readiness?.completionPercent || 0}%`, background:readiness?.minimumReady ? 'linear-gradient(90deg,#16A34A,#22C55E)' : 'linear-gradient(90deg,#FF6A00,#E05D00)', borderRadius:'100px', transition:'width 0.3s' }}/>
+        <div style={{ height:'100%', width: readiness ? `${(readiness.essentialsDone / readiness.essentialsTotal) * 100}%` : '0%', background:readiness?.minimumReady ? 'linear-gradient(90deg,#16A34A,#22C55E)' : 'linear-gradient(90deg,#FF6A00,#E05D00)', borderRadius:'100px', transition:'width 0.3s' }}/>
       </div>
     </div>
   )
@@ -451,7 +450,7 @@ export default function Onboarding() {
             <div style={{ fontSize:'60px', marginBottom:'10px' }}>👋</div>
             <h2 style={{ fontSize:'23px', fontWeight:'900', marginBottom:'8px', fontFamily:'Tajawal,sans-serif' }}>أهلاً بك في SIMSIM 🎉</h2>
             <p style={{ fontSize:'14px', color:'#6B7280', lineHeight:'1.8', marginBottom:'22px' }}>
-              خلّينا نجهّز مطعمك خطوة بخطوة: نضيف منيوك، نعاينه، ونعطيك رابطاً وQR جاهزين للمشاركة — بدقائق.
+              خلّينا نجهّز مطعمك خطوة بخطوة: نضيف منيوك، نعاينه، ونعطيك رابطاً وQR جاهزين للمشاركة.
             </p>
             <button onClick={() => goStage('info')} style={{ ...primaryBtn, width:'100%' }}>لنبدأ ←</button>
           </div>
@@ -624,7 +623,7 @@ export default function Onboarding() {
             <h2 style={{ fontSize:'22px', fontWeight:'900', marginBottom:'4px', fontFamily:'Tajawal,sans-serif' }}>لنشارك منيوً حقيقيًا أولاً</h2>
             <p style={{ fontSize:'13px', color:'#6B7280', lineHeight:'1.8', marginBottom:'16px' }}>تستطيع إكمال الهوية والصور لاحقًا، لكن نحتاج قسمًا ظاهرًا وصنفًا متاحًا بسعر قبل أن يصبح الرابط جاهزًا للمشاركة.</p>
             <MenuReadinessCard readiness={readiness || calculateMenuReadiness({ restaurant:rest })} onResolve={goToFirstProduct} />
-            <button onClick={() => completeOnboarding('/dashboard', false)} style={{ ...ghostBtn, width:'100%', marginTop:'10px' }}>سأكمل من لوحة التحكم</button>
+            <button onClick={() => completeOnboarding('/dashboard')} style={{ ...ghostBtn, width:'100%', marginTop:'10px' }}>سأكمل من لوحة التحكم</button>
           </>
         )}
 
@@ -671,7 +670,7 @@ export default function Onboarding() {
               <button onClick={downloadQR} style={{ ...ghostBtn, minHeight:'44px', gridColumn:'1 / -1', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>⬇️ تحميل QR</button>
             </div>
 
-            <button onClick={() => { trackOwnerEvent('menu_published', { restaurantId:rest.id, props:{ source:'onboarding' } }); goStage('done') }} style={{ ...primaryBtn, width:'100%' }}>أنهي الإعداد ✓</button>
+            <button onClick={() => goStage('done')} style={{ ...primaryBtn, width:'100%' }}>عرض ملخص الإعداد ←</button>
           </>
         )}
 
@@ -685,12 +684,12 @@ export default function Onboarding() {
               <span>○ أضف شعارك</span><span>○ أضف صور الأصناف</span><span>○ أضف ساعات العمل</span><span>○ أنشئ عرضًا أو كوبونًا</span>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'10px' }}>
+              <button onClick={copyURL} style={{ ...primaryBtn, minHeight:'44px' }}>نسخ رابط المنيو</button>
               <button onClick={() => window.open(menuURL, '_blank')} style={{ ...ghostBtn, minHeight:'44px' }}>فتح المنيو</button>
-              <button onClick={copyURL} style={{ ...ghostBtn, minHeight:'44px' }}>نسخ الرابط</button>
               <button onClick={shareWhatsApp} style={{ ...ghostBtn, minHeight:'44px' }}>مشاركة واتساب</button>
               <button onClick={downloadQR} style={{ ...ghostBtn, minHeight:'44px' }}>تحميل QR</button>
             </div>
-            <button onClick={() => completeOnboarding('/dashboard', false)} style={{ ...primaryBtn, width:'100%' }}>الذهاب للوحة التحكم ←</button>
+            <button onClick={() => completeOnboarding('/dashboard')} style={{ ...ghostBtn, width:'100%' }}>الانتقال إلى لوحة التحكم</button>
           </div>
         )}
       </div>
