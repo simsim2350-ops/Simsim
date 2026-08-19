@@ -18,7 +18,9 @@ describe('P0 onboarding UX contract', () => {
     expect(readinessCard).toContain('منيوك جاهز للمشاركة. يمكنك إضافة التحسينات لاحقًا.')
     expect(readinessCard).not.toContain('completionPercent')
 
-    expect(onboarding).toContain('الأساسيات ${readiness.essentialsDone}/${readiness.essentialsTotal}')
+    // جاهزية المشاركة تبقى في البطاقة المتخصصة؛ المؤشر العام يعرض خطوات Onboarding فقط من مصدر واحد.
+    expect(onboarding).toContain('الخطوة {stepIndex + 1} من {STEPS.length}')
+    expect(onboarding).not.toContain('الأساسيات ${readiness.essentialsDone}/${readiness.essentialsTotal}')
     expect(onboarding).not.toContain('completionPercent')
   })
 

@@ -70,4 +70,34 @@ describe('auth and onboarding journey contract', () => {
     expect(onboarding).toContain('جاري الحفظ...')
     expect(onboarding).toContain('الخطوة {stepIndex + 1} من {STEPS.length}')
   })
+
+  it('يحفظ نوع النشاط الحقيقي في restaurants.type ويستعيد الاختيار المحفوظ', () => {
+    expect(onboarding).toContain(".update({ type: typeKey, onboarding_step: 'type_selected' })")
+    expect(onboarding).toContain("const hasSavedTypeSelection = r.onboarding_step === 'type_selected' && isKnownBusinessType(r.type)")
+    expect(onboarding).toContain('setSelectedType(hasSavedTypeSelection ? r.type : null)')
+    expect(onboarding).toContain('setPersistedType(hasSavedTypeSelection ? r.type : null)')
+    expect(onboarding).toContain("const refreshedRestaurant = await fetchRestaurant(user.id)")
+    expect(onboarding).toContain("if (!refreshedRestaurant?.id || refreshedRestaurant.type !== typeKey) throw new Error('business_type_refresh_failed')")
+  })
+
+  it('لا يتيح الانتقال من نوع النشاط قبل اختيار وحفظ ناجحين ويمنع التكرار', () => {
+    expect(onboarding).toContain('const typeSaveInFlight = useRef(false)')
+    expect(onboarding).toContain('if (saving || typeSaveInFlight.current) return')
+    expect(onboarding).toContain('if (!selectedType)')
+    expect(onboarding).toContain('const isSaved = persistedType === selectedType || await persistBusinessType(selectedType)')
+    expect(onboarding).toContain('if (!isSaved) return')
+    expect(onboarding).toContain("setCats(getTemplate(selectedType).slice(0, 5).map(c => ({ ...c })))")
+    expect(onboarding).toContain("goStage('categories')")
+  })
+
+  it('يعرض مصدر تقدم واحدًا واختيار نوع قابلًا للوصول بلا رموز Emoji للخيارات', () => {
+    expect(onboarding).toContain('الخطوة {stepIndex + 1} من {STEPS.length}')
+    expect(onboarding).not.toContain('الأساسيات ${readiness.essentialsDone}/${readiness.essentialsTotal}')
+    expect(onboarding).toContain('id="onboarding-type-form"')
+    expect(onboarding).toContain('aria-pressed={isSelected}')
+    expect(onboarding).toContain('<BusinessTypeIcon type={t.icon} />')
+    expect(onboarding).toContain('<CheckIcon size={13} />')
+    const typesBlock = onboarding.slice(onboarding.indexOf('const TYPES = ['), onboarding.indexOf('const getTemplate'))
+    expect(typesBlock).not.toContain('emoji:')
+  })
 })
