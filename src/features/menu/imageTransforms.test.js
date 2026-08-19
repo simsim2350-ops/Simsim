@@ -24,4 +24,14 @@ describe('imageTransforms', () => {
     expect(srcSet.split(', ')).toHaveLength(2)
     expect(createSupabaseWebpSrcSet('https://example.com/product.jpg', [240])).toBeUndefined()
   })
+
+  it('يطابق نسبة المورد مع حاوية البطاقة دون تغيير أبعاد CSS المعلنة', () => {
+    expect(createSupabaseImageTransform(source, { width: 240, height: 240, resize: 'cover', quality: 72 })).toBe(
+      'https://gpwwnuuicywsvmmhxngs.supabase.co/storage/v1/render/image/public/restaurant-media/restaurant/products/item.jpg?width=240&height=240&resize=cover&quality=72&format=webp',
+    )
+
+    const srcSet = createSupabaseWebpSrcSet(source, [240, 480], 72, { width: 240, height: 240 })
+    expect(srcSet).toContain('width=240&height=240&resize=cover&quality=72&format=webp 240w')
+    expect(srcSet).toContain('width=480&height=480&resize=cover&quality=72&format=webp 480w')
+  })
 })

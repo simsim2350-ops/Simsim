@@ -14,7 +14,7 @@ export default function ResponsiveMenuImage({
   style,
   ...rest
 }) {
-  const srcSet = createSupabaseWebpSrcSet(src, widths, quality)
+  const srcSet = createSupabaseWebpSrcSet(src, widths, quality, { width, height })
   const image = (
     <img
       src={src}
