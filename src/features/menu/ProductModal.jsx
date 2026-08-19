@@ -3,6 +3,7 @@ import { TYPE } from './typography'
 import { toast } from 'react-hot-toast'
 import { getCalorieBadge } from './helpers'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import ResponsiveMenuImage from './ResponsiveMenuImage'
 
 // مودال تفاصيل الصنف: الخيارات + الكمية + الملاحظة + السحب للإغلاق.
 // يملك حالته الداخلية — تُصفَّر تلقائياً مع كل فتح لأن المودال يُركَّب من جديد.
@@ -118,7 +119,7 @@ export default function ProductModal({ product, brandColor, priceColor, isEn, t,
 
           <div style={{ height:'280px', margin:'0 20px', borderRadius:'16px', background: product.image_url ? '#F8F9FB' : `linear-gradient(135deg, ${brandColor}22, ${brandColor}08)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'70px', overflow:'hidden' }}>
             {product.image_url
-              ? <img src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+              ? <ResponsiveMenuImage src={product.image_url} alt={product.name} width="440" height="280" widths={[480, 720, 960]} sizes="min(100vw - 40px, 440px)" quality={80} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
               : product.emoji}
           </div>
         </div>

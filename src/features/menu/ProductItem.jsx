@@ -1,9 +1,10 @@
 import { getCalorieBadge } from './helpers'
 import { TYPE } from './typography'
 import { productBadgeState } from './productBadgeState'
+import ResponsiveMenuImage from './ResponsiveMenuImage'
 
 // بطاقة صنف واحدة في المنيو — تدعم 4 تخطيطات: list (افتراضي) / grid / circles / showcase
-export default function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor, descColor, isEn, layout = 'list', ordering = true }) {
+export default function ProductItem({ product, cart, onAdd, onQtyChange, brandColor, priceColor, descColor, isEn, layout = 'list', ordering = true, priority = false }) {
   const _priceColor = priceColor || brandColor
   const _descColor = descColor || '#9CA3AF'
   const pName = (isEn && product.name_en) ? product.name_en : product.name
@@ -57,7 +58,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
             overflow:'hidden', boxShadow:'0 6px 18px rgba(0,0,0,0.10)', border:'3px solid white', cursor:'pointer',
           }}>
             {product.image_url
-              ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+              ? <ResponsiveMenuImage src={product.image_url} alt={product.name} width="104" height="104" widths={[128, 240, 320]} sizes="104px" quality={72} priority={priority} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
               : product.emoji}
           </div>
           {renderTags({ top:'-2px', right:'-2px', transform:'scale(.82)', transformOrigin:'top right' })}
@@ -80,7 +81,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
         <div style={{ position:'relative' }}>
           <div onClick={onAdd} style={{ width:'100%', aspectRatio:'1/1', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'46px', overflow:'hidden', cursor:'pointer' }}>
             {product.image_url
-              ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+              ? <ResponsiveMenuImage src={product.image_url} alt={product.name} width="240" height="240" widths={[240, 480, 640]} sizes="(min-width: 1024px) 467px, calc((100vw - 42px) / 2)" quality={72} priority={priority} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
               : product.emoji}
           </div>
           {renderTags()}
@@ -103,7 +104,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
         <div style={{ position:'relative' }}>
           <div onClick={onAdd} style={{ width:'100%', aspectRatio:'4/3', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'52px', overflow:'hidden', cursor:'pointer' }}>
             {product.image_url
-              ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+              ? <ResponsiveMenuImage src={product.image_url} alt={product.name} width="480" height="360" widths={[480, 720, 960]} sizes="(min-width: 1024px) 467px, calc(100vw - 32px)" quality={76} priority={priority} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
               : product.emoji}
           </div>
           {renderTags()}
@@ -144,7 +145,7 @@ export default function ProductItem({ product, cart, onAdd, onQtyChange, brandCo
       <div style={{ position:'relative', flexShrink:0 }}>
         <div onClick={onAdd} style={{ width:'108px', height:'108px', borderRadius:'14px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'36px', border:'1px solid #E5E7EB', overflow:'hidden', cursor:'pointer' }}>
           {product.image_url
-            ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+            ? <ResponsiveMenuImage src={product.image_url} alt={product.name} width="108" height="108" widths={[128, 240, 320]} sizes="108px" quality={72} priority={priority} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
             : product.emoji}
         </div>
         {renderTags()}

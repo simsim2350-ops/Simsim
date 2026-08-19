@@ -2,6 +2,7 @@ import { TYPE } from './typography'
 import { useEffect, useRef, useState } from 'react'
 import ProductItem from './ProductItem'
 import HProductCard from './HProductCard'
+import ResponsiveMenuImage from './ResponsiveMenuImage'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { InlineMenuBanner } from './BannerDisplays'
 
@@ -17,6 +18,9 @@ export default function MenuBody({
 }) {
   // مصادر مستقلة: Best Sellers يدويًا، ومختارات المالك، وتوصيات الطلبات الفعلية.
   const featuredProducts = products.filter(p => p.is_featured === true).slice(0, 4)
+  // أولوية شبكة واحدة فقط لأوّل صورة منتج تظهر في تسلسل المحتوى؛ لا تنافس الغلاف أو بقية الصور.
+  const firstCategoryProduct = categories.map(category => products.find(product => product.category_id === category.id)).find(Boolean)
+  const prioritySection = manualBestSellers.length ? 'manual' : featuredProducts.length ? 'featured' : customerFavorites.length ? 'favorites' : 'categories'
   const categoryObserverRef = useRef(null)
   const [catsOpen, setCatsOpen] = useState(false) // قائمة كل الأقسام (زر ☰)
   useBodyScrollLock(catsOpen) // قفل تمرير الصفحة الخلفية طول ما القائمة مفتوحة
@@ -118,7 +122,7 @@ export default function MenuBody({
                 <div key={cat.id} onClick={() => goToCategory(cat.id, true)} style={{ display:'flex', alignItems:'center', gap:'11px', padding:'11px 10px', borderRadius:'12px', cursor:'pointer', background: isActive ? `${brandColor}0D` : 'transparent', marginBottom:'2px' }}>
                   {cat.cover_url ? (
                     <div style={{ width:'36px', height:'36px', borderRadius:'10px', overflow:'hidden', flexShrink:0 }}>
-                      <img loading="lazy" decoding="async" src={cat.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      <ResponsiveMenuImage src={cat.cover_url} alt="" width="36" height="36" widths={[64, 128]} sizes="36px" quality={70} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
                     </div>
                   ) : (
                     <span style={{ fontSize:'20px', width:'36px', textAlign:'center' }}>{cat.emoji}</span>
@@ -145,8 +149,8 @@ export default function MenuBody({
               <h2 style={{ ...TYPE.sectionTitle, color:'#0B0B0F', margin:0 }}>{t('manualBestSellers')}</h2>
             </div>
             <div className="sm-products" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }}>
-              {manualBestSellers.map(prod => (
-                <ProductItem key={prod.id} {...itemProps(prod)} layout="grid" />
+              {manualBestSellers.map((prod, index) => (
+                <ProductItem key={prod.id} {...itemProps(prod)} layout="grid" priority={prioritySection === 'manual' && index === 0} />
               ))}
             </div>
           </div>
@@ -159,8 +163,8 @@ export default function MenuBody({
               <h2 style={{ ...TYPE.sectionTitle, color:'#0B0B0F', margin:0 }}>{t('featuredProducts')}</h2>
             </div>
             <div className="sm-products" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', padding:'0 16px' }}>
-              {featuredProducts.map(prod => (
-                <ProductItem key={prod.id} {...itemProps(prod)} layout="grid" />
+              {featuredProducts.map((prod, index) => (
+                <ProductItem key={prod.id} {...itemProps(prod)} layout="grid" priority={prioritySection === 'featured' && index === 0} />
               ))}
             </div>
           </div>
@@ -177,6 +181,7 @@ export default function MenuBody({
                 <HProductCard
                   key={prod.id}
                   product={prod}
+                  priority={prioritySection === 'favorites' && customerFavorites.indexOf(prod) === 0}
                   onOpen={() => onOpenProduct(prod)}
                   onQuickAdd={ordering ? () => addToCart(prod, 1) : null}
                   brandColor={brandColor}
@@ -197,7 +202,7 @@ export default function MenuBody({
               <div style={{ padding:'12px 16px 8px', display:'flex', alignItems:'center', gap:'10px' }}>
                 {cat.cover_url ? (
                   <div style={{ width:'36px', height:'36px', borderRadius:'10px', overflow:'hidden', flexShrink:0 }}>
-                    <img loading="lazy" decoding="async" src={cat.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                    <ResponsiveMenuImage src={cat.cover_url} alt="" width="36" height="36" widths={[64, 128]} sizes="36px" quality={70} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
                   </div>
                 ) : (
                   <span style={{ fontSize:'20px' }}>{cat.emoji}</span>
@@ -210,8 +215,8 @@ export default function MenuBody({
                 : layout === 'showcase' ? { display:'flex', flexDirection:'column', gap:'10px', padding:'0 16px' }
                 : { display:'flex', flexDirection:'column', gap:'1px', background:'#F3F4F6' }
               }>
-                {catProducts.map(prod => (
-                  <ProductItem key={prod.id} {...itemProps(prod)} />
+                {catProducts.map((prod, index) => (
+                  <ProductItem key={prod.id} {...itemProps(prod)} priority={prioritySection === 'categories' && prod.id === firstCategoryProduct?.id && index === 0} />
                 ))}
               </div>
             </div>

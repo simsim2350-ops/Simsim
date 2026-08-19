@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 
+import ResponsiveMenuImage from './ResponsiveMenuImage'
+
 export function OffersIcon({ size = 18 }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 9v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"/><path d="M3 12h18M12 7v10M7.5 7a2.25 2.25 0 1 1 4.5 0M12 7a2.25 2.25 0 1 1 4.5 0"/></svg>
 }
@@ -34,7 +36,7 @@ function OfferCard({ banner, coupon, brandColor, isEn }) {
     <div style={{ display:'grid', gap:'7px', padding:'9px' }}>
       {banner && <div style={{ minWidth:0, display:'flex', alignItems:'center', gap:'9px', padding:'8px', borderRadius:'11px', background:'white', border:'1px solid #F2F4F7' }}>
         <div style={{ width:'52px', height:'46px', display:'grid', placeItems:'center', flexShrink:0, overflow:'hidden', borderRadius:'9px', background:`${brandColor}12`, color:brandColor }}>
-          {banner.image_url ? <img src={banner.image_url} alt={banner.title} style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <OffersIcon size={21} />}
+          {banner.image_url ? <ResponsiveMenuImage src={banner.image_url} alt={banner.title} width="52" height="46" widths={[64, 128]} sizes="52px" quality={74} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} /> : <OffersIcon size={21} />}
         </div>
         <div style={{ minWidth:0, flex:1 }}><div style={{ color:'#101828', fontFamily:'Tajawal,sans-serif', fontSize:'13px', fontWeight:'900', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{banner.title}</div>{banner.subtitle && <div style={{ marginTop:'3px', color:'#667085', fontSize:'11px', lineHeight:1.45 }}>{banner.subtitle}</div>}{coupon && <div style={{ marginTop:'4px', color:brandColor, fontSize:'10px', fontWeight:'800' }}>{isEn ? 'Discount code available with this offer' : 'يتوفر كود خصم مع هذا العرض'}</div>}</div>
       </div>}
