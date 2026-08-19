@@ -51,7 +51,13 @@ export default function Login() {
       toast.success('مرحباً بك! 👋')
       navigate(hasRestaurant ? '/dashboard' : '/onboarding')
     } catch (err) {
-      toast.error('البريد أو كلمة المرور غير صحيحة')
+      const message = String(err?.message || '').toLowerCase()
+      if (message.includes('email not confirmed') || message.includes('email not verified')) {
+        toast('تحقق من بريدك الإلكتروني أولًا. يمكنك طلب رابط تأكيد جديد.', { icon:'📧' })
+        navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`, { state: { email: email.trim() } })
+      } else {
+        toast.error('البريد أو كلمة المرور غير صحيحة')
+      }
     } finally {
       setLoading(false)
     }

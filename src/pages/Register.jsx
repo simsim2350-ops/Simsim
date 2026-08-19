@@ -75,8 +75,7 @@ export default function Register() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         trackRegistrationEvent('email_confirmation_required', { source: 'register' })
-        toast('📧 تحقق من بريدك لتأكيد الحساب ثم سجّل الدخول — سنكمل باسم مطعمك ورابطه تلقائياً.', { icon:'📧', duration:7000 })
-        navigate('/login')
+        navigate(`/verify-email?email=${encodeURIComponent(form.email.trim())}`, { state: { email: form.email.trim() }, replace:true })
         return
       }
 

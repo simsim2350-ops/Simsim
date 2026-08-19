@@ -35,6 +35,8 @@ const Login          = lazyWithRetry(() => import('./pages/Login'))
 const Register       = lazyWithRetry(() => import('./pages/Register'))
 const ForgotPassword = lazyWithRetry(() => import('./pages/ForgotPassword'))
 const ResetPassword  = lazyWithRetry(() => import('./pages/ResetPassword'))
+const VerifyEmail    = lazyWithRetry(() => import('./pages/VerifyEmail'))
+const AuthCallback   = lazyWithRetry(() => import('./pages/AuthCallback'))
 const Onboarding     = lazyWithRetry(() => import('./pages/Onboarding'))
 const Customers      = lazyWithRetry(() => import('./pages/Customers'))
 const Branches       = lazyWithRetry(() => import('./pages/Branches'))
@@ -178,6 +180,8 @@ export default function App() {
         <Route path="/register"        element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         <Route path="/reset-password"  element={<ResetPassword />} />
+        <Route path="/verify-email"    element={<VerifyEmail />} />
+        <Route path="/auth/callback"   element={<AuthCallback />} />
         <Route path="/menu/:slug"      element={<PublicMenu />} />
         <Route path="/staff-login/:slug" element={<StaffLogin />} />
         <Route path="/onboarding"      element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
