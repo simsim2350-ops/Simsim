@@ -79,9 +79,9 @@ function PublicMenuInner() {
   const { isEn, toggleLang, t, tx } = useLang()
   const {
     restaurant, branch,
-    categories, products, customerFavorites, manualBestSellers, loading, notFound,
+    categories, products, contentError, customerFavorites, manualBestSellers, loading, notFound,
     activeCategory, setActiveCategory, restaurantActiveOrdersCount, rating, loyaltyEnabled,
-    banners, coupons, capabilities, branding,
+    banners, coupons, capabilities, branding, reloadMenu,
   } = useMenuData(slug, effectiveBranchId)
   // يعيد slug التاريخي إلى الرابط الحالي قبل عرض حالة عدم التوفر؛ يحافظ على QR والمواد المطبوعة.
   useEffect(() => {
@@ -345,28 +345,36 @@ function PublicMenuInner() {
       {/* بانر أعلى المنيو — يظهر كأول عنصر عند اختيار وضع «أعلى المينيو» */}
       <TopMenuBanner banner={bannerDisplay.topBanner} brandColor={brandColor} />
 
-      {/* Category tabs + menu content */}
-      <MenuBody
-        categories={categories}
-        products={products}
-        customerFavorites={customerFavorites}
-        manualBestSellers={manualBestSellers}
-        activeCategory={activeCategory}
-        setActiveCategory={setActiveCategory}
-        cart={cart}
-        addToCart={addToCart}
-        removeFromCart={removeFromCart}
-        onOpenProduct={openProduct}
-        brandColor={brandColor}
-        priceColor={priceColor}
-        descColor={descColor}
-        isEn={isEn}
-        t={t}
-        tx={tx}
-        layout={restaurant.menu_layout}
-        inlineBanner={bannerDisplay.inlineBanner}
-        ordering={ordering}
-      />
+      {/* Category tabs + menu content: لا نترك الجسم فارغًا إن تعذر طلب المحتوى الحرج. */}
+      {contentError ? (
+        <section role="alert" style={{ margin:'16px', padding:'22px 18px', background:'white', border:'1px solid #FDE2CD', borderRadius:'18px', textAlign:'center' }}>
+          <strong style={{ display:'block', color:'#111827', fontSize:'16px', marginBottom:'8px' }}>تعذر تحميل المنيو</strong>
+          <p style={{ margin:'0 0 14px', color:'#6B7280', fontSize:'13px', lineHeight:1.7 }}>{contentError}</p>
+          <button type="button" onClick={() => reloadMenu()} style={{ minHeight:'44px', padding:'0 18px', border:'none', borderRadius:'12px', background:brandColor, color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', cursor:'pointer' }}>إعادة المحاولة</button>
+        </section>
+      ) : (
+        <MenuBody
+          categories={categories}
+          products={products}
+          customerFavorites={customerFavorites}
+          manualBestSellers={manualBestSellers}
+          activeCategory={activeCategory}
+          setActiveCategory={setActiveCategory}
+          cart={cart}
+          addToCart={addToCart}
+          removeFromCart={removeFromCart}
+          onOpenProduct={openProduct}
+          brandColor={brandColor}
+          priceColor={priceColor}
+          descColor={descColor}
+          isEn={isEn}
+          t={t}
+          tx={tx}
+          layout={restaurant.menu_layout}
+          inlineBanner={bannerDisplay.inlineBanner}
+          ordering={ordering}
+        />
+      )}
 
       {/* هوية المنيو «صمم بواسطة سمسم» — من الإعداد المركزي (يظهر أسفل المنيو حسب placement) */}
       <MenuBranding branding={branding} />
