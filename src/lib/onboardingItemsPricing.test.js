@@ -36,6 +36,16 @@ describe('عقد أسعار وأصناف Onboarding', () => {
     expect(onboarding).toContain('إضافة صنف مخصص')
   })
 
+  it('يفصل بطاقة السعر عن معلومات الصنف ويمنع تداخل الإدخال على الجوال', () => {
+    expect(onboarding).toContain('صف معلومات الصنف: ثابت ومستقل عن بطاقة السعر على جميع المقاسات.')
+    expect(onboarding).toContain("overflowWrap:'anywhere'")
+    expect(onboarding).toContain('السعر يضاف بعد التحديد')
+    expect(onboarding).toContain('dir="rtl"')
+    expect(onboarding).toContain("width:'100%', minWidth:0")
+    expect(onboarding).toContain("minHeight:'46px'")
+    expect(onboarding).not.toContain("width:'132px'")
+  })
+
   it('يوضح للمستخدم أن القوالب ليست منيو المطعم الحالي ويعرض عدادًا حيًا مفهوماً', () => {
     expect(onboarding).toContain('هذه أصناف مقترحة وليست منيو مطعمك الحالي.')
     expect(onboarding).toContain('إنشاء المنيو — ${selectedItemCount} صنف')

@@ -1122,22 +1122,26 @@ export default function Onboarding() {
                           const selected = selectedItems.has(key)
                           const price = getItemPrice(category, item)
                           return (
-                            <article key={key} style={{ padding:'11px', borderRadius:'14px', border:`1.5px solid ${selected ? '#FF6A00' : '#E5E7EB'}`, background:selected ? 'rgba(255,106,0,0.055)' : 'white', boxShadow:selected ? '0 5px 14px rgba(255,106,0,0.08)' : 'none' }}>
-                              <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-                                <button type="button" onClick={() => toggleItem(key)} aria-pressed={selected} aria-label={`${selected ? 'إلغاء اختيار' : 'اختيار'} ${item.name}`} style={{ width:'28px', height:'28px', display:'grid', placeItems:'center', flexShrink:0, borderRadius:'8px', border:`1.5px solid ${selected ? '#FF6A00' : '#C9D0D9'}`, background:selected ? '#FF6A00' : 'white', color:'white', fontSize:'14px', fontWeight:'900', cursor:'pointer' }}>{selected ? '✓' : ''}</button>
-                                <span aria-hidden="true" style={{ width:'37px', height:'37px', display:'grid', placeItems:'center', flexShrink:0, borderRadius:'11px', background:'#F8F9FB', fontSize:'18px' }}>{item.emoji || '🍽️'}</span>
-                                <div style={{ flex:1, minWidth:0 }}>
-                                  <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', color:'#1F2937', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.name}</div>
-                                  <div style={{ marginTop:'2px', fontSize:'11px', color:item.source === 'custom' ? '#15803D' : '#8A5A36' }}>{item.source === 'custom' ? 'صنف مخصص' : 'صنف مقترح'}</div>
+                            <article key={key} style={{ padding:'13px', borderRadius:'16px', border:`1.5px solid ${selected ? '#FF6A00' : '#E5E7EB'}`, background:selected ? 'rgba(255,106,0,0.055)' : 'white', boxShadow:selected ? '0 6px 16px rgba(255,106,0,0.09)' : 'none', transition:'border-color 160ms ease-out, box-shadow 160ms ease-out, background-color 160ms ease-out' }}>
+                              {/* صف معلومات الصنف: ثابت ومستقل عن بطاقة السعر على جميع المقاسات. */}
+                              <div style={{ display:'flex', alignItems:'flex-start', gap:'10px', minWidth:0 }}>
+                                <button type="button" onClick={() => toggleItem(key)} aria-pressed={selected} aria-label={`${selected ? 'إلغاء اختيار' : 'اختيار'} ${item.name}`} style={{ width:'30px', height:'30px', display:'grid', placeItems:'center', flexShrink:0, borderRadius:'9px', border:`1.5px solid ${selected ? '#FF6A00' : '#C9D0D9'}`, background:selected ? '#FF6A00' : 'white', color:'white', fontSize:'14px', fontWeight:'900', cursor:'pointer', marginTop:'2px' }}>{selected ? '✓' : ''}</button>
+                                <span aria-hidden="true" style={{ width:'40px', height:'40px', display:'grid', placeItems:'center', flexShrink:0, borderRadius:'12px', background:'#F8F9FB', fontSize:'19px' }}>{item.emoji || '🍽️'}</span>
+                                <div style={{ flex:1, minWidth:0, paddingTop:'1px' }}>
+                                  <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', lineHeight:'1.55', color:'#1F2937', overflowWrap:'anywhere' }}>{item.name}</div>
+                                  <div style={{ display:'flex', alignItems:'center', flexWrap:'wrap', gap:'6px', marginTop:'5px' }}>
+                                    <span style={{ fontSize:'11px', color:item.source === 'custom' ? '#15803D' : '#8A5A36' }}>{item.source === 'custom' ? 'صنف مخصص' : 'صنف مقترح'}</span>
+                                    {selected && <span style={{ padding:'2px 7px', borderRadius:'999px', background:'#FFF0E8', color:'#C64A00', fontSize:'10px', fontWeight:'900' }}>محدد</span>}
+                                  </div>
                                 </div>
-                                {!selected && <span style={{ fontSize:'11px', color:'#9CA3AF', whiteSpace:'nowrap' }}>السعر يضاف بعد التحديد</span>}
                               </div>
+                              {!selected && <div style={{ marginTop:'9px', marginInlineStart:'40px', color:'#9CA3AF', fontSize:'11px', lineHeight:'1.5' }}>السعر يضاف بعد التحديد</div>}
                               {selected && (
-                                <div style={{ display:'flex', alignItems:'center', gap:'9px', marginTop:'10px', paddingTop:'10px', borderTop:'1px solid #F3E6DE' }}>
-                                  <label htmlFor={`item-price-${key}`} style={{ flex:1, fontSize:'12px', fontWeight:'800', color:'#4B5563' }}>السعر الحقيقي</label>
-                                  <div style={{ position:'relative', width:'132px' }}>
-                                    <input id={`item-price-${key}`} type="number" min="0" step="0.01" inputMode="decimal" value={price} onChange={event => updateItemPrice(category, item, event.target.value)} placeholder="أدخل السعر" aria-label={`السعر الحقيقي لـ ${item.name}`} style={{ ...inputStyle, width:'100%', padding:'9px 33px 9px 9px', direction:'ltr', textAlign:'left', background:'white', borderColor:isValidItemPrice(price) ? '#CFE7D6' : '#F6C9B0' }} />
-                                    <span aria-hidden="true" style={{ position:'absolute', insetInlineEnd:'9px', top:'50%', transform:'translateY(-50%)', fontSize:'11px', color:'#6B7280' }}>{rest?.currency || 'SAR'}</span>
+                                <div dir="rtl" style={{ marginTop:'15px', paddingTop:'14px', borderTop:'1px solid #F2DDD1' }}>
+                                  <label htmlFor={`item-price-${key}`} style={{ display:'block', marginBottom:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'13px', fontWeight:'900', color:'#374151', textAlign:'right' }}>السعر الحقيقي</label>
+                                  <div style={{ position:'relative', width:'100%', minWidth:0 }}>
+                                    <input id={`item-price-${key}`} type="number" min="0" step="0.01" inputMode="decimal" value={price} onChange={event => updateItemPrice(category, item, event.target.value)} placeholder="أدخل السعر" aria-label={`السعر الحقيقي لـ ${item.name}`} style={{ ...inputStyle, boxSizing:'border-box', width:'100%', minWidth:0, minHeight:'46px', padding:'11px 62px 11px 14px', direction:'ltr', textAlign:'left', fontSize:'16px', fontWeight:'800', background:'white', borderColor:isValidItemPrice(price) ? '#CFE7D6' : '#F6C9B0' }} />
+                                    <span aria-hidden="true" style={{ position:'absolute', insetInlineEnd:'14px', top:'50%', transform:'translateY(-50%)', paddingInlineStart:'9px', borderInlineStart:'1px solid #E5E7EB', color:'#6B7280', fontSize:'12px', fontWeight:'800', whiteSpace:'nowrap', pointerEvents:'none' }}>{rest?.currency || 'SAR'}</span>
                                   </div>
                                 </div>
                               )}
