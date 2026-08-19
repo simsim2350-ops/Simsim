@@ -26,6 +26,9 @@ describe('auth and onboarding journey contract', () => {
     expect(authStore).toContain('invalidateAuthRequests()')
     expect(authStore).toContain('const bootstrapVersion = ++authBootstrapVersion')
     expect(authStore).toContain('if (!isCurrentBootstrap()) return')
+    expect(authStore).toContain("currentContext.authState === 'READY'")
+    expect(authStore).toContain('isSameReadySession')
+    expect(authStore).toContain("'[Auth bootstrap] READY reuse'")
     expect(authStore).not.toContain('onAuthStateChange(async')
   })
 
