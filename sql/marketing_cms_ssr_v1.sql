@@ -175,7 +175,7 @@ create or replace function public.marketing_write_audit()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
 declare
   actor_id uuid := auth.uid();
@@ -188,10 +188,7 @@ begin
     return coalesce(new, old);
   end if;
 
-  select pa.role into actor_role
-  from public.platform_admins pa
-  where pa.user_id = actor_id and pa.is_active = true
-  limit 1;
+  actor_role := public.platform_admin_role();
 
   if actor_role is null then
     return coalesce(new, old);

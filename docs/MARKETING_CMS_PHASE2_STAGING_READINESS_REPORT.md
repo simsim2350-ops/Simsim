@@ -3,7 +3,7 @@
 **المشروع:** Simsim Marketing CMS
 **النطاق:** Staging فقط — مشروع Supabase `rgqsetckcigkgsyobyjg` (`simsim-menu-staging`)
 **التاريخ:** 20 أغسطس 2026
-**الحالة:** تنفيذ الكود وترحيلات Staging واختبارات الحماية مكتملة؛ **إثبات رحلة Super Admin المنشورة بالكامل ما زال محجوبًا** لعدم توافر جلسة اختبار إدارية آمنة وعنوان Super Admin مرحلي منشور.
+**الحالة:** هذا التقييم **معلّق وغير صالح كقبول Phase 2** بعد اكتشاف انحراف فعلي بين بيئة واجهة Staging المنشورة وSupabase. راجع [`MARKETING_CMS_SCHEMA_DRIFT_REPORT.md`](./MARKETING_CMS_SCHEMA_DRIFT_REPORT.md) قبل أي قرار إطلاق. لا تزال رحلة Super Admin المنشورة بالكامل محجوبة إلى حين ضبط بيئة Staging وتوفير جلسة اختبار إدارية آمنة.
 
 > لم يُجر أي تغيير في قاعدة بيانات الإنتاج `gpwwnuuicywsvmmhxngs`، أو نطاق الإنتاج، أو إعداد Vercel Production، أو تطبيق الطلبات، أو المنيو العام، أو نظام المصادقة التشغيلي.
 

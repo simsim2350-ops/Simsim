@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { appConfig } from '../config'
 
-// عميل Supabase الرئيسي. إعداداته (URL + المفتاح publishable + منطق fallback/التحذير)
-// تأتي من طبقة الإعدادات الموحّدة (src/config) — مصدر واحد، لا قراءة import.meta.env هنا.
+// عميل Supabase الرئيسي. إعداداته غير السرّية تأتي من طبقة الإعدادات الموحّدة.
+// لا يوجد fallback إلى Production: بوابة App تمنع التهيئة عندما تكون متغيرات البيئة ناقصة.
 export const supabase = createClient(
   appConfig.supabaseUrl,
   appConfig.supabaseAnonKey,

@@ -5,6 +5,7 @@ import { useAuthStore } from './store/authStore'
 import { canAccess, firstAllowedPath } from './lib/permissions'
 import { has as featureHas, state as featureState, accessStatus } from './lib/features'
 import RootErrorBoundary from './components/RootErrorBoundary'
+import { appConfig } from './config'
 import RequirePlatformAdmin from './admin/RequirePlatformAdmin'
 
 // فشل تحميل chunk يجب أن يصل إلى RootErrorBoundary فورًا؛ لا نعيد التحميل قسرًا ولا نرجع
@@ -68,6 +69,19 @@ function PageLoader({ phase = 'AUTH_SESSION' }) {
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       <strong style={{ fontSize:'16px' }}>جارٍ تجهيز حسابك…</strong>
       <span style={{ color:'#B7BBC3', fontSize:'12px' }}>مرحلة التهيئة: {phase}</span>
+    </div>
+  )
+}
+
+function SupabaseConfigurationError() {
+  return (
+    <div dir="rtl" style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0B0B0F', padding:'24px', fontFamily:'Tajawal,sans-serif' }}>
+      <div role="alert" style={{ width:'100%', maxWidth:'520px', background:'white', borderRadius:'18px', padding:'26px', textAlign:'center' }}>
+        <div aria-hidden="true" style={{ width:'46px', height:'46px', display:'grid', placeItems:'center', margin:'0 auto 12px', borderRadius:'14px', background:'#FEF2F2', color:'#B91C1C', fontSize:'24px', fontWeight:'900' }}>!</div>
+        <h1 style={{ margin:'0 0 8px', color:'#111827', fontSize:'20px', fontWeight:'900' }}>إعداد Supabase غير مكتمل</h1>
+        <p style={{ margin:'0 0 12px', color:'#6B7280', fontSize:'14px', lineHeight:'1.75' }}>لن يتصل التطبيق بقاعدة أخرى كبديل. اضبط متغيرات البيئة المطلوبة ثم أعد نشر هذه البيئة.</p>
+        <code style={{ display:'block', padding:'10px', borderRadius:'9px', background:'#F3F4F6', color:'#374151', direction:'ltr', fontSize:'12px', overflowWrap:'anywhere' }}>{appConfig.missingKeys.join(', ')}</code>
+      </div>
     </div>
   )
 }
@@ -154,7 +168,7 @@ function RequirePage({ page, children }) {
   return children
 }
 
-export default function App() {
+function ConfiguredApp() {
   const initialize = useAuthStore((s) => s.initialize)
   const loadFeatures = useAuthStore((s) => s.loadFeatures)
   useEffect(() => {
@@ -220,4 +234,9 @@ export default function App() {
     </BrowserRouter>
     </RootErrorBoundary>
   )
+}
+
+export default function App() {
+  if (!appConfig.isConfigured) return <SupabaseConfigurationError />
+  return <ConfiguredApp />
 }
