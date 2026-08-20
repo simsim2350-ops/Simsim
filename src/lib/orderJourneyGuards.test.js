@@ -149,3 +149,41 @@ describe('GUARD-SQL-004 — كل RPC في رحلة الطلب معرَّفة ف�
     ).toBe(true)
   })
 })
+
+// ————————————————————————————————————————————————————————————————————————
+// GUARD-STM-001 — أزرار "تقديم الحالة" في Orders.jsx (ثابت STATUS) تطابق مصفوفة الانتقالات
+// المفروضة قاعدياً في sql/order_state_machine.sql (PHASE 5 — يمنع انحراف آلة الحالة).
+// ————————————————————————————————————————————————————————————————————————
+const ordersJsxText = readFileSync(join(sqlDir, '..', 'src', 'pages', 'Orders.jsx'), 'utf8')
+const STATUS_BLOCK_RE = /const STATUS = \{([\s\S]*?)\n\}/
+const statusBlockMatch = STATUS_BLOCK_RE.exec(ordersJsxText)
+const STATUS_ENTRY_RE = /(\w+):\s*\{[^}]*\}/g
+const uiForwardTransitions = []
+if (statusBlockMatch) {
+  for (const m of statusBlockMatch[1].matchAll(STATUS_ENTRY_RE)) {
+    const nextMatch = /next:\s*(?:'(\w+)'|null)/.exec(m[0])
+    if (nextMatch?.[1]) uiForwardTransitions.push([m[1], nextMatch[1]])
+  }
+}
+
+const stateMachineFile = sqlFiles.find((f) => f.name === 'order_state_machine.sql')
+const TUPLE_RE = /\(\s*'(\w+)'\s*,\s*'(\w+)'\s*\)/g
+const smAllowedPairs = new Set()
+if (stateMachineFile) {
+  for (const m of stateMachineFile.text.matchAll(TUPLE_RE)) {
+    smAllowedPairs.add(`${m[1]}->${m[2]}`)
+  }
+}
+
+describe('GUARD-STM-001 — أزرار "تقديم الحالة" في Orders.jsx تطابق مصفوفة enforce_order_transition', () => {
+  it('sql/order_state_machine.sql موجود وثابت STATUS في Orders.jsx مُلتقَط (شبكة أمان على المُحلِّل)', () => {
+    expect(stateMachineFile, 'sql/order_state_machine.sql غير موجود — PHASE 5 لم تُنفَّذ بعد؟').toBeTruthy()
+    expect(uiForwardTransitions.length, 'لم يُلتقَط أي انتقال من ثابت STATUS في Orders.jsx').toBeGreaterThan(0)
+  })
+  it.each(uiForwardTransitions.map(([from, to]) => [`${from} -> ${to}`, from, to]))('%s', (_label, from, to) => {
+    expect(
+      smAllowedPairs.has(`${from}->${to}`),
+      `الانتقال ${from}->${to} في ثابت STATUS بـOrders.jsx غير موجود في مصفوفة enforce_order_transition — زرّ "تقديم الحالة" سيُرفَض خادمياً!`,
+    ).toBe(true)
+  })
+})

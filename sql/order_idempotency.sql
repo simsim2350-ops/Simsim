@@ -2,6 +2,15 @@
 -- نُفِّذ فعلياً على قاعدة الإنتاج gpwwnuuicywsvmmhxngs. اختُبر داخل معاملة ROLLBACK قبل التنفيذ.
 -- Rollback: DROP COLUMN idempotency_key (يُسقط الفهرس معه تلقائياً) + استعادة الدالتين بالتوقيع
 -- السابق (11/7 معاملات بدل 12/8) — المعامل الجديد اختياري بقيمة NULL فلا يكسر أي عميل قديم.
+--
+-- ⚠️ تصحيح لاحق (اكتُشف أثناء PHASE 5 — ADR-50): CREATE OR REPLACE FUNCTION بمعامل إضافي **لا يستبدل**
+-- الدالة في Postgres — القائمة الوسيطة (arguments) مختلفة فتُنشئ Overload جديداً بجانب القديمة، لا بدلاً
+-- عنها. عند تنفيذ هذا الملف أول مرة بقيت نسختان حيّتان من create_order/create_order_from_table_qr
+-- (11/7-arg قديمة بلا idempotency + 12/8-arg هذا الملف) إلى أن أُسقطت القديمتان صراحة في PHASE 5:
+--   DROP FUNCTION IF EXISTS public.create_order(uuid, uuid, text, text, text, text, text, jsonb, text, text, numeric);
+--   DROP FUNCTION IF EXISTS public.create_order_from_table_qr(uuid, jsonb, text, text, text, text, numeric);
+-- عند إعادة تنفيذ هذا الملف بالكامل على قاعدة جديدة: نفّذ الـDROP أعلاه أولاً إن كانت النسخة القديمة
+-- (بلا p_idempotency_key) موجودة، قبل الـCREATE OR REPLACE أدناه.
 
 ALTER TABLE public.orders ADD COLUMN idempotency_key uuid;
 CREATE UNIQUE INDEX orders_idempotency_key_uidx ON public.orders (idempotency_key) WHERE idempotency_key IS NOT NULL;
