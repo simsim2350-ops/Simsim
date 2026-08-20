@@ -22,20 +22,55 @@ async function ensureExpanded(card: Locator, type: string) {
   await expect(fields.first()).toBeVisible()
 }
 
+async function sectionCardsWithHeading(page: Page, type: string, heading: string): Promise<Locator[]> {
+  const cards = sectionCards(page, type)
+  const matches: Locator[] = []
+  for (let index = 0; index < await cards.count(); index += 1) {
+    const card = cards.nth(index)
+    await ensureExpanded(card, type)
+    if (await card.locator('input:not([type="checkbox"])').nth(1).inputValue() === heading) matches.push(card)
+  }
+  return matches
+}
+
+async function sectionCardWithHeading(page: Page, type: string, heading: string): Promise<Locator> {
+  const matches = await sectionCardsWithHeading(page, type, heading)
+  if (matches.length !== 1) throw new Error(`Expected exactly one ${type} section with heading: ${heading}; found ${matches.length}`)
+  return matches[0]
+}
+
+async function sectionPosition(card: Locator): Promise<number> {
+  return card.evaluate((element) => Array.from(element.parentElement?.children || []).indexOf(element))
+}
+
+async function moveSectionBefore(page: Page, movingType: string, movingHeading: string, targetType: string, targetHeading: string) {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const moving = await sectionCardWithHeading(page, movingType, movingHeading)
+    const target = await sectionCardWithHeading(page, targetType, targetHeading)
+    if (await sectionPosition(moving) < await sectionPosition(target)) return
+    await moving.getByRole('button', { name: '↑' }).click()
+  }
+  throw new Error(`Unable to move ${movingType} before ${targetType} within 50 operations`)
+}
+
 async function publish(page: Page) {
-  page.once('dialog', (dialog) => dialog.accept())
   await page.getByRole('button', { name: 'نشر الآن' }).click()
   await expect(page.getByText('نُشرت المراجعة وأُبطل كاش الصفحة الموجّه.')).toBeVisible({ timeout: 20_000 })
 }
 
-async function publicHtml(page: Page, url: string): Promise<string> {
-  const response = await page.request.get(url)
-  expect(response.status()).toBe(200)
-  return response.text()
+async function publicText(page: Page, url: string): Promise<string> {
+  const publicPage = await page.context().newPage()
+  try {
+    const response = await publicPage.goto(url, { waitUntil: 'domcontentloaded' })
+    expect(response?.status()).toBe(200)
+    return await publicPage.locator('body').innerText()
+  } finally {
+    await publicPage.close()
+  }
 }
 
 async function expectPublic(page: Page, url: string, text: string, present: boolean) {
-  await expect.poll(async () => (await publicHtml(page, url)).includes(text), { timeout: 25_000, intervals: [1_000, 2_000, 3_000] }).toBe(present)
+  await expect.poll(async () => (await publicText(page, url)).includes(text), { timeout: 25_000, intervals: [1_000, 2_000, 3_000] }).toBe(present)
 }
 
 test('Staging Typed Sections E2E publishes and controls HERO, FAQ, CTA, and FEATURES without production egress', async ({ page }) => {
@@ -67,6 +102,8 @@ test('Staging Typed Sections E2E publishes and controls HERO, FAQ, CTA, and FEAT
   const protectedLoginUrl = secret ? `${loginUrl}?x-vercel-protection-bypass=${encodeURIComponent(secret)}` : loginUrl
   if (secret) await page.setExtraHTTPHeaders({ 'x-vercel-protection-bypass': secret, 'x-vercel-set-bypass-cookie': 'true' })
   await page.goto(protectedLoginUrl)
+  await page.waitForLoadState('domcontentloaded')
+  if (secret) await page.setExtraHTTPHeaders({})
   if (await page.getByRole('heading', { name: /Log in to Vercel/i }).isVisible().catch(() => false)) throw new Error('BLOCKED — Vercel Preview Protection is not bypassed for Playwright.')
   await page.getByLabel('البريد الإلكتروني').fill(email)
   await page.locator('input[type="password"]').fill(password)
@@ -77,7 +114,7 @@ test('Staging Typed Sections E2E publishes and controls HERO, FAQ, CTA, and FEAT
   await page.getByRole('button', { name: 'تحرير' }).first().click()
   await expect(page.getByText(/مسودة: home/)).toBeVisible({ timeout: 15_000 })
 
-  const suffix = '2026-08-20 14:00'
+  const suffix = `run-${Date.now().toString(36)}`
   const heroMarker = `E2E AUTO HERO ${suffix}`
   const faqMarker = `E2E AUTO FAQ ${suffix}`
   const featureMarker = `E2E AUTO FEATURES ${suffix}`
@@ -112,32 +149,37 @@ test('Staging Typed Sections E2E publishes and controls HERO, FAQ, CTA, and FEAT
   await expectPublic(page, publicUrl, faqMarker, true)
 
   // Hide the added FAQ, publish, and prove it is absent publicly.
-  const addedFaq = sectionCards(page, 'FAQ').last()
+  const addedFaq = await sectionCardWithHeading(page, 'FAQ', faqMarker)
   await addedFaq.locator('input[type="checkbox"]').uncheck()
   await publish(page)
   await expectPublic(page, publicUrl, faqMarker, false)
 
-  // Show it again, move it before FEATURES, publish, and prove public order changed.
-  const shownFaq = sectionCards(page, 'FAQ').last()
+  // Show it again, move it before the uniquely marked CTA, publish, and prove public order changed.
+  const shownFaq = await sectionCardWithHeading(page, 'FAQ', faqMarker)
   await shownFaq.locator('input[type="checkbox"]').check()
-  for (let step = 0; step < 5; step += 1) await sectionCards(page, 'FAQ').last().getByRole('button', { name: '↑' }).click()
+  await moveSectionBefore(page, 'FAQ', faqMarker, 'CTA', ctaMarker)
+  const reorderedFaq = await sectionCardWithHeading(page, 'FAQ', faqMarker)
+  const markedCta = await sectionCardWithHeading(page, 'CTA', ctaMarker)
+  expect(await sectionPosition(reorderedFaq)).toBeLessThan(await sectionPosition(markedCta))
   await publish(page)
   await expectPublic(page, publicUrl, faqMarker, true)
   await expect.poll(async () => {
-    const html = await publicHtml(page, publicUrl)
-    return html.indexOf(faqMarker) < html.indexOf(featureMarker)
+    const text = await publicText(page, publicUrl)
+    return text.indexOf(faqMarker) < text.indexOf(ctaMarker)
   }, { timeout: 25_000, intervals: [1_000, 2_000, 3_000] }).toBe(true)
 
   // Duplicate the added FAQ, publish, then delete the duplicate and prove its removal publicly.
-  const visibleFaq = sectionCards(page, 'FAQ').first()
+  const visibleFaq = await sectionCardWithHeading(page, 'FAQ', faqMarker)
   await visibleFaq.getByRole('button', { name: 'نسخ' }).click()
   await publish(page)
-  const copiesAfterDuplicate = (await publicHtml(page, publicUrl).match(new RegExp(faqMarker, 'g')) || []).length
+  const copiesAfterDuplicate = ((await publicText(page, publicUrl)).match(new RegExp(faqMarker, 'g')) || []).length
   expect(copiesAfterDuplicate).toBeGreaterThan(1)
 
-  await sectionCards(page, 'FAQ').nth(1).getByRole('button', { name: 'حذف' }).click()
+  const faqCopies = await sectionCardsWithHeading(page, 'FAQ', faqMarker)
+  expect(faqCopies).toHaveLength(2)
+  await faqCopies[1].getByRole('button', { name: 'حذف' }).first().click()
   await publish(page)
-  await expect.poll(async () => (await publicHtml(page, publicUrl).match(new RegExp(faqMarker, 'g')) || []).length, { timeout: 25_000, intervals: [1_000, 2_000, 3_000] }).toBeLessThan(copiesAfterDuplicate)
+  await expect.poll(async () => ((await publicText(page, publicUrl)).match(new RegExp(faqMarker, 'g')) || []).length, { timeout: 25_000, intervals: [1_000, 2_000, 3_000] }).toBeLessThan(copiesAfterDuplicate)
 
   expect(productionRequests, productionRequests.join('\n')).toEqual([])
   expect(marketingFailures, marketingFailures.join('\n')).toEqual([])
