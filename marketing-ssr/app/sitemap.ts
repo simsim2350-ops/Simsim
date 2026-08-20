@@ -1,9 +1,10 @@
 import type { MetadataRoute } from 'next'
 import { getPublishedPageIndex } from '@/lib/marketing-repository'
+import { marketingSiteUrl } from '@/lib/site-url'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [arabic, english] = await Promise.all([getPublishedPageIndex('ar'), getPublishedPageIndex('en')])
-  const base = process.env.MARKETING_SITE_URL || 'https://marketing.simsimmenu.com'
+  const base = marketingSiteUrl()
   const pages = [...arabic, ...english].map((page) => {
     const path = page.locale === 'ar' ? (page.slug === 'home' ? '/' : `/${page.slug}`) : (page.slug === 'home' ? '/en' : `/en/${page.slug}`)
     return { url: new URL(path, base).toString(), lastModified: page.publishedAt ? new Date(page.publishedAt) : new Date(), changeFrequency: 'weekly' as const, priority: page.slug === 'home' ? 1 : 0.7 }
