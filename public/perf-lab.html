@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>SIMSIM — Perf Lab</title>
+<style>
+  :root { --bg:#0B0B0F; --card:#16161C; --line:#2A2A33; --txt:#F5F5F7; --dim:#9CA3AF; --ok:#22C55E; --warn:#F59E0B; --bad:#EF4444; --acc:#6366F1; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; background:var(--bg); color:var(--txt); font-family:system-ui,-apple-system,'Tajawal',sans-serif; padding:14px; padding-bottom:40px; }
+  h1 { font-size:17px; margin:0 0 2px; }
+  .sub { font-size:12px; color:var(--dim); margin-bottom:14px; line-height:1.7; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:12px; }
+  .card h2 { font-size:13px; margin:0 0 10px; color:var(--dim); font-weight:700; }
+  label { display:block; font-size:12px; color:var(--dim); margin:8px 0 4px; }
+  input, select { width:100%; padding:10px; border-radius:10px; border:1px solid var(--line); background:#0F0F14; color:var(--txt); font-size:13px; font-family:inherit; }
+  button { width:100%; padding:14px; border-radius:12px; border:0; background:var(--acc); color:#fff; font-size:15px; font-weight:800; font-family:inherit; margin-top:8px; }
+  button:disabled { opacity:.45; }
+  button.sec { background:#26262F; }
+  button.ok { background:var(--ok); }
+  .row { display:flex; gap:8px; }
+  .row > button { flex:1; }
+  .status { font-size:12px; color:var(--dim); margin-top:10px; white-space:pre-wrap; line-height:1.8; max-height:190px; overflow:auto; background:#0F0F14; border-radius:10px; padding:10px; border:1px solid var(--line); }
+  .badge { display:inline-block; font-size:10px; padding:2px 8px; border-radius:100px; margin-inline-start:6px; }
+  .b-done { background:rgba(34,197,94,.16); color:var(--ok); }
+  .b-todo { background:#26262F; color:var(--dim); }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  td { padding:6px 4px; border-bottom:1px solid var(--line); }
+  td:last-child { text-align:end; font-variant-numeric:tabular-nums; }
+  .na { color:var(--warn); font-size:11px; }
+  .stage { position:fixed; inset:0; background:#000; z-index:50; display:none; }
+  .stage.on { display:block; }
+  .stage .bar { position:absolute; top:0; inset-inline:0; height:46px; background:#0B0B0F; color:#fff; font-size:12px; display:flex; align-items:center; justify-content:center; z-index:2; border-bottom:1px solid var(--line); }
+  .stage .wrap { position:absolute; top:46px; inset-inline-start:0; }
+  iframe { width:390px; height:844px; border:0; display:block; transform-origin:top right; background:#fff; }
+  pre { background:#0F0F14; border:1px solid var(--line); border-radius:10px; padding:10px; font-size:10px; overflow:auto; max-height:240px; direction:ltr; text-align:left; }
+  .warnbox { background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.35); color:#FCD34D; font-size:11.5px; border-radius:10px; padding:10px; line-height:1.8; }
+</style>
+</head>
+<body>
+
+<h1>SIMSIM — Perf Lab</h1>
+<div class="sub">أداة قياس منفصلة. لا تعدّل المنيو ولا البيانات — تفتحه داخل إطار 390×844 وتقرأ مقاييسه فقط.</div>
+
+<div class="card">
+  <h2>الإعداد</h2>
+  <label>رابط المنيو</label>
+  <input id="url" value="/menu/simsim">
+  <label>حالة الكاش لهذا الاختبار (تُسجَّل في التقرير كما تختارها)</label>
+  <select id="cacheMode">
+    <option value="cold">Cold — فتحتُ الأداة في وضع تصفح متخفٍّ أو مسحتُ بيانات الموقع</option>
+    <option value="warm">Warm — المنيو محمّل سابقاً في هذه الجلسة</option>
+  </select>
+</div>
+
+<div class="card">
+  <h2>الاختبارات</h2>
+  <button id="t1">TEST 1 — Cold Load <span id="s1" class="badge b-todo">لم يُنفَّذ</span></button>
+  <button id="t2" class="sec">TEST 2 — Normal Scroll <span id="s2" class="badge b-todo">لم يُنفَّذ</span></button>
+  <button id="t3" class="sec">TEST 3 — Fast Scroll <span id="s3" class="badge b-todo">لم يُنفَّذ</span></button>
+  <button id="t4" class="sec">TEST 4 — Reverse Scroll <span id="s4" class="badge b-todo">لم يُنفَّذ</span></button>
+  <button id="t5" class="sec">TEST 5 — Warm Cache <span id="s5" class="badge b-todo">لم يُنفَّذ</span></button>
+  <div class="status" id="log">جاهز.</div>
+</div>
+
+<div class="card">
+  <h2>النتيجة</h2>
+  <div id="tbl"><div class="sub">لم تُنفَّذ اختبارات بعد.</div></div>
+  <div class="row">
+    <button id="copy" class="ok">نسخ JSON</button>
+    <button id="reset" class="sec">مسح الكل</button>
+  </div>
+  <pre id="out" style="display:none"></pre>
+</div>
+
+<div class="card">
+  <h2>ما لا يستطيع المتصفح قياسه</h2>
+  <div class="warnbox" id="limits"></div>
+</div>
+
+<div class="stage" id="stage">
+  <div class="bar" id="bar">…</div>
+  <div class="wrap" id="wrap"></div>
+</div>
+
+<script>
+const SCHEMA = 'simsim-perf-lab/2';
+const TARGETS = { fcp:1800, lcp:2500, cls:0.1, tbt:200, firstProduct:2500, firstProductImage:2500 };
+const $ = id => document.getElementById(id);
+const log = m => { const l=$('log'); l.textContent += '\n'+m; l.scrollTop = l.scrollHeight; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const round = (v,d=0) => v==null||!isFinite(v) ? null : Number(Number(v).toFixed(d));
+
+let REPORT = load();
+function load(){ try { return JSON.parse(localStorage.getItem(SCHEMA)) || fresh(); } catch(e){ return fresh(); } }
+function fresh(){
+  return { schema:SCHEMA, url:null, timestamp:null, env:null,
+    coldLoad:{}, warmLoad:{}, scrollNormal:{}, scrollFast:{}, scrollReverse:{},
+    images:{}, prefetch:{}, verdict:{},
+    notAvailable:{
+      networkThrottling:'NOT AVAILABLE — المتصفح لا يسمح لصفحة بتقييد الشبكة. استخدم Chrome DevTools عبر USB (Remote debugging) أو PageSpeed Insights (Mobile) للحصول على Slow 4G حقيقي.',
+      cacheDisabled:'NOT AVAILABLE — لا يمكن تعطيل HTTP cache من JS. الحل: تشغيل الاختبار في نافذة تصفح متخفٍّ، أو Settings ← Privacy ← Clear browsing data قبل TEST 1.',
+      deviceScaleFactor:'NOT AVAILABLE — لا يمكن فرض DPR=3؛ التقرير يسجّل DPR الحقيقي للجهاز.',
+      trueTBT:'NOT AVAILABLE — TBT الحقيقي يحتاج TTI. المُسجَّل هو مجموع تجاوز Long Tasks فوق 50ms، وهو تقريب معلن.'
+    }
+  };
+}
+function save(){ localStorage.setItem(SCHEMA, JSON.stringify(REPORT)); paint(); }
+
+$('limits').textContent = Object.values(fresh().notAvailable).join('\n\n');
+
+function env(){
+  const c = navigator.connection || {};
+  return {
+    userAgent: navigator.userAgent,
+    devicePixelRatio: window.devicePixelRatio,
+    screen: screen.width+'x'+screen.height,
+    frameViewport: '390x844 (مفروض على الإطار)',
+    effectiveType: c.effectiveType ?? 'NOT AVAILABLE',
+    downlinkMbps: c.downlink ?? 'NOT AVAILABLE',
+    rttMs: c.rtt ?? 'NOT AVAILABLE',
+    saveData: c.saveData ?? 'NOT AVAILABLE',
+    deviceMemoryGB: navigator.deviceMemory ?? 'NOT AVAILABLE',
+    cpuCores: navigator.hardwareConcurrency ?? 'NOT AVAILABLE',
+    networkThrottled: false
+  };
+}
+
+// ---------------------------------------------------------------- الإطار
+function mount(){
+  const wrap = $('wrap');
+  wrap.innerHTML = '';
+  const f = document.createElement('iframe');
+  // إبقاء viewport الداخلي 390×844 مهما كان حجم الشاشة، مع تصغير بصري فقط.
+  const k = Math.min(1, (window.innerWidth) / 390, (window.innerHeight - 46) / 844);
+  f.style.transform = 'scale('+k+')';
+  wrap.style.width = (390*k)+'px';
+  wrap.appendChild(f);
+  $('stage').classList.add('on');
+  return f;
+}
+function unmount(){ $('stage').classList.remove('on'); $('wrap').innerHTML=''; }
+
+// المنيو قد يمرّر النافذة أو حاوية داخلية — نكتشف العنصر القابل للتمرير فعلياً.
+function scroller(W){
+  const d = W.document;
+  if (d.scrollingElement && d.scrollingElement.scrollHeight > d.scrollingElement.clientHeight + 40) return d.scrollingElement;
+  const all = d.querySelectorAll('div');
+  for (const el of all) if (el.scrollHeight > el.clientHeight + 200 && /auto|scroll/.test(W.getComputedStyle(el).overflowY)) return el;
+  return d.scrollingElement || d.documentElement;
+}
+const posOf = el => el === null ? 0 : el.scrollTop;
+const scrollBy = (el, dy) => { el.scrollTop += dy; };
+
+// ---------------------------------------------------------------- جوهر القياس
+async function measure({ kind, settleMs, phases }) {
+  const url = $('url').value.trim();
+  const f = mount();
+  $('bar').textContent = kind + ' — جارٍ التحميل…';
+
+  const marks = { firstCategory:null, firstProduct:null, firstProductImage:null, firstHeaderPaint:null };
+  const prefetch = [];           // روابط التسخين التي يحقنها PR-03
+  const seenPrefetch = new Set();
+  const vitals = { fcp:null, lcp:null, lcpElement:null, lcpUrl:null, cls:0, longTasks:[] };
+  let W = null, obsReady = false, lcpSupported = false;
+
+  // فاصل زمني: نبدأ المراقبة فوراً ونستمر طوال الاختبار.
+  const tick = setInterval(() => {
+    try {
+      if (!f.contentWindow || !f.contentDocument) return;
+      W = f.contentWindow;
+      const D = f.contentDocument;
+      const now = W.performance.now();
+
+      if (!obsReady && W.PerformanceObserver) {
+        obsReady = true;
+        try {
+          new W.PerformanceObserver(l => { for (const e of l.getEntries()) if (e.name==='first-contentful-paint') vitals.fcp = e.startTime; })
+            .observe({ type:'paint', buffered:true });
+        } catch(e){}
+        try {
+          new W.PerformanceObserver(l => {
+            const es = l.getEntries(); const last = es[es.length-1];
+            if (!last) return;
+            lcpSupported = true;
+            vitals.lcp = last.startTime;
+            vitals.lcpUrl = last.url || null;
+            vitals.lcpElement = last.element ? last.element.tagName : null;
+          }).observe({ type:'largest-contentful-paint', buffered:true });
+        } catch(e){}
+        try {
+          new W.PerformanceObserver(l => { for (const e of l.getEntries()) if (!e.hadRecentInput) vitals.cls += e.value; })
+            .observe({ type:'layout-shift', buffered:true });
+        } catch(e){}
+        try {
+          new W.PerformanceObserver(l => { for (const e of l.getEntries()) vitals.longTasks.push(e.duration); })
+            .observe({ type:'longtask', buffered:true });
+        } catch(e){}
+      }
+
+      // علامات المحتوى الحقيقي (هوكات DOM فعلية في المنيو)
+      if (marks.firstCategory == null && D.querySelector('[id^="tab-"]')) marks.firstCategory = now;
+      if (marks.firstProduct == null && D.querySelector('.sm-products > *')) marks.firstProduct = now;
+      if (marks.firstProductImage == null) {
+        const img = [...D.querySelectorAll('.sm-products img')].find(i => i.complete && i.naturalWidth > 0);
+        if (img) marks.firstProductImage = now;
+      }
+
+      // PR-03: التقاط روابط التسخين لحظة ظهورها
+      for (const l of D.querySelectorAll('link[rel="preload"][as="image"]')) {
+        const key = l.href + '|' + (l.getAttribute('imagesrcset')||'');
+        if (seenPrefetch.has(key)) continue;
+        seenPrefetch.add(key);
+        prefetch.push({ t: round(now), href: l.href, imagesrcset: l.getAttribute('imagesrcset'), fetchpriority: l.getAttribute('fetchpriority') });
+      }
+    } catch(e){ /* أثناء التنقل قد يتعذر الوصول للحظة */ }
+  }, 50);
+
+  f.src = url;
+  await new Promise(r => { f.onload = r; setTimeout(r, 45000); });
+  $('bar').textContent = kind + ' — استقرار…';
+  await sleep(settleMs);
+
+  // مراحل التمرير (إن وُجدت)
+  const scrollLog = [];
+  if (phases && W) {
+    const el = scroller(W);
+    for (const p of phases) {
+      $('bar').textContent = kind + ' — ' + p.label;
+      for (let i=0; i<p.steps; i++) {
+        scrollBy(el, p.dy);
+        await sleep(p.pause);
+        const D = f.contentDocument;
+        const blanks = [...D.querySelectorAll('.sm-products img')].filter(img => {
+          const r = img.getBoundingClientRect();
+          return r.top < 844 && r.bottom > 0 && (!img.complete || img.naturalWidth === 0);
+        }).length;
+        scrollLog.push({ phase:p.label, step:i, t:round(W.performance.now()), scrollTop:round(posOf(el)), blankImagesInView:blanks, cls:round(vitals.cls,4), prefetchSoFar:prefetch.length });
+      }
+    }
+  }
+
+  clearInterval(tick);
+
+  // ---- تجميع من Resource Timing ----
+  const res = W ? W.performance.getEntriesByType('resource') : [];
+  const isImg = r => r.initiatorType === 'img' || /\/storage\/v1\/(render\/image|object)\//.test(r.name) || /\.(webp|jpe?g|png|avif)(\?|$)/i.test(r.name);
+  const imgs = res.filter(isImg);
+  const tao = imgs.some(r => r.transferSize > 0);   // هل يسمح المصدر بقراءة البايتات؟
+  const counts = {};
+  for (const r of imgs) counts[r.name] = (counts[r.name]||0) + 1;
+  const dups = Object.entries(counts).filter(([,n]) => n>1).map(([url,n]) => ({ url, count:n }));
+
+  // ---- PR-03: هل الرابط المُسخَّن هو نفسه الذي طلبته <img>؟ ----
+  const warmed = new Set();
+  for (const p of prefetch) {
+    if (p.href) warmed.add(p.href);
+    if (p.imagesrcset) for (const c of p.imagesrcset.split(',')) warmed.add(c.trim().split(' ')[0]);
+  }
+  const actual = W ? [...f.contentDocument.querySelectorAll('.sm-products img')].map(i => i.currentSrc).filter(Boolean) : [];
+  const matched = actual.filter(u => warmed.has(u));
+  const prefetchVerdict = prefetch.length === 0 ? 'NO_PREFETCH_FIRED'
+    : matched.length === 0 ? 'PREFETCH_URL_MISMATCH' : 'MATCH';
+
+  // ---- جاهزية القسم التالي: متى اكتملت أول صورة في كل قسم ----
+  const cats = W ? [...f.contentDocument.querySelectorAll('[id^="cat-"]')].map(sec => {
+    const img = sec.querySelector('.sm-products img');
+    const entry = img && img.currentSrc ? res.find(r => r.name === img.currentSrc) : null;
+    return { category: sec.id, firstImageReadyMs: entry ? round(entry.responseEnd) : null,
+             ready: img ? !!(img.complete && img.naturalWidth>0) : null };
+  }) : [];
+
+  const tbt = vitals.longTasks.reduce((s,d) => s + Math.max(0, d-50), 0);
+  const result = {
+    kind, ranAt: new Date().toISOString(), cacheMode: $('cacheMode').value,
+    fcpMs: round(vitals.fcp),
+    lcpMs: lcpSupported ? round(vitals.lcp) : 'NOT AVAILABLE — لم تُصدر largest-contentful-paint داخل الإطار؛ استخدم PageSpeed Insights أو DevTools للحصول على LCP موثوق.',
+    lcpElement: vitals.lcpElement, lcpUrl: vitals.lcpUrl,
+    cls: round(vitals.cls, 4),
+    tbtApproxMs: round(tbt), longTaskCount: vitals.longTasks.length,
+    firstCategoryMs: round(marks.firstCategory),
+    firstProductMs: round(marks.firstProduct),
+    firstProductImageMs: round(marks.firstProductImage),
+    imageRequests: imgs.length,
+    imageBytes: tao ? imgs.reduce((s,r) => s + (r.transferSize||0), 0)
+                    : 'NOT AVAILABLE — موارد Supabase من أصل آخر بلا ترويسة Timing-Allow-Origin، فحقل transferSize يعود صفراً. القياس الموثوق للبايتات من DevTools ← Network.',
+    duplicateImageRequests: dups.length, duplicates: dups.slice(0,10),
+    prefetchRequests: prefetch.length,
+    prefetchUrlMatch: prefetchVerdict,
+    prefetchMatchedCount: matched.length,
+    prefetchSample: prefetch.slice(0,3),
+    actualSample: actual.slice(0,3),
+    categoriesReady: cats,
+    scrollLog
+  };
+
+  unmount();
+  return result;
+}
+
+// ---------------------------------------------------------------- التشغيل
+const PHASES = {
+  normal:  [{ label:'تمرير طبيعي', steps:8,  dy:700,  pause:2200 }],
+  fast:    [{ label:'تمرير سريع',  steps:14, dy:1400, pause:180  }],
+  reverse: [{ label:'نزول',        steps:7,  dy:1200, pause:700 },
+            { label:'رجوع لأعلى',  steps:7,  dy:-1200, pause:700 }]
+};
+
+async function run(kind, key, badge, opts){
+  for (const b of ['t1','t2','t3','t4','t5']) $(b).disabled = true;
+  log('▶ ' + kind + ' — بدأ');
+  try {
+    const r = await measure(Object.assign({ kind }, opts));
+    REPORT[key] = r;
+    REPORT.url = new URL($('url').value, location.href).href;
+    REPORT.timestamp = new Date().toISOString();
+    REPORT.env = env();
+    REPORT.images = { requests:r.imageRequests, bytes:r.imageBytes, duplicates:r.duplicateImageRequests };
+    REPORT.prefetch = { requests:r.prefetchRequests, urlMatch:r.prefetchUrlMatch, matched:r.prefetchMatchedCount };
+    REPORT.verdict = verdict();
+    save();
+    $(badge).className = 'badge b-done'; $(badge).textContent = 'تم';
+    log('✔ ' + kind + ' — FCP=' + r.fcpMs + ' LCP=' + r.lcpMs + ' CLS=' + r.cls + ' prefetch=' + r.prefetchUrlMatch);
+  } catch(e){
+    unmount(); log('✖ ' + kind + ' — خطأ: ' + e.message);
+  }
+  for (const b of ['t1','t2','t3','t4','t5']) $(b).disabled = false;
+}
+
+function verdict(){
+  const c = REPORT.coldLoad || {};
+  const j = (v, t) => (typeof v !== 'number') ? 'NOT AVAILABLE' : (v <= t ? 'PASS' : 'FAIL');
+  const pf = [REPORT.scrollNormal, REPORT.scrollFast, REPORT.scrollReverse, REPORT.coldLoad]
+    .map(r => r && r.prefetchUrlMatch).filter(Boolean);
+  return {
+    fcp: j(c.fcpMs, TARGETS.fcp),
+    lcp: j(c.lcpMs, TARGETS.lcp),
+    cls: j(c.cls, TARGETS.cls),
+    tbtApprox: j(c.tbtApproxMs, TARGETS.tbt),
+    firstProduct: j(c.firstProductMs, TARGETS.firstProduct),
+    firstProductImage: j(c.firstProductImageMs, TARGETS.firstProductImage),
+    prefetchUrlMatch: pf.includes('MATCH') ? 'MATCH' : (pf.length ? pf[0] : 'NOT AVAILABLE'),
+    networkConditions: 'NOT THROTTLED — القياس جرى على شبكة الجهاز الفعلية، لا على Slow 4G.'
+  };
+}
+
+function paint(){
+  const rows = [];
+  const c = REPORT.coldLoad || {};
+  const add = (k,v) => rows.push('<tr><td>'+k+'</td><td>'+(typeof v==='string'&&v.startsWith('NOT AVAILABLE')?'<span class="na">NOT AVAILABLE</span>':(v==null?'—':v))+'</td></tr>');
+  if (c.fcpMs !== undefined) {
+    add('FCP (ms)', c.fcpMs); add('LCP (ms)', c.lcpMs); add('CLS', c.cls);
+    add('TBT~ (ms)', c.tbtApproxMs); add('First Category (ms)', c.firstCategoryMs);
+    add('First Product (ms)', c.firstProductMs); add('First Product Image (ms)', c.firstProductImageMs);
+    add('Image Requests', c.imageRequests); add('Image Bytes', c.imageBytes);
+    add('Duplicate Images', c.duplicateImageRequests);
+    add('Prefetch Requests', c.prefetchRequests); add('Prefetch URL Match', c.prefetchUrlMatch);
+  }
+  $('tbl').innerHTML = rows.length ? '<table>'+rows.join('')+'</table>' : '<div class="sub">لم تُنفَّذ اختبارات بعد.</div>';
+  for (const [k,b] of [['coldLoad','s1'],['scrollNormal','s2'],['scrollFast','s3'],['scrollReverse','s4'],['warmLoad','s5']])
+    if (REPORT[k] && REPORT[k].kind) { $(b).className='badge b-done'; $(b).textContent='تم'; }
+}
+
+$('t1').onclick = () => run('cold-load',      'coldLoad',      's1', { settleMs:20000 });
+$('t2').onclick = () => run('scroll-normal',  'scrollNormal',  's2', { settleMs:8000, phases:PHASES.normal });
+$('t3').onclick = () => run('scroll-fast',    'scrollFast',    's3', { settleMs:8000, phases:PHASES.fast });
+$('t4').onclick = () => run('scroll-reverse', 'scrollReverse', 's4', { settleMs:8000, phases:PHASES.reverse });
+$('t5').onclick = () => run('warm-cache',     'warmLoad',      's5', { settleMs:20000 });
+
+$('copy').onclick = async () => {
+  const txt = JSON.stringify(REPORT, null, 2);
+  $('out').style.display='block'; $('out').textContent = txt;
+  try { await navigator.clipboard.writeText(txt); log('✔ نُسخ إلى الحافظة ('+txt.length+' حرف)'); }
+  catch(e){ log('تعذّر النسخ التلقائي — انسخ النص الظاهر بالأسفل يدوياً.'); }
+};
+$('reset').onclick = () => { REPORT = fresh(); localStorage.removeItem(SCHEMA); $('out').style.display='none';
+  for (const b of ['s1','s2','s3','s4','s5']) { $(b).className='badge b-todo'; $(b).textContent='لم يُنفَّذ'; }
+  $('log').textContent='تم المسح.'; paint(); };
+
+paint();
+</script>
+</body>
+</html>
