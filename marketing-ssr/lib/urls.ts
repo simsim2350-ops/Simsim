@@ -1,4 +1,6 @@
-const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://simsimmenu.com'
+import { saasAppUrl } from './site-url'
+
+const configuredAppUrl = saasAppUrl()
 
 export function appUrl(path: string): string {
   if (!path.startsWith('/')) return path

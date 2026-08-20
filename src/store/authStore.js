@@ -141,6 +141,23 @@ export const useAuthStore = create((set, get) => ({
       console.info('[Auth bootstrap] AUTH_SESSION', { source, userId: session.user.id })
       set({ user: session.user, session, loading: true, authState: 'LOADING_DATA', authError: null, bootstrapStage: 'AUTH_SESSION' })
 
+      // حساب المنصّة لا يجب أن يمرّ عبر استئناف/سياق المطعم؛ هذا يجنب اعتماده
+      // على RPC خاص بالمطاعم ويحافظ على فصل Super Admin عن نطاق المطاعم.
+      console.info('[Auth bootstrap] PLATFORM', { source, userId: session.user.id })
+      set({ bootstrapStage: 'PLATFORM' })
+      await withTimeout(
+        get().fetchPlatformStatus(),
+        { operation: 'platform_status_context' },
+      )
+      if (!isCurrentBootstrap()) return { destination: '/login', restaurant: null, cancelled: true }
+
+      if (get().isPlatformAdmin) {
+        const destination = get().resolveUserDestination()
+        console.info('[Auth bootstrap] READY_PLATFORM', { source, userId: session.user.id, destination })
+        set({ loading: false, authState: 'READY', authError: null, bootstrapStage: 'READY' })
+        return { destination, restaurant: null, source, platformAdmin: true }
+      }
+
       console.info('[Auth bootstrap] OWNER', { source, userId: session.user.id })
       set({ bootstrapStage: 'OWNER' })
       const { restaurant: resumedRestaurant, error: resumeError } = await withTimeout(
@@ -153,10 +170,7 @@ export const useAuthStore = create((set, get) => ({
       console.info('[Auth bootstrap] RESTAURANT', { source, userId: session.user.id })
       set({ bootstrapStage: 'RESTAURANT' })
       await withTimeout(
-        Promise.all([
-          get().fetchRestaurant(session.user.id),
-          get().fetchPlatformStatus(),
-        ]),
+        get().fetchRestaurant(session.user.id),
         { operation: 'restaurant_context' },
       )
       if (!isCurrentBootstrap()) return { destination: '/login', restaurant: null, cancelled: true }
@@ -192,8 +206,9 @@ export const useAuthStore = create((set, get) => ({
 
   // مصدر واحد للحقيقة لوجهة المالك/الموظف بعد اكتمال session + restaurant context.
   resolveUserDestination: () => {
-    const { user, restaurant, membership, isOwner } = get()
+    const { user, restaurant, membership, isOwner, isPlatformAdmin } = get()
     if (!user) return '/login'
+    if (isPlatformAdmin) return '/admin'
     if (!restaurant && !membership) return '/onboarding'
     if (isOwner && restaurant?.onboarding_completed === false) return '/onboarding'
     return '/dashboard'

@@ -56,7 +56,9 @@ function pageCache(slug: string, locale: Locale) {
   return unstable_cache(
     () => loadPublishedPage(slug, locale),
     ['marketing-page', slug, locale],
-    { revalidate: 300, tags: [`marketing-page:${slug}:${locale}`, `marketing-settings:${locale}`] },
+    // Scheduler يعمل خارج عملية Next.js؛ أي Data Cache طويل قد يعرض Revision قديمة بعد موعد النشر.
+    // تبقى الـtags لعمليات النشر اليدوي وإبطالات التطبيق، وTTL ثانية واحدة تحد من التأخر في النشر المجدول.
+    { revalidate: 1, tags: [`marketing-page:${slug}:${locale}`, `marketing-settings:${locale}`] },
   )
 }
 

@@ -1,5 +1,7 @@
--- Marketing CMS Phase 2 — Server-validated media registration (Staging only)
--- يحافظ على bucket والسياسات القائمة، ويمنع كتابة marketing_media مباشرةً من واجهة الإدارة.
+-- Marketing CMS — Staging schema drift repair v3
+-- Scope: Staging only. Fixes the PostgreSQL regex bound in the Media registration
+-- RPC that prevented valid paths from being registered after Storage upload.
+-- Does not touch production objects or production data.
 
 begin;
 
@@ -23,21 +25,30 @@ begin
   if not public.is_platform_admin() then
     raise exception 'platform admin required';
   end if;
+
   if p_bucket <> 'marketing-media' then
     raise exception 'unsupported media bucket';
   end if;
+
+  -- PostgreSQL permits regex repetition bounds only through 255. Keep the
+  -- 500-character policy as a normal length check and regex-check characters.
   if char_length(p_object_path) > 500
      or p_object_path !~ '^[a-z0-9][a-z0-9._/-]*$'
      or p_object_path like '%..%' then
     raise exception 'invalid object path';
   end if;
+
   if p_mime_type not in ('image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/svg+xml') then
     raise exception 'unsupported image type';
   end if;
+
   if p_byte_size is null or p_byte_size < 1 or p_byte_size > 10485760 then
     raise exception 'image size must be between 1 byte and 10 MB';
   end if;
-  if jsonb_typeof(p_alt_text) <> 'object' or jsonb_typeof(p_caption) <> 'object' or jsonb_typeof(p_metadata) <> 'object' then
+
+  if jsonb_typeof(p_alt_text) <> 'object'
+     or jsonb_typeof(p_caption) <> 'object'
+     or jsonb_typeof(p_metadata) <> 'object' then
     raise exception 'media metadata fields must be objects';
   end if;
 
@@ -72,7 +83,6 @@ begin
 end;
 $$;
 
-revoke all on function public.admin_register_marketing_media(text, text, text, bigint, jsonb, jsonb, jsonb) from public, anon;
-grant execute on function public.admin_register_marketing_media(text, text, text, bigint, jsonb, jsonb, jsonb) to authenticated;
+notify pgrst, 'reload schema';
 
 commit;

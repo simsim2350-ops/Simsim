@@ -6,6 +6,7 @@ const optional = (max = 360) => z.string().trim().max(max).optional().or(z.liter
 const cta = z.object({ label: text(80), href, trackingId: z.string().trim().max(62).optional().or(z.literal('')) })
 const heading = text(120)
 const basic = { eyebrow: optional(90), heading, description: optional(600) }
+const MUTED = '#9CA3AF'
 
 export const SECTION_TYPES = ['HERO', 'PROBLEM', 'BENEFITS', 'STEPS', 'MENU_PREVIEW', 'FEATURES', 'TRUST', 'PRICING', 'FAQ', 'CTA', 'VIDEO', 'IMAGE_TEXT', 'TESTIMONIALS', 'STATS', 'LOGOS', 'COMPARISON', 'CONTACT']
 

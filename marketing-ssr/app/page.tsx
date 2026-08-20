@@ -2,7 +2,9 @@ import type { Metadata } from 'next'
 import { PublishedMarketingPage } from '@/components/marketing/PublishedMarketingPage'
 import { getPublishedHome, getPublishedPlans } from '@/lib/marketing-repository'
 
-export const revalidate = 300
+// Keep data cached through unstable_cache tags, while rendering HTML per request.
+// This prevents a Vercel Full Route Cache entry from masking a successful tag revalidation.
+export const revalidate = 0
 
 export async function generateMetadata(): Promise<Metadata> {
   const marketing = await getPublishedHome()

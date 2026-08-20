@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import './styles.css'
+import { marketingSiteUrl } from '@/lib/site-url'
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.MARKETING_SITE_URL || 'https://marketing.simsimmenu.com'),
+  metadataBase: new URL(marketingSiteUrl()),
   title: { default: 'سمسم | منيو إلكتروني احترافي لمطعمك', template: '%s | سمسم' },
   description: 'منيو إلكتروني للمطاعم والمقاهي مع QR Code والطلبات والولاء.',
 }
