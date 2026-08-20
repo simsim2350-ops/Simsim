@@ -7,13 +7,14 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { InlineMenuBanner } from './BannerDisplays'
 import { warmCategoryImages } from './imagePrefetch'
 
-// إعدادات الصورة (widths/sizes/quality) المطابقة تماماً لما يستخدمه ProductItem لكل تخطيط،
-// لضمان أن رابط الـpreload يطابق حرفياً الرابط الذي سيطلبه <img loading="lazy"> لاحقاً (cache hit فعلي).
+// إعدادات الصورة (widths/sizes/quality + أبعاد العرض width/height) المطابقة تماماً لما يمرّره
+// ProductItem إلى ResponsiveMenuImage لكل تخطيط. الأبعاد إلزامية: هي ما يجعل ResponsiveMenuImage
+// يضيف height/resize=cover إلى الرابط، وبدونها يُسخَّن رابط مختلف عن المطلوب فعلاً (cache miss).
 const LAYOUT_IMAGE_CONFIG = {
-  circles: { widths: [128, 240, 320], sizes: '104px', quality: 72 },
-  grid: { widths: [240, 480, 640], sizes: '(min-width: 1024px) 467px, calc((100vw - 42px) / 2)', quality: 72 },
-  showcase: { widths: [480, 720, 960], sizes: '(min-width: 1024px) 467px, calc(100vw - 32px)', quality: 76 },
-  list: { widths: [128, 240, 320], sizes: '108px', quality: 72 },
+  circles: { widths: [128, 240, 320], sizes: '104px', quality: 72, width: '104', height: '104' },
+  grid: { widths: [240, 480, 640], sizes: '(min-width: 1024px) 467px, calc((100vw - 42px) / 2)', quality: 72, width: '240', height: '240' },
+  showcase: { widths: [480, 720, 960], sizes: '(min-width: 1024px) 467px, calc(100vw - 32px)', quality: 76, width: '480', height: '360' },
+  list: { widths: [128, 240, 320], sizes: '108px', quality: 72, width: '108', height: '108' },
 }
 const NEXT_CATEGORY_PREFETCH_COUNT = 3
 

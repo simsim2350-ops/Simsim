@@ -26,7 +26,7 @@ function pump() {
   }
 }
 
-function preloadOne(product, { widths, sizes, quality }) {
+function preloadOne(product, { widths, sizes, quality, width, height }) {
   if (typeof document === 'undefined' || !product?.image_url || warmedProductIds.has(product.id)) return
   warmedProductIds.add(product.id)
 
@@ -37,12 +37,21 @@ function preloadOne(product, { widths, sizes, quality }) {
     link.fetchPriority = 'low'
 
     if (isSupabasePublicStorageUrl(product.image_url)) {
-      const srcSet = createSupabaseWebpSrcSet(product.image_url, widths, quality)
+      // نفس استدعاء ResponsiveMenuImage حرفياً (بما فيه { width, height })، وإلا اختلف الرابط المُسخَّن
+      // عن الرابط الذي سيطلبه <img> فيضيع الـcache hit ويُنزَّل الملف مرتين.
+      const srcSet = createSupabaseWebpSrcSet(product.image_url, widths, quality, { width, height })
       if (srcSet) {
         link.imageSrcset = srcSet
         link.imageSizes = sizes
       }
-      link.href = createSupabaseImageTransform(product.image_url, { width: widths[0], quality })
+      // href هو fallback لمتصفح لا يدعم imagesrcset: يطابق أصغر مرشّح في الـsrcset.
+      const hasRenderedRatio = Number(width) > 0 && Number(height) > 0
+      link.href = createSupabaseImageTransform(product.image_url, {
+        width: widths[0],
+        height: hasRenderedRatio ? Math.round(widths[0] * Number(height) / Number(width)) : undefined,
+        resize: hasRenderedRatio ? 'cover' : undefined,
+        quality,
+      })
     } else {
       link.href = product.image_url
     }
@@ -64,7 +73,7 @@ function preloadOne(product, { widths, sizes, quality }) {
 }
 
 // products: أول 2-4 منتجات فقط من القسم القادم (P2)، وليس القسم كاملاً
-export function warmCategoryImages(products, { widths, sizes, quality }) {
+export function warmCategoryImages(products, { widths, sizes, quality, width, height }) {
   if (!Array.isArray(products) || getMaxConcurrent() === 0) return
-  products.forEach(product => preloadOne(product, { widths, sizes, quality }))
+  products.forEach(product => preloadOne(product, { widths, sizes, quality, width, height }))
 }
