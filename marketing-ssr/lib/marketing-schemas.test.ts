@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { publicMarketingPayloadSchema, validateSectionContent } from './marketing-schemas'
+import { marketingSettingsSchema, publicMarketingPayloadSchema, validateSectionContent } from './marketing-schemas'
 
 describe('marketing content schemas', () => {
   it('accepts a valid hero section', () => {
@@ -28,5 +28,16 @@ describe('marketing content schemas', () => {
     }
     expect(publicMarketingPayloadSchema.safeParse(base).success).toBe(true)
     expect(publicMarketingPayloadSchema.safeParse({ ...base, page: { ...base.page, seo: { title: 'ناقص' } } }).success).toBe(false)
+  })
+
+  it('accepts optional blank contact and SEO fields from global settings', () => {
+    const settings = {
+      brandName: 'سمسم', logoPath: '/simsim-s.svg', navigation: [],
+      primaryCta: { label: 'ابدأ', href: '/register' }, secondaryCta: { label: 'دخول', href: '/login' },
+      contact: { email: '', phone: '', address: '', social: [] },
+      seo: { title: '', description: '', canonicalPath: '/', keywords: [] },
+      footer: { description: 'وصف', navigation: [], legal: [], copyright: '© 2026' },
+    }
+    expect(marketingSettingsSchema.safeParse(settings).success).toBe(true)
   })
 })

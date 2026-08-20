@@ -114,6 +114,14 @@ export const marketingSectionSchema = z.object({
 
 const navItemSchema = z.object({ label: z.string().trim().min(1).max(80), href: safeUrl })
 
+// Mirrors the optional/blank-friendly Global Settings editor without weakening page SEO requirements.
+const marketingSettingsSeoSchema = seoSchema.partial().extend({
+  title: z.string().trim().max(160).optional(),
+  description: z.string().trim().max(320).optional(),
+  canonicalPath: z.string().trim().max(500).optional(),
+  keywords: z.array(z.string().trim().max(80)).max(24).optional(),
+})
+
 export const marketingSettingsSchema = z.object({
   brandName: z.string().trim().min(1).max(80),
   logoPath: safeUrl,
@@ -121,10 +129,10 @@ export const marketingSettingsSchema = z.object({
   primaryCta: ctaSchema,
   secondaryCta: ctaSchema,
   contact: z.object({
-    email: z.string().trim().email().max(180).optional(), phone: z.string().trim().max(60).optional(), address: z.string().trim().max(300).optional(),
+    email: z.string().trim().email().max(180).or(z.literal('')).optional(), phone: z.string().trim().max(60).optional(), address: z.string().trim().max(300).optional(),
     social: z.array(navItemSchema).max(12).optional(),
   }).optional(),
-  seo: seoSchema.partial().optional(),
+  seo: marketingSettingsSeoSchema.optional(),
   footer: z.object({
     description: z.string().trim().max(360), navigation: z.array(navItemSchema).max(10), legal: z.array(navItemSchema).max(10), copyright: z.string().trim().max(180),
   }),
