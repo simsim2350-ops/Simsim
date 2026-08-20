@@ -344,3 +344,18 @@ A read-only Staging audit query shows the actions performed by the isolated `sup
 The saved Revision 6 Draft bearing `E2E DRAFT MUST STAY PRIVATE — 2026-08-20` was previewed through the Super Admin UI. The token-creation request completed with HTTP 200 and the UI confirmed a 30-minute lifetime. Because direct cross-origin navigation caused an automation-browser blank-page interruption earlier, the same issued token was opened in an SSR Preview iframe. The rendered HERO visibly displayed the Draft marker, proving the authenticated preview path returns a draft without publishing it.
 
 The Typed Section selector was then used to add an FAQ section to Revision 6, which appeared as section 11. The section was deleted through its own UI delete control before the draft was saved. The final saved Revision 6 therefore retains its ten valid original sections and the unpublished security marker; the public page remains Revision A.
+
+
+## Scheduler retest — 2026-08-20 13:35–13:44 UTC (Staging only)
+
+| عنصر | دليل | النتيجة |
+|---|---|---|
+| الآلية السابقة | `marketing_schedule_revision` كانت تغيّر الحالة إلى `scheduled` فقط؛ لا توجد `cron.job` ولا امتدادات `pg_cron`/`pg_net` في Staging. | فجوة مثبتة |
+| الإصلاح المرحلي | ترحيل `sql/marketing_cms_staging_scheduler_v1.sql` طُبق بنجاح على `rgqsetckcigkgsyobyjg`. أنشأ `marketing_publish_due_revisions()` ومهمة `marketing-publish-due-revisions-staging` كل دقيقة. | PASS |
+| الجدولة من UI | Revision #11 (`fb2c9f36-d526-4e30-a7da-0561b89049b7`) مع HERO marker `E2E SCHEDULED PUBLISH BARE PATH — 2026-08-20 13:33` جُدولت بواسطة Super Admin إلى `2026-08-20 13:38:00+00`. | PASS |
+| قبل الموعد | bare SSR `GET /` بلا Query أخفى marker المجدول. | PASS |
+| بعد الموعد | Revision #11 أصبح `published` عند `2026-08-20 13:38:00.026662+00`، وأصبحت `scheduled_for = null`. | PASS |
+| Audit | سجل `marketing.revision_scheduled` بدور `super_admin` ثم `marketing.revision_scheduled_published` بدور `system_scheduler` مع `execution: pg_cron`. | PASS |
+| bare path بعد Scheduler | SSR Preview السابق بقي يعرض Revision A رغم `x-vercel-cache: MISS` و`cache-control: private, no-cache`; السبب Data Cache في `unstable_cache` مع `revalidate: 300`. | FAIL مُشخّص |
+| إصلاح SSR | الالتزام `6673218` غيّر TTL قراءة الصفحة العامة من 300 ثانية إلى ثانية واحدة مع إبقاء tags. GitHub سجّل Vercel SSR Preview build ناجحاً؛ يلزم التحقق على URL الـPreview الجديد قبل إغلاق الاختبار. | قيد المتابعة |
+| Playwright protection | رابط Vercel share المؤقت لمسار `/admin/login` لم يتجاوز Vercel Authentication في Playwright؛ الاختبار ما زال يعيد `BLOCKED — Vercel Preview Protection`. لا يُخزن الرابط أو أي Secret في Git. | BLOCKED |
