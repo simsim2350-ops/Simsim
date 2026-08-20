@@ -32,7 +32,9 @@ test('Staging Super Admin can enter Marketing without production egress or CMS c
     if (url.includes('/rest/v1/rpc/') && response.status() >= 400) marketingFailures.push(`${response.status()} ${url}`)
   })
 
-  await page.goto(`${baseUrl.replace(/\/$/, '')}/admin/login`)
+  const previewAccessUrl = process.env.E2E_VERCEL_SHARE_URL
+  await page.goto(previewAccessUrl || `${baseUrl.replace(/\/$/, '')}/admin/login`)
+  await page.waitForLoadState('domcontentloaded')
   if (await page.getByRole('heading', { name: /Log in to Vercel/i }).isVisible().catch(() => false)) {
     throw new Error('BLOCKED — Vercel Preview Protection requires an automation bypass credential or an authenticated CI storageState; the Supabase Super Admin form is not reachable in a fresh Playwright context.')
   }
