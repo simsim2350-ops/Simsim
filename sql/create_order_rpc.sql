@@ -1,3 +1,7 @@
+-- ⚠️ تاريخي/مهجور — يوثّق فقط إصلاح ADR-25 الأصلي (توقيع 15-arg قديم بأسعار من العميل).
+-- التعريف الحيّ الحالي لـ create_order (11 معاملاً + p_idempotency_key اختياري) في
+-- sql/order_idempotency.sql — راجعه دائماً كمصدر الحقيقة، لا هذا الملف. مُبقًى بلا تعديل لسجل ADR-25.
+--
 -- إصلاح عاجل: الزبون لا يقدر ينشئ طلباً إطلاقاً (new row violates row-level security policy for table "orders")
 --
 -- السبب الجذري: كود إنشاء الطلب يستخدم .insert().select() — و.select() يجعل Postgres يحاول

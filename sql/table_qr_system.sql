@@ -116,6 +116,8 @@ create index if not exists idx_orders_table_source_created
   on public.orders(restaurant_id, branch_id, table_id, source, created_at desc);
 
 -- سياق QR في الطلب لا يُكتب إلا من RPC الموثقة؛ الإدخال المباشر يبقى متوافقاً للطلبات اليدوية فقط.
+-- ⚠️ أُسقطت هذه السياسة لاحقاً فعلياً على الإنتاج في PHASE 1 (sql/order_journey_hotfix.sql —
+-- MIG-004/TASK-SEC-002 — SEC-002: كانت تسمح بإدخال طلبات مزوَّرة). مُبقاة هنا بلا تعديل كسجل تاريخي فقط.
 drop policy if exists orders_insert_public on public.orders;
 create policy orders_insert_public on public.orders
   for insert to anon, authenticated

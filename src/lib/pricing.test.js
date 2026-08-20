@@ -1,7 +1,7 @@
 // اختبارات مسار الفلوس — أي كسر في هذه الحسابات يوقف الدمج في CI.
 // المرجع: ADR-1 — السعر المعروض شامل ض.ق.م 15%، تُفكّ للخلف.
 import { describe, it, expect } from 'vitest'
-import { VAT_RATE, vatBreakdown, orderBreakdown, itemsGross } from './pricing'
+import { VAT_RATE, vatBreakdown, orderBreakdown, itemsGross, computeCouponDiscount } from './pricing'
 
 describe('VAT_RATE', () => {
   it('نسبة الضريبة 15%', () => {
@@ -124,6 +124,48 @@ describe('itemsGross — إجمالي الأصناف (شامل الضريبة)',
       { price: 10, qty: 1, unavailable: true },
       { price: 20, qty: 2, unavailable: true },
     ])).toBe(0)
+  })
+})
+
+describe('computeCouponDiscount — يطابق منطق create_order الخادمي حرفياً (TASK-CHK-003)', () => {
+  it('خصم نسبة بلا سقف: 148 × 10% = 14.80 (نفس §6.4 من وثيقة التدقيق)', () => {
+    expect(computeCouponDiscount({ discount_type: 'percent', discount_value: 10 }, 148)).toBeCloseTo(14.8, 10)
+  })
+
+  it('خصم نسبة يتجاوز سقف max_discount_amount ⇒ يُقصّ عنده', () => {
+    const coupon = { discount_type: 'percent', discount_value: 50, max_discount_amount: 20 }
+    expect(computeCouponDiscount(coupon, 100)).toBe(20)
+  })
+
+  it('خصم نسبة تحت السقف ⇒ لا يتأثر بالسقف', () => {
+    const coupon = { discount_type: 'percent', discount_value: 10, max_discount_amount: 100 }
+    expect(computeCouponDiscount(coupon, 100)).toBeCloseTo(10, 10)
+  })
+
+  it('خصم ثابت أكبر من الإجمالي ⇒ يُقصّ عند الإجمالي (لا خصم سالب على الفاتورة)', () => {
+    expect(computeCouponDiscount({ discount_type: 'fixed', discount_value: 500 }, 100)).toBe(100)
+  })
+
+  it('خصم ثابت ضمن الإجمالي وبلا سقف ⇒ القيمة كما هي', () => {
+    expect(computeCouponDiscount({ discount_type: 'fixed', discount_value: 15 }, 100)).toBe(15)
+  })
+
+  it('خصم ثابت يتجاوز max_discount_amount ⇒ يُقصّ عند السقف قبل مقارنته بالإجمالي', () => {
+    const coupon = { discount_type: 'fixed', discount_value: 50, max_discount_amount: 30 }
+    expect(computeCouponDiscount(coupon, 100)).toBe(30)
+  })
+
+  it('تقريب الخصم لمنزلتين مطابق لـ round(x,2) الخادمية', () => {
+    // 33.33 × 15% = 4.9995 → 5.00
+    expect(computeCouponDiscount({ discount_type: 'percent', discount_value: 15 }, 33.33)).toBeCloseTo(5, 2)
+  })
+
+  it('بلا كوبون مطبَّق ⇒ صفر', () => {
+    expect(computeCouponDiscount(null, 100)).toBe(0)
+  })
+
+  it('إجمالي سالب أو تالف ⇒ صفر بلا انهيار', () => {
+    expect(computeCouponDiscount({ discount_type: 'fixed', discount_value: 10 }, -50)).toBe(0)
   })
 })
 

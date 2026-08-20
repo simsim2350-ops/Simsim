@@ -12,6 +12,7 @@ export default function CartDrawer({
   openStatus, deliveryEnabled, deliveryFee, takeawayEnabled = true, placeOrder, submitting, removeFromCart, incrementCartItem, onDeleteItem, onEditItem, onClose,
   suggestions = [], onAddSuggestion, onOpenSuggestion, loyalty,
   couponInput, setCouponInput, appliedCoupon, applyCoupon, removeCoupon, applyingCoupon, discountAmount = 0,
+  priceChangeInfo = null, onConfirmPriceUpdate,
 }) {
   const suggestionBadge = {
     curated:    { label: t('reasonCurated'),    bg:'#FFF1E8', fg:'#C8481B' },
@@ -20,7 +21,10 @@ export default function CartDrawer({
   }
   const discountedSubtotal = Math.max(0, cartTotal - discountAmount)
   const finalTotal = discountedSubtotal + (orderType === 'delivery' ? (Number(deliveryFee) || 0) : 0)
-  const canSubmit = openStatus.open && !submitting
+  // TASK-CART-003: أصناف حُذفت أو أصبحت غير متاحة منذ إضافتها للسلة — لا يمكن تأكيد الطلب وهي موجودة
+  const hasUnavailableItems = cart.some(item => item.available === false)
+  // TASK-CHK-004: طالما رد الخادم بسعر مختلف، لا يُعاد الإرسال إلا عبر «حدّث وتابع» الصريح
+  const canSubmit = openStatus.open && !submitting && !hasUnavailableItems && !priceChangeInfo
   const loyaltyThreshold = loyalty?.reward_threshold || 0
   const loyaltyBalance = loyalty?.balance || 0
   const loyaltyReady = loyaltyThreshold > 0 && loyaltyBalance >= loyaltyThreshold
@@ -56,7 +60,7 @@ export default function CartDrawer({
         {/* Cart items */}
         <div style={{ padding:'12px 20px' }}>
           {cart.map((item) => (
-            <div key={item.cartKey} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 0', borderBottom:'1px solid #F3F4F6' }}>
+            <div key={item.cartKey} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 0', borderBottom:'1px solid #F3F4F6', opacity: item.available === false ? 0.6 : 1 }}>
               <div style={{ width:'48px', height:'48px', borderRadius:'12px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px', flexShrink:0, overflow:'hidden' }}>
                 {item.image_url
                   ? <img loading="lazy" decoding="async" src={item.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
@@ -70,16 +74,23 @@ export default function CartDrawer({
                   </div>
                 )}
                 {item.note && <div style={{ fontSize:'11px', color:'#9CA3AF' }}>📝 {item.note}</div>}
+                {/* TASK-CART-003: صنف حُذف/أصبح غير متاح — تعليم صريح بدل رفض خادمي غامض عند التأكيد */}
+                {item.available === false && (
+                  <div style={{ fontSize:'11px', color:'#B91C1C', fontWeight:'700', marginTop:'2px' }}>⚠️ {t('cartItemUnavailableNow')}</div>
+                )}
+                {item.available !== false && item.priceChanged && (
+                  <div style={{ fontSize:'11px', color:'#C8481B', fontWeight:'700', marginTop:'2px' }}>{t('cartItemPriceChanged')} {item.currentBasePrice} ﷼</div>
+                )}
                 {/* تعديل ✎ / حذف السطر 🗑 — تحت اسم الصنف حتى لا يضيق الصف */}
                 <div style={{ display:'flex', gap:'6px', marginTop:'5px' }}>
-                  <button onClick={() => onEditItem(item)} aria-label={t('editItemA')} style={{ width:'28px', height:'28px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', fontSize:'13px', cursor:'pointer', color:'#6B7280', display:'flex', alignItems:'center', justifyContent:'center' }}>✎</button>
+                  <button onClick={() => onEditItem(item)} aria-label={t('editItemA')} disabled={item.available === false} style={{ width:'28px', height:'28px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', fontSize:'13px', cursor: item.available === false ? 'not-allowed' : 'pointer', color:'#6B7280', display:'flex', alignItems:'center', justifyContent:'center', opacity: item.available === false ? 0.5 : 1 }}>✎</button>
                   <button onClick={() => onDeleteItem(item.cartKey)} aria-label={t('delItemA')} style={{ width:'28px', height:'28px', borderRadius:'8px', border:'1.5px solid rgba(239,68,68,0.3)', background:'rgba(239,68,68,0.06)', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>🗑</button>
                 </div>
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:'0', border:'1.5px solid #E5E7EB', borderRadius:'10px', overflow:'hidden', flexShrink:0 }}>
                 <button type="button" onClick={() => removeFromCart(item.cartKey)} aria-label={t('decreaseA')} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', color:brandColor, fontWeight:'300' }}>−</button>
                 <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'13px', minWidth:'24px', textAlign:'center', borderRight:'1px solid #E5E7EB', borderLeft:'1px solid #E5E7EB', lineHeight:'30px' }}>{item.qty}</span>
-                <button type="button" onClick={() => incrementCartItem(item.cartKey)} aria-label={t('increaseA')} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', color:brandColor, fontWeight:'300' }}>+</button>
+                <button type="button" onClick={() => incrementCartItem(item.cartKey)} disabled={item.available === false} aria-label={t('increaseA')} style={{ width:'30px', height:'30px', background:'none', border:'none', fontSize:'18px', color:brandColor, fontWeight:'300', opacity: item.available === false ? 0.5 : 1, cursor: item.available === false ? 'not-allowed' : 'pointer' }}>+</button>
               </div>
               <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', flexShrink:0, minWidth:'50px', textAlign:'left' }}>{(item.price * item.qty).toFixed(2)} ﷼</div>
             </div>
@@ -316,6 +327,34 @@ export default function CartDrawer({
             <span>{t('total')}</span>
             <span style={{ color:brandColor }}>{finalTotal.toFixed(2)} ﷼</span>
           </div>
+
+          {priceChangeInfo && (
+            <div style={{ background:'#FFF8F0', border:'1px solid #FDE2CD', borderRadius:'12px', padding:'12px 14px', marginTop:'12px' }}>
+              <div style={{ display:'flex', alignItems:'flex-start', gap:'8px', marginBottom:'10px' }}>
+                <span style={{ fontSize:'18px', flexShrink:0 }}>↻</span>
+                <div>
+                  <div style={{ fontSize:'13px', fontWeight:'800', color:'#9A3412', marginBottom:'2px' }}>{t('priceChangedTitle')}</div>
+                  <div style={{ fontSize:'12px', color:'#9A3412' }}>
+                    <span style={{ textDecoration:'line-through', opacity:0.7 }}>{priceChangeInfo.oldTotal.toFixed(2)} ﷼</span>
+                    {' '}← <strong>{priceChangeInfo.newTotal.toFixed(2)} ﷼</strong>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onConfirmPriceUpdate}
+                disabled={submitting}
+                style={{ width:'100%', padding:'11px', borderRadius:'11px', border:'none', background: brandColor, color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', cursor: submitting ? 'default' : 'pointer', opacity: submitting ? 0.7 : 1 }}
+              >{t('priceChangedUpdateBtn')}</button>
+            </div>
+          )}
+
+          {hasUnavailableItems && (
+            <div style={{ display:'flex', alignItems:'flex-start', gap:'8px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.25)', borderRadius:'12px', padding:'12px 14px', marginTop:'12px' }}>
+              <span style={{ fontSize:'18px', flexShrink:0 }}>⚠️</span>
+              <div style={{ fontSize:'13px', fontWeight:'800', color:'#B91C1C' }}>{t('cartHasUnavailableItems')}</div>
+            </div>
+          )}
 
           {!openStatus.open && (
             <div style={{ display:'flex', alignItems:'flex-start', gap:'8px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.25)', borderRadius:'12px', padding:'12px 14px', marginTop:'12px' }}>

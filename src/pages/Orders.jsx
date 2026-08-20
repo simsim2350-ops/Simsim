@@ -25,6 +25,14 @@ const COLS = [
   { key:'completed', label:'مكتمل',         emoji:'🎉', accent:'#9CA3AF' },
 ]
 
+// رسالة عربية مفهومة عند رفض انتقال حالة من مشغّل enforce_order_transition (PHASE 5/D-09 — ADR-50)
+// بدل عرض نص Postgres الخام (raise exception 'invalid_order_transition: ...')
+const transitionErrorMessage = (message) => (
+  typeof message === 'string' && message.includes('invalid_order_transition')
+    ? '⚠️ لا يمكن تنفيذ هذا التغيير — إما أن الانتقال غير مسموح أو انتهت مهلة التراجع (60 ثانية)'
+    : message
+)
+
 const TYPE_LABEL = { dine_in:'🪑 محلي', takeaway:'🥡 سفري', delivery:'🛵 توصيل' }
 const TYPE_META = {
   dine_in:  { label:'محلي',  emoji:'🪑', c:'#7C3AED', bg:'#F3E8FF' },
@@ -221,7 +229,8 @@ export default function Orders() {
     return () => supabase.removeChannel(ch)
   }
 
-  // توست تراجع
+  // توست تراجع — نافذة التراجع 60 ثانية (D-09 = B1)؛ المشغّل enforce_order_transition هو الحدّ الفعلي
+  // (يرفض السيرفر أي محاولة بعد انتهاء المهلة حتى لو ظلّ التوست ظاهراً)، هنا فقط نعرض رفضه بوضوح.
   const showUndo = (orderId, prevStatus, msg) => {
     toast((t) => (
       <span style={{ display:'flex', alignItems:'center', gap:'10px', fontFamily:'Tajawal,sans-serif', fontWeight:'700' }}>
@@ -229,13 +238,14 @@ export default function Orders() {
         <button
           onClick={async () => {
             toast.dismiss(t.id)
-            await supabase.from('orders').update({ status: prevStatus, cancelled_by: null, cancel_reason: null }).eq('id', orderId)
+            const { error } = await supabase.from('orders').update({ status: prevStatus, cancelled_by: null, cancel_reason: null }).eq('id', orderId)
+            if (error) { toast.error(transitionErrorMessage(error.message)); return }
             toast.success('تم التراجع ↩')
           }}
           style={{ padding:'5px 11px', borderRadius:'8px', border:'none', background:'#111827', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer', whiteSpace:'nowrap' }}
         >↩ تراجع</button>
       </span>
-    ), { duration: 5000 })
+    ), { duration: 60000 })
   }
 
   const advanceOrder = async (order) => {
@@ -249,7 +259,7 @@ export default function Orders() {
       .eq('id', order.id)
       .eq('status', prev)
       .select()
-    if (error) { toast.error(error.message); return }
+    if (error) { toast.error(transitionErrorMessage(error.message)); return }
     if (!data || data.length === 0) {
       const { data: fresh } = await supabase.from('orders').select('*').eq('id', order.id).single()
       if (fresh) setOrders(list => list.map(o => o.id === order.id ? fresh : o))
@@ -293,7 +303,8 @@ export default function Orders() {
   const performCancel = async (order, reason) => {
     const prev = order.status
     setCancelTarget(null)
-    await supabase.from('orders').update({ status:'cancelled', cancelled_by:'restaurant', cancel_reason: reason || null }).eq('id', order.id)
+    const { error } = await supabase.from('orders').update({ status:'cancelled', cancelled_by:'restaurant', cancel_reason: reason || null }).eq('id', order.id)
+    if (error) { toast.error(transitionErrorMessage(error.message)); return }
     if (selectedOrder?.id === order.id) setSelectedOrder(null)
     showUndo(order.id, prev, '🚫 تم إلغاء الطلب')
   }
@@ -307,7 +318,7 @@ export default function Orders() {
     const updatePayload = { items: updatedItems, subtotal: newNet, tax: newTax, total: newTotal }
     if (allUnavailable) { updatePayload.status = 'cancelled'; updatePayload.cancelled_by = 'restaurant' }
     const { error } = await supabase.from('orders').update(updatePayload).eq('id', order.id)
-    if (error) { toast.error(error.message); return }
+    if (error) { toast.error(transitionErrorMessage(error.message)); return }
     const item = items[itemIndex]
     if (allUnavailable) toast.error('🚫 تم إلغاء الطلب بالكامل — كل الأصناف غير متوفرة')
     else toast.success(item.unavailable ? `✅ ${item.name} أصبح متوفراً` : `⚠️ تم تعليم ${item.name} كغير متوفر`)
