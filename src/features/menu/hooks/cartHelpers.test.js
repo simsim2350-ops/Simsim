@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readStoredCart, validateCartAgainstProducts } from './cartHelpers'
+import { readStoredCart, validateCartAgainstProducts, idempotencyStorageKey } from './cartHelpers'
 
 describe('readStoredCart', () => {
   const branchA = 'branch-a'
@@ -51,6 +51,13 @@ describe('readStoredCart', () => {
     const result = readStoredCart(null, branchA)
     expect(result.items).toEqual([])
     expect(result.conflict).toBeNull()
+  })
+})
+
+describe('idempotencyStorageKey — TASK-ORD-002', () => {
+  it('مفتاح منفصل عن مفتاح السلة، ومختلف لكل فرع من نفس المطعم', () => {
+    expect(idempotencyStorageKey('koshary', 'branch-a')).toBe('simsim_idem_koshary_branch-a')
+    expect(idempotencyStorageKey('koshary', 'branch-a')).not.toBe(idempotencyStorageKey('koshary', 'branch-b'))
   })
 })
 

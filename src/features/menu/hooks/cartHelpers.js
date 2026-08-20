@@ -23,6 +23,11 @@ export function readStoredCart(raw, branchId) {
   return { items: saved.items, conflict: null }
 }
 
+// مفتاح تخزين Idempotency لكل مطعم/فرع (TASK-ORD-002) — منفصل عن مفتاح السلة نفسها.
+export function idempotencyStorageKey(slug, branchId) {
+  return `simsim_idem_${slug}_${branchId}`
+}
+
 // تطابق كل سطر سلة بالمنتج الحالي من المنيو المحمَّل أصلاً (صفر استعلامات إضافية).
 // products هنا مُصفّاة سلفاً بـ is_available=true (useMenuData) — فغياب المعرّف يعني
 // أن الصنف حُذف أو أصبح غير متاح، بغضّ النظر عن السبب.

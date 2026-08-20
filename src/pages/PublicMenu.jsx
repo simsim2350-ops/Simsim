@@ -119,7 +119,7 @@ function PublicMenuInner() {
   const { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer } = useActiveOrders(slug, t)
   const {
     cart, setCart, cartOpen, setCartOpen, addToCart: addToCartRaw, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount,
-    branchConflict, clearCartForNewBranch,
+    branchConflict, clearCartForNewBranch, idempotencyKey,
   } = useCart(slug, branch?.id, t)
   // فحص صلاحية السلة قبل الدفع (TASK-CART-003): صنف حُذف/أصبح غير متاح أو تغيّر سعره — من products المحمّلة أصلاً، صفر استعلامات إضافية
   const cartForCheckout = useMemo(() => validateCartAgainstProducts(cart, products), [cart, products])
@@ -139,7 +139,7 @@ function PublicMenuInner() {
     deliveryAddress, setDeliveryAddress, customerName, setCustomerName,
     customerPhone, setCustomerPhone, orderNote, setOrderNote, placeOrder, submitting,
     priceChangeInfo, confirmPriceUpdate,
-  } = useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, isEn, appliedCoupon, discountAmount, removeCoupon, tableQr })
+  } = useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, isEn, appliedCoupon, discountAmount, removeCoupon, tableQr, idempotencyKey })
   // PCR: شريط الولاء يظهر فقط إذا كانت قدرة الولاء مفعّلة في الباقة (loyaltyEnabled) — وإلا لا نمرّره
   const loyaltyRaw = useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone })
   const loyalty = loyaltyEnabled ? loyaltyRaw : null

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
-import { readStoredCart } from './cartHelpers'
+import { readStoredCart, idempotencyStorageKey } from './cartHelpers'
 
 // حالة السلة وعملياتها — المفتاح الفريد: نفس الصنف بخيارات/ملاحظة مختلفة = عنصر سلة مختلف
 // السلة تُحفظ في localStorage فتنجو من تحديث الصفحة (F5) أو إغلاق المتصفح بالخطأ
@@ -10,6 +10,7 @@ export function useCart(slug, branchId, t) {
   const [cart, setCart] = useState([])
   const [cartOpen, setCartOpen] = useState(false)
   const [branchConflict, setBranchConflict] = useState(null) // { savedBranchId, itemCount } | null
+  const [idempotencyKey, setIdempotencyKey] = useState(null) // TASK-ORD-002 — مفتاح ثابت لكل "نيّة شراء"
   const CART_STORAGE_KEY = `simsim_cart_${slug}`
 
   // تحميل السلة المحفوظة عند معرفة الفرع الفعلي (ننتظره لتفادي نزاع وهمي أثناء تحميل بيانات المطعم)
@@ -52,6 +53,27 @@ export function useCart(slug, branchId, t) {
     setBranchConflict(null)
     setCart([])
   }
+
+  // TASK-ORD-002: مفتاح Idempotency يُولَّد مرة واحدة عند أول فتح للسلة بمحتوى (لا عند كل ضغطة)،
+  // يُحفظ في localStorage فينجو من refresh أثناء الإرسال، ويُبطَل (يُولَّد غيره) بعد نجاح الطلب
+  // وتفريغ السلة — نفس السلوك عند تفريغها لأي سبب آخر (لا حاجة لمفتاح لسلة فارغة).
+  useEffect(() => {
+    if (!slug || !branchId) return
+    const storageKey = idempotencyStorageKey(slug, branchId)
+    if (cart.length === 0) {
+      setIdempotencyKey(null)
+      try { localStorage.removeItem(storageKey) } catch { /* تجاهل */ }
+      return
+    }
+    if (idempotencyKey) return
+    try {
+      const stored = localStorage.getItem(storageKey)
+      if (stored) { setIdempotencyKey(stored); return }
+    } catch { /* تجاهل */ }
+    const fresh = crypto.randomUUID()
+    setIdempotencyKey(fresh)
+    try { localStorage.setItem(storageKey, fresh) } catch { /* تجاهل */ }
+  }, [cart.length, slug, branchId, idempotencyKey])
 
   // selectedOptions: [{ groupName, choiceName, price }] — قائمة مفسّرة من الخيارات المختارة
   // silent: يكتم توست الإضافة (يُستخدم عند إعادة الطلب لتفادي عشرات التوستات — ملخّص واحد بدلها)
@@ -115,6 +137,6 @@ export function useCart(slug, branchId, t) {
 
   return {
     cart, setCart, cartOpen, setCartOpen, addToCart, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount,
-    branchConflict, clearCartForNewBranch,
+    branchConflict, clearCartForNewBranch, idempotencyKey,
   }
 }

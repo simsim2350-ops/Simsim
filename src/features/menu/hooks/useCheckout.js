@@ -9,7 +9,7 @@ const CREATE_ORDER_TIMEOUT_MS = 15_000
 
 // بيانات نموذج الطلب + إنشاء الطلب في قاعدة البيانات.
 // طلب QR لا يرسل restaurant_id أو branch_id أو table_id من المتصفح؛ الخادم يستخرجها من token فقط.
-export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, isEn, appliedCoupon, discountAmount = 0, removeCoupon, tableQr = null }) {
+export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, isEn, appliedCoupon, discountAmount = 0, removeCoupon, tableQr = null, idempotencyKey = null }) {
   const [tableNumber, setTableNumber] = useState('')
   const [orderType, setOrderType] = useState('dine_in') // dine_in | takeaway | delivery
   const [deliveryAddress, setDeliveryAddress] = useState('')
@@ -45,6 +45,7 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
         p_notes: orderNote.trim(),
         p_coupon_code: appliedCoupon?.code || null,
         p_client_total: total,
+        p_idempotency_key: idempotencyKey,
       })
       : supabase.rpc('create_order', {
         p_restaurant_id: restaurant.id,
@@ -58,6 +59,7 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
         p_notes: orderNote.trim(),
         p_coupon_code: appliedCoupon?.code || null,
         p_client_total: total,
+        p_idempotency_key: idempotencyKey,
       })
 
     let result
