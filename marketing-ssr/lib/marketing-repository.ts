@@ -1,8 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
+import { z } from 'zod'
 import { homePageSeed, marketingSettingsSeed } from './marketing-seed'
 import { marketingSettingsSchema, publicMarketingPayloadSchema, publicPlansSchema } from './marketing-schemas'
-import type { MarketingPage, MarketingSiteSettings } from './marketing-types'
+import type { Locale, MarketingPage, MarketingSiteSettings } from './marketing-types'
+
+export const SUPPORTED_LOCALES: Locale[] = ['ar', 'en']
 
 function publicClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -15,13 +18,12 @@ function mapPublishedPage(raw: unknown): { page: MarketingPage; settings: Market
   const parsed = publicMarketingPayloadSchema.safeParse(raw)
   if (!parsed.success) return null
   const { page, settings, sections } = parsed.data
-  const siteSettings = marketingSettingsSeed
-  const settingsParsed = marketingSettingsSchema.safeParse(settings)
-  const candidateSettings = settingsParsed.success ? settingsParsed.data : {}
+  const candidate = marketingSettingsSchema.safeParse(settings)
+  const partial: Partial<MarketingSiteSettings> = candidate.success ? candidate.data : {}
   const resolvedSettings = {
-    ...siteSettings,
-    ...(candidateSettings as Partial<MarketingSiteSettings>),
-    footer: { ...siteSettings.footer, ...((candidateSettings as Partial<MarketingSiteSettings>).footer || {}) },
+    ...marketingSettingsSeed,
+    ...partial,
+    footer: { ...marketingSettingsSeed.footer, ...(partial.footer || {}) },
   } as MarketingSiteSettings
   return {
     page: {
@@ -31,22 +33,18 @@ function mapPublishedPage(raw: unknown): { page: MarketingPage; settings: Market
       title: page.title,
       seo: page.seo,
       sections: sections.map((section) => ({
-        id: section.id,
-        type: section.type,
-        content: section.content,
-        settings: section.settings,
-        sortOrder: section.sortOrder,
-        isVisible: section.isVisible,
+        id: section.id, type: section.type, content: section.content, settings: section.settings,
+        analyticsId: section.analyticsId, sortOrder: section.sortOrder, isVisible: section.isVisible,
       })),
     },
     settings: resolvedSettings,
   }
 }
 
-async function loadPublishedHome() {
+async function loadPublishedPage(slug: string, locale: Locale) {
   const supabase = publicClient()
   if (!supabase) return null
-  const { data, error } = await supabase.rpc('marketing_public_page', { p_slug: 'home', p_locale: 'ar' })
+  const { data, error } = await supabase.rpc('marketing_public_page', { p_slug: slug, p_locale: locale })
   if (error) {
     console.error('[marketing] failed to load published page', error.message)
     return null
@@ -54,16 +52,29 @@ async function loadPublishedHome() {
   return mapPublishedPage(data)
 }
 
-const getCachedPublishedHome = unstable_cache(loadPublishedHome, ['marketing-home-ar'], { revalidate: 300, tags: ['marketing-page:home:ar', 'marketing-settings:ar'] })
-
-export async function getPublishedHome() {
-  return (await getCachedPublishedHome()) || { page: homePageSeed, settings: marketingSettingsSeed, isFallback: true }
+function pageCache(slug: string, locale: Locale) {
+  return unstable_cache(
+    () => loadPublishedPage(slug, locale),
+    ['marketing-page', slug, locale],
+    { revalidate: 300, tags: [`marketing-page:${slug}:${locale}`, `marketing-settings:${locale}`] },
+  )
 }
 
-async function loadPublishedPlans() {
+export async function getPublishedPage(slug: string, locale: Locale): Promise<{ page: MarketingPage; settings: MarketingSiteSettings; isFallback?: boolean } | null> {
+  const published = await pageCache(slug, locale)()
+  if (published) return published
+  if (slug === 'home' && locale === 'ar') return { page: homePageSeed, settings: marketingSettingsSeed, isFallback: true }
+  return null
+}
+
+export async function getPublishedHome() {
+  return getPublishedPage('home', 'ar').then((value) => value || { page: homePageSeed, settings: marketingSettingsSeed, isFallback: true })
+}
+
+async function loadPublishedPlans(locale: Locale) {
   const supabase = publicClient()
   if (!supabase) return []
-  const { data, error } = await supabase.rpc('marketing_public_plans', { p_locale: 'ar' })
+  const { data, error } = await supabase.rpc('marketing_public_plans', { p_locale: locale })
   if (error) {
     console.error('[marketing] failed to load plans', error.message)
     return []
@@ -72,7 +83,37 @@ async function loadPublishedPlans() {
   return parsed.success ? parsed.data : []
 }
 
-export const getPublishedPlans = unstable_cache(loadPublishedPlans, ['marketing-plans-ar'], { revalidate: 300, tags: ['marketing-plans:ar'] })
+export function getPublishedPlans(locale: Locale = 'ar') {
+  return unstable_cache(
+    () => loadPublishedPlans(locale),
+    ['marketing-plans', locale],
+    { revalidate: 300, tags: [`marketing-plans:${locale}`] },
+  )()
+}
+
+const publicPageIndexSchema = z.array(z.object({
+  slug: z.string().min(1),
+  locale: z.enum(['ar', 'en']),
+  publishedAt: z.string().nullable().optional(),
+}))
+
+export function getPublishedPageIndex(locale: Locale) {
+  return unstable_cache(
+    async () => {
+      const supabase = publicClient()
+      if (!supabase) return []
+      const { data, error } = await supabase.rpc('marketing_public_pages', { p_locale: locale })
+      if (error) {
+        console.error('[marketing] failed to load published page index', error.message)
+        return []
+      }
+      const parsed = publicPageIndexSchema.safeParse(data)
+      return parsed.success ? parsed.data : []
+    },
+    ['marketing-page-index', locale],
+    { revalidate: 300, tags: [`marketing-page-index:${locale}`, `marketing-settings:${locale}`] },
+  )()
+}
 
 export async function getPreviewPage(token: string) {
   const supabase = publicClient()
