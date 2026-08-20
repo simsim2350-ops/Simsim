@@ -11,6 +11,13 @@ export type SectionType =
   | 'PRICING'
   | 'FAQ'
   | 'CTA'
+  | 'VIDEO'
+  | 'IMAGE_TEXT'
+  | 'TESTIMONIALS'
+  | 'STATS'
+  | 'LOGOS'
+  | 'COMPARISON'
+  | 'CONTACT'
 
 export interface MarketingSeo {
   title: string
@@ -27,8 +34,8 @@ export interface MarketingSeo {
 export interface MarketingCta {
   label: string
   href: string
-  variant: 'primary' | 'secondary'
-  trackingId: string
+  variant?: 'primary' | 'secondary'
+  trackingId?: string
 }
 
 export interface MarketingSection<T = Record<string, unknown>> {
@@ -37,6 +44,8 @@ export interface MarketingSection<T = Record<string, unknown>> {
   isVisible: boolean
   sortOrder: number
   content: T
+  settings?: Record<string, unknown>
+  analyticsId?: string | null
 }
 
 export interface MarketingPage {
@@ -48,16 +57,28 @@ export interface MarketingPage {
   sections: MarketingSection[]
 }
 
+export interface MarketingNavItem {
+  label: string
+  href: string
+}
+
 export interface MarketingSiteSettings {
   brandName: string
   logoPath: string
-  navigation: Array<{ label: string; href: string }>
+  navigation: MarketingNavItem[]
   primaryCta: MarketingCta
   secondaryCta: MarketingCta
+  contact?: {
+    email?: string
+    phone?: string
+    address?: string
+    social?: Array<{ label: string; href: string }>
+  }
+  seo?: Partial<MarketingSeo>
   footer: {
     description: string
-    navigation: Array<{ label: string; href: string }>
-    legal: Array<{ label: string; href: string }>
+    navigation: MarketingNavItem[]
+    legal: MarketingNavItem[]
     copyright: string
   }
 }
