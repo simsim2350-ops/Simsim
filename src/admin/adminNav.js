@@ -9,6 +9,7 @@ export const ADMIN_NAV = [
   { key: 'flags',       label: 'المزايا',      path: '/admin/flags',       ready: true  },
   { key: 'catalog',     label: 'سجل القدرات',  path: '/admin/catalog',     ready: true  },
   { key: 'branding',    label: 'هوية المنيو',  path: '/admin/branding',    ready: true  },
+  { key: 'marketing',   label: 'الموقع التسويقي', path: '/admin/marketing', ready: true  },
   { key: 'announcements', label: 'الإعلانات',  path: '/admin/announcements', ready: true },
   { key: 'admins',      label: 'المشرفون',     path: '/admin/admins',      ready: true  },
   { key: 'audit',       label: 'سجلّ التدقيق', path: '/admin/audit',       ready: true  },
