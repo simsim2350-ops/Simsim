@@ -70,6 +70,28 @@ describe('imagePrefetch', () => {
     expect(links[0].imageSizes).toBe(source.props.sizes)
   })
 
+  it('يفرّغ سجل الـdedupe عند بلوغ السقف فلا ينمو بلا حد', async () => {
+    const links = installFakeDom()
+    const { warmCategoryImages, WARMED_LIMIT } = await import('./imagePrefetch')
+
+    // تفريغ الطابور بمحاكاة اكتمال كل رابط، حتى لا يحجب حدُّ التزامن بقية الطلبات.
+    const drain = () => { for (let i=0; i<links.length; i++) if (!links[i]._drained) { links[i]._drained = true; links[i].onload() } }
+    const product = n => ({ id:'p'+n, image_url: supabaseSrc.replace('item.jpg', 'item'+n+'.jpg') })
+
+    warmCategoryImages([product(0)], config); drain()
+    const afterFirst = links.length
+    expect(afterFirst).toBe(1)
+
+    // ما دام السجل دون السقف، إعادة تسخين نفس المنتج لا تضيف شيئاً.
+    warmCategoryImages([product(0)], config); drain()
+    expect(links.length).toBe(afterFirst)
+
+    // بلوغ السقف يفرّغ السجل، فيصبح المنتج الأول قابلاً للتسخين من جديد.
+    warmCategoryImages(Array.from({ length: WARMED_LIMIT }, (_, i) => product(i+1)), config); drain()
+    warmCategoryImages([product(0)], config); drain()
+    expect(links.length).toBe(afterFirst + WARMED_LIMIT + 1)
+  })
+
   it('يستخدم href مباشرة بلا imageSrcset لصورة خارج Supabase Storage', async () => {
     const links = installFakeDom()
     const { warmCategoryImages } = await import('./imagePrefetch')

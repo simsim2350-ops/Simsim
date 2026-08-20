@@ -8,6 +8,10 @@ const warmedProductIds = new Set()
 const queue = []
 let active = 0
 const LINK_TIMEOUT_MS = 8000
+// سقف سجل الـdedupe: يمنع النمو بلا حد في جلسة طويلة تتصفح عدة منيوهات.
+// عند بلوغه يُفرَّغ السجل بالكامل؛ أسوأ أثر ممكن هو إعادة تسخين صورة واحدة
+// موجودة أصلاً في HTTP cache، وهو أرخص من تركه ينمو بلا حد.
+export const WARMED_LIMIT = 300
 
 function getMaxConcurrent() {
   const conn = typeof navigator !== 'undefined' ? navigator.connection : null
@@ -28,6 +32,7 @@ function pump() {
 
 function preloadOne(product, { widths, sizes, quality, width, height }) {
   if (typeof document === 'undefined' || !product?.image_url || warmedProductIds.has(product.id)) return
+  if (warmedProductIds.size >= WARMED_LIMIT) warmedProductIds.clear()
   warmedProductIds.add(product.id)
 
   queue.push((done) => {
