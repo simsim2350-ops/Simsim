@@ -3,10 +3,10 @@
 **التاريخ:** 20 أغسطس 2026 (GMT+3)  
 **النطاق:** Staging وVercel Preview فقط  
 **الفرع:** `staging/marketing-cms-e2e-preview`  
-**آخر التزام موثق:** `73bbcaa` — `fix(marketing): repair staging media registration validation`  
+**آخر التزام موثق:** `a86559f` — `test(marketing): add staging preview E2E retest and automation guard`
 **حالة الإنتاج:** لم يتم تغيير قاعدة بيانات الإنتاج أو نطاق الإنتاج أو Vercel Production أو مشروع Vercel الإنتاجي.
 
-> **النتيجة الصارمة:** لا يُعلن هذا التقرير `Phase 2 E2E = PASS` كاملاً. أُثبتت رحلة Super Admin الحقيقية والوظائف الأساسية عملياً على Staging/Preview، لكن النتيجة تبقى **PARTIAL / NOT YET PASS** لأن تجربة Media الأولى احتوت خطأ API تم إصلاحه ثم أعيد تشغيل تدفقها فقط، كما بقيت اختبارات صلاحيات المستخدم غير الإداري والرفض المجهول للـAdmin RPC والتحقق العلني من Revision B قبل الاستعادة غير مكتملة كاختبارات E2E مستقلة.
+> **النتيجة الصارمة المحدثة:** أُثبتت رحلة Super Admin الحقيقية في إعادة نظيفة على Staging/Preview، بما في ذلك Settings وMedia وRevision A ثم B ثم Rollback، والتحقق من bare path بلا Query. ومع ذلك تبقى حالة البرنامج **PARTIAL / NOT YET FINAL PASS**؛ لأن جدولة النشر المستقبلية لم تُنفذ، ولأن Playwright محجوب حالياً بـVercel Preview Protection ولا يمكنه دخول نموذج التطبيق في سياق آلي جديد.
 
 ## الملخص التنفيذي
 
@@ -16,13 +16,13 @@
 
 | المؤشر | الحالة |
 |---|---|
-| Marketing Control Readiness | **86/100** |
-| Phase 2 E2E النهائي | **PARTIAL — NOT YET PASS** |
+| Marketing Control Readiness | **91/100** |
+| Phase 2 E2E النهائي | **MANUAL E2E PASS — OVERALL PARTIAL (automation/scheduling gaps)** |
 | جلسة Super Admin حقيقية | **PASS** |
 | عزل Staging/Preview | **PASS** |
 | نشر إلى Production أو تغيير نطاق | **لم يحدث** |
 | التحقق العام من Revision A وRollback | **PASS** |
-| إعادة حزمة E2E كاملة نظيفة بعد إصلاح Media | **مطلوب** |
+| إعادة تدفق E2E النظيفة بعد إصلاح Media | **PASS للتدفقات الأساسية؛ أتمتة كاملة وجدولة ما زالت مطلوبة** |
 
 ## بيئات النشر المعتمدة
 
@@ -120,8 +120,8 @@
 | Public published read | PASS | SSR أعاد Revision 5 المنشور. |
 | Public draft isolation | PASS | تم حفظ `E2E DRAFT MUST STAY PRIVATE — 2026-08-20` في Revision 6 Draft؛ HTML العام لم يحتويها، واحتوى Revision A. |
 | Preview token | PASS | token أُنشئ عبر UI، صالح 30 دقيقة، واستعمل في SSR Preview. |
-| Non-admin write denial | NOT RUN | لا يوجد حساب Staging غير إداري مهيأ للاختبار. |
-| Anonymous admin-RPC denial | NOT RUN | لم ينفذ كاختبار HTTP مستقل موثق. |
+| Non-admin write denial | PASS | حُظر حساب Staging Authenticated غير إداري من Admin RPCs ومن واجهة إدارة المنصة. |
+| Anonymous admin-RPC denial | PASS | استدعاءات Admin RPC بلا Bearer token رُفضت في Staging. |
 | Production egress | PASS للطلبات الملتقطة | لم يرصد أي أصل Production في Vite/Media/SSR خلال التحقق. |
 
 ## Tests and Regression
@@ -138,27 +138,25 @@
 | Preview E2E | PASS عبر token حقيقي وإطار SSR بعد تعذر الانتقال المباشر في متصفح الأتمتة |
 | Rollback E2E | PASS |
 | Public Draft isolation | PASS |
-| Regression خارج Marketing | FAIL مستقل: `/admin` overview يستدعي `public.admin_dashboard` غير موجود في schema cache. |
+| Regression خارج Marketing | PASS على Staging بعد تعريف `admin_dashboard` fallback مستقل يعتمد الجداول المتاحة فقط. |
 
 ## Remaining Gaps to 100%
 
-1. **إعادة تشغيل حزمة E2E كاملة من البداية بعد إصلاح Media v3** دون أي Marketing CMS API/Console error. هذه هي الفجوة الأهم وفق معيار القبول الصارم.
-2. **التحقق العام المستقل من Revision B** قبل تنفيذ الاستعادة، ثم حفظ دليل أن علامة B ظهرت علناً.
-3. **اختبار Non-admin وAnonymous**: إنشاء مستخدم Staging غير إداري وإثبات رفض كل Admin RPC، مع اختبار HTTP مجهول موثق.
-4. **مراقبة bare-path cache**: توثيق أن `/` بلا Query Key يتلقى المحتوى الجديد بعد revalidation في متصفح نظيف، أو إضافة اختبار آلي يمنع الرجوع للعرض القديم.
-5. **تنظيف كائنات Storage الاختبارية الفاشلة** التي سبقت تسجيل Media؛ Delete UI اختبر حذف السجل، لا حذف كائن Storage وحده.
-6. **إصلاح منفصل لـ`public.admin_dashboard`** في لوحة المنصة العامة؛ هو خارج Marketing CMS لكنه Regression مرئي.
-7. **E2E آلي** عبر Playwright/Cypress لتكرار نفس العقد على كل Preview وعدم الاعتماد على مراقبة يدوية.
+1. **Scheduling E2E**: يجب إنشاء نشر مستقبلي على Staging، الانتظار حتى الموعد، ثم إثبات أن الحالة `scheduled` تحولت إلى منشورة وأن bare path حدّث تلقائياً.
+2. **Playwright Preview access**: الاختبار الآلي موجود ويكشف أي egress للإنتاج أو CMS RPC/Console error، لكنه محجوب قبل التطبيق بـVercel Preview Protection. يلزم bypass secret أو CI `storageState` آمن.
+3. **أتمتة الأقسام الكاملة**: نتائج الواجهة اليدوية السابقة للأقسام مثبتة، لكن إضافة/إخفاء/إظهار/ترتيب/نسخ/حذف تحتاج تشغيل Playwright كامل بعد فتح Preview الآلي.
+4. **قرار الدمج إلى main/Production**: ممنوع حتى تغلق البنود أعلاه وتُعطى موافقة صريحة منفصلة؛ لا تغيير Production في هذه الجولة.
 
 ## Conclusion
 
-تم إنجاز وإثبات غالبية متطلبات Marketing CMS Phase 2 على Staging/Preview مع رحلة Super Admin حقيقية، إعدادات ونشر وSSR عام وإدارة Media وأقسام واستعادة إصدار وعزل Draft. بقيت شروط تحقق صارمة ومحددة تحول دون إعلان PASS النهائي، ولذلك فالقرار الصحيح هو **عدم الانتقال إلى Production وعدم وصف Phase 2 بأنها مكتملة 100%** حتى إغلاق الفجوات أعلاه وإعادة تشغيل الحزمة النظيفة.
+أثبتت إعادة E2E النظيفة أن تدفق Super Admin الأساسي يعمل عملياً على Staging/Preview من Settings وMedia إلى النشر والتحقق العام والاستعادة وعزل Draft، من دون Production. كما تحقق bare path مباشرة من Settings وRevision A وB والـRollback. لذلك تسجل الرحلة اليدوية الأساسية **PASS**. لكن لا يجوز وصف البرنامج بأنه مكتمل 100% أو دمجه إلى Production قبل تشغيل Scheduling وإغلاق حاجز Vercel أمام Playwright الآلي. القرار الصحيح هو **البقاء في Staging/Preview**.
 
-**Marketing Control Readiness: 86/100**
+**Marketing Control Readiness: 91/100**
 
 ## Evidence References
 
 - [سجل أدلة بيئة Preview وE2E](MARKETING_CMS_PREVIEW_ENVIRONMENT_EVIDENCE.md)
+- [ملحق إعادة E2E النظيفة والأتمتة](MARKETING_CMS_PHASE2_E2E_RETEST_20260820.md)
 - [تحقيق Vercel SSR والعزل](MARKETING_SSR_VERCEL_READ_ONLY_INVESTIGATION.md)
 - [خطة أتمتة E2E](MARKETING_CMS_E2E_AUTOMATION_PLAN.md)
 - [ترحيل إصلاح Media على Staging](../sql/marketing_cms_staging_schema_drift_repair_v3.sql)
