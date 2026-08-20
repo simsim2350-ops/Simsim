@@ -1,31 +1,57 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
-
-const CART_TTL_MS = 6 * 60 * 60 * 1000 // 6 ساعات — سلة أقدم من كذا تُهمَل تفادياً لأسعار قديمة
+import { readStoredCart } from './cartHelpers'
 
 // حالة السلة وعملياتها — المفتاح الفريد: نفس الصنف بخيارات/ملاحظة مختلفة = عنصر سلة مختلف
 // السلة تُحفظ في localStorage فتنجو من تحديث الصفحة (F5) أو إغلاق المتصفح بالخطأ
-export function useCart(slug, t) {
+// معزولة بالفرع (ADR-44/TASK-CART-001): branchId جزء من الحمولة المحفوظة؛ سلة فرع آخر بها أصناف
+// تُطرح كنزاع صريح (branchConflict) بدل تحميلها صامتة في فرع لا تنتمي إليه.
+export function useCart(slug, branchId, t) {
   const [cart, setCart] = useState([])
   const [cartOpen, setCartOpen] = useState(false)
+  const [branchConflict, setBranchConflict] = useState(null) // { savedBranchId, itemCount } | null
   const CART_STORAGE_KEY = `simsim_cart_${slug}`
 
-  // تحميل السلة المحفوظة عند فتح المطعم لأول مرة في هذه الجلسة
+  // تحميل السلة المحفوظة عند معرفة الفرع الفعلي (ننتظره لتفادي نزاع وهمي أثناء تحميل بيانات المطعم)
   useEffect(() => {
-    if (!slug) return
+    if (!slug || !branchId) return
     try {
-      const saved = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || 'null')
-      if (saved && Date.now() - (saved.savedAt || 0) < CART_TTL_MS && Array.isArray(saved.items)) {
-        setCart(saved.items)
-      }
-    } catch { /* تجاهل */ }
-  }, [slug])
+      const { items, conflict } = readStoredCart(localStorage.getItem(CART_STORAGE_KEY), branchId)
+      setBranchConflict(conflict)
+      setCart(conflict ? [] : items)
+    } catch {
+      setBranchConflict(null)
+      setCart([])
+    }
+  }, [slug, branchId])
 
-  // حفظ السلة في localStorage عند أي تغيير
+  // حفظ السلة في localStorage عند أي تغيير — يُعلَّق أثناء نزاع فرع غير محسوم حتى لا تُمحى سلة الفرع الآخر قبل أن يقرر الزبون
   useEffect(() => {
-    if (!slug) return
-    try { localStorage.setItem(CART_STORAGE_KEY, JSON.stringify({ items: cart, savedAt: Date.now() })) } catch { /* تجاهل */ }
-  }, [cart, slug])
+    if (!slug || !branchId || branchConflict) return
+    try { localStorage.setItem(CART_STORAGE_KEY, JSON.stringify({ items: cart, savedAt: Date.now(), branchId })) } catch { /* تجاهل */ }
+  }, [cart, slug, branchId, branchConflict])
+
+  // مزامنة بين التبويبات (TASK-CART-002): تعديل في تبويب آخر لنفس السلة ينعكس هنا فوراً
+  useEffect(() => {
+    if (!slug || !branchId) return
+    const onStorage = (e) => {
+      if (e.key !== CART_STORAGE_KEY) return
+      try {
+        const { items, conflict } = readStoredCart(e.newValue, branchId)
+        setBranchConflict(conflict)
+        setCart(conflict ? [] : items)
+      } catch { /* تجاهل */ }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [slug, branchId])
+
+  // القرار الأول لنزاع الفرع: تفريغ سلة الفرع القديم والبدء من هذا الفرع (القرار الثاني — الرجوع
+  // للفرع السابق — تنقّل بين الصفحات، يُدار من الصفحة المستدعية عبر savedBranchId في branchConflict)
+  const clearCartForNewBranch = () => {
+    setBranchConflict(null)
+    setCart([])
+  }
 
   // selectedOptions: [{ groupName, choiceName, price }] — قائمة مفسّرة من الخيارات المختارة
   // silent: يكتم توست الإضافة (يُستخدم عند إعادة الطلب لتفادي عشرات التوستات — ملخّص واحد بدلها)
@@ -87,5 +113,8 @@ export function useCart(slug, t) {
   const cartTotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0)
   const cartCount = cart.reduce((sum, i) => sum + i.qty, 0)
 
-  return { cart, setCart, cartOpen, setCartOpen, addToCart, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount }
+  return {
+    cart, setCart, cartOpen, setCartOpen, addToCart, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount,
+    branchConflict, clearCartForNewBranch,
+  }
 }

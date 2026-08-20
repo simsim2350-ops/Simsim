@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { track } from '../lib/analytics'
 import { supabase } from '../lib/supabase'
 import ErrBoundary from '../features/menu/ErrBoundary'
+import ConfirmDialog from '../components/ConfirmDialog'
+import { validateCartAgainstProducts } from '../features/menu/hooks/cartHelpers'
 import { computeBranchOpenStatus, effectiveDeliverySettings, makeItemName, estimatedPrepTime } from '../features/menu/helpers'
 import { openWhatsAppAboutOrder } from '../features/menu/whatsapp'
 import { useLang } from '../features/menu/hooks/useLang'
@@ -115,7 +117,17 @@ function PublicMenuInner() {
   // تفاصيل المنتج (PCR): عند التعطيل لا تُفتح نافذة المنتج عند الضغط (منيو عرض بلا تفاصيل).
   const productDetails = capabilities?.product_details !== false
   const { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer } = useActiveOrders(slug, t)
-  const { cart, setCart, cartOpen, setCartOpen, addToCart: addToCartRaw, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount } = useCart(slug, t)
+  const {
+    cart, setCart, cartOpen, setCartOpen, addToCart: addToCartRaw, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount,
+    branchConflict, clearCartForNewBranch,
+  } = useCart(slug, branch?.id, t)
+  // فحص صلاحية السلة قبل الدفع (TASK-CART-003): صنف حُذف/أصبح غير متاح أو تغيّر سعره — من products المحمّلة أصلاً، صفر استعلامات إضافية
+  const cartForCheckout = useMemo(() => validateCartAgainstProducts(cart, products), [cart, products])
+  // الرجوع للفرع الذي بدأت فيه سلته (خيار B في نزاع الفرع — D-10): يُسقط رمز الطاولة عمداً، فالقرار لصفحة المنيو العادية للفرع لا لجلسة QR الحالية
+  const goToCartsBranch = () => {
+    if (!branchConflict) return
+    navigate(`/menu/${slug}?branch=${branchConflict.savedBranchId}`, { replace: true })
+  }
   // تغليف الإضافة للسلة لبثّ حدث تحليلات مركزياً (ADR-42/M2) — إطلاق-وانسَ، لا يغيّر السلوك.
   const addToCart = (...args) => {
     track('cart.item_added', { restaurantId: restaurant?.id, branchId: branch?.id, entityType: 'product', entityId: args?.[0]?.id, props: { qty: args?.[1] ?? 1 } })
@@ -424,7 +436,7 @@ function PublicMenuInner() {
       {/* Cart drawer — يُحجب لو الطلبات أونلاين مُطفأة */}
       {ordering && cartOpen && (
         <CartDrawer
-          cart={cart}
+          cart={cartForCheckout}
           cartCount={cartCount}
           cartTotal={cartTotal}
           restaurant={restaurant}
@@ -524,6 +536,19 @@ function PublicMenuInner() {
           onClose={() => setShowAllergensModal(false)}
         />
       )}
+
+      {/* نزاع سلة من فرع آخر (TASK-CART-001 — D-10/B): رسالة صريحة بخيارين، بلا تحميل الأصناف صامتة */}
+      <ConfirmDialog
+        open={Boolean(branchConflict)}
+        icon="🛒"
+        title={t('cartBranchConflictTitle')}
+        body={t('cartBranchConflictBody')}
+        cancelLabel={t('cartBranchConflictBack')}
+        confirmLabel={t('cartBranchConflictClear')}
+        danger={false}
+        onCancel={goToCartsBranch}
+        onConfirm={clearCartForNewBranch}
+      />
     </div>
   )
 }
