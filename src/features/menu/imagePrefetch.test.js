@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const supabaseSrc = 'https://gpwwnuuicywsvmmhxngs.supabase.co/storage/v1/object/public/restaurant-media/restaurant/products/item.jpg'
-const config = { widths: [128, 240, 320], sizes: '108px', quality: 72 }
+// يطابق ما يمرّره ProductItem لتخطيط list: أبعاد العرض جزء لا يتجزأ من الإعداد.
+const config = { widths: [128, 240, 320], sizes: '108px', quality: 72, width: '108', height: '108' }
 
 function installFakeDom(navigatorOverrides = {}) {
   const links = []
@@ -34,13 +35,39 @@ describe('imagePrefetch', () => {
     expect(links[0].fetchPriority).toBe('low')
     expect(links[0].imageSizes).toBe('108px')
     expect(links[0].imageSrcset).toBe(
-      'https://gpwwnuuicywsvmmhxngs.supabase.co/storage/v1/render/image/public/restaurant-media/restaurant/products/item.jpg?width=128&quality=72&format=webp 128w, '
-      + 'https://gpwwnuuicywsvmmhxngs.supabase.co/storage/v1/render/image/public/restaurant-media/restaurant/products/item.jpg?width=240&quality=72&format=webp 240w, '
-      + 'https://gpwwnuuicywsvmmhxngs.supabase.co/storage/v1/render/image/public/restaurant-media/restaurant/products/item.jpg?width=320&quality=72&format=webp 320w',
+      'https://gpwwnuuicywsvmmhxngs.supabase.co/storage/v1/render/image/public/restaurant-media/restaurant/products/item.jpg?width=128&height=128&resize=cover&quality=72&format=webp 128w, '
+      + 'https://gpwwnuuicywsvmmhxngs.supabase.co/storage/v1/render/image/public/restaurant-media/restaurant/products/item.jpg?width=240&height=240&resize=cover&quality=72&format=webp 240w, '
+      + 'https://gpwwnuuicywsvmmhxngs.supabase.co/storage/v1/render/image/public/restaurant-media/restaurant/products/item.jpg?width=320&height=320&resize=cover&quality=72&format=webp 320w',
     )
     expect(links[0].href).toBe(
-      'https://gpwwnuuicywsvmmhxngs.supabase.co/storage/v1/render/image/public/restaurant-media/restaurant/products/item.jpg?width=128&quality=72&format=webp',
+      'https://gpwwnuuicywsvmmhxngs.supabase.co/storage/v1/render/image/public/restaurant-media/restaurant/products/item.jpg?width=128&height=128&resize=cover&quality=72&format=webp',
     )
+  })
+
+  // اختبار الربط بين المُنتِج (imagePrefetch) والمستهلك (ResponsiveMenuImage):
+  // لا يقارن بسلسلة ثابتة، بل بالناتج الفعلي للمكوّن نفسه — فأي تغيير مستقبلي في طريقة
+  // بناء الرابط داخل ResponsiveMenuImage يُفشل هذا الاختبار بدل أن يعطّل التسخين صامتاً.
+  it('يُسخّن نفس الرابط الذي يطلبه ResponsiveMenuImage فعلاً (وإلا فلا cache hit)', async () => {
+    const links = installFakeDom()
+    const { warmCategoryImages } = await import('./imagePrefetch')
+    const { default: ResponsiveMenuImage } = await import('./ResponsiveMenuImage')
+
+    warmCategoryImages([{ id: 'p1', image_url: supabaseSrc }], config)
+
+    // استدعاء المكوّن كدالة للحصول على شجرة العناصر دون الحاجة إلى DOM حقيقي.
+    const picture = ResponsiveMenuImage({
+      src: supabaseSrc,
+      widths: config.widths,
+      sizes: config.sizes,
+      width: config.width,
+      height: config.height,
+      quality: config.quality,
+    })
+    const source = picture.props.children[0]
+
+    expect(source.props.srcSet).toBeTruthy()
+    expect(links[0].imageSrcset).toBe(source.props.srcSet)
+    expect(links[0].imageSizes).toBe(source.props.sizes)
   })
 
   it('يستخدم href مباشرة بلا imageSrcset لصورة خارج Supabase Storage', async () => {
