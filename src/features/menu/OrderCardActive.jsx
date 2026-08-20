@@ -106,7 +106,7 @@ export default function OrderCardActive({
           onClick={() => onMessage(order)}
           style={{ flex:1, padding:'11px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer' }}
         >{t('msgRest')}</button>
-        {order.status === 'pending' && (
+        {order.status === 'pending' && order.accessToken && (
           <button
             onClick={() => setConfirmOpen(true)}
             style={{ flex:1, padding:'11px', borderRadius:'12px', border:'none', background:'#FEECEF', color:'#E11D48', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer' }}

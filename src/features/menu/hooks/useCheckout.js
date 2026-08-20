@@ -100,6 +100,7 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
       {
         id: data.id,
         orderNumber: data.order_number,
+        accessToken: data.access_token || null,
         status: 'pending',
         items: cart,
         total: Number(data.total ?? total),

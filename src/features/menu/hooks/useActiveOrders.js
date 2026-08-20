@@ -131,40 +131,43 @@ export function useActiveOrders(slug, t) {
 
   // إلغاء الطلب من جهة العميل نفسه — متاح فقط وهو لا يزال "انتظار" قبل أن يبدأ المطعم التحضير
   // التأكيد يحصل داخل المنصّة قبل استدعاء هذه الدالة (OrderCardActive) — وليس هنا
+  // يمرّ عبر cancel_order_by_customer (RPC آمنة تتحقق من order_access_token) بدل UPDATE مباشر على orders
   const cancelOrderByCustomer = async (order) => {
-    const { error } = await supabase
-      .from('orders')
-      .update({ status: 'cancelled', cancelled_by: 'customer' })
-      .eq('id', order.id)
-      .eq('status', 'pending') // حماية إضافية: لا يُنفَّذ إلا لو لسه pending فعلياً في قاعدة البيانات
+    if (!order.accessToken) {
+      toast.error(t('tCancelFail3'))
+      return
+    }
+
+    const { data, error } = await supabase.rpc('cancel_order_by_customer', {
+      p_order_id: order.id,
+      p_access_token: order.accessToken,
+    })
+
+    // صفر صفوف راجعة = فشل الإلغاء (الطلب لم يعد pending أو الرمز غير مطابق)
+    const cancelled = !error && Array.isArray(data) && data.length > 0
+
+    if (cancelled) {
+      setActiveOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'cancelled', cancelledBy:'customer' } : o))
+      toast.success(t('tCancelled'))
+      return
+    }
 
     if (error) {
       toast.error(t('tCancelFail3'))
       return
     }
 
-    // التأكد من الحالة الحقيقية: update().eq() لا يُرجع خطأ لو لم يُطابق أي صف
-    // (أي لو المطعم بدأ التحضير فعلاً) — لذلك نتحقق بدل افتراض النجاح
-    let confirmedCancelled = true
+    // لم يُلغَ (تغيّرت الحالة قبل الطلب) — نتحقق من الحالة الحقيقية ونعرضها
     try {
-      const { data } = await supabase.rpc('get_orders_status', { order_ids: [order.id] })
-      const fresh = data && data[0]
-      if (fresh) {
-        confirmedCancelled = fresh.status === 'cancelled'
-        if (!confirmedCancelled) {
-          setActiveOrders(prev => prev.map(o => o.id === order.id
-            ? { ...o, status: fresh.status, cancelledBy: fresh.cancelled_by ?? o.cancelledBy }
-            : o))
-        }
+      const { data: fresh } = await supabase.rpc('get_orders_status', { order_ids: [order.id] })
+      const freshOrder = fresh && fresh[0]
+      if (freshOrder) {
+        setActiveOrders(prev => prev.map(o => o.id === order.id
+          ? { ...o, status: freshOrder.status, cancelledBy: freshOrder.cancelled_by ?? o.cancelledBy }
+          : o))
       }
-    } catch { /* تعذّر التحقق — نفترض النجاح ما دام لم يُرجع خطأ */ }
-
-    if (confirmedCancelled) {
-      setActiveOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'cancelled', cancelledBy:'customer' } : o))
-      toast.success(t('tCancelled'))
-    } else {
-      toast.error(t('tCancelFail'))
-    }
+    } catch { /* تعذّر التحقق */ }
+    toast.error(t('tCancelFail'))
   }
 
   // عدد الطلبات النشطة فعلياً (انتظار/تحضير/جاهز) — لا يشمل المكتملة أو الملغاة
