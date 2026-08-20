@@ -37,3 +37,28 @@ export function itemsGross(items) {
   return (Array.isArray(items) ? items : [])
     .reduce((s, it) => it.unavailable ? s : s + (Number(it.price) || 0) * (Number(it.qty) || 1), 0)
 }
+
+function round2(n) {
+  return Math.round((n + Number.EPSILON) * 100) / 100
+}
+
+/**
+ * يحسب قيمة خصم كوبون مطابقة تماماً لمنطق create_order الخادمي (TASK-CHK-003) —
+ * لا يُوثَق بها كمصدر حقيقة (الخادم يُعيد التسعير كلياً)، بل تُستخدم فقط لعرض الرقم الصحيح
+ * قبل الضغط على تأكيد الطلب حتى لا يفاجَأ الزبون بـ price_changed.
+ * @param {{discount_type:string, discount_value:any, max_discount_amount?:any}|null} coupon
+ * @param {number} subtotalGross إجمالي السلة شامل الضريبة قبل الخصم
+ * @returns {number}
+ */
+export function computeCouponDiscount(coupon, subtotalGross) {
+  if (!coupon) return 0
+  const gross = Math.max(0, Number(subtotalGross) || 0)
+  const value = Number(coupon.discount_value) || 0
+  let discount = coupon.discount_type === 'percent'
+    ? round2(gross * value / 100)
+    : Math.max(0, value)
+  if (coupon.max_discount_amount != null && coupon.max_discount_amount !== '') {
+    discount = Math.min(discount, Number(coupon.max_discount_amount))
+  }
+  return Math.min(discount, gross)
+}

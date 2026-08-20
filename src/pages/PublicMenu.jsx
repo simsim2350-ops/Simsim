@@ -138,7 +138,8 @@ function PublicMenuInner() {
     tableNumber, setTableNumber, orderType, setOrderType,
     deliveryAddress, setDeliveryAddress, customerName, setCustomerName,
     customerPhone, setCustomerPhone, orderNote, setOrderNote, placeOrder, submitting,
-  } = useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, appliedCoupon, discountAmount, removeCoupon, tableQr })
+    priceChangeInfo, confirmPriceUpdate,
+  } = useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, isEn, appliedCoupon, discountAmount, removeCoupon, tableQr })
   // PCR: شريط الولاء يظهر فقط إذا كانت قدرة الولاء مفعّلة في الباقة (loyaltyEnabled) — وإلا لا نمرّره
   const loyaltyRaw = useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone })
   const loyalty = loyaltyEnabled ? loyaltyRaw : null
@@ -480,6 +481,8 @@ function PublicMenuInner() {
           removeCoupon={removeCoupon}
           applyingCoupon={applyingCoupon}
           discountAmount={discountAmount}
+          priceChangeInfo={priceChangeInfo}
+          onConfirmPriceUpdate={confirmPriceUpdate}
         />
       )}
 

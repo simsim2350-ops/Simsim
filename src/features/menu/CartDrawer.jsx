@@ -12,6 +12,7 @@ export default function CartDrawer({
   openStatus, deliveryEnabled, deliveryFee, takeawayEnabled = true, placeOrder, submitting, removeFromCart, incrementCartItem, onDeleteItem, onEditItem, onClose,
   suggestions = [], onAddSuggestion, onOpenSuggestion, loyalty,
   couponInput, setCouponInput, appliedCoupon, applyCoupon, removeCoupon, applyingCoupon, discountAmount = 0,
+  priceChangeInfo = null, onConfirmPriceUpdate,
 }) {
   const suggestionBadge = {
     curated:    { label: t('reasonCurated'),    bg:'#FFF1E8', fg:'#C8481B' },
@@ -22,7 +23,8 @@ export default function CartDrawer({
   const finalTotal = discountedSubtotal + (orderType === 'delivery' ? (Number(deliveryFee) || 0) : 0)
   // TASK-CART-003: أصناف حُذفت أو أصبحت غير متاحة منذ إضافتها للسلة — لا يمكن تأكيد الطلب وهي موجودة
   const hasUnavailableItems = cart.some(item => item.available === false)
-  const canSubmit = openStatus.open && !submitting && !hasUnavailableItems
+  // TASK-CHK-004: طالما رد الخادم بسعر مختلف، لا يُعاد الإرسال إلا عبر «حدّث وتابع» الصريح
+  const canSubmit = openStatus.open && !submitting && !hasUnavailableItems && !priceChangeInfo
   const loyaltyThreshold = loyalty?.reward_threshold || 0
   const loyaltyBalance = loyalty?.balance || 0
   const loyaltyReady = loyaltyThreshold > 0 && loyaltyBalance >= loyaltyThreshold
@@ -325,6 +327,27 @@ export default function CartDrawer({
             <span>{t('total')}</span>
             <span style={{ color:brandColor }}>{finalTotal.toFixed(2)} ﷼</span>
           </div>
+
+          {priceChangeInfo && (
+            <div style={{ background:'#FFF8F0', border:'1px solid #FDE2CD', borderRadius:'12px', padding:'12px 14px', marginTop:'12px' }}>
+              <div style={{ display:'flex', alignItems:'flex-start', gap:'8px', marginBottom:'10px' }}>
+                <span style={{ fontSize:'18px', flexShrink:0 }}>↻</span>
+                <div>
+                  <div style={{ fontSize:'13px', fontWeight:'800', color:'#9A3412', marginBottom:'2px' }}>{t('priceChangedTitle')}</div>
+                  <div style={{ fontSize:'12px', color:'#9A3412' }}>
+                    <span style={{ textDecoration:'line-through', opacity:0.7 }}>{priceChangeInfo.oldTotal.toFixed(2)} ﷼</span>
+                    {' '}← <strong>{priceChangeInfo.newTotal.toFixed(2)} ﷼</strong>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onConfirmPriceUpdate}
+                disabled={submitting}
+                style={{ width:'100%', padding:'11px', borderRadius:'11px', border:'none', background: brandColor, color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', cursor: submitting ? 'default' : 'pointer', opacity: submitting ? 0.7 : 1 }}
+              >{t('priceChangedUpdateBtn')}</button>
+            </div>
+          )}
 
           {hasUnavailableItems && (
             <div style={{ display:'flex', alignItems:'flex-start', gap:'8px', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.25)', borderRadius:'12px', padding:'12px 14px', marginTop:'12px' }}>

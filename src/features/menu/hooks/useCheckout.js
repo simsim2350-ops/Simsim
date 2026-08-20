@@ -2,10 +2,14 @@ import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../../../lib/supabase'
 import { computeBranchOpenStatus, effectiveDeliverySettings } from '../helpers'
+import { withTimeout, isTimeoutError } from '../../../lib/asyncTimeout'
+import { mapOrderError } from '../orderErrors'
+
+const CREATE_ORDER_TIMEOUT_MS = 15_000
 
 // بيانات نموذج الطلب + إنشاء الطلب في قاعدة البيانات.
 // طلب QR لا يرسل restaurant_id أو branch_id أو table_id من المتصفح؛ الخادم يستخرجها من token فقط.
-export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, appliedCoupon, discountAmount = 0, removeCoupon, tableQr = null }) {
+export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, isEn, appliedCoupon, discountAmount = 0, removeCoupon, tableQr = null }) {
   const [tableNumber, setTableNumber] = useState('')
   const [orderType, setOrderType] = useState('dine_in') // dine_in | takeaway | delivery
   const [deliveryAddress, setDeliveryAddress] = useState('')
@@ -14,6 +18,9 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
   const [orderNote, setOrderNote] = useState('')
   const [orderNumber, setOrderNumber] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  // TASK-CHK-004: رد price_changed من الخادم — يحمل الإجمالي الصحيح بانتظار تأكيد الزبون صراحة
+  // قبل إعادة الإرسال (لا نعيد الإرسال تلقائياً بسعر مختلف بلا علم الزبون)
+  const [priceChangeInfo, setPriceChangeInfo] = useState(null) // { oldTotal, newTotal } | null
 
   const PHONE_STORAGE_KEY = `simsim_phone_${slug}`
 
@@ -25,29 +32,9 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
     setDeliveryAddress('')
   }, [tableQr?.token, tableQr?.tableName])
 
-  const placeOrder = async () => {
-    if (submitting) return
-    if (cart.length === 0) { toast.error(t('tCartEmpty')); return }
-    const openStatus = computeBranchOpenStatus(branch)
-    if (!openStatus.open) {
-      toast.error(openStatus.nextText ? `${t('closedTitle')} — ${openStatus.nextText}` : t('tClosed'))
-      return
-    }
-    if (!tableQr && orderType === 'dine_in' && !tableNumber.trim()) { toast.error(t('tEnterTable')); return }
-    if (!tableQr && orderType === 'delivery' && !deliveryAddress.trim()) { toast.error(t('tEnterAddr')); return }
-    if (!customerPhone.trim()) { toast.error(t('tEnterPhone')); return }
-    if (!/^5\d{8}$/.test(customerPhone)) { toast.error(t('tBadPhone')); return }
-
-    const items = cart.map(i => ({
-      product_id: i.id,
-      quantity: i.qty,
-      notes: i.note || '',
-      options: (i.selectedOptions || []).map(o => ({ groupName: o.groupName, choiceName: o.choiceName })),
-    }))
-
-    const deliveryFee = !tableQr && orderType === 'delivery' ? (Number(effectiveDeliverySettings(branch, restaurant).fee) || 0) : 0
-    const total = Math.max(0, cartTotal - discountAmount) + deliveryFee
-    setSubmitting(true)
+  // ينفّذ استدعاء create_order فعلياً؛ clientTotalOverride تُستخدم فقط عند تأكيد سعر مُحدَّث (TASK-CHK-004)
+  const submitOrder = async (items, deliveryFee, clientTotalOverride) => {
+    const total = clientTotalOverride ?? (Math.max(0, cartTotal - discountAmount) + deliveryFee)
 
     const request = tableQr
       ? supabase.rpc('create_order_from_table_qr', {
@@ -73,20 +60,34 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
         p_client_total: total,
       })
 
-    const { data, error } = await request.single()
+    let result
+    try {
+      result = await withTimeout(request.single(), { operation: 'create_order', timeoutMs: CREATE_ORDER_TIMEOUT_MS })
+    } catch (err) {
+      // لم يُنشأ أي طلب هنا (price_changed=true لا تُدرِج صفاً، وأي خطأ آخر يمنع الإدخال) — الرسالة تنصّ صراحة على ذلك
+      if (isTimeoutError(err)) toast.error(t('tOrderTimeout'))
+      else toast.error(t('tErr'))
+      setSubmitting(false)
+      return
+    }
+    const { data, error } = result
+
     if (error) {
       console.error('Order error:', error)
-      toast.error(error.message || t('tErr'))
+      const msg = mapOrderError(error.message)
+      toast.error(isEn ? msg.en : msg.ar)
       setSubmitting(false)
       return
     }
 
     if (!data?.id || data.price_changed) {
-      toast('تم تحديث السعر. راجع إجمالي السلة ثم حاول مرة أخرى.', { icon:'↻' })
+      // صفر طلب أُنشئ (VERIFIED في create_order) — نعرض الفرق صراحة بدل توست عابر يترك السلة في طريق مسدود
+      setPriceChangeInfo({ oldTotal: total, newTotal: Number(data.total) })
       setSubmitting(false)
       return
     }
 
+    setPriceChangeInfo(null)
     setOrderNumber(data.order_number)
     try { localStorage.setItem(PHONE_STORAGE_KEY, customerPhone) } catch { /* تجاهل */ }
     setOrderPlaced(true)
@@ -113,10 +114,50 @@ export function useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart
     ])
   }
 
+  const placeOrder = async () => {
+    if (submitting) return
+    if (cart.length === 0) { toast.error(t('tCartEmpty')); return }
+    const openStatus = computeBranchOpenStatus(branch)
+    if (!openStatus.open) {
+      toast.error(openStatus.nextText ? `${t('closedTitle')} — ${openStatus.nextText}` : t('tClosed'))
+      return
+    }
+    if (!tableQr && orderType === 'dine_in' && !tableNumber.trim()) { toast.error(t('tEnterTable')); return }
+    if (!tableQr && orderType === 'delivery' && !deliveryAddress.trim()) { toast.error(t('tEnterAddr')); return }
+    if (!customerPhone.trim()) { toast.error(t('tEnterPhone')); return }
+    if (!/^5\d{8}$/.test(customerPhone)) { toast.error(t('tBadPhone')); return }
+
+    const items = cart.map(i => ({
+      product_id: i.id,
+      quantity: i.qty,
+      notes: i.note || '',
+      options: (i.selectedOptions || []).map(o => ({ groupName: o.groupName, choiceName: o.choiceName })),
+    }))
+
+    const deliveryFee = !tableQr && orderType === 'delivery' ? (Number(effectiveDeliverySettings(branch, restaurant).fee) || 0) : 0
+    setPriceChangeInfo(null)
+    setSubmitting(true)
+    await submitOrder(items, deliveryFee)
+  }
+
+  // TASK-CHK-004: الزبون يقبل السعر الذي أعاده الخادم صراحة ويعيد الإرسال بنفس أصناف السلة
+  const confirmPriceUpdate = async () => {
+    if (!priceChangeInfo || submitting) return
+    const items = cart.map(i => ({
+      product_id: i.id,
+      quantity: i.qty,
+      notes: i.note || '',
+      options: (i.selectedOptions || []).map(o => ({ groupName: o.groupName, choiceName: o.choiceName })),
+    }))
+    setSubmitting(true)
+    await submitOrder(items, 0, priceChangeInfo.newTotal)
+  }
+
   return {
     tableNumber, setTableNumber, orderType, setOrderType,
     deliveryAddress, setDeliveryAddress, customerName, setCustomerName,
     customerPhone, setCustomerPhone, orderNote, setOrderNote,
     orderNumber, placeOrder, submitting,
+    priceChangeInfo, confirmPriceUpdate,
   }
 }
