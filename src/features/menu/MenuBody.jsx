@@ -5,6 +5,17 @@ import HProductCard from './HProductCard'
 import ResponsiveMenuImage from './ResponsiveMenuImage'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { InlineMenuBanner } from './BannerDisplays'
+import { warmCategoryImages } from './imagePrefetch'
+
+// إعدادات الصورة (widths/sizes/quality) المطابقة تماماً لما يستخدمه ProductItem لكل تخطيط،
+// لضمان أن رابط الـpreload يطابق حرفياً الرابط الذي سيطلبه <img loading="lazy"> لاحقاً (cache hit فعلي).
+const LAYOUT_IMAGE_CONFIG = {
+  circles: { widths: [128, 240, 320], sizes: '104px', quality: 72 },
+  grid: { widths: [240, 480, 640], sizes: '(min-width: 1024px) 467px, calc((100vw - 42px) / 2)', quality: 72 },
+  showcase: { widths: [480, 720, 960], sizes: '(min-width: 1024px) 467px, calc(100vw - 32px)', quality: 76 },
+  list: { widths: [128, 240, 320], sizes: '108px', quality: 72 },
+}
+const NEXT_CATEGORY_PREFETCH_COUNT = 3
 
 // جسم المنيو: شريط الأقسام + Best Sellers اليدوية + مختارات المطعم + توصيات الطلبات + الأقسام.
 export default function MenuBody({
@@ -73,6 +84,29 @@ export default function MenuBody({
 
   // Filter products
   const filteredProducts = (catId) => products.filter(p => p.category_id === catId)
+
+  // Prefetch استباقي (P2): عندما يصبح قسم ما هو النشط، نُسخّن أول صور القسم التالي فقط
+  // (ليست كل الصور، وليست كل الأقسام) عبر <link rel=preload> بأولوية منخفضة أثناء وقت فراغ
+  // المتصفح، حتى لا ينافس تحميل المحتوى الحرج (LCP). لا يعدّل lazy-loading الفعلي لأي صورة.
+  useEffect(() => {
+    if (!activeCategory || categories.length === 0) return
+    const activeIndex = categories.findIndex(cat => cat.id === activeCategory)
+    if (activeIndex === -1) return
+    const nextCategory = categories[activeIndex + 1]
+    if (!nextCategory) return
+    const nextProducts = filteredProducts(nextCategory.id).slice(0, NEXT_CATEGORY_PREFETCH_COUNT)
+    if (nextProducts.length === 0) return
+
+    const config = LAYOUT_IMAGE_CONFIG[layout] || LAYOUT_IMAGE_CONFIG.list
+    const run = () => warmCategoryImages(nextProducts, config)
+    const hasIdleCallback = typeof window !== 'undefined' && 'requestIdleCallback' in window
+    const idleId = hasIdleCallback ? window.requestIdleCallback(run, { timeout: 2000 }) : setTimeout(run, 300)
+
+    return () => {
+      if (hasIdleCallback) window.cancelIdleCallback(idleId)
+      else clearTimeout(idleId)
+    }
+  }, [activeCategory, categories, products, layout])
 
   const itemProps = (prod) => ({
     product: prod,
