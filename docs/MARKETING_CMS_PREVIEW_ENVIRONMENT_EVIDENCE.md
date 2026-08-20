@@ -328,3 +328,19 @@ Revision B then changed HERO to `E2E Page Revision B — 2026-08-20`, successful
 ## Separate non-Marketing regression
 
 The generic Vite `/admin` overview continues to report a missing `public.admin_dashboard` schema-cache function. It is outside Marketing CMS routes; no Marketing CMS Console error was recorded during the flows above.
+
+
+## Rollback and Draft-isolation verification
+
+Revision A was restored from its archived Revision 2 through the Super Admin UI, creating Revision 5. Publishing Revision 5 created a new draft Revision 6 and archived Revision 3; the UI recorded Revision 5 as published at `2026-08-20T12:12:12+00:00`. A cache-busted SSR request to `?e2e=rollback-a-2` contained the Revision A marker, confirming public rollback.
+
+For the public-draft isolation test, the active Super Admin saved the distinct marker `E2E DRAFT MUST STAY PRIVATE — 2026-08-20` into the new Staging-only Draft Revision 6 and did not publish it. A direct public SSR response at `?e2e=draft-security-2` contained the published Revision A marker and did not contain the Draft marker (`DRAFT_HIDDEN`, `PUBLISHED_A_PRESENT`). This proves the public read path does not return the current draft.
+
+A read-only Staging audit query shows the actions performed by the isolated `super_admin`: `marketing.draft_saved`, `marketing.insert`, `marketing.update`, and audited Marketing Sections insert/delete activity. This includes the data mutations created by the UI-driven revision, section, restore, and draft-isolation flows.
+
+
+## Draft Preview and final Section Add/Delete evidence
+
+The saved Revision 6 Draft bearing `E2E DRAFT MUST STAY PRIVATE — 2026-08-20` was previewed through the Super Admin UI. The token-creation request completed with HTTP 200 and the UI confirmed a 30-minute lifetime. Because direct cross-origin navigation caused an automation-browser blank-page interruption earlier, the same issued token was opened in an SSR Preview iframe. The rendered HERO visibly displayed the Draft marker, proving the authenticated preview path returns a draft without publishing it.
+
+The Typed Section selector was then used to add an FAQ section to Revision 6, which appeared as section 11. The section was deleted through its own UI delete control before the draft was saved. The final saved Revision 6 therefore retains its ten valid original sections and the unpublished security marker; the public page remains Revision A.
