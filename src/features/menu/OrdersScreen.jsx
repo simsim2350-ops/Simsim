@@ -1,16 +1,30 @@
 // شاشة "طلباتي" — النشط مفتوح بالتتبع، والسابق (مكتمل/ملغي) منطوٍ مع «اطلب تاني»
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import OrdersHeader from './OrdersHeader'
 import LoyaltyCard from './LoyaltyCard'
 import OrderCardActive from './OrderCardActive'
 import OrderCardCollapsed from './OrderCardCollapsed'
 import EmptyOrders from './EmptyOrders'
+import { formatLastSynced } from './orderTracking'
 
 const IS_ACTIVE = (s) => ['pending','preparing','ready'].includes(s)
 
+// TASK-TRK-002: مؤشّر "آخر تحديث" نسبي — يحتاج عدّاداً حياً بمعزل عن بقية الشاشة فلا يُعيد رسم القائمة كل ثانية
+function LastSynced({ lastSyncedAt, isEn, t }) {
+  const [, tick] = useState(0)
+  useEffect(() => {
+    if (!lastSyncedAt) return
+    const id = setInterval(() => tick(n => n + 1), 1000)
+    return () => clearInterval(id)
+  }, [lastSyncedAt])
+  const label = formatLastSynced(lastSyncedAt, Date.now(), isEn)
+  if (!label) return null
+  return <span style={{ fontSize:'10px', color:'#9CA3AF', fontWeight:'700' }}>{t('lastSyncedPrefix')} {label}</span>
+}
+
 export default function OrdersScreen({
   brandColor, isEn, t, itemName,
-  activeOrders, liveOrdersCount, loyalty, prepTime,
+  activeOrders, liveOrdersCount, lastSyncedAt, loyalty, prepTime,
   reviewedIds, reviewDraft, setDraft, submitReview, submittingReview,
   reviewsEnabled = true, ordering = true,
   cancelOrderByCustomer, onBack, onReorder, onMessage,
@@ -127,7 +141,12 @@ export default function OrdersScreen({
         )}
 
         {/* قيد التنفيذ الآن — مفتوح بالكامل مع التتبّع */}
-        {activeList.length > 0 && <div style={sec}>{t('activeNow')}</div>}
+        {activeList.length > 0 && (
+          <div style={{ ...sec, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <span>{t('activeNow')}</span>
+            <LastSynced lastSyncedAt={lastSyncedAt} isEn={isEn} t={t} />
+          </div>
+        )}
         {activeList.map((order, i) => (
           <div key={order.id} className="ord-in" style={{ animationDelay:`${i * 45}ms` }}>
             <OrderCardActive

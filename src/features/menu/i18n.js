@@ -131,6 +131,7 @@ export const TT = {
   tOrderTimeout: { ar: 'تعذّر تأكيد الطلب بسبب ضعف الاتصال. لم يتم تأكيد الطلب بعد — حاول مرة أخرى', en: "Couldn't confirm the order due to a weak connection. The order was not confirmed — try again" },
   priceChangedTitle: { ar: 'تغيّر السعر منذ آخر مرة راجعت فيها السلة', en: 'The price changed since you last checked your cart' },
   priceChangedUpdateBtn: { ar: 'حدّث وتابع', en: 'Update & continue' },
+  lastSyncedPrefix: { ar: 'آخر تحديث:', en: 'Last updated:' },
   sendWaLast:  { ar: '💬 إرسال تأكيد آخر طلب عبر واتساب', en: '💬 Send last order via WhatsApp' },
   backToMenu:  { ar: '← العودة للمنيو لطلب إضافي', en: '← Back to menu for another order' },
   rewardDefault:{ ar: 'مكافأة', en: 'reward' },

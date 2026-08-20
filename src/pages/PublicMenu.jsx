@@ -116,7 +116,7 @@ function PublicMenuInner() {
   const reviewsEnabled = capabilities?.reviews !== false
   // تفاصيل المنتج (PCR): عند التعطيل لا تُفتح نافذة المنتج عند الضغط (منيو عرض بلا تفاصيل).
   const productDetails = capabilities?.product_details !== false
-  const { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer } = useActiveOrders(slug, t)
+  const { activeOrders, setActiveOrders, orderPlaced, setOrderPlaced, liveOrdersCount, cancelOrderByCustomer, lastSyncedAt } = useActiveOrders(slug, t)
   const {
     cart, setCart, cartOpen, setCartOpen, addToCart: addToCartRaw, removeFromCart, incrementCartItem, deleteCartItem, updateCartItem, cartTotal, cartCount,
     branchConflict, clearCartForNewBranch, idempotencyKey,
@@ -276,6 +276,7 @@ function PublicMenuInner() {
       itemName={itemName}
       activeOrders={activeOrders}
       liveOrdersCount={liveOrdersCount}
+      lastSyncedAt={lastSyncedAt}
       loyalty={loyalty}
       prepTime={estimatedPrepTime(restaurantActiveOrdersCount)}
       reviewedIds={reviewedIds}
