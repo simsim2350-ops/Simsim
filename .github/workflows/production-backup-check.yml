@@ -2,6 +2,8 @@ name: Production Backup Connection Check
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 0'  # Sundays 02:00 UTC — weekly backup integrity check
 
 permissions:
   contents: read
