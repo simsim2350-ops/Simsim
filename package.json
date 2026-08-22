@@ -9,11 +9,13 @@
     "preview": "vite preview",
     "test": "vitest run",
     "check:registry": "node scripts/checkRegistryDrift.mjs",
-    "test:e2e:staging:smoke": "playwright test tests/e2e/marketing-staging-smoke.spec.ts",
-    "test:e2e:staging:sections": "playwright test tests/e2e/marketing-staging-sections.spec.ts",
-    "test:e2e:saas": "playwright test tests/e2e/saas-auth-onboarding.spec.ts",
-    "test:e2e:qr-cart": "playwright test tests/e2e/qr-cart-checkout-order.spec.ts",
-    "test:e2e:staff": "playwright test tests/e2e/staff-orders-status.spec.ts"
+    "test:e2e:staging:smoke": "playwright test tests/e2e/marketing-staging-smoke.spec.ts --project=desktop",
+    "test:e2e:staging:sections": "playwright test tests/e2e/marketing-staging-sections.spec.ts --project=desktop",
+    "test:e2e:saas": "playwright test tests/e2e/saas-auth-onboarding.spec.ts --project=desktop",
+    "test:e2e:qr-cart": "playwright test tests/e2e/qr-cart-checkout-order.spec.ts --project=desktop",
+    "test:e2e:staff": "playwright test tests/e2e/staff-orders-status.spec.ts --project=desktop",
+    "test:e2e:mobile": "playwright test --project=mobile",
+    "test:e2e:mobile:qr-cart": "playwright test tests/e2e/qr-cart-checkout-order.spec.ts --project=mobile"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
