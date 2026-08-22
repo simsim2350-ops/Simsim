@@ -17,7 +17,7 @@ export class Logger {
   withContext(_ctx) { return this }
 }
 
-/** واجهة الإبلاغ عن الأخطاء — تُستبدَل لاحقاً بمزوّد فعلي (Sentry/…) بلا لمس المتصلين. */
+/** واجهة الإبلاغ عن الأخطاء — تُستبدَل لاحقاً بمزوّد فعلي (LogRocket/…) بلا لمس المتصلين. */
 export class ErrorReporter {
   /** @param {Error} _error @param {Object} [_context] */
   captureException(_error, _context) {}
