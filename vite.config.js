@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     exclude: ['**/node_modules/**', '**/dist/**', 'marketing-ssr/**', 'tests/e2e/**'],
+    setupFiles: ['./src/test/setup.js'],
   },
   build: {
     rollupOptions: {
