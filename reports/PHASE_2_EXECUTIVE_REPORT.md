@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-22
 **Phase:** Phase 2 — Test Coverage
-**Status:** 🔄 IN PROGRESS (Tasks 2.1–2.2 complete)
+**Status:** 🔄 IN PROGRESS (Tasks 2.1–2.3 complete)
 
 ---
 
@@ -14,7 +14,7 @@ Source: `SIMSIM_CURRENT_STATE_ENGINEERING_AUDIT.md` §N
 |------|-------------|----------|--------|
 | **2.1** | E2E: auth → onboarding → menu create flow | P0 | ✅ COMPLETE (PR #314) |
 | **2.2** | E2E: QR scan → cart → checkout → order status | P0 | ✅ COMPLETE (PR #315) |
-| **2.3** | E2E: staff login → orders view → status update | P1 | ⏳ NOT STARTED |
+| **2.3** | E2E: staff login → orders view → status update | P1 | ✅ COMPLETE (PR #317) |
 | **2.4** | Add mobile viewport profile to Playwright config | P1 | ⏳ NOT STARTED |
 | **2.5** | Add React Testing Library for CartDrawer + ProtectedRoute | P1 | ⏳ NOT STARTED |
 | **2.6** | Add coverage report to CI (`--coverage` flag + minimum threshold) | P2 | ⏳ NOT STARTED |
@@ -58,12 +58,32 @@ Source: `SIMSIM_CURRENT_STATE_ENGINEERING_AUDIT.md` §N
 
 ---
 
+## Task 2.3 Summary
+
+| Field | Value |
+|-------|-------|
+| PR | #317 — MERGED |
+| Merge commit | `c80351d` |
+| Merged at | 2026-08-22 |
+| Files changed | `tests/e2e/staff-orders-status.spec.ts` (new), `package.json` (+1 script) |
+| Tests added | 4 (4 suites: staff-login, orders-page, order-modal, status-advance+undo) |
+| Build | PASS ✅ |
+| CI | PASS ✅ |
+
+**Owner actions required to activate tests in CI:**
+- Create staff E2E account in Supabase Auth + `restaurant_members` with `allowed_pages: ['orders']`
+- Set GitHub Actions secrets: `E2E_STAFF_SLUG`, `E2E_STAFF_USERNAME`, `E2E_STAFF_PASSWORD`
+- Provide a test order: `E2E_TEST_ORDER_NUMBER` (order_number value in pending status)
+- To activate status advance + undo: `E2E_ALLOW_STATUS_UPDATE=true`
+
+---
+
 ## Next Task
 
-**Task 2.3 — E2E: staff login → orders view → status update** (P1)
+**Task 2.4 — Add mobile viewport profile to Playwright config** (P1)
 
 Awaiting owner instruction to start.
 
 ---
 
-*Report last updated: 2026-08-22 (Task 2.2 complete)*
+*Report last updated: 2026-08-22 (Task 2.3 complete)*
