@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import CartDrawer from '../../src/features/menu/CartDrawer'
 
 // mock TableSelect — not under test here
@@ -120,6 +120,8 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
+afterEach(cleanup)
+
 describe('CartDrawer', () => {
   it('UT-CD-001: يعرض عنوان السلة مع عدد العناصر', () => {
     render(<CartDrawer {...defaultProps} cart={[cartItem]} cartCount={1} cartTotal={25} />)
@@ -153,7 +155,8 @@ describe('CartDrawer', () => {
 
   it('UT-CD-006: زر نوع الطلب "محلي" يحمل aria-pressed=true عند الاختيار', () => {
     render(<CartDrawer {...defaultProps} cart={[cartItem]} cartCount={1} cartTotal={50} orderType="dine_in" />)
-    const dineInBtn = screen.getByRole('button', { name: 'محلي' })
+    // accessible name includes emoji child: "🪑 محلي" — use regex to match
+    const dineInBtn = screen.getByRole('button', { name: /محلي/ })
     expect(dineInBtn).toHaveAttribute('aria-pressed', 'true')
   })
 
