@@ -17,7 +17,12 @@ export default defineConfig({
         'src/main.jsx',
         'src/integration/tests/**',
       ],
-      // thresholds added after baseline measurement
+      thresholds: {
+        statements: 60,
+        branches: 53,
+        functions: 45,
+        lines: 63,
+      },
     },
   },
   build: {
