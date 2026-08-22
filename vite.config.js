@@ -7,6 +7,23 @@ export default defineConfig({
   test: {
     exclude: ['**/node_modules/**', '**/dist/**', 'marketing-ssr/**', 'tests/e2e/**'],
     setupFiles: ['./src/test/setup.js'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary', 'lcov'],
+      reportsDirectory: './coverage',
+      exclude: [
+        'src/test/**',
+        'src/**/*.test.{js,jsx}',
+        'src/main.jsx',
+        'src/integration/tests/**',
+      ],
+      thresholds: {
+        statements: 60,
+        branches: 53,
+        functions: 45,
+        lines: 63,
+      },
+    },
   },
   build: {
     rollupOptions: {
