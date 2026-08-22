@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "check:registry": "node scripts/checkRegistryDrift.mjs",
     "test:e2e:staging:smoke": "playwright test tests/e2e/marketing-staging-smoke.spec.ts --project=desktop",
     "test:e2e:staging:sections": "playwright test tests/e2e/marketing-staging-sections.spec.ts --project=desktop",
@@ -39,6 +40,7 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.2.0",
+    "@vitest/coverage-v8": "^4.1.11",
     "happy-dom": "^20.11.6",
     "vite": "^5.0.0",
     "vitest": "^4.1.10"
