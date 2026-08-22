@@ -1,13 +1,15 @@
 // سجلّ مُهايئات المزوّدين (Adapter Registry).
-// فارغ عمداً في مرحلة الأساس: لم يُربط أي مزوّد بعد.
+// يحتوي الآن على MoyasarAdapter — أُضيف في المرحلة الثالثة (Task 3.2).
 //
-// لاحقاً، كل مزوّد يُضاف كملف هنا (مثل moyasar.js) يُصدّر صنفاً يمدّد PaymentAdapter،
+// كل مزوّد يُضاف كملف هنا (مثل moyasar.js) يُصدّر صنفاً يمدّد PaymentAdapter،
 // ثم يُسجَّل في الخريطة أدناه. الطبقة الأعلى تطلبه عبر getAdapter دون أن تعرف تفاصيله.
 
-/** @type {Record<string, import('../contracts').PaymentAdapter>} */
+import { MoyasarAdapter } from './moyasar.js'
+
+/** @type {Record<string, import('../contracts/PaymentAdapter.js').PaymentAdapter>} */
 export const adapters = Object.freeze({
-  // moyasar: new MoyasarAdapter(),   ← أمثلة مستقبلية (لا شيء الآن)
-  // tap:      new TapAdapter(),
+  moyasar: new MoyasarAdapter(),
+  // tap:      new TapAdapter(),   ← مستقبلاً
 })
 
 /**
