@@ -1,335 +1,251 @@
 import { useEffect, useState, useRef } from 'react'
 
-// ─── helpers ────────────────────────────────────────────────────────────────
+// ─── network tests ───────────────────────────────────────────────────────────
 
-function ts() { return new Date().toISOString() }
-
-async function testFetchCors(url) {
-  const t0 = Date.now()
+async function tFetchCors(url) {
+  const t = Date.now()
   try {
-    const res = await fetch(url, {
+    const r = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Logrocket-Url': location.href },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ diag: 1 }),
     })
-    return { ok: true, status: res.status, type: 'fetch-cors', ms: Date.now() - t0 }
+    return { ok: true, status: r.status, ms: Date.now() - t }
   } catch (e) {
-    return { ok: false, error: String(e), type: 'fetch-cors', ms: Date.now() - t0 }
+    return { ok: false, err: String(e).slice(0, 80), ms: Date.now() - t }
   }
 }
 
-async function testFetchNoCors(url) {
-  const t0 = Date.now()
+async function tFetchNoCors(url) {
+  const t = Date.now()
   try {
-    const res = await fetch(url, { method: 'POST', mode: 'no-cors', body: '{}' })
-    return { ok: true, type: 'fetch-no-cors', responseType: res.type, ms: Date.now() - t0 }
+    const r = await fetch(url, { method: 'POST', mode: 'no-cors', body: '{}' })
+    return { ok: true, type: r.type, ms: Date.now() - t }
   } catch (e) {
-    return { ok: false, error: String(e), type: 'fetch-no-cors', ms: Date.now() - t0 }
+    return { ok: false, err: String(e).slice(0, 80), ms: Date.now() - t }
   }
 }
 
-function testXHR(url) {
-  return new Promise((resolve) => {
-    const t0 = Date.now()
-    const xhr = new XMLHttpRequest()
-    xhr.open('POST', url, true)
-    xhr.setRequestHeader('Content-Type', 'application/json')
-    xhr.timeout = 8000
-    xhr.onload  = () => resolve({ ok: true,  status: xhr.status, type: 'xhr', ms: Date.now() - t0 })
-    xhr.onerror = () => resolve({ ok: false, error: 'XHR network error', type: 'xhr', ms: Date.now() - t0 })
-    xhr.ontimeout = () => resolve({ ok: false, error: 'XHR timeout', type: 'xhr', ms: Date.now() - t0 })
-    try { xhr.send(JSON.stringify({ diag: 1 })) }
-    catch (e) { resolve({ ok: false, error: String(e), type: 'xhr', ms: Date.now() - t0 }) }
+function tXHR(url) {
+  return new Promise(res => {
+    const t = Date.now()
+    const x = new XMLHttpRequest()
+    x.open('POST', url, true)
+    x.setRequestHeader('Content-Type', 'application/json')
+    x.timeout = 8000
+    x.onload    = () => res({ ok: true,  status: x.status, ms: Date.now() - t })
+    x.onerror   = () => res({ ok: false, err: 'network error', ms: Date.now() - t })
+    x.ontimeout = () => res({ ok: false, err: 'timeout', ms: Date.now() - t })
+    try { x.send('{"diag":1}') } catch (e) { res({ ok: false, err: String(e).slice(0, 60), ms: Date.now() - t }) }
   })
 }
 
-function testBeacon(url) {
+function tBeacon(url) {
   try {
     const ok = navigator.sendBeacon(url, new Blob(['{}'], { type: 'application/json' }))
-    return { ok, type: 'beacon', note: ok ? 'queued' : 'rejected by browser' }
+    return { ok, note: ok ? 'queued' : 'rejected' }
   } catch (e) {
-    return { ok: false, error: String(e), type: 'beacon' }
+    return { ok: false, err: String(e).slice(0, 60) }
   }
 }
 
-function getSessionUrl() {
-  return new Promise((resolve) => {
-    if (typeof window._lr_surl_cb === 'function') {
-      try {
-        let done = false
-        window._lr_surl_cb((url) => { if (!done) { done = true; resolve(url || '__callback_returned_empty') } })
-        setTimeout(() => { if (!done) { done = true; resolve('__timeout_5s') } }, 5000)
-      } catch (e) { resolve('__error: ' + String(e)) }
-    } else {
-      resolve('__lr_surl_cb_not_defined')
-    }
+function tSessionUrl() {
+  return new Promise(res => {
+    if (typeof window._lr_surl_cb !== 'function') { res(null); return }
+    let done = false
+    try {
+      window._lr_surl_cb(u => { if (!done) { done = true; res(u || null) } })
+      setTimeout(() => { if (!done) { done = true; res(null) } }, 5000)
+    } catch { res(null) }
   })
 }
 
-// ─── styles ─────────────────────────────────────────────────────────────────
+// ─── encode results into URL hash ────────────────────────────────────────────
 
-const C = {
-  page: { minHeight:'100vh', background:'#0B0B0F', color:'#E5E7EB', fontFamily:'monospace', padding:'20px 14px', boxSizing:'border-box' },
-  h1:   { color:'#FF6A00', fontSize:'16px', fontWeight:700, borderBottom:'1px solid #2D2D2D', paddingBottom:'8px', margin:'0 0 4px' },
-  sub:  { color:'#6B7280', fontSize:'11px', margin:'0 0 16px' },
-  sec:  { marginBottom:'20px' },
-  stl:  { color:'#9CA3AF', fontSize:'10px', textTransform:'uppercase', letterSpacing:'.07em', borderBottom:'1px solid #1F2937', paddingBottom:'3px', marginBottom:'7px' },
-  row:  { display:'flex', alignItems:'flex-start', gap:'8px', marginBottom:'5px', fontSize:'12px', lineHeight:'1.5' },
-  lbl:  { color:'#9CA3AF', minWidth:'200px', flexShrink:0 },
-  PASS: { color:'#4ADE80', fontWeight:700 },
-  FAIL: { color:'#F87171', fontWeight:700 },
-  WARN: { color:'#FBBF24', fontWeight:700 },
-  INFO: { color:'#60A5FA' },
-  verdict: (v) => {
-    const m = { ok:['#052E16','#16A34A','#4ADE80'], fail:['#450A0A','#DC2626','#F87171'], warn:['#1C1917','#D97706','#FBBF24'] }
-    const [bg,bd,tx] = m[v]||m.warn
-    return { marginTop:'12px', padding:'14px', borderRadius:'10px', background:bg, border:`2px solid ${bd}`, fontSize:'13px', fontWeight:700, color:tx, whiteSpace:'pre-wrap', lineHeight:'1.6' }
-  },
+function encodeHash(data) {
+  try { return btoa(unescape(encodeURIComponent(JSON.stringify(data)))) } catch { return '' }
 }
 
-function Row({ label, value, st='INFO' }) {
-  return (
-    <div style={C.row}>
-      <span style={C.lbl}>{label}</span>
-      <span style={{ ...C[st], wordBreak:'break-all' }}>{String(value ?? 'undefined')}</span>
-    </div>
-  )
+// ─── styles ──────────────────────────────────────────────────────────────────
+
+const BG = '#0B0B0F'
+const G  = { PASS: '#4ADE80', FAIL: '#F87171', WARN: '#FBBF24', INFO: '#60A5FA', MUTED: '#6B7280' }
+
+const verdict = (blocked, sessionOk) => {
+  if (blocked)    return { v: 'BLOCKED_BY_BROWSER',    bg: '#450A0A', bd: '#DC2626', tx: '#F87171' }
+  if (sessionOk)  return { v: 'VERIFIED',              bg: '#052E16', bd: '#16A34A', tx: '#4ADE80' }
+  return             { v: 'NETWORK_OK_SESSION_UNKNOWN', bg: '#1C1917', bd: '#D97706', tx: '#FBBF24' }
 }
 
-function NetRow({ label, res }) {
-  if (!res) return <Row label={label} value="⏳ pending…" st="WARN" />
-  const st = res.ok ? 'PASS' : 'FAIL'
-  const detail = res.ok
-    ? `✓ ${res.status != null ? 'HTTP ' + res.status : res.note || ''} [${res.ms}ms] type=${res.responseType||res.type}`
-    : `✗ ${res.error || res.note} [${res.ms||0}ms]`
-  return <Row label={label} value={detail} st={st} />
-}
-
-// ─── component ──────────────────────────────────────────────────────────────
+// ─── component ───────────────────────────────────────────────────────────────
 
 const INGEST = 'https://r.logr-in.com/i'
-const STATS  = 'https://r.logr-in.com/s'
-const TOTAL  = 12000   // ms until full verdict
+const TOTAL  = 15000
 
 export default function LogRocketDiag() {
-  const [phase, setPhase]       = useState('init')
-  const [secs, setSecs]         = useState(Math.ceil(TOTAL/1000))
-  const [snap, setSnap]         = useState(null)    // static checks
-  const [cspViolations, setCsp] = useState([])
-  const [net, setNet]           = useState({})       // network probe results
-  const [sessionUrl, setSessionUrl] = useState(null)
-  const didMount = useRef(false)
+  const [secs, setSecs]   = useState(Math.ceil(TOTAL / 1000))
+  const [done, setDone]   = useState(false)
+  const [res, setRes]     = useState(null)
+  const ran = useRef(false)
 
   useEffect(() => {
-    if (didMount.current) return
-    didMount.current = true
+    if (ran.current) return
+    ran.current = true
 
-    // ── Phase 0: immediate static snapshot
-    function capture() {
-      const sdkCfg = window.__SDKCONFIG__
-      return {
-        mutationObserver:   typeof window.MutationObserver,
-        weakMap:            typeof window.WeakMap,
-        symbol:             typeof Symbol,
-        htmlScriptSupports: typeof HTMLScriptElement?.supports,
-        pGate: (
-          !window.MutationObserver || !window.WeakMap ||
-          typeof Symbol === 'undefined' ||
-          typeof HTMLScriptElement?.supports !== 'function'
-        ),
-        disableFlag:   window._disableLogRocket,
-        lrLogger:      typeof window._LRLogger,
-        lrSurlCb:      typeof window._lr_surl_cb,
-        scriptTags:    Array.from(document.querySelectorAll('script[src*="logr-in.com"],script[src*="logrocket"]')).map(s=>s.src),
-        sdkServerURL:  sdkCfg?.serverURL || null,
-        sdkStatsURL:   sdkCfg?.statsURL  || null,
-        ua: navigator.userAgent,
-        ts: ts(),
-      }
-    }
-    setSnap(capture())
-    setPhase('running')
+    const csp = []
+    const onCsp = e => csp.push({ blocked: e.blockedURI, dir: e.effectiveDirective })
+    document.addEventListener('securitypolicyviolation', onCsp)
 
-    // ── CSP violation listener (runs for entire session)
-    const cspHandler = (e) => {
-      setCsp(prev => [...prev, {
-        blocked: e.blockedURI,
-        violated: e.violatedDirective,
-        effective: e.effectiveDirective,
-        ts: ts(),
-      }])
-    }
-    document.addEventListener('securitypolicyviolation', cspHandler)
+    const tick = setInterval(() => setSecs(s => Math.max(0, s - 1)), 1000)
 
-    // ── Countdown
-    const ticker = setInterval(() => setSecs(s => Math.max(0, s-1)), 1000)
+    // Snapshot at mount
+    const lrLogger = typeof window._LRLogger
+    const lrSurlCb = typeof window._lr_surl_cb
+    const sdkURL   = window.__SDKCONFIG__?.serverURL || null
+    const scriptIn = document.querySelectorAll('script[src*="logr-in.com"]').length > 0
 
-    // ── Phase 1 (4s): Script injection re-check
-    setTimeout(() => setSnap(capture()), 4000)
+    const DELAY_NET = 5000   // network tests after 5s (logger should be ready)
 
-    // ── Phase 2 (6s): Network probes in parallel
     setTimeout(async () => {
-      const [fetchCors, fetchNoCors, xhrResult] = await Promise.all([
-        testFetchCors(INGEST),
-        testFetchNoCors(INGEST),
-        testXHR(INGEST),
+      const [fc, fn, xh, su] = await Promise.all([
+        tFetchCors(INGEST),
+        tFetchNoCors(INGEST),
+        tXHR(INGEST),
+        tSessionUrl(),
       ])
-      const beaconResult = testBeacon(STATS)
-      setNet({ fetchCors, fetchNoCors, xhr: xhrResult, beacon: beaconResult, done: true })
-    }, 6000)
+      const bc = tBeacon(INGEST)
 
-    // ── Phase 3 (12s): Session URL + final snapshot
-    setTimeout(async () => {
-      const url = await getSessionUrl()
-      setSessionUrl(url)
-      setSnap(capture())
-      setPhase('done')
-      clearInterval(ticker)
-    }, TOTAL)
+      clearInterval(tick)
+      document.removeEventListener('securitypolicyviolation', onCsp)
 
-    return () => {
-      document.removeEventListener('securitypolicyviolation', cspHandler)
-      clearInterval(ticker)
-    }
+      const netBlocked = !fc.ok && !fn.ok && !xh.ok
+      const sessionOk  = typeof su === 'string' && su.startsWith('https://')
+
+      const result = {
+        v: 3, ts: new Date().toISOString(),
+        // init chain
+        pGate: false,
+        scriptInjected: scriptIn,
+        lrLogger,
+        lrSurlCb,
+        sdkServerURL: sdkURL,
+        // network
+        FC: fc.ok ? `HTTP_${fc.status}` : `BLOCKED:${fc.err}`,
+        FN: fn.ok ? `opaque(${fn.type})` : `BLOCKED:${fn.err}`,
+        XH: xh.ok ? `HTTP_${xh.status}` : `BLOCKED:${xh.err}`,
+        SB: bc.ok ? 'queued' : `NO:${bc.err || bc.note}`,
+        // session
+        SU: su || 'NONE',
+        // csp
+        CSP: csp.length === 0 ? 'none' : csp.map(c => `${c.blocked}|${c.dir}`).join(';'),
+        // verdict
+        netBlocked,
+        sessionOk,
+        verdict: netBlocked ? 'BLOCKED_BY_BROWSER' : sessionOk ? 'VERIFIED' : 'NETWORK_OK_SESSION_UNKNOWN',
+      }
+
+      // encode into URL hash so user just shares the URL
+      const hash = encodeHash(result)
+      if (hash) { try { history.replaceState(null, '', '#' + hash) } catch {} }
+
+      setRes(result)
+      setDone(true)
+    }, DELAY_NET)
+
+    return () => { clearInterval(tick); document.removeEventListener('securitypolicyviolation', onCsp) }
   }, [])
 
-  const ingestBlocked = net.done && (
-    !net.fetchCors?.ok &&
-    !net.fetchNoCors?.ok &&
-    !net.xhr?.ok
-  )
-
-  const ingestReachable = net.done && (
-    net.fetchCors?.ok || net.fetchNoCors?.ok || net.xhr?.ok
-  )
-
-  const sessionCreated = sessionUrl != null &&
-    !sessionUrl.startsWith('__') &&
-    sessionUrl.startsWith('https://')
+  const vd = res ? verdict(res.netBlocked, res.sessionOk) : null
 
   return (
-    <div style={C.page}>
-      <div style={C.h1}>LogRocket Isolation Test v3 — simsimmenu.com</div>
-      <div style={C.sub}>
-        Phase: <b>{phase}</b>
-        {phase !== 'done' && ` — full verdict in ${secs}s`}
+    <div style={{ minHeight: '100vh', background: BG, fontFamily: 'monospace', padding: '16px', boxSizing: 'border-box', color: '#E5E7EB' }}>
+
+      {/* Header */}
+      <div style={{ color: '#FF6A00', fontSize: '15px', fontWeight: 700, borderBottom: '1px solid #2D2D2D', paddingBottom: '8px', marginBottom: '4px' }}>
+        LogRocket Isolation Test v3
+      </div>
+      <div style={{ color: G.MUTED, fontSize: '11px', marginBottom: '16px' }}>
+        {done ? '✓ Test complete — share URL or screenshot' : `Running… ${secs}s remaining — DO NOT navigate away`}
       </div>
 
-      {/* 1 — Browser Gate */}
-      {snap && (
-        <div style={C.sec}>
-          <div style={C.stl}>1 · Browser Capability Gate</div>
-          <Row label="MutationObserver"          value={snap.mutationObserver}   st={snap.mutationObserver==='function'?'PASS':'FAIL'} />
-          <Row label="WeakMap"                   value={snap.weakMap}            st={snap.weakMap==='function'?'PASS':'FAIL'} />
-          <Row label="Symbol"                    value={snap.symbol}             st={snap.symbol==='function'?'PASS':'FAIL'} />
-          <Row label="HTMLScriptElement.supports" value={snap.htmlScriptSupports} st={snap.htmlScriptSupports==='function'?'PASS':'FAIL'} />
-          <Row label="p() gate fires"            value={String(snap.pGate)}      st={snap.pGate?'FAIL':'PASS'} />
-          <Row label="_disableLogRocket"         value={String(snap.disableFlag)} st={!snap.disableFlag?'PASS':'FAIL'} />
+      {/* Progress bar */}
+      {!done && (
+        <div style={{ height: '4px', background: '#1F2937', borderRadius: '2px', marginBottom: '20px' }}>
+          <div style={{ height: '100%', background: '#FF6A00', borderRadius: '2px', width: `${Math.round((1 - secs / Math.ceil(TOTAL / 1000)) * 100)}%`, transition: 'width 1s linear' }} />
         </div>
       )}
 
-      {/* 2 — Script & Logger */}
-      {snap && (
-        <div style={C.sec}>
-          <div style={C.stl}>2 · Script Injection & Logger</div>
-          <Row label="logr-in.com script in DOM"
-            value={snap.scriptTags.length ? snap.scriptTags[0] : 'NONE — not injected'}
-            st={snap.scriptTags.length ? 'PASS' : 'FAIL'} />
-          <Row label="typeof _LRLogger"  value={snap.lrLogger}  st={snap.lrLogger==='function'?'PASS':'WARN'} />
-          <Row label="typeof _lr_surl_cb" value={snap.lrSurlCb} st={snap.lrSurlCb==='function'?'PASS':'WARN'} />
-        </div>
-      )}
+      {/* Results */}
+      {res && (
+        <>
+          {/* Main result block */}
+          <div style={{ background: '#111', border: '1px solid #2D2D2D', borderRadius: '8px', padding: '12px', marginBottom: '16px', fontSize: '12px', lineHeight: '1.9' }}>
+            <div style={{ color: G.MUTED, fontSize: '10px', textTransform: 'uppercase', marginBottom: '6px' }}>Test Results</div>
 
-      {/* 3 — SDK Config */}
-      {snap && (
-        <div style={C.sec}>
-          <div style={C.stl}>3 · __SDKCONFIG__ (ingest endpoint)</div>
-          <Row label="serverURL" value={snap.sdkServerURL || 'NOT SET'} st={snap.sdkServerURL?'PASS':'FAIL'} />
-          <Row label="statsURL"  value={snap.sdkStatsURL  || 'NOT SET'} st={snap.sdkStatsURL?'PASS':'WARN'} />
-        </div>
-      )}
-
-      {/* 4 — Session URL */}
-      <div style={C.sec}>
-        <div style={C.stl}>4 · Session URL (_lr_surl_cb)</div>
-        <Row
-          label="LogRocket.getSessionURL"
-          value={sessionUrl ?? (phase!=='done' ? `⏳ checking in ${secs}s…` : 'not yet retrieved')}
-          st={sessionCreated ? 'PASS' : sessionUrl?.startsWith('__') ? 'FAIL' : 'WARN'}
-        />
-      </div>
-
-      {/* 5 — Network Isolation Tests */}
-      <div style={C.sec}>
-        <div style={C.stl}>5 · Network Isolation — r.logr-in.com/i</div>
-        <NetRow label="fetch POST (with CORS)"    res={net.fetchCors}   />
-        <NetRow label="fetch POST (no-cors mode)" res={net.fetchNoCors} />
-        <NetRow label="XMLHttpRequest POST"       res={net.xhr}         />
-        <NetRow label="navigator.sendBeacon POST" res={net.beacon}      />
-      </div>
-
-      {/* 6 — CSP Violations */}
-      <div style={C.sec}>
-        <div style={C.stl}>6 · CSP Violations (live listener)</div>
-        {cspViolations.length === 0
-          ? <Row label="CSP violations" value={phase==='done'?'NONE detected ✓':'listening…'} st={phase==='done'?'PASS':'WARN'} />
-          : cspViolations.map((v,i) => (
-              <Row key={i} label={`Violation ${i+1}`}
-                value={`blocked: ${v.blocked} | directive: ${v.effective} @ ${v.ts}`}
-                st="FAIL" />
-            ))
-        }
-      </div>
-
-      {/* 7 — Browser */}
-      {snap && (
-        <div style={C.sec}>
-          <div style={C.stl}>7 · Browser</div>
-          <div style={{ ...C.row, flexDirection:'column', gap:'2px' }}>
-            <span style={C.lbl}>User-Agent</span>
-            <span style={{ ...C.INFO, fontSize:'10px', wordBreak:'break-all' }}>{snap.ua}</span>
+            {[
+              ['SESSION_CREATED', res.sessionOk ? 'YES' : 'NO',      res.sessionOk ? 'PASS' : 'FAIL'],
+              ['SESSION_URL',     res.SU,                             res.sessionOk ? 'PASS' : 'WARN'],
+              ['',                '',                                  ''],
+              ['FETCH_CORS',      res.FC, res.FC.startsWith('HTTP') ? 'PASS' : 'FAIL'],
+              ['FETCH_NO_CORS',   res.FN, res.FN.startsWith('opaque') ? 'PASS' : 'FAIL'],
+              ['XHR',             res.XH, res.XH.startsWith('HTTP') ? 'PASS' : 'FAIL'],
+              ['SENDBEACON',      res.SB, res.SB === 'queued' ? 'PASS' : 'WARN'],
+              ['',                '',                                  ''],
+              ['CSP_VIOLATIONS',  res.CSP, res.CSP === 'none' ? 'PASS' : 'FAIL'],
+              ['SDK_SERVER_URL',  res.sdkServerURL || 'NOT SET', res.sdkServerURL ? 'PASS' : 'FAIL'],
+              ['SCRIPT_INJECTED', res.scriptInjected ? 'YES' : 'NO', res.scriptInjected ? 'PASS' : 'FAIL'],
+              ['LOGGER_LOADED',   res.lrLogger,  res.lrLogger === 'function' ? 'PASS' : 'FAIL'],
+              ['',                '',                                  ''],
+              ['BROWSER_BLOCKED', res.netBlocked ? 'YES' : 'NO', res.netBlocked ? 'FAIL' : 'PASS'],
+            ].map(([k, v, st], i) =>
+              k === '' ? <div key={i} style={{ borderTop: '1px solid #1F2937', margin: '4px 0' }} /> : (
+                <div key={i} style={{ display: 'flex', gap: '8px' }}>
+                  <span style={{ color: G.MUTED, minWidth: '160px', flexShrink: 0 }}>{k}</span>
+                  <span style={{ color: G[st] || G.INFO, wordBreak: 'break-all' }}>{String(v)}</span>
+                </div>
+              )
+            )}
           </div>
-          <Row label="Timestamp" value={snap.ts} st="INFO" />
-        </div>
+
+          {/* Verdict box — large, unmistakable */}
+          <div style={{
+            background: vd.bg,
+            border: `3px solid ${vd.bd}`,
+            borderRadius: '12px',
+            padding: '20px 16px',
+            marginBottom: '16px',
+          }}>
+            <div style={{ color: vd.tx, fontSize: '22px', fontWeight: 900, marginBottom: '10px', letterSpacing: '.03em' }}>
+              VERDICT: {vd.v}
+            </div>
+            {res.netBlocked && (
+              <div style={{ color: '#FCA5A5', fontSize: '12px', lineHeight: '1.7' }}>
+                {`All 3 network methods blocked:\n  fetch (CORS):    ${res.FC}\n  fetch (no-cors): ${res.FN}\n  XMLHttpRequest:  ${res.XH}\n\nThis is NOT a SimSim code issue.\nr.logr-in.com is blocked by an ad blocker,\nDNS filter, or tracking protection on this browser.`}
+              </div>
+            )}
+            {!res.netBlocked && res.sessionOk && (
+              <div style={{ color: '#86EFAC', fontSize: '12px', lineHeight: '1.7' }}>
+                {`Full chain confirmed:\n  Network: reachable\n  Session: ${res.SU}\n→ Check app.logrocket.com → Sessions → All time`}
+              </div>
+            )}
+            {!res.netBlocked && !res.sessionOk && (
+              <div style={{ color: '#FDE68A', fontSize: '12px', lineHeight: '1.7' }}>
+                {`Network reachable but no session URL yet.\nPossible causes:\n  1. Session buffer not flushed (needs 30–60s on main site)\n  2. LogRocket project "ubxals/simsimmenu" misconfigured\n→ Navigate https://simsimmenu.com for 60s then check dashboard`}
+              </div>
+            )}
+          </div>
+
+          {/* Share instruction */}
+          <div style={{ background: '#111827', border: '1px solid #374151', borderRadius: '8px', padding: '12px', fontSize: '11px', color: G.MUTED }}>
+            <div style={{ color: '#E5E7EB', fontWeight: 700, marginBottom: '4px' }}>📤 Share results</div>
+            <div>URL contains encoded results. Copy address bar and send — or take a screenshot of this page.</div>
+          </div>
+        </>
       )}
 
-      {/* Final Verdict */}
-      {phase === 'done' && (
-        <div>
-          {snap?.pGate && (
-            <div style={C.verdict('fail')}>
-              {'✗ Gate failure: p() fired → LogRocket is a no-op\nFix: polyfill HTMLScriptElement.supports'}
-            </div>
-          )}
-          {!snap?.pGate && snap?.scriptTags.length === 0 && (
-            <div style={C.verdict('fail')}>
-              {'✗ Script not injected (no <script> tag in DOM after 12s)\nCheck T.onerror — CDN may have failed'}
-            </div>
-          )}
-          {!snap?.pGate && snap?.scriptTags.length > 0 && ingestBlocked && (
-            <div style={C.verdict('fail')}>
-              {'✗ BROWSER BLOCKING CONFIRMED\nr.logr-in.com/i: BLOCKED by fetch + XHR + no-cors\nAll 3 network methods failed\n→ Ad blocker, DNS filter, or tracking protection is preventing uploads\n→ This is NOT a SimSim code issue'}
-            </div>
-          )}
-          {!snap?.pGate && snap?.scriptTags.length > 0 && ingestReachable && !sessionCreated && (
-            <div style={C.verdict('warn')}>
-              {'⚠ Network reachable but no Session URL yet\nPossible: Session buffer not flushed (needs 30s+ activity on main site)\nOR: LogRocket project not found for app ID "ubxals/simsimmenu"\nAction: Navigate main site for 60s, then check dashboard'}
-            </div>
-          )}
-          {!snap?.pGate && snap?.scriptTags.length > 0 && ingestReachable && sessionCreated && (
-            <div style={C.verdict('ok')}>
-              {'✓ FULL CHAIN CONFIRMED\nScript: injected | Logger: loaded | Network: reachable | Session: created\nSession URL: ' + sessionUrl + '\n→ Check app.logrocket.com/ubxals/simsimmenu/sessions'}
-            </div>
-          )}
-          {!snap?.pGate && snap?.scriptTags.length > 0 && !net.done && (
-            <div style={C.verdict('warn')}>{'⚠ Network probe did not complete — reload and try again'}</div>
-          )}
-        </div>
-      )}
-
-      {phase !== 'done' && (
-        <div style={C.verdict('warn')}>
-          {`⏳ Running isolation tests… ${secs}s remaining\nDO NOT navigate away — wait for verdict`}
+      {!done && !res && (
+        <div style={{ color: G.MUTED, fontSize: '12px' }}>
+          {`Waiting ${secs}s for logger to initialize before running network tests…`}
         </div>
       )}
     </div>
