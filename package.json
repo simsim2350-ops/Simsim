@@ -10,7 +10,8 @@
     "test": "vitest run",
     "check:registry": "node scripts/checkRegistryDrift.mjs",
     "test:e2e:staging:smoke": "playwright test tests/e2e/marketing-staging-smoke.spec.ts",
-    "test:e2e:staging:sections": "playwright test tests/e2e/marketing-staging-sections.spec.ts"
+    "test:e2e:staging:sections": "playwright test tests/e2e/marketing-staging-sections.spec.ts",
+    "test:e2e:saas": "playwright test tests/e2e/saas-auth-onboarding.spec.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
