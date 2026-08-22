@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-22
 **Phase:** Phase 2 — Test Coverage
-**Status:** 🔄 IN PROGRESS (Tasks 2.1–2.3 complete)
+**Status:** 🔄 IN PROGRESS (Tasks 2.1–2.4 complete)
 
 ---
 
@@ -15,7 +15,7 @@ Source: `SIMSIM_CURRENT_STATE_ENGINEERING_AUDIT.md` §N
 | **2.1** | E2E: auth → onboarding → menu create flow | P0 | ✅ COMPLETE (PR #314) |
 | **2.2** | E2E: QR scan → cart → checkout → order status | P0 | ✅ COMPLETE (PR #315) |
 | **2.3** | E2E: staff login → orders view → status update | P1 | ✅ COMPLETE (PR #317) |
-| **2.4** | Add mobile viewport profile to Playwright config | P1 | ⏳ NOT STARTED |
+| **2.4** | Add mobile viewport profile to Playwright config | P1 | ✅ COMPLETE (PR #319) |
 | **2.5** | Add React Testing Library for CartDrawer + ProtectedRoute | P1 | ⏳ NOT STARTED |
 | **2.6** | Add coverage report to CI (`--coverage` flag + minimum threshold) | P2 | ⏳ NOT STARTED |
 
@@ -78,12 +78,31 @@ Source: `SIMSIM_CURRENT_STATE_ENGINEERING_AUDIT.md` §N
 
 ---
 
+## Task 2.4 Summary
+
+| Field | Value |
+|-------|-------|
+| PR | #319 — MERGED |
+| Merge commit | `49fe42e` |
+| Merged at | 2026-08-22 |
+| Files changed | `playwright.config.ts` (projects array added), `package.json` (5 scripts pinned + 2 new mobile scripts) |
+| Device added | `Pixel 7` — 412×915 CSS px, hasTouch, Chromium, portrait |
+| Build | PASS ✅ |
+| CI | PASS ✅ |
+
+**How to use:**
+- Desktop (unchanged): `npm run test:e2e:saas` (etc.)
+- Mobile opt-in: `npm run test:e2e:mobile` or `playwright test --project=mobile`
+- Target specific spec on mobile: `npm run test:e2e:mobile:qr-cart`
+
+---
+
 ## Next Task
 
-**Task 2.4 — Add mobile viewport profile to Playwright config** (P1)
+**Task 2.5 — Add React Testing Library for CartDrawer + ProtectedRoute** (P1)
 
 Awaiting owner instruction to start.
 
 ---
 
-*Report last updated: 2026-08-22 (Task 2.3 complete)*
+*Report last updated: 2026-08-22 (Task 2.4 complete)*
