@@ -7,6 +7,7 @@ import { has as featureHas, state as featureState, accessStatus } from './lib/fe
 import RootErrorBoundary from './components/RootErrorBoundary'
 import { appConfig } from './config'
 import RequirePlatformAdmin from './admin/RequirePlatformAdmin'
+import LogRocketDiag from './pages/LogRocketDiag'
 
 // فشل تحميل chunk يجب أن يصل إلى RootErrorBoundary فورًا؛ لا نعيد التحميل قسرًا ولا نرجع
 // Promise معلقة لأن أيًا منهما يخفي التشخيص ويُبقي المستخدم على شاشة تحميل لا تنتهي.
@@ -228,6 +229,7 @@ function ConfiguredApp() {
         <Route path="/admin/catalog"     element={<RequirePlatformAdmin><AdminCatalog /></RequirePlatformAdmin>} />
         <Route path="/admin/branding"    element={<RequirePlatformAdmin><AdminBranding /></RequirePlatformAdmin>} />
         <Route path="/admin/marketing"   element={<RequirePlatformAdmin><AdminMarketing /></RequirePlatformAdmin>} />
+        <Route path="/logrocket-diag"   element={<LogRocketDiag />} />
         <Route path="*"                element={<Navigate to="/login" replace />} />
       </Routes>
       </Suspense>
