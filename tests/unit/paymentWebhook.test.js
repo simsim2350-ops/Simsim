@@ -45,9 +45,14 @@ async function validSig(body) {
 /** بناء Request وهمي */
 async function makePostRequest(body, opts = {}) {
   const rawBody = typeof body === 'string' ? body : JSON.stringify(body)
-  const sig = opts.sig ?? await validSig(rawBody)
   const headers = new Headers({ 'content-type': 'application/json' })
-  if (sig !== null) headers.set('x-moyasar-signature', sig)
+  if ('sig' in opts) {
+    // sig مُمرَّر صراحةً: null = لا ترسل الرأس، string = استخدمها
+    if (opts.sig !== null) headers.set('x-moyasar-signature', opts.sig)
+  } else {
+    // لم يُمرَّر sig → احسب توقيعاً صالحاً تلقائياً
+    headers.set('x-moyasar-signature', await validSig(rawBody))
+  }
   return new Request('https://example.com/payment-webhook', {
     method: opts.method ?? 'POST',
     headers,
