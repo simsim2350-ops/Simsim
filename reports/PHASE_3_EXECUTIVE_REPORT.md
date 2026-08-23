@@ -2,9 +2,9 @@
 
 **Date:** 2026-08-23
 **Phase:** 3 — Payment Integration (Moyasar)
-**Tasks completed this report:** 3.1, 3.2, 3.3
-**Tasks remaining:** 3.4, 3.5
-**Status:** 🟡 IN PROGRESS — Tasks 3.1–3.3 Complete, Task 3.4 Not Started
+**Tasks completed this report:** 3.1, 3.2, 3.3, 3.4
+**Tasks remaining:** 3.5
+**Status:** 🟡 IN PROGRESS — Tasks 3.1–3.4 Complete (code + CI), Task 3.5 Not Started
 
 ---
 
@@ -17,7 +17,7 @@ Phase 3 integrates Moyasar as the payment gateway for SimSim. The implementation
 | 3.1 | Payment Gateway Decision Lock | ✅ COMPLETE |
 | 3.2 | Implement MoyasarAdapter | ✅ COMPLETE |
 | 3.3 | Wire paymentService to MoyasarAdapter | ✅ COMPLETE |
-| 3.4 | Webhook Edge Function | 🔴 NOT STARTED |
+| 3.4 | Webhook Edge Function | ✅ COMPLETE (code + CI) — deploy pending owner actions |
 | 3.5 | create_order RPC payment column | 🔴 NOT STARTED |
 
 ---
@@ -125,15 +125,16 @@ payment_webhook_events        ✅ Schema ready — UNIQUE(provider, event_id) ex
 | Pre-Phase 3 baseline | — | 422 | — |
 | Task 3.2 | +14 | 436 | 32592548459 ✅ |
 | Task 3.3 | +18 | 454 | 32599461981 ✅ |
+| Task 3.4 | +22 | 476 | 32621723936 ✅ |
 
 ### Coverage After Task 3.3 (measured in CI)
 
-| Metric | Threshold | Measured | Status |
-|--------|-----------|----------|--------|
-| Statements | ≥60% | 67.13% | ✅ +7.13% |
-| Branches | ≥53% | 59.77% | ✅ +6.77% |
-| Functions | ≥45% | 52.35% | ✅ +7.35% |
-| Lines | ≥63% | 71.16% | ✅ +8.16% |
+| Metric | Threshold | After Task 3.3 | After Task 3.4 | Status |
+|--------|-----------|----------------|----------------|--------|
+| Statements | ≥60% | 67.13% | 68.85% | ✅ |
+| Branches | ≥53% | 59.77% | 60.57% | ✅ |
+| Functions | ≥45% | 52.35% | 53.93% | ✅ |
+| Lines | ≥63% | 71.16% | 72.77% | ✅ |
 
 **Zero regressions across all phases.**
 
@@ -146,7 +147,7 @@ payment_webhook_events        ✅ Schema ready — UNIQUE(provider, event_id) ex
 | No real API keys in codebase | ✅ CONFIRMED | Grep confirms 0 matches |
 | Gateway secrets in env vars only | ✅ | `PAYMENT_MOYASAR_SECRET_KEY` read from Edge Function env |
 | service_role isolation | ✅ | `db` injected — browser anon client physically cannot write to payment tables due to RLS |
-| Webhook HMAC validation | 🔴 NOT YET | Required in Task 3.4 |
+| Webhook HMAC validation | ✅ IMPLEMENTED (unverified against real Moyasar) | Deployed + real test needed |
 | Client-supplied status not trusted | ✅ | paymentService always re-verifies via adapter |
 | No card data stored | ✅ | `raw` jsonb stores provider response only |
 | No secrets in git history | ✅ CONFIRMED | All commits inspected |
@@ -219,7 +220,7 @@ payment_providers.moyasar.is_enabled: false
 | Moyasar gateway selected and documented | ✅ Task 3.1 |
 | MoyasarAdapter implementing PaymentAdapter contract | ✅ Task 3.2 |
 | paymentService orchestrating via adapter | ✅ Task 3.3 |
-| Webhook Edge Function with HMAC validation | 🔴 Task 3.4 |
+| Webhook Edge Function with HMAC validation | ✅ Task 3.4 (code done — deploy pending) |
 | create_order RPC with payment reference | 🔴 Task 3.5 |
 | Sandbox end-to-end test | 🔴 Blocked — credentials needed |
 | Production go-live | 🔴 Blocked — Tasks 3.4, 3.5 + owner actions |
