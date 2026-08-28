@@ -3,12 +3,13 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const register = readFileSync(resolve(process.cwd(), 'src/pages/Register.jsx'), 'utf8')
+const registerCss = readFileSync(resolve(process.cwd(), 'src/pages/Register.css'), 'utf8')
 
 describe('registration experience contract', () => {
   it('يستخدم تركيبًا responsive حقيقيًا بدلاً من قياس نافذة ثابت في render', () => {
-    expect(register).toContain('@media (max-width: 899px)')
-    expect(register).toContain('.register-marketing { display:none; }')
-    expect(register).toContain('max-width:560px')
+    expect(registerCss).toContain('@media (max-width: 899px)')
+    expect(registerCss).toContain('.register-marketing { display:none; }')
+    expect(registerCss).toContain('max-width:560px')
     expect(register).not.toContain('window.innerWidth')
   })
 
