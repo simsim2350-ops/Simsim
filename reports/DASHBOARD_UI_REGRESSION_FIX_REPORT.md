@@ -105,4 +105,6 @@ None discovered in this task. Investigation was deliberately scoped to `Dashboar
 
 ## 17–19. Git Commit / PR Number / Merge Status
 
-Recorded after the commit and PR are created — see the final section of this report and the corresponding `PROJECT_STATE.md` ADR-53 entry (updated in the same commit once the hash is known).
+- **Commit:** `61c33abdd57235b8a4ad6be33a4827533acc3568` on branch `fix/dashboard-ui-regression` (created from `main`).
+- **PR:** **#329** — `https://github.com/simsim2350-ops/Simsim/pull/329`, base `main`.
+- **Merge status:** **NOT MERGED.** Left open pending owner review — this task's instructions did not authorize a merge, and `main` requires a passing PR + the `Build (Vite)` status check (active GitHub ruleset, confirmed in the prior `PROJECT_STATE.md §12` database audit) before it can be merged at all.
