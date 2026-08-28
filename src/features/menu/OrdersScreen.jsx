@@ -6,6 +6,7 @@ import OrderCardActive from './OrderCardActive'
 import OrderCardCollapsed from './OrderCardCollapsed'
 import EmptyOrders from './EmptyOrders'
 import { formatLastSynced } from './orderTracking'
+import './menu.css'
 
 const IS_ACTIVE = (s) => ['pending','preparing','ready'].includes(s)
 
@@ -70,13 +71,6 @@ export default function OrdersScreen({
 
   return (
     <div style={{ minHeight:'100vh', background:'#F8F9FB', direction:'rtl', fontFamily:'Tajawal,sans-serif', maxWidth:'480px', margin:'0 auto', position:'relative', boxShadow:'0 0 60px rgba(15,17,23,0.12)' }}>
-      <style>{`
-        @keyframes ordIn{ from{ opacity:0; transform:translateY(12px) } to{ opacity:1; transform:none } }
-        .ord-in{ animation:ordIn .4s ease both }
-        @media (prefers-reduced-motion: reduce){ .ord-in{ animation:none } }
-        @media(min-width:600px){ body{ background:#E9ECF2 } }
-      `}</style>
-
       <OrdersHeader
         brandColor={brandColor} isEn={isEn} t={t}
         ordersCount={ordersCount} spend={spend} points={loyalty?.balance || 0}

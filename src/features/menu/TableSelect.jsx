@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import './menu.css'
 
 // قائمة اختيار رقم الطاولة (طلب داخل المطعم فقط) — Dropdown حقيقي وليس حقل نص:
 // الزبون يختار من الطاولات المفعّلة التي عرّفها صاحب المطعم فقط، بلا كتابة يدوية.
@@ -21,19 +22,6 @@ export default function TableSelect({ tables, value, onChange, brandColor, t }) 
 
   return (
     <>
-      <style>{`
-        .simsim-table-trigger { background:white; color:#0B0B0F; border-color:#E5E7EB; }
-        .simsim-table-sheet { background:white; color:#0B0B0F; }
-        .simsim-table-search { background:white; color:#0B0B0F; border-color:#E5E7EB; }
-        .simsim-table-row { color:#0B0B0F; border-color:#F3F4F6; }
-        @media (prefers-color-scheme: dark) {
-          .simsim-table-trigger { background:#1A1B22; color:#F3F4F6; border-color:#2E2F38; }
-          .simsim-table-sheet { background:#1A1B22; color:#F3F4F6; }
-          .simsim-table-search { background:#23252E; color:#F3F4F6; border-color:#2E2F38; }
-          .simsim-table-row { color:#F3F4F6; border-color:#2E2F38; }
-        }
-      `}</style>
-
       <button
         type="button"
         className="simsim-table-trigger"
