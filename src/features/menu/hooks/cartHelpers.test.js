@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readStoredCart, validateCartAgainstProducts, idempotencyStorageKey } from './cartHelpers'
+import { readStoredCart, validateCartAgainstProducts, idempotencyStorageKey, paymentIdempotencyStorageKey } from './cartHelpers'
 
 describe('readStoredCart', () => {
   const branchA = 'branch-a'
@@ -58,6 +58,14 @@ describe('idempotencyStorageKey — TASK-ORD-002', () => {
   it('مفتاح منفصل عن مفتاح السلة، ومختلف لكل فرع من نفس المطعم', () => {
     expect(idempotencyStorageKey('koshary', 'branch-a')).toBe('simsim_idem_koshary_branch-a')
     expect(idempotencyStorageKey('koshary', 'branch-a')).not.toBe(idempotencyStorageKey('koshary', 'branch-b'))
+  })
+})
+
+describe('paymentIdempotencyStorageKey — TASK-PAY-3.6D.3', () => {
+  it('مفتاح منفصل عن مفتاح إتقان الطلب (idempotencyStorageKey)، ومختلف لكل فرع من نفس المطعم', () => {
+    expect(paymentIdempotencyStorageKey('koshary', 'branch-a')).toBe('simsim_payidem_koshary_branch-a')
+    expect(paymentIdempotencyStorageKey('koshary', 'branch-a')).not.toBe(paymentIdempotencyStorageKey('koshary', 'branch-b'))
+    expect(paymentIdempotencyStorageKey('koshary', 'branch-a')).not.toBe(idempotencyStorageKey('koshary', 'branch-a'))
   })
 })
 

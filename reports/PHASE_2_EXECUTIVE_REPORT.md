@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-22
 **Phase:** Phase 2 — Test Coverage
-**Status:** 🔄 IN PROGRESS (Tasks 2.1–2.5 complete)
+**Status:** ✅ COMPLETE (All Tasks 2.1–2.6 complete)
 
 ---
 
@@ -17,7 +17,7 @@ Source: `SIMSIM_CURRENT_STATE_ENGINEERING_AUDIT.md` §N
 | **2.3** | E2E: staff login → orders view → status update | P1 | ✅ COMPLETE (PR #317) |
 | **2.4** | Add mobile viewport profile to Playwright config | P1 | ✅ COMPLETE (PR #319) |
 | **2.5** | Add React Testing Library for CartDrawer + ProtectedRoute | P1 | ✅ COMPLETE (PR #321) |
-| **2.6** | Add coverage report to CI (`--coverage` flag + minimum threshold) | P2 | ⏳ NOT STARTED |
+| **2.6** | Add coverage report to CI (`--coverage` flag + minimum threshold) | P2 | ✅ COMPLETE (PR #323) |
 
 ---
 
@@ -124,12 +124,33 @@ Source: `SIMSIM_CURRENT_STATE_ENGINEERING_AUDIT.md` §N
 
 ---
 
-## Next Task
+## Task 2.6 Summary
 
-**Task 2.6 — Add coverage report to CI (`--coverage` flag + minimum threshold)** (P2)
+| Field | Value |
+|-------|-------|
+| PR | #323 — MERGED |
+| Merge commit | `98cdffbce2bcb9b120e715a26bbb4014d4f667af` |
+| Merged at | 2026-08-22 |
+| Files changed | `package.json` (+1 devDep, +1 script), `vite.config.js` (coverage block + thresholds), `.github/workflows/ci.yml` (test:coverage + artifact upload) |
+| CI runs | 2 (baseline measurement + threshold gate) — both PASSED |
+| Tests | 422/422 ✅ (32 files — zero regression) |
+| Build | PASS ✅ |
 
-Awaiting owner instruction to start.
+**Baseline Coverage (CI run 32588185226):**
+
+| Metric | Measured | Threshold | Buffer |
+|--------|----------|-----------|--------|
+| Statements | 64.57% | 60% | 4.57% |
+| Branches | 58.26% | 53% | 5.26% |
+| Functions | 51.55% | 45% | 6.55% |
+| Lines | 68.31% | 63% | 5.31% |
+
+**No owner action required** — gate runs automatically in every CI build.
 
 ---
 
-*Report last updated: 2026-08-22 (Task 2.5 complete)*
+## Phase 2 — COMPLETE
+
+All 6 tasks delivered. Phase 2 scope fully addressed.
+
+*Report last updated: 2026-08-22 (Task 2.6 complete — Phase 2 DONE)*

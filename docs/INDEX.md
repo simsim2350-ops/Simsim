@@ -35,10 +35,15 @@
 ```
 docs/
 ├── INDEX.md              ✅ هذا الملف — بوابة التوثيق
+├── PAYMENTS.md           ✅ معمارية نظام الدفع (Adapter Pattern، تدفّق، Webhook)
+│
+│  === قرارات معمارية (Architecture Decision Records) ===
+├── architecture/
+│   └── ADR-003-PAYMENT-GATEWAY-MOYASAR.md  ✅ قرار بوابة الدفع: Moyasar (ACCEPTED، 2026-08-22)
 │
 │  === المرجع الحيّ الحالي (خارج doc/ مؤقتاً في جذر المستودع) ===
 ├── ../CLAUDE.md          ✅ قواعد العمل الملزمة للمساعد الذكي (15 قاعدة)
-├── ../PROJECT_STATE.md   ✅ الحالة التقنية الحيّة + كل قرارات ADR
+├── ../PROJECT_STATE.md   ✅ الحالة التقنية الحيّة + كل قرارات ADR (ADR-1 → ADR-52)
 │
 │  === مخطّطة (📝 لم تُنشأ بعد) ===
 ├── README_AI.md          📝 مدخل الذكاء الاصطناعي السريع

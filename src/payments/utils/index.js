@@ -1,5 +1,5 @@
 // أدوات دفع محايدة للمزوّد (Utils) — دوال نقيّة فقط، بلا أي اتصال بمزوّد أو شبكة.
-import { TransactionStatus } from '../types'
+import { TransactionStatus } from '../types/index.js'
 
 /** توليد مفتاح إتقان (Idempotency Key) فريد لعملية شحن — يمنع الشحن المزدوج. */
 export function newIdempotencyKey(prefix = 'sim') {

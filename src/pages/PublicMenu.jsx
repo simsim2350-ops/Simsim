@@ -30,6 +30,7 @@ import ProductModal from '../features/menu/ProductModal'
 import CartDrawer from '../features/menu/CartDrawer'
 import AllergensModal from '../features/menu/AllergensModal'
 import OrdersScreen from '../features/menu/OrdersScreen'
+import PaymentFirstOrderCreation from '../features/menu/PaymentFirstOrderCreation'
 import { FloatingMenuBanner, MenuBannerOverlays, TopMenuBanner, useMenuBannerDisplay } from '../features/menu/BannerDisplays'
 
 function PublicMenuInner() {
@@ -38,6 +39,9 @@ function PublicMenuInner() {
   const [searchParams] = useSearchParams()
   const branchId = searchParams.get('branch')
   const rawTableQrToken = searchParams.get('table')
+  // TASK-PAY-3.6D.4-C.3: علامة تفعيل فقط (عقد TASK_3_6D_4_C_1) — قيمتها لا تُستخدَم أبداً كمفتاح
+  // استعلام موثوق؛ PaymentFirstCallbackLanding نفسها تقرأ مفتاح الإتقان الفعلي من localStorage حصراً.
+  const paymentCallbackActive = Boolean(searchParams.get('payment_callback'))
   const [tableQr, setTableQr] = useState(null) // { token, tableId, tableName, restaurantId, branchId }
   const [resolvingTableQr, setResolvingTableQr] = useState(Boolean(rawTableQrToken))
   // حالات الواجهات التي تفتح عند الطلب؛ تُستخدم لتوقيت تحميل بياناتها الثانوية.
@@ -128,6 +132,45 @@ function PublicMenuInner() {
     if (!branchConflict) return
     navigate(`/menu/${slug}?branch=${branchConflict.savedBranchId}`, { replace: true })
   }
+  // TASK-PAY-3.6D.6-B/C: يُستدعى فقط بعد إنشاء/استرداد طلب فعلي عبر create-order-from-payment
+  // (idempotent أو جديد — كلاهما مُعامَل كنجاح هنا حرفياً، القرار المعتمد لـ3.6D.6-C). يُلحِق الطلب
+  // بنفس آلية activeOrders الموجودة (useActiveOrders/useCheckout) — لا نظام طلبات جديد؛
+  // items/total/status الحقيقية تُصحَّح تلقائياً بواسطة reconcileActiveOrders الموجودة أصلاً (RPC
+  // get_orders_status_secure) خلال ثوانٍ. tableNumber/deliveryAddress هنا عرضية بحتة، غير سلطوية.
+  // مقصود: تسجيل فوري (لا يُفقَد الطلب لو أغلق العميل التبويب) — لكن بلا أي تنقّل هنا؛ الانتقال
+  // الفعلي لشاشة الطلبات يبقى مسؤولية handleViewPaymentFirstOrder وحدها، بفعل صريح من العميل
+  // (زر "عرض طلبي" في PaymentFirstOrderCreation نفسها) — TASK-PAY-3.6D.6-C: بطاقة التأكيد يجب أن
+  // تبقى ظاهرة فعلياً للعميل، لا تُستبدَل صامتاً بشاشة الطلبات في نفس اللحظة.
+  const handlePaymentFirstOrderCreated = (response) => {
+    setActiveOrders(prev => {
+      if (prev.some((o) => o.id === response.orderId)) return prev
+      return [
+        {
+          id: response.orderId,
+          orderNumber: response.orderNumber,
+          accessToken: response.accessToken,
+          status: 'pending',
+          items: [],
+          total: 0,
+          tableNumber: tableQr?.tableName || response.tableNumber || null,
+          orderType: tableQr ? 'dine_in' : (response.tableNumber ? 'dine_in' : (response.deliveryAddress ? 'delivery' : 'takeaway')),
+          source: 'payment_first',
+          deliveryAddress: tableQr ? null : (response.deliveryAddress || null),
+        },
+        ...prev,
+      ]
+    })
+    setOrderPlaced(true)
+  }
+  // TASK-PAY-3.6D.6-C: الفعل الصريح الوحيد الذي يُغادر بطاقة التأكيد إلى شاشة الطلبات — يُستدعى فقط
+  // من زر "عرض طلبي" في PaymentFirstOrderCreation، بعد أن رأى العميل فعلياً تأكيد طلبه. يُزيل
+  // payment_callback فقط من الرابط — يحافظ على branch/table كما هما (سلوك المنيو/QR العادي بعدها).
+  const handleViewPaymentFirstOrder = () => {
+    const next = new URLSearchParams(searchParams)
+    next.delete('payment_callback')
+    const qs = next.toString()
+    navigate(`/menu/${slug}${qs ? `?${qs}` : ''}`, { replace: true })
+  }
   // تغليف الإضافة للسلة لبثّ حدث تحليلات مركزياً (ADR-42/M2) — إطلاق-وانسَ، لا يغيّر السلوك.
   const addToCart = (...args) => {
     track('cart.item_added', { restaurantId: restaurant?.id, branchId: branch?.id, entityType: 'product', entityId: args?.[0]?.id, props: { qty: args?.[1] ?? 1 } })
@@ -139,6 +182,8 @@ function PublicMenuInner() {
     deliveryAddress, setDeliveryAddress, customerName, setCustomerName,
     customerPhone, setCustomerPhone, orderNote, setOrderNote, placeOrder, submitting,
     priceChangeInfo, confirmPriceUpdate,
+    // TASK-PAY-3.6D.10: إضافية بحتة فوق useCheckout الموجودة — لا تغيير على أي حقل/دالة أعلاه.
+    paymentMethod, setPaymentMethod, paymentFirstCheckoutInput, startPaymentFirstCheckout, cancelPaymentFirstCheckout,
   } = useCheckout({ slug, restaurant, branch, cart, cartTotal, setCart, setCartOpen, setActiveOrders, setOrderPlaced, t, isEn, appliedCoupon, discountAmount, removeCoupon, tableQr, idempotencyKey })
   // PCR: شريط الولاء يظهر فقط إذا كانت قدرة الولاء مفعّلة في الباقة (loyaltyEnabled) — وإلا لا نمرّره
   const loyaltyRaw = useLoyalty({ slug, restaurant, orderPlaced, activeOrders, customerPhone })
@@ -246,8 +291,11 @@ function PublicMenuInner() {
   // لا نعرض منيو أو سلة قبل توثيق QR حتى لا ينتقل العميل مؤقتاً إلى فرع آخر.
   if (loading || resolvingTableQr) return <MenuSkeleton />
 
-  // الرابط المعطّل أو المُعاد إنشاؤه أو طاولة غير نشطة لا يكشف أي منيو ولا يسمح بإنشاء طلب.
-  if (rawTableQrToken && !tableQr) return (
+  // الرابط المعطّل أو المُعاد إنشاؤه أو طاولة غير نشطة لا يكشف أي منيو ولا يسمح بإنشاء طلب —
+  // TASK-PAY-3.6D.4-C.3: باستثناء عودة من دفع (payment_callback): العميل ربما دفع فعلاً حتى لو
+  // تعطّل رمز الطاولة بين بدء الدفع والعودة؛ حلّ حالة الدفع لا يتوقف على نجاح إعادة توثيق QR
+  // (القاعدة الحرجة في TASK_3_6D_4_C_1/التدقيق — لا يُحجَب أبداً في سياق عودة دفع).
+  if (rawTableQrToken && !tableQr && !paymentCallbackActive) return (
     <div style={{ minHeight:'100vh', display:'grid', placeItems:'center', background:'#F8F9FB', fontFamily:'Tajawal,sans-serif', direction:'rtl', padding:'24px', textAlign:'center' }}>
       <div style={{ maxWidth:'360px', background:'white', border:'1px solid #FDE2CD', borderRadius:'18px', padding:'28px 22px', boxShadow:'0 8px 28px rgba(17,24,39,0.06)' }}>
         <span style={{ width:'48px', height:'48px', display:'grid', placeItems:'center', margin:'0 auto 12px', borderRadius:'14px', background:'#FFF0EB', color:'#FF6A00', fontSize:'22px' }}>▦</span>
@@ -264,6 +312,31 @@ function PublicMenuInner() {
       <h2 style={{ fontSize:'22px', fontWeight:'900', color:'#0B0B0F' }}>{t('notFound')}</h2>
       <p style={{ color:'#9CA3AF', fontSize:'14px' }}>{t('notFoundSub')}</p>
     </div>
+  )
+
+  // TASK-PAY-3.6D.4-C.3/3.6D.6-B/3.6D.6-C — هبوط العودة من الدفع أولاً + تأكيد الطلب تلقائياً + بطاقة تأكيد نهائية واضحة.
+  // موضع الفحص هنا مقصود بدقة: بعد استقرار loading/resolvingTableQr/notFound (فرع/مطعم محلولان
+  // فعلياً — branch?.id متاح، ولو تعطّل QR فقد تجاوزناه أعلاه صراحة)، وقبل orderPlaced (عودة دفع
+  // حقيقية تتقدّم على أي علم orderPlaced قديم مخزَّن محلياً). استحواذ كامل على الشاشة — بلا منيو
+  // أو سلة تفاعلية تحته أبداً، بلا استثناء — يمنع بدء طلب نقدي غير مرتبط أثناء غموض حالة الدفع.
+  // بلا إعادة تشغيل أي تدفّق دفع هنا: لا startCheckout، لا initiatePaymentFirstCheckout، لا مفتاح
+  // إتقان جديد، لا استدعاء Moyasar — التحقّق من حالة الدفع بالكامل داخل PaymentFirstCallbackLanding
+  // نفسها (غير مُعدَّلة)، عبر RPC المعتمدة/localStorage حصراً. PaymentFirstOrderCreation
+  // (TASK-PAY-3.6D.6-B) تُغلِّفها فقط، ولا تستدعي create-order-from-payment إلا بعد أن تُبلِّغ
+  // PaymentFirstCallbackLanding بنجاح دفع فعلي (onSucceeded) — لا مسار آخر يبدأ إنشاء طلب هنا.
+  if (paymentCallbackActive) return (
+    <PaymentFirstOrderCreation
+      slug={slug}
+      branchId={branch?.id}
+      tableQrToken={rawTableQrToken}
+      restaurantName={restaurant?.name}
+      t={t}
+      isEn={isEn}
+      brandColor={brandColor}
+      onRecover={() => navigate(`/menu/${slug}`, { replace: true })}
+      onOrderCreated={handlePaymentFirstOrderCreated}
+      onViewOrder={handleViewPaymentFirstOrder}
+    />
   )
 
   // Order placed / tracking screen — يعرض كل الطلبات النشطة، الأحدث أولاً
@@ -484,6 +557,13 @@ function PublicMenuInner() {
           discountAmount={discountAmount}
           priceChangeInfo={priceChangeInfo}
           onConfirmPriceUpdate={confirmPriceUpdate}
+          slug={slug}
+          branchId={branch?.id}
+          paymentMethod={paymentMethod}
+          setPaymentMethod={setPaymentMethod}
+          paymentFirstCheckoutInput={paymentFirstCheckoutInput}
+          onStartPaymentFirstCheckout={startPaymentFirstCheckout}
+          onCancelPaymentFirstCheckout={cancelPaymentFirstCheckout}
         />
       )}
 
