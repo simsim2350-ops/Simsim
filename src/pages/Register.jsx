@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import { trackOwnerMilestone, trackRegistrationEvent } from '../lib/analytics'
+import './Register.css'
 
 // خريطة تحويل الحروف العربية إلى لاتينية لتوليد رابط منيو صالح من اسم عربي.
 const AR_MAP = {
@@ -154,57 +155,6 @@ export default function Register() {
 
   return (
     <div className="register-page" dir="rtl">
-      <style>{`
-        .register-page { min-height:100vh; background:#fff; color:#15171B; font-family:Tajawal,Arial,sans-serif; }
-        .register-layout { min-height:100vh; display:flex; direction:rtl; }
-        .register-panel { flex:1 1 58%; min-width:0; display:flex; align-items:center; justify-content:center; padding:clamp(28px,5vw,76px) clamp(20px,6vw,108px); background:#fff; }
-        .register-form-wrap { width:100%; max-width:560px; }
-        .register-brand { display:flex; align-items:center; gap:9px; margin-bottom:clamp(32px,5vh,56px); color:#14161A; text-decoration:none; width:max-content; }
-        .register-brand img { width:auto; height:34px; display:block; }
-        .register-brand-word { font-family:Poppins,Tajawal,sans-serif; font-size:21px; font-weight:800; letter-spacing:-.7px; direction:ltr; }
-        .register-eyebrow { display:inline-flex; align-items:center; gap:7px; padding:6px 10px; margin-bottom:13px; border:1px solid #FCD8BC; border-radius:999px; color:#B84200; background:#FFF7F1; font-size:12px; font-weight:800; }
-        .register-title { margin:0; max-width:470px; font-size:clamp(28px,3vw,42px); line-height:1.22; letter-spacing:-.4px; font-weight:900; }
-        .register-subtitle { margin:11px 0 29px; color:#67707C; font-size:clamp(14px,1.25vw,16px); line-height:1.8; }
-        .register-form { display:flex; flex-direction:column; gap:16px; }
-        .register-field { display:flex; flex-direction:column; gap:7px; }
-        .register-label { font-size:14px; font-weight:800; color:#252A32; }
-        .register-optional { color:#8D96A2; font-weight:500; }
-        .register-input:focus { border-color:#FF6A00 !important; box-shadow:0 0 0 4px rgba(255,106,0,.13); }
-        .register-helper, .register-error { margin:0; font-size:12px; line-height:1.55; }
-        .register-helper { color:#7E8793; }
-        .register-error { color:#D92D20; font-weight:700; }
-        .register-url-card { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 11px; border:1px solid #E7EBF0; border-radius:12px; background:#F8FAFC; }
-        .register-url { min-width:0; direction:ltr; unicode-bidi:plaintext; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#687281; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; }
-        .register-url strong { color:#C94D00; font-weight:800; }
-        .register-link-button { flex:0 0 auto; border:0; padding:5px 0; color:#D75700; background:transparent; font:700 12px Tajawal,sans-serif; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
-        .register-slug-status { display:flex; align-items:center; gap:6px; min-height:18px; margin-top:-2px; font-size:12px; font-weight:700; }
-        .register-password-wrap { position:relative; }
-        .register-password-wrap input { padding-left:50px !important; }
-        .register-password-toggle { position:absolute; left:8px; top:50%; width:36px; height:36px; transform:translateY(-50%); display:grid; place-items:center; border:0; border-radius:9px; background:transparent; color:#5E6875; font-size:17px; cursor:pointer; }
-        .register-password-toggle:focus-visible, .register-link-button:focus-visible, .register-cta:focus-visible, .register-login-link:focus-visible { outline:3px solid rgba(255,106,0,.35); outline-offset:3px; }
-        .register-cta { width:100%; min-height:54px; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:4px; border:0; border-radius:14px; color:#fff; background:#FF6A00; box-shadow:0 12px 23px rgba(255,106,0,.27); font:800 16px Tajawal,sans-serif; cursor:pointer; transition:transform .15s ease, background .15s ease, box-shadow .15s ease; }
-        .register-cta:hover:not(:disabled) { background:#E85F00; box-shadow:0 14px 25px rgba(255,106,0,.34); transform:translateY(-1px); }
-        .register-cta:active:not(:disabled) { transform:scale(.985); }
-        .register-cta:disabled { cursor:wait; opacity:.72; }
-        .register-trust { margin:4px 0 0; color:#8C96A2; text-align:center; font-size:12px; line-height:1.6; }
-        .register-login { margin:7px 0 0; color:#697381; text-align:center; font-size:14px; }
-        .register-login-link { color:#D75700; font-weight:800; text-underline-offset:3px; }
-        .register-marketing { flex:1 1 42%; min-width:0; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; padding:clamp(40px,6vw,104px); color:#fff; background:#11131B; }
-        .register-marketing::before { content:''; position:absolute; width:520px; height:520px; top:-270px; left:-245px; border-radius:50%; border:1px solid rgba(255,255,255,.08); box-shadow:0 0 0 66px rgba(255,106,0,.06), 0 0 0 134px rgba(255,255,255,.025); }
-        .register-marketing::after { content:''; position:absolute; width:380px; height:380px; right:-245px; bottom:-265px; border:1px solid rgba(255,255,255,.07); border-radius:50%; }
-        .register-marketing-inner { position:relative; z-index:1; width:100%; max-width:420px; }
-        .register-marketing-icon { display:grid; place-items:center; width:66px; height:66px; margin-bottom:31px; border:1px solid rgba(255,255,255,.13); border-radius:19px; background:rgba(255,255,255,.06); color:#FF7A20; font-size:30px; box-shadow:0 14px 35px rgba(0,0,0,.17); }
-        .register-marketing h2 { margin:0; max-width:390px; color:#fff; font-size:clamp(30px,3vw,46px); line-height:1.24; letter-spacing:-.7px; font-weight:900; }
-        .register-marketing h2 span { color:#FF7620; }
-        .register-marketing p { margin:17px 0 27px; max-width:390px; color:rgba(255,255,255,.63); font-size:15px; line-height:1.8; }
-        .register-benefits { display:grid; gap:13px; padding:0; margin:0; list-style:none; }
-        .register-benefits li { display:flex; align-items:center; gap:10px; color:rgba(255,255,255,.86); font-size:14px; font-weight:700; }
-        .register-benefit-check { display:grid; place-items:center; width:21px; height:21px; flex:0 0 21px; border-radius:50%; color:#11131B; background:#FF7620; font-size:13px; font-weight:900; }
-        @media (max-width: 899px) { .register-layout { display:block; } .register-panel { min-height:100vh; padding:28px 20px 38px; align-items:flex-start; } .register-form-wrap { max-width:560px; } .register-brand { margin-bottom:31px; } .register-marketing { display:none; } .register-title { font-size:29px; } .register-subtitle { margin-bottom:25px; font-size:14px; } .register-form { gap:14px; } }
-        @media (min-width: 900px) and (max-width: 1120px) { .register-panel { padding-right:clamp(28px,5vw,64px); padding-left:clamp(28px,5vw,64px); } .register-marketing { padding:45px; } .register-marketing h2 { font-size:34px; } }
-        @media (prefers-reduced-motion: reduce) { .register-cta, .register-input { transition:none; } }
-      `}</style>
-
       <main className="register-layout">
         <section className="register-panel" aria-labelledby="register-title">
           <div className="register-form-wrap">
