@@ -76,6 +76,13 @@ export function buildHandler({ webhookSecret, adapter, db }) {
     const headers = headersToObject(req.headers)
     const event = adapter.parseWebhook(payload, headers)
 
+    // TASK-PAY-3.4-REMEDIATION: eventId هو payload.id الرسمي (معرّف الحدث)، منفصل عن data.id
+    // (مرجع الدفعة). لا نختلق هوية بديلة (كانت سابقاً unknown_${Date.now()}) — حمولة بلا هوية حدث
+    // صريحة تُرفَض بدل إدراجها بمفتاح إتقان مُلتبِس قد يتصادم مع أحداث أخرى بلا مبرر.
+    if (!event.eventId) {
+      return json({ error: 'Missing webhook event ID' }, 400)
+    }
+
     // معالجة الحدث
     try {
       const result = await _handleWebhookEvent(
@@ -199,6 +206,18 @@ async function _handleWebhookEvent(event, db) {
       .update({ transaction_id: tx.id, processed_at: new Date().toISOString() })
       .eq('id', webhookId)
     return { updated: false, reason: 'already_terminal', transactionId: tx.id }
+  }
+
+  // TASK-PAY-3.4-REMEDIATION: نوع موثَّق رسمياً (payment_refunded/voided/captured/verified) لكن بلا
+  // منطق عمل مُحدَّد بعد. إن لم تُرفِق Moyasar حالة صريحة (data.status) لا نخترع تحويل حالة (لا نمرّر
+  // لـ_eventTypeToStatus التي تُرجع FAILED افتراضياً — تحويل خاطئ لحدث كـpayment_captured مثلاً).
+  // الحدث يُسجَّل ويُعلَّم مُعالَجاً كي لا يُعاد تسليمه، بلا تحديث حالة مُخمَّنة على payment_transactions.
+  if (!event.status && event.type === 'recognized_unhandled') {
+    await db
+      .from('payment_webhook_events')
+      .update({ transaction_id: tx.id, processed_at: new Date().toISOString() })
+      .eq('id', webhookId)
+    return { updated: false, reason: 'recognized_unhandled_event_type', transactionId: tx.id }
   }
 
   const newStatus = event.status ?? _eventTypeToStatus(event.type)

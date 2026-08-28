@@ -8,6 +8,14 @@ vi.mock('../../src/features/menu/TableSelect', () => ({
   default: () => <select data-testid="table-select" />,
 }))
 
+// TASK-PAY-3.6D.10 — PaymentFirstCheckoutEntry مموَّهة هنا (نفس نمط TableSelect أعلاه) — منطقها
+// الداخلي (اللوحة/إعادة التوجيه/الأخطاء) مُختبَر باستقلالية تامة في PaymentFirstCheckoutEntry.test.jsx؛
+// هذا الملف يختبر فقط منطق CartDrawer نفسه (متى تُعرَض، وبأي props).
+const paymentFirstEntryPropsSpy = vi.fn()
+vi.mock('../../src/features/menu/PaymentFirstCheckoutEntry', () => ({
+  default: (props) => { paymentFirstEntryPropsSpy(props); return <div data-testid="stub-payment-first-entry" /> },
+}))
+
 const t = (key) => ({
   cartYours: 'سلتك',
   emptyCartTitle: 'سلتك فارغة',
@@ -51,6 +59,9 @@ const t = (key) => ({
   tablePh: 'اختر رقم الطاولة',
   addrReq: '📍 عنوان التوصيل',
   addrPh2: 'الحي، الشارع...',
+  pfPaymentMethodLabel: 'طريقة الدفع',
+  pfPaymentMethodCash: 'نقداً/عند الاستلام',
+  pfPaymentMethodCard: 'الدفع الإلكتروني',
 }[key] || key)
 
 const defaultProps = {
@@ -172,5 +183,83 @@ describe('CartDrawer', () => {
     )
     const submitBtn = screen.getByRole('button', { name: /مغلق/i })
     expect(submitBtn).toBeDisabled()
+  })
+})
+
+// ══════════════════════════════════════════════════════════════════
+// TASK-PAY-3.6D.10 — ربط لوحة بدء الدفع أولاً بالسلة الحقيقية
+// ══════════════════════════════════════════════════════════════════
+describe('CartDrawer — payment-first integration (TASK-PAY-3.6D.10)', () => {
+  it('1. خيار "الدفع الإلكتروني" يظهر في السلة الحقيقية', () => {
+    render(<CartDrawer {...defaultProps} cart={[cartItem]} cartCount={1} cartTotal={50} />)
+    expect(screen.getByRole('button', { name: 'الدفع الإلكتروني' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'نقداً/عند الاستلام' })).toBeInTheDocument()
+  })
+
+  it('نقداً هو الافتراضي — لا props جديدة ⇒ نفس سلوك الدفع النقدي القديم تماماً (بلا تغيير)', () => {
+    const placeOrder = vi.fn()
+    render(<CartDrawer {...defaultProps} cart={[cartItem]} cartCount={1} cartTotal={50} placeOrder={placeOrder} />)
+    fireEvent.click(screen.getByRole('button', { name: /تأكيد الطلب/ }))
+    expect(placeOrder).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('stub-payment-first-entry')).not.toBeInTheDocument()
+  })
+
+  it('2/5. اختيار "الدفع الإلكتروني" ثم الضغط على زر التأكيد يستدعي onStartPaymentFirstCheckout بدل placeOrder', () => {
+    const placeOrder = vi.fn()
+    const onStartPaymentFirstCheckout = vi.fn()
+    render(<CartDrawer {...defaultProps} cart={[cartItem]} cartCount={1} cartTotal={50} placeOrder={placeOrder} onStartPaymentFirstCheckout={onStartPaymentFirstCheckout} paymentMethod="card" />)
+    fireEvent.click(screen.getByRole('button', { name: /تأكيد الطلب/ }))
+    expect(onStartPaymentFirstCheckout).toHaveBeenCalledTimes(1)
+    expect(placeOrder).not.toHaveBeenCalled()
+  })
+
+  it('زر "الدفع الإلكتروني" يستدعي setPaymentMethod("card")', () => {
+    const setPaymentMethod = vi.fn()
+    render(<CartDrawer {...defaultProps} cart={[cartItem]} cartCount={1} cartTotal={50} setPaymentMethod={setPaymentMethod} />)
+    fireEvent.click(screen.getByRole('button', { name: 'الدفع الإلكتروني' }))
+    expect(setPaymentMethod).toHaveBeenCalledWith('card')
+  })
+
+  it('2/3. paymentFirstCheckoutInput موجودة ⇒ تُعرَض PaymentFirstCheckoutEntry بدل زر التأكيد العادي، ويختفي مبدِّل طريقة الدفع', () => {
+    const snapshot = { type: 'takeaway', items: [], customer_phone: '512345678', restaurant_slug: 'koshary', branch_id: 'branch-1' }
+    render(<CartDrawer {...defaultProps} cart={[cartItem]} cartCount={1} cartTotal={50} paymentFirstCheckoutInput={snapshot} />)
+    expect(screen.getByTestId('stub-payment-first-entry')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /تأكيد الطلب/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'الدفع الإلكتروني' })).not.toBeInTheDocument()
+    expect(paymentFirstEntryPropsSpy).toHaveBeenCalledWith(expect.objectContaining({ checkoutInput: snapshot }))
+  })
+
+  it('4. onCancel من PaymentFirstCheckoutEntry مربوط بـ onCancelPaymentFirstCheckout', () => {
+    const onCancelPaymentFirstCheckout = vi.fn()
+    const snapshot = { type: 'takeaway', items: [], customer_phone: '512345678' }
+    render(<CartDrawer {...defaultProps} cart={[cartItem]} cartCount={1} cartTotal={50} paymentFirstCheckoutInput={snapshot} onCancelPaymentFirstCheckout={onCancelPaymentFirstCheckout} />)
+    expect(paymentFirstEntryPropsSpy).toHaveBeenCalledWith(expect.objectContaining({ onCancel: onCancelPaymentFirstCheckout }))
+  })
+
+  it('6. لا وجود لأي زر تأكيد نقر مزدوج بعد التفعيل — الزر استُبدِل بالكامل، لا يتعايشان', () => {
+    const snapshot = { type: 'takeaway', items: [], customer_phone: '512345678' }
+    render(<CartDrawer {...defaultProps} cart={[cartItem]} cartCount={1} cartTotal={50} paymentFirstCheckoutInput={snapshot} />)
+    expect(screen.queryAllByRole('button', { name: /تأكيد الطلب/ })).toHaveLength(0)
+  })
+
+  it('8. مسار QR: slug/branchId يُمرَّران لـ PaymentFirstCheckoutEntry، وisQrCheckout=true', () => {
+    render(<CartDrawer {...defaultProps} cart={[cartItem]} cartCount={1} cartTotal={50} tableQr={{ token: 'qr-1', tableName: '5' }} paymentFirstCheckoutInput={{ type: 'dine_in', items: [], customer_phone: '512345678', table_qr_token: 'qr-1' }} slug="koshary" branchId="branch-qr" />)
+    expect(paymentFirstEntryPropsSpy).toHaveBeenCalledWith(expect.objectContaining({ slug: 'koshary', branchId: 'branch-qr', isQrCheckout: true }))
+  })
+
+  it('غير-QR: isQrCheckout=false يُمرَّر بشكل صحيح', () => {
+    render(<CartDrawer {...defaultProps} cart={[cartItem]} cartCount={1} cartTotal={50} tableQr={null} paymentFirstCheckoutInput={{ type: 'takeaway', items: [], customer_phone: '512345678' }} />)
+    expect(paymentFirstEntryPropsSpy).toHaveBeenCalledWith(expect.objectContaining({ isQrCheckout: false }))
+  })
+
+  it('7. الدفع النقدي (afterAll) يبقى كما هو تماماً حين paymentMethod="cash" — لا PaymentFirstCheckoutEntry تُعرَض إطلاقاً', () => {
+    render(<CartDrawer {...defaultProps} cart={[cartItem]} cartCount={1} cartTotal={50} paymentMethod="cash" />)
+    expect(screen.queryByTestId('stub-payment-first-entry')).not.toBeInTheDocument()
+  })
+
+  it('بلا أي props جديدة إطلاقاً (مُستدعٍ قديم لا يعرف عن 3.6D.10) ⇒ يُعرَض بلا انهيار، طريقة الدفع نقداً افتراضياً', () => {
+    // defaultProps نفسها لا تتضمّن أياً من props الدفع أولاً الجديدة — هذا يثبت التوافق الخلفي الكامل
+    expect(() => render(<CartDrawer {...defaultProps} cart={[cartItem]} cartCount={1} cartTotal={50} />)).not.toThrow()
+    expect(screen.getByRole('button', { name: 'نقداً/عند الاستلام' })).toHaveAttribute('aria-pressed', 'true')
   })
 })

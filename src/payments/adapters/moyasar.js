@@ -10,8 +10,15 @@ const BASE_URL = 'https://api.moyasar.com/v1'
 const KNOWN_WEBHOOK_TYPES = new Set([
   'payment_paid',
   'payment_failed',
+  'payment_faild', // TASK-PAY-3.4-REMEDIATION: الاسم الرسمي الموثَّق لدى Moyasar (بهذا التهجئة) — alias إلى نفس حالة الفشل
   'payment_authorized',
   'payment_expired',
+  // TASK-PAY-3.4-REMEDIATION: أنواع موثَّقة رسمياً لدى Moyasar، مُعرَّفة الآن بأمان (RECOGNIZED_UNHANDLED)
+  // بدل الوقوع في UNKNOWN — بلا منطق عمل مُخترَع لأي منها بعد.
+  'payment_refunded',
+  'payment_voided',
+  'payment_captured',
+  'payment_verified',
 ])
 
 export class MoyasarAdapter extends PaymentAdapter {
@@ -101,6 +108,7 @@ export class MoyasarAdapter extends PaymentAdapter {
           eventType = WebhookEventType.PAYMENT_SUCCEEDED
           break
         case 'payment_failed':
+        case 'payment_faild': // TASK-PAY-3.4-REMEDIATION: تهجئة Moyasar الرسمية الموثَّقة — alias لنفس الحالة
           eventType = WebhookEventType.PAYMENT_FAILED
           break
         case 'payment_authorized':
@@ -109,13 +117,23 @@ export class MoyasarAdapter extends PaymentAdapter {
         case 'payment_expired':
           eventType = WebhookEventType.PAYMENT_CANCELLED
           break
+        // TASK-PAY-3.4-REMEDIATION: أنواع موثَّقة رسمياً — مُعترَف بها صراحة بلا منطق عمل مُخترَع.
+        case 'payment_refunded':
+        case 'payment_voided':
+        case 'payment_captured':
+        case 'payment_verified':
+          eventType = WebhookEventType.RECOGNIZED_UNHANDLED
+          break
         default:
           eventType = WebhookEventType.UNKNOWN
       }
     }
 
+    // TASK-PAY-3.4-REMEDIATION: مُعرِّف الحدث الوحيد هو payload.id الرسمي الموثَّق ("Event's unique
+    // ID") — منفصل تماماً عن data.id (مرجع/معرّف الدفعة). لا نقع لـdata.id ولا نختلق هوية بديلة؛
+    // المستدعي (handler.js) يرفض أي حمولة بلا payload.id بدل إنشاء مفتاح إتقان مُلتبِس.
     return {
-      eventId: data.id ?? `unknown_${Date.now()}`,
+      eventId: payload?.id,
       type: eventType,
       providerRef: data.id ?? undefined,
       status: data.status ? this.mapStatus(data.status) : undefined,

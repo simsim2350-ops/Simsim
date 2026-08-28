@@ -1,6 +1,7 @@
 import { vatBreakdown } from '../../lib/pricing'
 import TableSelect from './TableSelect'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import PaymentFirstCheckoutEntry from './PaymentFirstCheckoutEntry'
 
 // درج السلة: العناصر + الملخص المالي + نوع الطلب + بيانات الزبون + زر التأكيد
 export default function CartDrawer({
@@ -13,6 +14,10 @@ export default function CartDrawer({
   suggestions = [], onAddSuggestion, onOpenSuggestion, loyalty,
   couponInput, setCouponInput, appliedCoupon, applyCoupon, removeCoupon, applyingCoupon, discountAmount = 0,
   priceChangeInfo = null, onConfirmPriceUpdate,
+  // TASK-PAY-3.6D.10 — الدفع أولاً (بطاقة) اختياري بالكامل؛ قيم افتراضية تُبقي سلوك النقد كما هو
+  // تماماً حين لا يُمرَّر أيٌّ منها (تكامل تدريجي، لا كسر لأي مُستدعٍ/اختبار قائم لا يعرف عنها).
+  slug, branchId, paymentMethod = 'cash', setPaymentMethod = () => {},
+  paymentFirstCheckoutInput = null, onStartPaymentFirstCheckout = () => {}, onCancelPaymentFirstCheckout = () => {},
 }) {
   const suggestionBadge = {
     curated:    { label: t('reasonCurated'),    bg:'#FFF1E8', fg:'#C8481B' },
@@ -303,6 +308,35 @@ export default function CartDrawer({
               )}
             </div>
           )}
+
+          {/* TASK-PAY-3.6D.10 — اختيار طريقة الدفع: نقداً (المسار الحالي، بلا أي تغيير) أو دفع
+              إلكتروني (يستولي على منطقة التأكيد أدناه بعد الضغط). يُخفى بمجرد بدء محاولة دفع أولاً
+              فعلية — منطقة التأكيد نفسها تعرض PaymentFirstCheckoutEntry حينها. */}
+          {!paymentFirstCheckoutInput && (
+            <div style={{ marginBottom:'12px' }}>
+              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px' }}>{t('pfPaymentMethodLabel')}</label>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
+                {[
+                  { key:'cash', label:t('pfPaymentMethodCash') },
+                  { key:'card', label:t('pfPaymentMethodCard') },
+                ].map(opt => (
+                  <button
+                    type="button"
+                    key={opt.key}
+                    onClick={() => setPaymentMethod(opt.key)}
+                    aria-pressed={paymentMethod===opt.key}
+                    style={{
+                      padding:'11px 8px', borderRadius:'11px', textAlign:'center',
+                      border:`1.5px solid ${paymentMethod===opt.key ? brandColor : '#E5E7EB'}`,
+                      background: paymentMethod===opt.key ? `${brandColor}0D` : 'white',
+                      fontFamily:'Tajawal,sans-serif', fontSize:'12.5px', fontWeight:'700',
+                      color: paymentMethod===opt.key ? brandColor : '#374151',
+                    }}
+                  >{opt.label}</button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* الملخص المالي — آخر ما يراه الزبون قبل زر التأكيد (الأسعار شاملة ض.ق.م 15%) */}
@@ -371,31 +405,46 @@ export default function CartDrawer({
 
         </div>
 
-        {/* زر التأكيد الثابت — خارج التمرير، يحمل السعر، ويتعطّل مع سبينر أثناء الإرسال */}
+        {/* زر التأكيد الثابت — خارج التمرير. TASK-PAY-3.6D.10: بمجرد وجود paymentFirstCheckoutInput
+            (لقطة مُجمَّدة بُنيت لحظة الضغط)، تستولي PaymentFirstCheckoutEntry على هذه المنطقة كاملة —
+            لا زر تأكيد قابل للنقر المزدوج بعدها بتاتاً (استُبدِل بالكامل، لا يتعايشان أبداً). */}
         <div style={{ flexShrink:0, background:'white', borderTop:'1px solid #E5E7EB', padding:'11px 16px 14px', boxShadow:'0 -8px 24px rgba(20,14,28,0.06)' }}>
-          <button
-            type="button"
-            onClick={placeOrder}
-            disabled={!canSubmit}
-            style={{ width:'100%', height:'52px', borderRadius:'15px', border:'none', background: canSubmit ? `linear-gradient(135deg, ${brandColor}, ${brandColor}CC)` : '#E5E7EB', color: canSubmit ? 'white' : '#9CA3AF', fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'15px', cursor: canSubmit ? 'pointer' : 'not-allowed', boxShadow: canSubmit ? `0 8px 22px ${brandColor}44` : 'none', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 20px' }}
-          >
-            {submitting ? (
-              <>
-                <span style={{ display:'flex', alignItems:'center', gap:'9px' }}>
-                  <span style={{ width:'17px', height:'17px', border:'2.5px solid rgba(255,255,255,0.4)', borderTopColor:'white', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
-                  {t('placingOrder')}
-                </span>
-                <span/>
-              </>
-            ) : openStatus.open ? (
-              <>
-                <span>{t('confirmOrder')}</span>
-                <span style={{ background:'rgba(0,0,0,0.16)', padding:'5px 12px', borderRadius:'10px', fontSize:'14px' }}>{finalTotal.toFixed(2)} ﷼</span>
-              </>
-            ) : (
-              <span style={{ width:'100%', textAlign:'center' }}>{t('closedBtn')}</span>
-            )}
-          </button>
+          {paymentFirstCheckoutInput ? (
+            <PaymentFirstCheckoutEntry
+              slug={slug}
+              branchId={branchId}
+              checkoutInput={paymentFirstCheckoutInput}
+              isQrCheckout={Boolean(tableQr)}
+              onCancel={onCancelPaymentFirstCheckout}
+              t={t}
+              isEn={isEn}
+              brandColor={brandColor}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={paymentMethod === 'card' ? onStartPaymentFirstCheckout : placeOrder}
+              disabled={!canSubmit}
+              style={{ width:'100%', height:'52px', borderRadius:'15px', border:'none', background: canSubmit ? `linear-gradient(135deg, ${brandColor}, ${brandColor}CC)` : '#E5E7EB', color: canSubmit ? 'white' : '#9CA3AF', fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'15px', cursor: canSubmit ? 'pointer' : 'not-allowed', boxShadow: canSubmit ? `0 8px 22px ${brandColor}44` : 'none', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 20px' }}
+            >
+              {submitting ? (
+                <>
+                  <span style={{ display:'flex', alignItems:'center', gap:'9px' }}>
+                    <span style={{ width:'17px', height:'17px', border:'2.5px solid rgba(255,255,255,0.4)', borderTopColor:'white', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
+                    {t('placingOrder')}
+                  </span>
+                  <span/>
+                </>
+              ) : openStatus.open ? (
+                <>
+                  <span>{t('confirmOrder')}</span>
+                  <span style={{ background:'rgba(0,0,0,0.16)', padding:'5px 12px', borderRadius:'10px', fontSize:'14px' }}>{finalTotal.toFixed(2)} ﷼</span>
+                </>
+              ) : (
+                <span style={{ width:'100%', textAlign:'center' }}>{t('closedBtn')}</span>
+              )}
+            </button>
+          )}
         </div>
         </>
         )}

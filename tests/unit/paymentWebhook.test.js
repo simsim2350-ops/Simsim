@@ -75,7 +75,11 @@ function makeAdapter(overrides = {}) {
 }
 
 // حمولة Webhook نموذجية من Moyasar
+// TASK-PAY-3.4-REMEDIATION: id على المستوى الأعلى هو هوية الحدث الرسمية (منفصلة عن data.id).
+// الحمولة هنا تمر دائماً عبر adapter مُموَّه (makeAdapter) في هذا الملف، فقيمته لا تغيّر سلوك
+// الاختبارات القائمة — أُضيف فقط لتبقى الحمولة النموذجية مطابقة للشكل الرسمي الصحيح.
 const SAMPLE_PAYLOAD = {
+  id: 'evt_moyasar_001',
   type: 'payment_paid',
   data: { id: 'pay_001', status: 'paid', amount: 5000, currency: 'SAR' },
 }
@@ -430,6 +434,97 @@ describe('WEBHOOK-014: service_role مُحقون من الخارج فقط (عد�
       // Deno غير موجود في بيئة الاختبار — المعالج يعمل بدونه
       expect(() => buildHandler({ webhookSecret: 'x', adapter: makeAdapter(), db: makeDb() })).not.toThrow()
     }
+  })
+})
+
+// ══════════════════════════════════════════════════════════════════
+// WEBHOOK-015 (TASK-PAY-3.4-REMEDIATION): لا eventId من المُهايئ → 400، بلا هوية بديلة مُختلَقة
+// ══════════════════════════════════════════════════════════════════
+
+describe('WEBHOOK-015: لا eventId (payload.id مفقود) → 400، لا اتصال بقاعدة البيانات', () => {
+  it('يُعيد 400 ولا يستدعي db.from إذا غاب eventId من نتيجة parseWebhook', async () => {
+    const db = makeDb()
+    const noEventIdAdapter = makeAdapter({
+      parseWebhook: vi.fn().mockReturnValue({
+        eventId: undefined, // يحاكي حمولة بلا payload.id على مستوى الحدث
+        type: WebhookEventType.PAYMENT_SUCCEEDED,
+        providerRef: 'pay_015',
+        status: TransactionStatus.SUCCEEDED,
+        raw: {},
+      }),
+    })
+    const handle = buildHandler({ webhookSecret: TEST_SECRET, adapter: noEventIdAdapter, db })
+
+    const req = await makePostRequest(SAMPLE_PAYLOAD)
+    const res = await handle(req)
+    const body = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(body.error).toMatch(/event id/i)
+    // لا يُختلَق مفتاح إتقان بديل (كان سابقاً unknown_${Date.now()}) — يُرفَض الطلب قبل أي كتابة
+    expect(db.from).not.toHaveBeenCalled()
+  })
+})
+
+// ══════════════════════════════════════════════════════════════════
+// WEBHOOK-016 (TASK-PAY-3.4-REMEDIATION): نوع مُعترَف به لكن غير مُعالَج (recognized_unhandled)
+// ══════════════════════════════════════════════════════════════════
+
+describe('WEBHOOK-016: نوع موثَّق رسمياً بلا منطق عمل (payment_refunded/voided/captured/verified)', () => {
+  it('يُسجِّل الحدث ويُعلِّمه مُعالَجاً دون تخمين تحويل حالة على payment_transactions', async () => {
+    const db = makeDb(
+      makeChain({ data: { id: 'wh_016' }, error: null }),              // insert webhook
+      makeChain({ data: { id: 'tx_016', status: 'pending' }, error: null }), // find tx (not terminal)
+      makeChain({ data: null, error: null }),                           // mark processed
+    )
+    const recognizedUnhandledAdapter = makeAdapter({
+      parseWebhook: vi.fn().mockReturnValue({
+        eventId: 'evt_016',
+        type: 'recognized_unhandled',
+        providerRef: 'pay_016',
+        status: undefined, // Moyasar لم يُرفِق data.status صريحة في هذا المثال
+        raw: {},
+      }),
+    })
+    const handle = buildHandler({ webhookSecret: TEST_SECRET, adapter: recognizedUnhandledAdapter, db })
+
+    const req = await makePostRequest({ id: 'evt_016', type: 'payment_captured', data: { id: 'pay_016' } })
+    const res = await handle(req)
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(body.reason).toBe('recognized_unhandled_event_type')
+    expect(body.updated).toBe(false)
+    // 3 استدعاءات فقط (insert webhook + select tx + mark processed) — لا تحديث على payment_transactions
+    expect(db.from).toHaveBeenCalledTimes(3)
+  })
+
+  it('لا يرمي استثناء ولا يُسقِط الطلب عند وجود status صريحة رغم النوع غير المُعالَج', async () => {
+    const db = makeDb(
+      makeChain({ data: { id: 'wh_016b' }, error: null }),
+      makeChain({ data: { id: 'tx_016b', status: 'pending' }, error: null }),
+      makeChain({ data: null, error: null }), // update tx (status موجودة فيُتَّبع المسار العادي)
+      makeChain({ data: null, error: null }), // mark processed
+    )
+    const adapterWithStatus = makeAdapter({
+      parseWebhook: vi.fn().mockReturnValue({
+        eventId: 'evt_016b',
+        type: 'recognized_unhandled',
+        providerRef: 'pay_016b',
+        status: TransactionStatus.REFUNDED, // Moyasar أرفق data.status صريحة هذه المرة
+        raw: {},
+      }),
+    })
+    const handle = buildHandler({ webhookSecret: TEST_SECRET, adapter: adapterWithStatus, db })
+
+    const req = await makePostRequest({ id: 'evt_016b', type: 'payment_refunded', data: { id: 'pay_016b', status: 'refunded' } })
+    const res = await handle(req)
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.updated).toBe(true)
+    expect(body.status).toBe(TransactionStatus.REFUNDED)
   })
 })
 

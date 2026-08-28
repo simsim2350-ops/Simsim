@@ -99,16 +99,29 @@ describe('UT-MAD-004: mapStatus', () => {
 
 // UT-MAD-005
 describe('UT-MAD-005: parseWebhook payment_paid', () => {
-  it('returns PAYMENT_SUCCEEDED for payment_paid', () => {
+  it('returns PAYMENT_SUCCEEDED for payment_paid, eventId from top-level payload.id (NOT data.id)', () => {
     const adapter = new MoyasarAdapter(FAKE_KEY)
     const result = adapter.parseWebhook(
-      { type: 'payment_paid', data: { id: 'pay_abc', status: 'paid' } },
+      { id: 'evt_abc', type: 'payment_paid', data: { id: 'pay_abc', status: 'paid' } },
       {}
     )
     expect(result.type).toBe(WebhookEventType.PAYMENT_SUCCEEDED)
-    expect(result.eventId).toBe('pay_abc')
+    // TASK-PAY-3.4-REMEDIATION: eventId (هوية الحدث) وproviderRef (مرجع الدفعة) مصدران منفصلان
+    // تماماً — يجب ألا يتساويا هنا (evt_abc ≠ pay_abc) لإثبات فصلهما.
+    expect(result.eventId).toBe('evt_abc')
     expect(result.providerRef).toBe('pay_abc')
     expect(result.status).toBe(TransactionStatus.SUCCEEDED)
+  })
+
+  it('TASK-PAY-3.4-REMEDIATION: eventId is undefined (not a fabricated identity) when payload.id is missing', () => {
+    const adapter = new MoyasarAdapter(FAKE_KEY)
+    const result = adapter.parseWebhook(
+      { type: 'payment_paid', data: { id: 'pay_abc', status: 'paid' } }, // no top-level id
+      {}
+    )
+    expect(result.eventId).toBeUndefined()
+    // providerRef يبقى متاحاً من data.id رغم غياب eventId — المفهومان مستقلّان
+    expect(result.providerRef).toBe('pay_abc')
   })
 })
 
@@ -117,11 +130,36 @@ describe('UT-MAD-006: parseWebhook payment_failed', () => {
   it('returns PAYMENT_FAILED for payment_failed', () => {
     const adapter = new MoyasarAdapter(FAKE_KEY)
     const result = adapter.parseWebhook(
-      { type: 'payment_failed', data: { id: 'pay_xyz', status: 'failed' } },
+      { id: 'evt_xyz', type: 'payment_failed', data: { id: 'pay_xyz', status: 'failed' } },
       {}
     )
     expect(result.type).toBe(WebhookEventType.PAYMENT_FAILED)
     expect(result.status).toBe(TransactionStatus.FAILED)
+  })
+
+  it('TASK-PAY-3.4-REMEDIATION: returns PAYMENT_FAILED for the official Moyasar spelling "payment_faild" too', () => {
+    const adapter = new MoyasarAdapter(FAKE_KEY)
+    const result = adapter.parseWebhook(
+      { id: 'evt_xyz2', type: 'payment_faild', data: { id: 'pay_xyz2', status: 'failed' } },
+      {}
+    )
+    expect(result.type).toBe(WebhookEventType.PAYMENT_FAILED)
+    expect(result.status).toBe(TransactionStatus.FAILED)
+  })
+})
+
+// UT-MAD-006c (TASK-PAY-3.4-REMEDIATION)
+describe('UT-MAD-006c: parseWebhook recognized-but-unhandled official event types', () => {
+  it.each([
+    ['payment_refunded'],
+    ['payment_voided'],
+    ['payment_captured'],
+    ['payment_verified'],
+  ])('%s maps to RECOGNIZED_UNHANDLED, not UNKNOWN', (type) => {
+    const adapter = new MoyasarAdapter(FAKE_KEY)
+    const result = adapter.parseWebhook({ id: 'evt_ru', type, data: { id: 'pay_ru' } }, {})
+    expect(result.type).toBe(WebhookEventType.RECOGNIZED_UNHANDLED)
+    expect(result.type).not.toBe(WebhookEventType.UNKNOWN)
   })
 })
 
@@ -130,11 +168,18 @@ describe('UT-MAD-007: parseWebhook unknown type', () => {
   it('returns UNKNOWN for unrecognised webhook type', () => {
     const adapter = new MoyasarAdapter(FAKE_KEY)
 
-    const unknown = adapter.parseWebhook({ type: 'some_future_event', data: {} }, {})
+    const unknown = adapter.parseWebhook({ id: 'evt_u1', type: 'some_future_event', data: {} }, {})
     expect(unknown.type).toBe(WebhookEventType.UNKNOWN)
 
-    const noType = adapter.parseWebhook({ data: {} }, {})
+    const noType = adapter.parseWebhook({ id: 'evt_u2', data: {} }, {})
     expect(noType.type).toBe(WebhookEventType.UNKNOWN)
+  })
+
+  it('TASK-PAY-3.4-REMEDIATION: a genuinely unknown type stays UNKNOWN, distinct from RECOGNIZED_UNHANDLED', () => {
+    const adapter = new MoyasarAdapter(FAKE_KEY)
+    const result = adapter.parseWebhook({ id: 'evt_u3', type: 'totally_made_up_event', data: {} }, {})
+    expect(result.type).toBe(WebhookEventType.UNKNOWN)
+    expect(result.type).not.toBe(WebhookEventType.RECOGNIZED_UNHANDLED)
   })
 })
 

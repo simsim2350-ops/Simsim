@@ -47,6 +47,9 @@ export const WebhookEventType = Object.freeze({
   PAYMENT_CANCELLED: 'payment.cancelled',
   REFUND_SUCCEEDED: 'refund.succeeded',
   REFUND_FAILED: 'refund.failed',
+  // TASK-PAY-3.4-REMEDIATION: نوع حدث موثَّق رسمياً لدى Moyasar (payment_refunded/voided/captured/verified)
+  // لكن بلا منطق عمل مُحدَّد بعد — يميّزه عن UNKNOWN (نوع غير معروف إطلاقاً) دون اختراع تحويل حالة.
+  RECOGNIZED_UNHANDLED: 'recognized_unhandled',
   UNKNOWN: 'unknown',
 })
 
@@ -87,6 +90,7 @@ export const PaymentMode = Object.freeze({ TEST: 'test', LIVE: 'live' })
 /**
  * @typedef {Object} RefundInput
  * @property {string} providerRef
+ * @property {string} restaurantId           TASK-PAY-3.6C.3.0: إلزامي — يُتحقَّق من مطابقته لمالك المعاملة الفعلي
  * @property {number} [amount]               جزئي؛ يُترك فارغاً للاسترداد الكامل
  * @property {string} [reason]
  * @property {string} idempotencyKey

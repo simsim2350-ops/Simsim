@@ -28,6 +28,12 @@ export function idempotencyStorageKey(slug, branchId) {
   return `simsim_idem_${slug}_${branchId}`
 }
 
+// مفتاح تخزين إتقان الدفع لكل مطعم/فرع (TASK-PAY-3.6D.3) — شقيق idempotencyStorageKey أعلاه، لكن
+// لهوية "محاولة دفع" منفصلة عن هوية "نيّة شراء" السلة (فرق موثَّق أصلاً في checkoutOrchestration.js).
+export function paymentIdempotencyStorageKey(slug, branchId) {
+  return `simsim_payidem_${slug}_${branchId}`
+}
+
 // تطابق كل سطر سلة بالمنتج الحالي من المنيو المحمَّل أصلاً (صفر استعلامات إضافية).
 // products هنا مُصفّاة سلفاً بـ is_available=true (useMenuData) — فغياب المعرّف يعني
 // أن الصنف حُذف أو أصبح غير متاح، بغضّ النظر عن السبب.
