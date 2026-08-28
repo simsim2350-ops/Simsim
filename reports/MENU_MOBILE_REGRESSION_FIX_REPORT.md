@@ -105,7 +105,11 @@ What was verified instead: the CSS mechanism itself (build-output structural pro
 
 ## 11. CI Results / PR / Commit / Merge / Production
 
-Recorded after the commit, PR, and merge exist — see the closing section below and the corresponding `PROJECT_STATE.md` ADR-54 entry (updated in the same task once each value is known).
+- **Commit:** `2380568` on branch `fix/menu-mobile-regression` (pre-squash local commit).
+- **CI checks on PR #330:** `Build (Vite)` — **pass** (45s); `Vercel Preview Comments` — pass; `Supabase Preview` — skipping (not a failure, same as every prior PR in this project); `Vercel – simsim` (preview) — pass; `Vercel – simsim-marketing-ssr-staging` (preview) — pass.
+- **PR:** **#330** — `https://github.com/simsim2350-ops/Simsim/pull/330`, base `main`.
+- **Merge:** **MERGED** — squash merge, merge commit `bce4a6ed1bb1625913ca280676fc32cd8a0dedd1`, merged `2026-08-28T21:30:34Z`. Confirmed present on `origin/main` via fresh `git fetch`.
+- **Production deployment:** checked via `gh api .../commits/bce4a6e.../status` — **Vercel `simsim` (production): SUCCESS** ("Deployment has completed"). **Vercel `simsim-marketing-ssr-staging`: SUCCESS.**
 
 ## 12. Known Remaining Issues
 
