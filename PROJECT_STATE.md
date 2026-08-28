@@ -191,7 +191,7 @@ sql/                           ← ملفات SQL تُحفظ هنا وتُنفَ
   - **السلطة الخادمية (Server-Side Authority):** IMPLEMENTED — السعر النهائي يُعاد احتسابه دائماً خادمياً (`p_dry_run` ثم `create_order` الفعلي)، لا يُعتمَد على أي رقم قادم من العميل.
   - **سلوك الـWebhook:** IMPLEMENTED (كود) — `payment-webhook` Edge Function (22 اختبار وحدة، Task 3.4) منشورة `ACTIVE` على staging. **التحقّق الحيّ بتوقيع Moyasar حقيقي DEFERRED** — السرّ `PAYMENT_MOYASAR_WEBHOOK_SECRET` غير مهيَّأ على staging؛ الغياب تحقَّق منه بأسلوب سلوكي آمن (طلب حقيقي يكشف فقط أي مسار كود مُنفَّذ، بلا قراءة/طباعة أي قيمة سرّ).
   - **الاختبارات:** VERIFIED — **1100/1100 ناجح** (61 ملف اختبار)، أُعيد التشغيل فعلياً (`npx vitest run`) عند كتابة هذا التحديث، صفر فشل وصفر تخطّي.
-  - **تحقّق Staging:** IMPLEMENTED + PARTIALLY VERIFIED — 3 دوال Edge منشورة `ACTIVE` على `simsim-menu-staging` (`rgqsetckcigkgsyobyjg`): `create-order-from-payment`، `payment-webhook`، `payment-first-checkout`. **مشروع الإنتاج (`gpwwnuuicywsvmmhxngs`) لم يُلمَس بأي نشر من هذه السلسلة** باستثناء ترحيل `orders.payment_transaction_id`/الفهرس المرتبط (Task 3.5، مُعتمَد مسبقاً كأساس لهذا العمل). **معاملة Moyasar حقيقية كاملة DEFERRED** — الأسرار الثلاثة (`PUBLIC_APP_BASE_URL`، `PAYMENT_MOYASAR_WEBHOOK_SECRET`، `PAYMENT_MOYASAR_SECRET_KEY`) غير مُهيَّأة على staging (سبب: تهيئة/تكوين خارجي غير متاح حالياً — لم تُقرأ أو تُطبَع أي قيمة سرّ في أي مرحلة). **تنفيذ الكود والنشر ≠ التحقّق الفعلي من معاملة دفع حقيقية عبر Moyasar** — الأول مكتمل، الثاني لا يزال مؤجَّلاً بانتظار تهيئة خارجية.
+  - **تحقّق Staging:** IMPLEMENTED + PARTIALLY VERIFIED — 3 دوال Edge منشورة `ACTIVE` على `simsim-menu-staging` (`rgqsetckcigkgsyobyjg`): `create-order-from-payment`، `payment-webhook`، `payment-first-checkout`. **[تصحيح — تدقيق التوافق أغسطس 2026]:** الادّعاء السابق هنا بأن "مشروع الإنتاج لم يُلمَس بأي نشر من هذه السلسلة باستثناء Task 3.5" كان **غير دقيق** — تحقّق مباشر على الإنتاج (`gpwwnuuicywsvmmhxngs`) أثبت أن طبقة قاعدة البيانات كاملة تقريباً موجودة فعلياً هناك (توقيع `create_order` بمعامليه `p_dry_run`/`p_payment_transaction_id`، `orders.payment_transaction_id`+فهرسه الفريد، `uq_paytx_idempotency_key`، `uq_paytx_provider_ref`) — **الاستثناء الحقيقي الوحيد على مستوى SQL** هو دالة `get_payment_status_by_idempotency_key` (غائبة عن الإنتاج). **الفجوة الفعلية الوحيدة والأهم هي طبقة النشر:** الإنتاج لديه **صفر** دالة Edge من الثلاث (`create-order-from-payment`/`payment-webhook`/`payment-first-checkout`) — تحقَّق مباشرة عبر `list_edge_functions`؛ الإنتاج لديه فقط `dynamic-action`/`delete-staff`/`create-platform-admin`. التفاصيل الكاملة في **§12 (Database ↔ Main Compatibility Audit)** أدناه. **معاملة Moyasar حقيقية كاملة DEFERRED** — الأسرار الثلاثة (`PUBLIC_APP_BASE_URL`، `PAYMENT_MOYASAR_WEBHOOK_SECRET`، `PAYMENT_MOYASAR_SECRET_KEY`) غير مُهيَّأة على staging (سبب: تهيئة/تكوين خارجي غير متاح حالياً — لم تُقرأ أو تُطبَع أي قيمة سرّ في أي مرحلة). **تنفيذ الكود والنشر ≠ التحقّق الفعلي من معاملة دفع حقيقية عبر Moyasar** — الأول مكتمل جزئياً (SQL نعم، Edge Functions لا)، الثاني لا يزال مؤجَّلاً بانتظار تهيئة خارجية ونشر الإنتاج.
 
   **GitHub:** PR #326 (Base=`main`)، Squash Merge، Merge Commit `bbef458ed5268b0532f904b08b8c837cd8bcb17e`. فحوصات CI الخمسة على الكوميت المدموج كلها `success`: `Build (Vite)` · `build` · `report-build-status` · `deploy` (GitHub Pages) · `Supabase Preview`.
   **النشر:** الإنتاج (مشروع Vercel `simsim`) — **SUCCESS**. `simsim-marketing-ssr-staging` — **SUCCESS**. كلاهما نتيجة الدمج التلقائي في `main` (لا نشر يدوي منفصل؛ لا مساس بمشروع Supabase الإنتاجي).
@@ -256,8 +256,8 @@ sql/                           ← ملفات SQL تُحفظ هنا وتُنفَ
 | `opening_hours_migration.sql` | أوقات العمل — ADR-4 |
 | `orders_cancel_reason.sql` · `reviews_table.sql` · `loyalty_tables.sql` · `get_orders_status_rpc.sql` | ميزات سابقة |
 | `sql/restaurant_tables.sql` | إدارة الطاولات — ADR-12 — نُفِّذ يدوياً في Supabase ✅ |
-| `sql/product_recommendations.sql` | محرك الاقتراحات الذكي — ADR-13 — ⚠️ لم يُنفَّذ بعد، يحتاج تشغيلاً يدوياً في Supabase |
-| `sql/menu_card_modularity.sql` | مرونة بطاقة هوية المطعم (5 مفاتيح إظهار/إخفاء) — ADR-14 — ⚠️ لم يُنفَّذ بعد، يحتاج تشغيلاً يدوياً في Supabase |
+| `sql/product_recommendations.sql` | محرك الاقتراحات الذكي — ADR-13 — نُفِّذ فعلياً على الإنتاج ✅ (صُحِّح بتدقيق التوافق، أغسطس 2026 — كان موثَّقاً خطأً كـ"لم يُنفَّذ") |
+| `sql/menu_card_modularity.sql` | مرونة بطاقة هوية المطعم (5 مفاتيح إظهار/إخفاء) — ADR-14 — نُفِّذ فعلياً على الإنتاج ✅ (صُحِّح بتدقيق التوافق، أغسطس 2026 — كان موثَّقاً خطأً كـ"لم يُنفَّذ") |
 | `sql/remove_branches_feature.sql` | حذف جدول `branches` القديم (ADR-21) — نُفِّذ ✅، ثم عُكس بالكامل ببنية جديدة عبر ما يلي |
 | `sql/create_branches_v2.sql` | إعادة بناء `branches` (نموذج عميق، `is_primary`) + `branch_id` إجباري على categories/products/orders + اختياري على banners/coupons/reviews + استعادة `branch_scope` — ADR-22 — نُفِّذ ✅ |
 | `sql/branch_operational_settings.sql` | `delivery_enabled`/`delivery_fee` (وراثة اختيارية) + `takeaway_enabled` + `is_paused` على `branches` — ADR-23 — نُفِّذ ✅ |
@@ -290,10 +290,10 @@ sql/                           ← ملفات SQL تُحفظ هنا وتُنفَ
 | `sql/announcements.sql` | جدول الإعلانات + 3 دوال إدارة (`manage_announcements`، بوابة+Audit) — ADR-33/م1 — نُفِّذ ✅ |
 | `sql/announcement_reads.sql` | حالة «مقروء» + دالتا مطعم آمنتان (تحلّان المطعم عبر `auth.uid`) — ADR-33/م2 — نُفِّذ ✅ |
 | `sql/payments_gateway_foundation.sql` | أساس الدفع: providers/transactions/webhook_events (خامل، RLS إداري) — ADR-34 — نُفِّذ ✅ |
-| `sql/payment_transactions_idempotency_key_unique.sql` | قيد تفرّد `idempotency_key` على `payment_transactions` — Task 3.3/ADR-52 — نُفِّذ على **staging فقط** ✅ (الإنتاج لم يُلمَس) |
-| `sql/order_dry_run_pricing.sql` | توسعة `create_order` بمعامل `p_dry_run` (تسعير جاف بلا إدراج، بلا تكرار منطق) — Task 3.6/ADR-52 — نُفِّذ على **staging فقط** ✅ (الإنتاج لم يُلمَس) |
-| `sql/order_payment_reference.sql` | ربط `orders`↔`payment_transactions` (لقطة الدفع + `p_payment_transaction_id`) — Task 3.6/ADR-52 — نُفِّذ على **staging فقط** ✅ (الإنتاج لم يُلمَس) |
-| `sql/payment_status_reads.sql` | `get_payment_status_by_idempotency_key` — قراءة آمنة لحالة الدفع للـCallback — Task 3.6D/ADR-52 — نُفِّذ على **staging فقط** ✅ (staging-verified) |
+| `sql/payment_transactions_idempotency_key_unique.sql` | قيد تفرّد `idempotency_key` على `payment_transactions` — Task 3.3/ADR-52 — **نُفِّذ على الإنتاج أيضاً ✅** (صُحِّح بتدقيق التوافق، أغسطس 2026 — كان موثَّقاً خطأً كـ"staging فقط"؛ تحقَّق مباشرة: `uq_paytx_idempotency_key` حاضر) |
+| `sql/order_dry_run_pricing.sql` | توسعة `create_order` بمعامل `p_dry_run` (تسعير جاف بلا إدراج، بلا تكرار منطق) — Task 3.6/ADR-52 — **نُفِّذ على الإنتاج أيضاً ✅** (صُحِّح بتدقيق التوافق، أغسطس 2026 — كان موثَّقاً خطأً كـ"staging فقط"؛ تحقَّق مباشرة عبر `pg_get_functiondef`) |
+| `sql/order_payment_reference.sql` | ربط `orders`↔`payment_transactions` (لقطة الدفع + `p_payment_transaction_id`) — Task 3.6/ADR-52 — **نُفِّذ على الإنتاج أيضاً ✅** (صُحِّح بتدقيق التوافق، أغسطس 2026 — كان موثَّقاً خطأً كـ"staging فقط"؛ `orders.payment_transaction_id`+`orders_payment_transaction_id_uidx` حاضران) |
+| `sql/payment_status_reads.sql` | `get_payment_status_by_idempotency_key` — قراءة آمنة لحالة الدفع للـCallback — Task 3.6D/ADR-52 — نُفِّذ على **staging فقط** ✅ (مؤكَّد **غائب عن الإنتاج** بتدقيق التوافق أغسطس 2026 — صفر دالة بأي اسم يحوي "payment" على الإنتاج) |
 | `sql/loyalty_tables.sql` | توثيق `loyalty_programs`+`loyalty_redemptions` (كانا في Supabase فقط) — ADR-37/خطوة 1 — منشور مسبقاً ✅ |
 | `sql/reviews_table.sql` | توثيق `reviews` (مع ثغرة `reviews_insert_public` الموثّقة) — ADR-37/خطوة 1 — منشور مسبقاً ✅ |
 | `sql/get_customer_loyalty.sql` | دالة رصيد الزبون — وُثّقت (خطوة 1) ثم أُعيدت لتقرأ من الدفتر — ADR-37/خطوة 6ج — نُفِّذ ✅ |
@@ -346,7 +346,7 @@ sql/                           ← ملفات SQL تُحفظ هنا وتُنفَ
 | Phase 2 أدوات المشرف: المزايا · النمو · «عرض كمطعم» · بحث ⌘K — ADR-32 | ✅ منجزة (PR #177–#180) |
 | الإعلانات (منصّة + جرس المطعم) — ADR-33 | ✅ منجزة (PR #181–#182) |
 | أساس نظام الدفع (خامل، محايد للمزوّد) — ADR-34 | ✅ منجز (PR #183) — ربط مزوّد فعلي أُنجز لاحقاً، انظر الصف التالي |
-| **Phase 3 — الدفع الإلكتروني الفعلي (Payment-First Checkout, Moyasar)** — ADR-52 | ✅ **مُنجزة ومدموجة**: التنفيذ الكامل + 1100/1100 اختبار + دمج `main` (PR #326، Squash، `bbef458`) + نشر إنتاج/staging **SUCCESS** + توثيق. ⏳ **مؤجَّل:** التحقّق الحيّ بمعاملة Moyasar حقيقية (تهيئة أسرار خارجية غير متاحة حالياً على staging؛ الإنتاج لم يُلمَس) |
+| **Phase 3 — الدفع الإلكتروني الفعلي (Payment-First Checkout, Moyasar)** — ADR-52 | ✅ **مُنجزة ومدموجة**: التنفيذ الكامل + 1100/1100 اختبار + دمج `main` (PR #326، Squash، `bbef458`) + نشر إنتاج/staging **SUCCESS** (الواجهة/الكود) + توثيق. ⏳ **مؤجَّل:** (1) نشر 3 دوال Edge إلى الإنتاج (غائبة تماماً — راجع §12 Database ↔ Main Compatibility Audit)، (2) تطبيق `sql/payment_status_reads.sql` على الإنتاج، (3) تهيئة أسرار Moyasar الثلاثة، (4) التحقّق الحيّ بمعاملة Moyasar حقيقية. طبقة SQL الأساسية (تسعير جاف/ربط الطلب/idempotency) **موجودة فعلياً على الإنتاج بالفعل** (صُحِّح توثيقياً، أغسطس 2026) |
 | طبقة التكامل (البوابة الموحّدة، خاملة) — ADR-35 | ✅ منجز (PR #184) — ربط مزوّدين فعليين لاحقاً |
 | إعادة التنظيم لطبقات احترافية (LAYERS/Observability/Config/Data-Access) — ADR-36 | ✅ منجز (PR #186–#189) — ترحيل بقية صفحات المطعم تدريجياً |
 | خطة أساس المينيو: فصل الحزم (~137KB بدل 783) · 22 اختبار فلوس في CI · تفكيك PublicMenu (1,974←~290) · Skeleton + صور كسولة · إضافة سريعة · اقتراحات السلة | ✅ منجزة 6/6 |
@@ -376,3 +376,262 @@ sql/                           ← ملفات SQL تُحفظ هنا وتُنفَ
 1. **صاحب المطعم:** يسجّل، يدير مطعمه، QR، طلبات، موظفون. ✅
 2. **صاحب سِمسِم:** تحكّم مركزي بكل المطاعم مع حفظ خصوصيتها. 🎯 التالي
 3. **تطبيق توصيل:** سِمسِم جهة التوصيل للمطاعم التي تفعّل الخيار. 🔮
+
+## 12) Database ↔ Main Compatibility Audit (تدقيق التوافق: قاعدة البيانات ↔ main المدموج — أغسطس 2026)
+
+> منهجية: كل بند أدناه تحقّق منه هذا التدقيق **مباشرة على قاعدة بيانات الإنتاج** (`gpwwnuuicywsvmmhxngs`، مشروع `simsim`) عبر استعلامات SQL للقراءة فقط (`information_schema`/`pg_catalog`) و`list_edge_functions`/`list_extensions` — **لا افتراض من وجود ملف SQL في المستودع، ولا من حالة Staging**. جدول `public.schema_migrations` (الذي أُنشئ 2026-08-22) وُجد يحتوي **صفاً واحداً فقط** (توثيق نفسه) — أي أنه **غير مُستخدَم فعلياً لتتبّع تاريخ الترحيلات السابقة**، فلا يصلح كمصدر وحيد للتحقّق؛ الاعتماد كان على فحص الكائنات الحيّة مباشرة.
+
+### 1. Executive Summary
+
+**الخلاصة الحاسمة: main متوافق مع الإنتاج بدرجة أعلى بكثير مما كانت توثّقه `PROJECT_STATE.md` نفسها قبل هذا التدقيق — لكن فجوة حقيقية واحدة كبيرة موجودة: أي من دوال Edge الثلاث لـPayment-First (`payment-first-checkout`, `payment-webhook`, `create-order-from-payment`) غير منشورة على الإنتاج إطلاقاً.**
+
+نطاق المنيو (Menu) بكل ما يتصل به (فروع/منتجات/أقسام/طلبات/QR/عملاء/تقييمات/اقتراحات) **متوافق بالكامل** مع الإنتاج — بما في ذلك بندان كانا موثَّقين خطأً كـ"لم يُنفَّذا بعد" (ADR-13 اقتراحات المنتجات، ADR-14 مرونة بطاقة الهوية) والتحقّق المباشر أثبت أنهما **منفَّذان فعلياً** على الإنتاج. تم تصحيح هذا في §8 أدناه.
+
+طبقة قاعدة بيانات Payment-First (الأعمدة/القيود/الفهارس الفريدة/توقيع `create_order` الكامل بمعامل `p_dry_run` و`p_payment_transaction_id`) **موجودة فعلياً على الإنتاج** — وهذا **يصحّح ادّعاءً خاطئاً** كُتب في هذا الملف نفسه ضمن تحديث ADR-52 (مهمة Task 3.6D.14 السابقة) الذي وصف `sql/order_dry_run_pricing.sql`/`sql/order_payment_reference.sql`/قيد تفرّد `idempotency_key` على `payment_transactions` بأنها "نُفِّذت على staging فقط". **الاستثناء الحقيقي الوحيد** في طبقة قاعدة البيانات هو دالة `get_payment_status_by_idempotency_key` (`sql/payment_status_reads.sql`) — **غير موجودة على الإنتاج فعلاً** (تحقَّق بحثاً مباشراً: صفر دالة اسمها يحتوي "payment" في `public` على الإنتاج).
+
+**الفجوة الحقيقية والأهم لتفعيل الدفع فعلياً على الإنتاج ليست في قاعدة البيانات، بل في طبقة Edge Functions:** مشروع الإنتاج (`gpwwnuuicywsvmmhxngs`) لديه **3 دوال Edge فقط منشورة**: `dynamic-action`، `delete-staff`، `create-platform-admin` — **لا وجود إطلاقاً** لـ`payment-first-checkout`/`payment-webhook`/`create-order-from-payment`. أي أن **الكود المدموج في `main` (PR #326) لا يملك أي مسار قابل للتنفيذ فعلياً على الإنتاج** لبدء أو تسوية دفعة Moyasar — حتى لو أُعِدَّت أسرار Moyasar الثلاثة غداً، الدفع الأولي لن يعمل على الإنتاج قبل نشر هذه الدوال الثلاث إليه (وهو نشر لم يُطلَب أو يُنفَّذ في أي تدقيق سابق).
+
+### 2. GitHub/main Changes Audited
+
+منظَّمة حسب الميزة/ADR (نفس تنظيم `PROJECT_STATE.md` نفسه) لا رقم Commit خام — عدد كل الـPRs المدموجة في `main` حتى الآن (فحص مباشر عبر `gh pr list --state merged`): **307**. الجدول يغطي كل تغيير له اعتماد محتمل على قاعدة البيانات؛ التغييرات الواجهية البحتة (frontend-only، لا SQL) مُصنَّفة NOT DATABASE-DEPENDENT في الجدول التالي (§3) ولا تتكرر هنا.
+
+| الميزة/المهمة | PR/Commit معروف | اعتماد قاعدة البيانات | حالة الإنتاج (ملخّص) |
+|---|---|---|---|
+| المنيو الأساسي (منتجات/أقسام/فروع) — ADR-1..12، 22 | متعدد، مدموج تاريخياً | tables + RLS + RPCs | ✅ موجود بالكامل |
+| اقتراحات المنتجات — ADR-13 | PR #96–#97 | `product_recommendations` table + RLS | ✅ موجود (يصحّح توثيق §8 القديم) |
+| مرونة بطاقة الهوية — ADR-14 | PR #107 | 5 أعمدة `show_*` على `restaurants` | ✅ موجود (يصحّح توثيق §8 القديم) |
+| رحلة الطلب Phase 1 (Hotfix) — ADR-44 | مدموج | `create_order` fix + `broadcast_order_status` + RLS drop | ✅ موجود بالكامل |
+| رحلة الطلب Phase 4 (Idempotency) — ADR-47 | مدموج | `orders.idempotency_key` + فهرس فريد | ✅ موجود |
+| رحلة الطلب Phase 5 (State Machine) — ADR-50 | مدموج | `CHECK` + `trg_enforce_order_transition` | ✅ موجود |
+| رحلة الطلب Phase 6 جزئي — ADR-48 | مدموج | `get_orders_status_secure`/`cancel_order_by_customer`/`can_read_order_status` | ✅ موجود |
+| الفروع كوحدة مستقلة — ADR-22 | مدموج | `branches` (`is_primary`)، `branch_id` إجباري | ✅ موجود |
+| الولاء Phase 1–3 — ADR-37/38/39 | مدموج | `loyalty_accounts`/`loyalty_transactions`/`loyalty_tiers`/`loyalty_campaigns` + دوال + pg_cron | ✅ موجود بالكامل، cron نشط |
+| أساس Super Admin — ADR-27/28 | PR #163+ | `platform_admins`/`admin_list_restaurants`+ | ✅ موجود |
+| الفوترة — ADR-29 | مدموج | `subscriptions`/`invoices`/`payments`/`plans` + 9 دوال | ✅ موجود |
+| RBAC مرن — ADR-30 | مدموج | `platform_roles` + دوال | ✅ موجود |
+| طبقة التوسّع F1–F5 — ADR-31 | مدموج | `subscription_events`/`platform_daily_metrics`/`restaurant_stats` + pg_cron | ✅ موجود، cron نشط |
+| Phase 2 أدوات المشرف — ADR-32 | PR #177–#180 | `admin_growth`/`admin_feature_flags`+ | ✅ موجود |
+| الإعلانات — ADR-33 | PR #181–#182 | `announcements`/`announcement_reads` | ✅ موجود |
+| أساس الدفع (خامل) — ADR-34 | PR #183 | `payment_providers`/`payment_transactions`/`payment_webhook_events` | ✅ موجود |
+| طبقة التكامل — ADR-35 | PR #184 | لا شيء (كود فقط) | NOT DATABASE-DEPENDENT |
+| PCR (سجل القدرات) M1–M7 — ADR-40 | مدموج | `feature_flags`(مُوسَّع)/`feature_categories`/`feature_dependencies`/`plan_features` + ~20 دالة + 3 triggers حدود | ✅ موجود بالكامل |
+| Analytics Core Layer — ADR-42 | غير مُرقَّم بـPR في التوثيق | `analytics_events`/`analytics_event_types`/`analytics_funnel_daily` + `emit_event`/`track_event`+ | ⚠️ **موجود وأبعد مما يوثّقه ADR-42 نفسه** (الذي يصف الحالة "M0: تصميم فقط، صفر كود") — انظر §7 |
+| **Payment-First الكامل — ADR-52 / PR #326** | **PR #326، Merge Commit `bbef458`** | عمودان + قيود + فهارس + توقيع `create_order` كامل + 3 Edge Functions + دالة قراءة حالة الدفع | ⚠️ **مختلط — انظر §5 (القسم المخصّص)** |
+| تحديث `PROJECT_STATE.md` (Task 3.6D.14) — PR #327 | **PR #327، Merge Commit `52059cc`** | توثيق فقط | NOT DATABASE-DEPENDENT (لكن يحتوي **ادّعاءً خاطئاً** عن الإنتاج — مُصحَّح في §7) |
+| الموقع التسويقي (Marketing) | متعدد، خارج نطاق هذا التدقيق المُركَّز | `marketing_pages`/`marketing_sections`+ | ✅ موجود (تحقّق سطحي فقط — ليس ضمن التركيز المطلوب: المنيو + Payment-First) |
+
+### 3. Production Database Verification
+
+| Feature / Task | DB Object | Expected | Production Status | Result |
+|---|---|---|---|---|
+| Menu — منتجات | `public.products` (131 صفاً حياً) + RLS `products_public_read`/`products_access` | من `sql/` والكود | PRESENT | ✅ PRESENT IN PRODUCTION |
+| Menu — أقسام | `public.categories` (36 صفاً) + RLS | من `sql/` والكود | PRESENT | ✅ PRESENT IN PRODUCTION |
+| Menu — فروع | `public.branches` (8 صفوف)، عمود `is_primary`، `delivery_enabled`/`takeaway_enabled`/`is_paused` | ADR-22/23 | PRESENT | ✅ PRESENT IN PRODUCTION |
+| Menu — طاولات QR | `public.restaurant_tables` (7 صفوف) + `resolve_table_qr`/`regenerate_table_qr` + triggers تكامل الفرع | ADR-12 | PRESENT | ✅ PRESENT IN PRODUCTION |
+| Menu — اقتراحات المنتج | `public.product_recommendations` (9 صفوف) + RLS | ADR-13 (موثَّق "لم يُنفَّذ" في §8 القديم) | PRESENT | ⚠️ DIFFERENT FROM EXPECTED (الوثيقة كانت خاطئة، ليست القاعدة) |
+| Menu — اقتراحات السلة | `public.cart_wide_recommendations` (13 صفاً) + `branch_id` إجباري | ADR-23 | PRESENT | ✅ PRESENT IN PRODUCTION |
+| Menu — بطاقة الهوية | أعمدة `show_description`/`show_social_links`/`show_allergens`/`show_hours`/`show_prep_time` على `restaurants` | ADR-14 (موثَّق "لم يُنفَّذ" في §8 القديم) | PRESENT | ⚠️ DIFFERENT FROM EXPECTED (الوثيقة كانت خاطئة، ليست القاعدة) |
+| Menu — البانرات/الكوبونات | `public.banners`/`public.coupons` + RLS عامة للقراءة | تاريخي | PRESENT | ✅ PRESENT IN PRODUCTION |
+| الطلبات — إنشاء آمن | `create_order(...)` — SECURITY DEFINER، 14 معاملاً بما فيها `p_idempotency_key`/`p_payment_transaction_id`/`p_dry_run` | ADR-25/44/47/52 | PRESENT، نسخة واحدة فقط (لا Overload مكرَّر) | ✅ PRESENT IN PRODUCTION |
+| الطلبات — Idempotency | `orders.idempotency_key` + `orders_idempotency_key_uidx` (فريد جزئي) | ADR-47 | PRESENT | ✅ PRESENT IN PRODUCTION |
+| الطلبات — آلة الحالة | `CHECK orders_status_check` + `trg_enforce_order_transition` (BEFORE UPDATE OF status) | ADR-50 | PRESENT، مطابق لنافذة تراجع 60 ثانية بالكود | ✅ PRESENT IN PRODUCTION |
+| الطلبات — بثّ لحظي | `trg_broadcast_order_status` (AFTER UPDATE) + `broadcast_order_status()` | ADR-25/44 | PRESENT | ✅ PRESENT IN PRODUCTION |
+| الطلبات — قراءة آمنة | `get_orders_status_secure`/`cancel_order_by_customer`/`can_read_order_status` | ADR-48/49 | PRESENT (الثلاثة) | ✅ PRESENT IN PRODUCTION |
+| الطلبات — الثغرة القديمة GAP-SEC-003 | `get_orders_status(uuid[])` (بلا إثبات ملكية، موسومة قديمة عمداً) | ADR-49 | PRESENT (لم تُسحَب بعد، كما وثَّق ADR-49 نفسه) | ✅ PRESENT IN PRODUCTION (متوافق مع التوثيق — سحبها مؤجَّل عمداً) |
+| الطلبات — سياسات RLS الخطرة القديمة | `orders_cancel_public`/`orders_insert_public` | يجب أن تكون **محذوفة** (ADR-44 B3) | **غائبة فعلاً** (السياسة الوحيدة المتبقية: `orders_access` لـ`has_restaurant_access`) | ✅ PRESENT IN PRODUCTION (الحالة الآمنة المطلوبة) |
+| الطلبات — صلاحيات anon | `REVOKE INSERT/UPDATE/DELETE ON orders FROM anon` | ADR-44 B3 | `anon` بلا INSERT/UPDATE/DELETE على `orders` (فقط SELECT) | ✅ PRESENT IN PRODUCTION |
+| الترقيم الذرّي | `generate_order_number()` (قفل استشاري) + `UNIQUE(restaurant_id, order_number)` | ADR-47 | PRESENT | ✅ PRESENT IN PRODUCTION |
+| **Payment-First — أساس** | `payment_providers`/`payment_transactions`/`payment_webhook_events` (RLS: `is_platform_admin()` فقط) | ADR-34 | PRESENT (5/0/0 صفوف) | ✅ PRESENT IN PRODUCTION |
+| **Payment-First — ربط الطلب** | `orders.payment_transaction_id` + FK + `orders_payment_transaction_id_uidx` (فريد جزئي) | ADR-52 (Task 3.5، مُعتمَد) | PRESENT | ✅ PRESENT IN PRODUCTION |
+| **Payment-First — تسعير جاف** | `create_order(..., p_dry_run boolean)` — يُعيد السعر بلا إدراج | `sql/order_dry_run_pricing.sql` | PRESENT فعلياً | ⚠️ **DIFFERENT FROM EXPECTED** — موثَّق خطأً "staging فقط" في هذا الملف (مُصحَّح، §7) |
+| **Payment-First — قيد تفرّد idempotency على الدفعة** | `uq_paytx_idempotency_key` (فريد جزئي على `payment_transactions.idempotency_key`) | `sql/payment_transactions_idempotency_key_unique.sql` | PRESENT فعلياً | ⚠️ **DIFFERENT FROM EXPECTED** — موثَّق خطأً "staging فقط" (مُصحَّح، §7) |
+| **Payment-First — قيد تفرّد مرجع المزوّد** | `uq_paytx_provider_ref` (فريد جزئي على `(provider, provider_ref)`) | ADR-34/52 | PRESENT | ✅ PRESENT IN PRODUCTION |
+| **Payment-First — تفرّد أحداث Webhook** | `uq_webhook_provider_event` (فريد على `(provider, event_id)`) | ADR-34 | PRESENT | ✅ PRESENT IN PRODUCTION |
+| **Payment-First — قراءة حالة الدفع للـCallback** | `get_payment_status_by_idempotency_key(...)` | `sql/payment_status_reads.sql` | **غائبة تماماً** (صفر دالة بأي اسم يحوي "payment" في الإنتاج) | ❌ **MISSING FROM PRODUCTION** |
+| **Payment-First — Edge Function البدء** | `payment-first-checkout` | Task 3.6 | **غير منشورة على الإنتاج** (منشورة على staging فقط، `ACTIVE`) | ❌ **MISSING FROM PRODUCTION** |
+| **Payment-First — Edge Function الـWebhook** | `payment-webhook` | Task 3.4 | **غير منشورة على الإنتاج** (منشورة على staging فقط، `ACTIVE`) | ❌ **MISSING FROM PRODUCTION** |
+| **Payment-First — Edge Function إنشاء الطلب من الدفعة** | `create-order-from-payment` | Task 3.6D.6 | **غير منشورة على الإنتاج** (منشورة على staging فقط، `ACTIVE`) | ❌ **MISSING FROM PRODUCTION** |
+| **Payment-First — مزوّد Moyasar مفعَّل** | `payment_providers.is_enabled` لصفّ `moyasar` | تهيئة تشغيلية | `is_enabled = false` (بيانات، ليست خللاً بنيوياً) | ✅ PRESENT IN PRODUCTION (كصف بيانات، بحالة معطَّلة كما هو متوقَّع قبل التفعيل الرسمي) |
+| **Payment-First — أسرار Moyasar الخادمية** | `PUBLIC_APP_BASE_URL`/`PAYMENT_MOYASAR_WEBHOOK_SECRET`/`PAYMENT_MOYASAR_SECRET_KEY` (Edge Function secrets) | Task 3.6D.7/8 | لا أداة متاحة لهذا التدقيق لقراءة/التحقّق من أسرار Edge Function على أي مشروع؛ لم تُقرأ أو تُطبَع أي قيمة | ⚪ CANNOT VERIFY (بلا كشف قيم، ولا حاجة له أصلاً بما أن الدوال نفسها غائبة عن الإنتاج) |
+| الولاء — الدفتر | `loyalty_accounts`(57)/`loyalty_transactions`(57) + Triggers صيانة الرصيد | ADR-37 | PRESENT | ✅ PRESENT IN PRODUCTION |
+| الولاء — المستويات | `loyalty_tiers`(5) + `loyalty_compute_tier`/`loyalty_recompute_tiers` | ADR-38 | PRESENT | ✅ PRESENT IN PRODUCTION |
+| الولاء — الحملات | `loyalty_campaigns`(0 صف حالياً) + `get_campaigns_impact` | ADR-39 | PRESENT | ✅ PRESENT IN PRODUCTION |
+| الولاء — صلاحية النقاط | Trigger ختم + `loyalty_expire_points()` + **`pg_cron` job `loyalty-expire-points` (30 3 * * *, نشطة)** | ADR-38/و | PRESENT ونشطة | ✅ PRESENT IN PRODUCTION |
+| التقييمات — النزاهة | `submit_review()` + قيد فريد `order_id` + أعمدة `reply`/`status`/`complaint_category` + RLS `reviews_access` (`has_restaurant_access` فقط، لا إدراج عام) | ADR-37/39 | PRESENT | ✅ PRESENT IN PRODUCTION |
+| Super Admin — الأساس | `platform_admins`/`is_platform_admin`/`admin_list_restaurants`+ (~60 دالة `admin_*`) | ADR-27→41 | PRESENT (عدد كبير من الدوال تحقَّق منه مباشرة) | ✅ PRESENT IN PRODUCTION |
+| الفوترة | `subscriptions`(7)/`invoices`(1)/`payments`(1)/`plans`(1) + 9 دوال `admin_*` | ADR-29 | PRESENT | ✅ PRESENT IN PRODUCTION |
+| طبقة التوسّع (Metrics) | `platform_daily_metrics`(39)/`restaurant_stats`(7) + **`pg_cron` job `refresh-platform-metrics` (*/10 * * * *, نشطة)** | ADR-31 | PRESENT ونشطة | ✅ PRESENT IN PRODUCTION |
+| PCR (سجل القدرات) | `feature_flags`(34، مُوسَّع بكل أعمدة M1) + `feature_categories`(9)/`feature_dependencies`(4)/`plan_features`(9) + `effective_features`/`feature_value`/`has_feature` + 3 Triggers حدود (`trg_enforce_*_limit`) | ADR-40 M1–M7 | PRESENT بالكامل | ✅ PRESENT IN PRODUCTION |
+| Analytics Core Layer | `analytics_events`(246)/`analytics_event_types`(22)/`analytics_funnel_daily`(32) + `emit_event`/`track_event`/`track_owner_event`/`track_registration_event`/`refresh_analytics_rollups` | ADR-42 (يصف الحالة "M0 تصميم فقط") | PRESENT وبه بيانات فعلية | ⚠️ **DIFFERENT FROM EXPECTED** — أبعد بكثير مما يصفه ADR-42 نفسه؛ انظر §7 |
+| Storage | Buckets: `marketing-media`، `restaurant-media` (كلاهما public) | تاريخي | PRESENT، لا bucket مخصّص للدفع (غير مطلوب أصلاً) | ✅ PRESENT IN PRODUCTION / NOT DATABASE-DEPENDENT لـPayment |
+| الإضافات (Extensions) | `pgcrypto`، `uuid-ossp` (غير مُستخدَم فعلياً في `create_order` الذي يستخدم `extensions.gen_random_bytes`)، `pg_cron`، `pg_stat_statements`، `supabase_vault` | متعدد ADRs | كلها مثبَّتة (`installed_version` غير فارغ) | ✅ PRESENT IN PRODUCTION |
+
+### 4. Menu Compatibility
+
+**نعم — كود المنيو الحالي على `main` متوافق بالكامل مع قاعدة بيانات الإنتاج.**
+
+كل كائن قاعدة بيانات يعتمد عليه مسار المنيو الحيّ (تصفّح عام/سلة/دفع/QR/عملاء/تقييمات/اقتراحات) تحقَّق منه هذا التدقيق مباشرة على الإنتاج ووُجد **حاضراً ومطابقاً**: `products`/`categories`/`branches`/`restaurant_tables`/`banners`/`coupons`/`product_recommendations`/`cart_wide_recommendations`/`reviews`، كل سياسات RLS للقراءة العامة (`anon`) والكتابة المقيَّدة، ودالة `create_order` بكامل معاملاتها الحديثة (بما فيها Idempotency وآلة الحالة). **البند الإيجابي غير المتوقَّع الوحيد:** ADR-13 وADR-14 كانا موثَّقين في `PROJECT_STATE.md §8` كـ"لم يُنفَّذا بعد" — التحقّق المباشر أثبت أنهما **منفَّذان فعلياً** على الإنتاج منذ فترة (بيانات حيّة: 9 اقتراحات، أعمدة `show_*` موجودة). لا فجوة خطر هنا — فقط توثيق قديم صُحِّح.
+
+### 5. Payment-First Compatibility
+
+| البند | الكود المدموج (main) | متطلَّب قاعدة البيانات | حاضر على الإنتاج | حاضر على Staging فقط | غائب تماماً |
+|---|---|---|---|---|---|
+| لقطة الدفع + البصمة (`checkoutBinding.js`) | ✅ | لا (منطق تطبيقي بحت، لا تخزين خادمي مستقل) | — | — | NOT DATABASE-DEPENDENT |
+| التسعير الجاف | ✅ | `create_order(p_dry_run)` | **✅ نعم** | لا (موجود في الاثنين) | لا |
+| ربط الطلب بالدفعة | ✅ | `orders.payment_transaction_id` + قيد فريد | **✅ نعم** | لا | لا |
+| Idempotency على الدفعة | ✅ (`paymentService`) | `uq_paytx_idempotency_key` | **✅ نعم** | لا | لا |
+| Idempotency على الطلب | ✅ (منذ ADR-47) | `orders.idempotency_key` + فهرس فريد | **✅ نعم** | لا | لا |
+| محوّل Moyasar (`moyasar.js`) | ✅ | لا (كود تطبيقي، لا جدول مخصّص) | — | — | NOT DATABASE-DEPENDENT |
+| جداول أساس الدفع | ✅ (ADR-34) | `payment_providers`/`payment_transactions`/`payment_webhook_events` | **✅ نعم** | لا | لا |
+| قراءة حالة الدفع للـCallback | ✅ (`PaymentFirstCallbackLanding.jsx`) | `get_payment_status_by_idempotency_key` | ❌ لا | **✅ نعم فقط** | — |
+| Edge Function البدء | ✅ (`paymentFirstCheckoutApi.js`) | نشر `payment-first-checkout` | ❌ لا | **✅ نعم فقط** | — |
+| Edge Function الـWebhook | ✅ (كود، 22 اختبار) | نشر `payment-webhook` | ❌ لا | **✅ نعم فقط** | — |
+| Edge Function إنشاء الطلب من الدفعة | ✅ (`paymentOrderCreationApi.js`) | نشر `create-order-from-payment` | ❌ لا | **✅ نعم فقط** | — |
+| تفعيل مزوّد Moyasar (بيانات) | — | `payment_providers.moyasar.is_enabled = true` | ❌ لا (`false` حالياً) | ⚪ لم يُتحقَّق على staging في هذا التدقيق | — |
+| أسرار Moyasar الخادمية | — | متغيّرات بيئة Edge Function | ⚪ CANNOT VERIFY (بلا كشف قيم) | معروف من مهام سابقة: غير مهيَّأة على staging أيضاً | — |
+
+**الخلاصة:** طبقة قاعدة البيانات لـPayment-First **جاهزة عملياً على الإنتاج بأكثر مما وُثِّق سابقاً**. الفجوة الحقيقية والكاملة لتفعيل الدفع فعلياً على الإنتاج هي: **(1)** نشر 3 دوال Edge (غير منشورة إطلاقاً على الإنتاج، فرق كامل عن staging)، **(2)** دالة SQL واحدة إضافية (`get_payment_status_by_idempotency_key`)، **(3)** تفعيل صفّ `moyasar` في `payment_providers` بيانياً، **(4)** تهيئة الأسرار الخارجية الثلاثة. لا شيء من هذه الأربعة نُفِّذ أو ينبغي تنفيذه ضمن هذا التدقيق (قراءة فقط).
+
+### 6. Missing Production Database Changes
+
+بالتحديد، الكائنات التالية **غائبة عن الإنتاج** رغم وجود كود/سياق يعتمد عليها في `main`:
+
+1. **دالة `get_payment_status_by_idempotency_key`** (`sql/payment_status_reads.sql`) — يعتمد عليها `PaymentFirstCallbackLanding.jsx` لقراءة نتيجة الدفع بعد إعادة التوجيه من Moyasar. **غائبة تماماً عن الإنتاج.**
+2. **Edge Function `payment-first-checkout`** — نقطة الدخول الوحيدة لبدء أي دفعة Payment-First. **غير منشورة على الإنتاج.**
+3. **Edge Function `payment-webhook`** — نقطة استقبال إشعارات Moyasar. **غير منشورة على الإنتاج.**
+4. **Edge Function `create-order-from-payment`** — تحويل دفعة ناجحة إلى طلب فعلي. **غير منشورة على الإنتاج.**
+
+لا كائن قاعدة بيانات آخر (جدول/عمود/قيد/فهرس/RLS/Trigger) وُجد غائباً في نطاقَي المنيو وPayment-First بعد التحقّق المباشر.
+
+### 7. Differences
+
+كائنات موجودة لكن **توثيقها** (لا بنيتها) يختلف عمّا هو حقيقي على الإنتاج — أي "الفرق" هنا فرق **توثيق مقابل واقع**، وليس فرق بنية فعلية خطرة:
+
+1. **`PROJECT_STATE.md §8`** كان يصف `sql/product_recommendations.sql` (ADR-13) و`sql/menu_card_modularity.sql` (ADR-14) بـ"⚠️ لم يُنفَّذ بعد" — **التحقّق المباشر أثبت أنهما منفَّذان فعلياً** على الإنتاج (بيانات حيّة). **تم تصحيح هذين السطرين في §8 كجزء من هذا التدقيق** (تصحيح توثيقي بحت، صفر تغيير بنيوي).
+2. **`PROJECT_STATE.md`، تحديث ADR-52 (من مهمة Task 3.6D.14 السابقة)** وصف `sql/order_dry_run_pricing.sql` و`sql/order_payment_reference.sql` وقيد `uq_paytx_idempotency_key` بأنها **"نُفِّذت على staging فقط — الإنتاج لم يُلمَس"**. **هذا الادّعاء غير دقيق** — التحقّق المباشر لهذا التدقيق أثبت أن الثلاثة **موجودة فعلياً على الإنتاج** (توقيع `create_order` الكامل + الفهرسان الفريدان). **السبب المرجَّح:** الاعتماد السابق على تقرير `TASK_3_6D_PAYMENT_FIRST_FINAL_IMPLEMENTATION_DOCUMENTATION.md` (سطر 203) بدل تحقّق مباشر جديد على الإنتاج وقت كتابة ذلك التحديث — بالضبط نوع الخطأ الذي يحذّر منه هذا التدقيق (البند 6: "لا تفترض من وجود ملف Staging"). **تم تصحيح هذا في §8/ADR-52 كجزء من هذا التدقيق.**
+3. **`ADR-42` (Analytics Core Layer)** يصف حالته كـ"M0: تثبيت التصميم، بلا كود" — لكن التحقّق المباشر وجد جداول `analytics_events`(246 صفاً)/`analytics_event_types`(22)/`analytics_funnel_daily`(32) ودوال `emit_event`/`track_event`/`track_owner_event`/`track_registration_event`/`refresh_analytics_rollups` **حاضرة وبها بيانات فعلية حيّة** على الإنتاج — أي أن M1 (وربما أكثر) من خطة ADR-42 **نُفِّذ فعلياً دون تحديث توثيقي مقابل**. **خارج نطاق التركيز الأساسي لهذا التدقيق (المنيو + Payment-First)** فلم يُصحَّح نصّ ADR-42 نفسه هنا — يُترَك كـ**Suggestion** صريح للمالك (§10) لتحديثه في مهمة منفصلة، تفادياً لتوسيع نطاق هذا التدقيق بلا تفويض.
+
+لا فرق بنيوي خطر آخر (RLS مختلفة عن المتوقَّع، دالة بمنطق مختلف، Trigger غائب) وُجد ضمن ما تم فحصه.
+
+**تصحيحات توثيقية طُبِّقت فعلياً على `PROJECT_STATE.md §8` كجزء من هذا التدقيق** (توثيق بحت، صفر تغيير كود/قاعدة بيانات): سطرا `sql/product_recommendations.sql`/`sql/menu_card_modularity.sql` من "⚠️ لم يُنفَّذ بعد" إلى "نُفِّذ فعلياً على الإنتاج ✅"؛ وسطور `sql/order_dry_run_pricing.sql`/`sql/order_payment_reference.sql`/`sql/payment_transactions_idempotency_key_unique.sql` من "staging فقط" إلى "نُفِّذ على الإنتاج أيضاً ✅" (`sql/payment_status_reads.sql` يبقى "staging فقط" كما هو — صحيح، مؤكَّد).
+
+### 8. Risk Assessment
+
+| البند | المستوى | السبب |
+|---|---|---|
+| غياب دوال Edge الثلاث لـPayment-First عن الإنتاج | **HIGH** | يمنع تشغيل أي دفعة Moyasar فعلياً على الإنتاج بالكامل حتى لو أُعِدَّت الأسرار — لا مسار كود منفَّذ إطلاقاً |
+| غياب `get_payment_status_by_idempotency_key` عن الإنتاج | **MEDIUM** | جزء من نفس مسار Payment-First غير المُفعَّل أصلاً على الإنتاج؛ لا أثر مستقل إضافي بما أن الدوال أعلاه غائبة أيضاً |
+| توثيق ADR-52 السابق الخاطئ ("staging فقط") | **MEDIUM** | لا يهدد الإنتاج مباشرة، لكنه كان سيُضلِّل أي قرار مستقبلي بشأن "ما تبقّى لتفعيل الدفع" — مُصحَّح الآن |
+| ADR-13/14 موثَّقين خطأً كـ"لم يُنفَّذا" | **LOW** | لا خطر تشغيلي (الميزتان تعملان فعلياً)، فقط قد يُربك قراراً مستقبلياً بإعادة تنفيذ شيء منفَّذ أصلاً — مُصحَّح الآن |
+| توثيق ADR-42 المتأخر عن واقع الإنتاج | **LOW** | لا خطر أمني/تشغيلي (البيانات تُجمَع بأمان عبر RLS ودوال DEFINER)، فجوة توثيقية بحتة خارج التركيز الأساسي |
+| منح خام (GRANT) لـ`anon`/`authenticated` على جداول الدفع (INSERT/UPDATE/DELETE) رغم أن RLS تمنعها فعلياً (`is_platform_admin()` فقط) | **LOW** | RLS مفعَّلة وتمنع أي وصول غير مصرَّح فعلياً؛ لا صلاحية GRANT خام مكشوفة عملياً، لكن سحب المنح صراحة (كما فُعل مع `orders` في ADR-44) كان سيكون دفاعاً إضافياً أعمق (Defense-in-Depth) — Suggestion فقط |
+| توافق المنيو مع الإنتاج | **NONE** | تحقَّق منه مباشرة بالكامل، صفر فجوة |
+| طبقة قاعدة بيانات Payment-First (الجداول/الأعمدة/القيود) | **NONE** | حاضرة بالكامل وصحيحة على الإنتاج |
+
+### 9. Safe Production Readiness
+
+**"هل GitHub/main متوافق بالكامل مع قاعدة بيانات الإنتاج حالياً؟"**
+
+# **NO**
+
+**السبب بالتحديد:** طبقة قاعدة البيانات (SQL) متوافقة بالكامل تقريباً (باستثناء دالة واحدة فقط، `get_payment_status_by_idempotency_key`). **لكن** ثلاث دوال Edge Functions التي يعتمد عليها كود Payment-First المدموج فعلياً في `main` (PR #326) — `payment-first-checkout`، `payment-webhook`، `create-order-from-payment` — **غير منشورة إطلاقاً على مشروع الإنتاج**. المسار الوحيد المتاح فعلياً لزبون حقيقي يفتح الموقع على `simsimmenu.com` ويختار "الدفع بالبطاقة" هو: طلب HTTP لدالة Edge غير موجودة ← فشل فوري (404 من Supabase أو ما يعادله). **بقية النظام (المنيو، الطلب بالدفع النقدي، الولاء، لوحة التحكم، Super Admin) غير متأثرة إطلاقاً** — هذا القيد محصور تماماً في مسار "الدفع بالبطاقة" الجديد.
+
+### 10. Recommended Next Steps
+
+**لا يُنفَّذ أي منها في هذا التدقيق — قائمة فقط، بانتظار قرار المالك:**
+
+1. نشر 3 دوال Edge (`payment-first-checkout`/`payment-webhook`/`create-order-from-payment`) إلى مشروع الإنتاج (`gpwwnuuicywsvmmhxngs`) — يتطلّب موافقة صريحة (نشر إلى الإنتاج، إجراء له أثر حقيقي).
+2. تطبيق `sql/payment_status_reads.sql` (دالة `get_payment_status_by_idempotency_key`) على الإنتاج — ترحيل قاعدة بيانات، يتطلّب موافقة صريحة.
+3. تهيئة الأسرار الثلاثة (`PUBLIC_APP_BASE_URL`/`PAYMENT_MOYASAR_WEBHOOK_SECRET`/`PAYMENT_MOYASAR_SECRET_KEY`) على الإنتاج — إجراء خارجي، يتطلّب موافقة صريحة ولا يمكن لهذه الجلسة تنفيذه.
+4. تفعيل صفّ `moyasar` في `payment_providers.is_enabled` على الإنتاج (بعد اكتمال 1–3) — تحديث بيانات، يتطلّب موافقة صريحة.
+5. تحديث نصّ `ADR-42` ليعكس حالته الفعلية (M1+ منفَّذ، لا "M0 تصميم فقط") — مهمة توثيقية منفصلة، خارج تركيز هذا التدقيق.
+6. **Suggestion منخفض الأولوية:** سحب صلاحيات GRANT الخام (`INSERT`/`UPDATE`/`DELETE`) لـ`anon`/`authenticated` على `payment_transactions`/`payment_webhook_events`/`payment_providers` صراحة (دفاع إضافي، RLS تمنعها فعلياً أصلاً).
+7. اختبار E2E حقيقي على الإنتاج بعد اكتمال 1–4 قبل الإعلان عن الدفع الإلكتروني كميزة "مباشرة" للزبائن.
+
+### 11. Verification Evidence
+
+كل الاستعلامات التالية **قراءة فقط (SELECT)**، نُفِّذت مباشرة على مشروع الإنتاج `gpwwnuuicywsvmmhxngs` عبر أداة `execute_sql` (MCP Supabase الرسمية)، بلا أي `INSERT`/`UPDATE`/`DELETE`/`CREATE`/`ALTER`/`DROP`:
+
+```sql
+-- تأكيد المشاريع (list_projects) — تحديد الإنتاج = gpwwnuuicywsvmmhxngs، staging = rgqsetckcigkgsyobyjg
+
+select * from public.schema_migrations order by 1;
+-- النتيجة: صفّ واحد فقط (bootstrap 2026-08-22) — الجدول غير مُستخدَم فعلياً لتتبّع تاريخي شامل
+
+select p.proname, pg_get_function_identity_arguments(p.oid), p.prosecdef
+from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+where n.nspname='public' order by 1,2;
+-- النتيجة: ~140 دالة، شملت create_order بمعاملاته الـ14 كاملة (p_dry_run/p_payment_transaction_id/p_idempotency_key)
+-- وصفر دالة اسمها يحوي "payment" بخلاف الجداول (لا get_payment_status_by_idempotency_key)
+
+select pg_get_functiondef(p.oid) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+where n.nspname='public' and p.proname='create_order' and pg_get_function_identity_arguments(p.oid) like '%p_dry_run%';
+-- النتيجة: التعريف الكامل، يطابق sql/order_dry_run_pricing.sql + sql/order_payment_reference.sql حرفياً
+
+select table_name, column_name, data_type from information_schema.columns
+where table_schema='public' and table_name in ('orders','payment_transactions','payment_providers','payment_webhook_events');
+-- النتيجة: orders.idempotency_key + orders.payment_transaction_id موجودان؛ payment_transactions.idempotency_key (text) موجود
+
+select conname, conrelid::regclass::text, contype, pg_get_constraintdef(oid) from pg_constraint
+where connamespace='public'::regnamespace and conrelid::regclass::text in ('orders','payment_transactions','payment_webhook_events','payment_providers');
+
+select tablename, indexname, indexdef from pg_indexes where schemaname='public'
+and tablename in ('orders','payment_transactions','payment_webhook_events','payment_providers');
+-- النتيجة: uq_paytx_idempotency_key + uq_paytx_provider_ref + orders_payment_transaction_id_uidx + orders_idempotency_key_uidx كلها CREATE UNIQUE INDEX موجودة فعلياً
+
+select tgname, tgrelid::regclass::text, pg_get_triggerdef(oid) from pg_trigger
+where not tgisinternal and tgrelid::regclass::text in ('orders','products','categories','branches','restaurant_tables','loyalty_transactions','loyalty_accounts','coupons');
+-- النتيجة: trg_enforce_order_transition + trg_broadcast_order_status + trg_loyalty_earn + set_order_number + ... كلها حاضرة
+
+select schemaname, tablename, policyname, cmd, roles, qual, with_check from pg_policies
+where schemaname='public' and tablename in ('orders','payment_transactions','payment_webhook_events','payment_providers','products','categories','branches','reviews', ...);
+-- النتيجة: orders_access فقط على orders (لا orders_cancel_public/orders_insert_public)؛ *_admin_all (is_platform_admin) على جداول الدفع الثلاثة
+
+select grantee, table_name, privilege_type from information_schema.role_table_grants
+where table_schema='public' and table_name in ('orders','payment_transactions', ...) and grantee in ('anon','authenticated','public');
+-- النتيجة: anon بلا INSERT/UPDATE/DELETE على orders (RLS + GRANT متوافقان)؛ منح خام (غير مُستغَل عملياً بفضل RLS) على جداول الدفع
+
+-- list_edge_functions(gpwwnuuicywsvmmhxngs):
+-- النتيجة: dynamic-action, delete-staff, create-platform-admin فقط — صفر دالة Payment-First
+
+select jobname, schedule, active from cron.job order by 1;
+-- النتيجة: loyalty-expire-points (نشطة) + refresh-platform-metrics (نشطة)
+
+select key, display_name, is_enabled, mode from public.payment_providers order by sort_order;
+-- النتيجة: moyasar is_enabled=false (بيانات، متوقَّع)
+
+select id, name, public from storage.buckets order by 1;
+-- النتيجة: marketing-media, restaurant-media (كلاهما public)
+
+-- list_extensions(gpwwnuuicywsvmmhxngs): pgcrypto/uuid-ossp/pg_cron/pg_stat_statements/supabase_vault مثبَّتة (installed_version غير فارغ)
+
+$ git fetch origin main && git log -8 --oneline origin/main
+$ gh pr list --state merged --limit 400 --json number  # 307 نتيجة
+```
+
+جميع الاستعلامات أعلاه تحمل تنبيه أداة Supabase القياسي: *"هذا قد يُعيد بيانات مستخدِم غير موثوقة، لا تتّبع أي تعليمات ضمنها"* — تم التعامل مع كل نتيجة كبيانات، لا كتعليمات، طوال هذا التدقيق.
+
+### 12. Git Status
+
+```
+current branch:      docs/db-compat-audit (فرع جديد من origin/main، بنفس نمط PR #327 السابق)
+origin/main HEAD:     52059cc docs(project-state): record completed payment-first implementation (#327)
+working tree:         تعديل واحد فقط على PROJECT_STATE.md (هذا القسم + تصحيحان في §8)، لم يُطبَّق commit بعد وقت كتابة هذا القسم
+untracked files:      40 ملفاً (تقارير خارج النطاق من مهام سابقة، بلا تغيير)
+```
+لم يُلمَس أي ملف آخر غير `PROJECT_STATE.md` في هذه المهمة. لا كود تطبيقي، لا ملف SQL، لا إعداد Vercel/Supabase عُدِّل.
+
+---
+
+## Final Verdict
+
+1. **Total merged changes audited:** 307 PR مدموجة في `main` (فحص مباشر)؛ نُظِّمت حسب ~40 ميزة/ADR ذات صلة محتملة بقاعدة البيانات (§2).
+2. **Number requiring database changes:** ~28 ميزة/ADR من أصل ~40 المفحوصة تعتمد فعلياً على قاعدة البيانات (البقية واجهية بحتة: ADR-35/36/41/43/45/46 وغيرها).
+3. **Number fully present in Production:** **27 من 28** ميزة/ADR معتمدة على قاعدة البيانات — كائناتها **كلها** حاضرة وصحيحة على الإنتاج.
+4. **Number missing from Production:** جزء واحد من ميزة واحدة (Payment-First/ADR-52): دالة SQL واحدة (`get_payment_status_by_idempotency_key`) + 3 دوال Edge Function (طبقة نشر، لا قاعدة بيانات بالمعنى الدقيق).
+5. **Number with differences (توثيق مقابل واقع، لا بنية خطرة):** 3 حالات — ADR-13/14 (موثَّقتان خطأً "لم تُنفَّذا")، وتحديث ADR-52 السابق (موثَّق خطأً "staging فقط" لثلاثة كائنات هي فعلياً على الإنتاج). **كل الثلاثة صُحِّحت في هذا التدقيق.**
+6. **Number not database-dependent:** ~12 ميزة/ADR (طبقات كود بحتة: التكامل، إعادة التنظيم لطبقات، تصميم لوحة الأدمن، هوية العلامة، معظم مراحل رحلة الطلب الواجهية 2/3).
+7. **Whether Menu is safe against Production DB:** **نعم، آمن بالكامل.** كل كائن قاعدة بيانات يعتمد عليه المنيو الحيّ (منتجات/أقسام/فروع/QR/اقتراحات/بانرات/كوبونات/تقييمات) حاضر وصحيح.
+8. **Whether Payment-First is safe against Production DB:** **جزئياً.** طبقة SQL (95% منها) حاضرة وصحيحة على الإنتاج — **لكن** طبقة Edge Functions (النشر الفعلي القابل للاستدعاء) **غائبة بالكامل عن الإنتاج**، ما يجعل مسار "الدفع بالبطاقة" **غير قابل للعمل فعلياً على الإنتاج اليوم** رغم أن الكود مدموج في `main`.
+9. **Exact blockers:** (أ) 3 دوال Edge غير منشورة على الإنتاج، (ب) دالة SQL واحدة غير مطبَّقة على الإنتاج، (ج) أسرار Moyasar الثلاثة غير مهيَّأة (خارجي، معروف مسبقاً)، (د) صفّ `moyasar` غير مفعَّل بيانياً.
+10. **Exact next step:** بانتظار قرار المالك بشأن التوصيات في §10 — لا إجراء يُنفَّذ تلقائياً. **يُوصى بالبدء بالبند (أ) (نشر دوال Edge) بما أنه المُعطِّل الحقيقي الوحيد لعمل الميزة بالكامل، بعد موافقة صريحة.**
