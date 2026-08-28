@@ -1,11 +1,11 @@
 // هيكل تحميل المنيو: يحاكي شكل الصفحة الحقيقي (هيدر + بحث + تبويبات + بطاقات أصناف)
 // بدل الشاشة الفارغة — يظهر أثناء جلب البيانات من Supabase فقط
+import './menu.css'
+
 export default function MenuSkeleton() {
   const pulse = { background:'#E8EAEF', borderRadius:'10px', animation:'smPulse 1.4s ease-in-out infinite' }
   return (
     <div style={{ minHeight:'100vh', background:'#F8F9FB', direction:'rtl', maxWidth:'480px', margin:'0 auto' }}>
-      <style>{`@keyframes smPulse{0%,100%{opacity:1}50%{opacity:.45}}`}</style>
-
       {/* هيدر: شعار + سطور */}
       <div style={{ padding:'20px 16px 16px', borderBottom:'1px solid #E5E7EB' }}>
         <div style={{ display:'flex', gap:'14px', marginBottom:'14px' }}>

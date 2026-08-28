@@ -1,0 +1,77 @@
+/* Shared CSS for the public customer-facing Menu page and its component tree
+   (PublicMenu.jsx + everything under src/features/menu/ that it renders).
+
+   Previously these rules were split across 7 different components, each injected
+   at runtime via a JS-templated <style>{`...`}</style> tag. The deployed
+   Content-Security-Policy (vercel.json: style-src 'self' ..., no unsafe-inline)
+   silently blocks inline <style> elements — so none of this ever actually applied
+   on production. Every element's own style={{}} attribute (CSSOM-based, not
+   subject to that CSP restriction) kept working, which is why the page rendered
+   with all its content/data intact but the layout (hero header spacing/sizing,
+   which is driven entirely by CSS custom properties defined here) and every
+   animation (spin/slideUp/fadeIn/ordIn/smPulse/blink) silently failed.
+
+   Consolidated here as one real, Vite-bundled, same-origin stylesheet — imported
+   once from PublicMenu.jsx, the root of this whole component tree, so it is
+   always loaded before any descendant (OrdersScreen, TableSelect, MenuSkeleton,
+   the Payment-First flow components) needs it. No rule was removed or redesigned;
+   only the delivery mechanism changed. */
+
+/* ===== PublicMenu.jsx — .sm-menu-frame (hero/page shell) ===== */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+* { box-sizing: border-box; }
+html, body { background: #E4E7EE; }
+
+/* ===== Hero Design Tokens (ADR-43) — the single source for hero/card dimensions =====
+   Edit only from here. Values are fluid via clamp() (scale with width, no jumps, no vh).
+   Interim note: image-h/overlap/logo stay fixed in Phase 1 (tied to Morph thresholds)
+   and move to clamp() in Phase 2 alongside a threshold recalibration. */
+.sm-menu-frame {
+  -webkit-text-size-adjust: 100%; /* stops font inflation on some Android browsers */
+  text-size-adjust: 100%;
+  --hero-image-h: clamp(96px, 26vw, 132px); /* strip height — fluid (no vh, min/max clamped) */
+  --hero-overlap: calc(var(--hero-image-h) - 52px); /* keeps card top at 52px always -> stable Morph thresholds */
+  --hero-radius: 22px; /* card corners (brand — do not change) */
+  --hero-pad-x: 16px; /* card horizontal padding */
+  --hero-pad-bottom: clamp(3px, 1.2vw, 6px); /* bottom padding — removes white gap */
+  --hero-spacing: clamp(2px, 0.7vw, 5px); /* unified vertical rhythm between content rows */
+  --hero-logo: clamp(44px, 12.5vw, 52px); /* logo — fluid, slightly smaller on small screens */
+  --hero-social: clamp(26px, 7vw, 28px); /* social icon (fluid) */
+  --hero-stat-pad-y: 3px; /* stats card vertical padding (tight) */
+}
+/* Tablet: nicely centered frame (direction A) */
+@media (min-width: 600px) and (max-width: 1023px) {
+  .sm-menu-frame { box-shadow: 0 0 0 100vw #E4E7EE, 0 0 60px rgba(15,17,23,0.14); }
+}
+/* Laptop: wide layout + two-column products (direction B) */
+@media (min-width: 1024px) {
+  .sm-menu-frame { max-width: 980px !important; box-shadow: 0 0 0 100vw #E4E7EE, 0 0 70px rgba(15,17,23,0.14); }
+  .sm-products { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 14px !important; background: transparent !important; padding: 0 16px !important; }
+}
+
+/* ===== OrdersScreen.jsx — order-card entrance animation ===== */
+@keyframes ordIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.ord-in { animation: ordIn .4s ease both; }
+@media (prefers-reduced-motion: reduce) { .ord-in { animation: none; } }
+@media (min-width: 600px) { body { background: #E9ECF2; } }
+
+/* ===== MenuSkeleton.jsx — loading shimmer ===== */
+@keyframes smPulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+
+/* ===== OrderCardActive.jsx (rendered inside OrdersScreen) — live-status dot =====
+   Matches the same @keyframes blink already used in AppShell.jsx/Orders.jsx. */
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+
+/* ===== TableSelect.jsx — dine-in table picker ===== */
+.simsim-table-trigger { background: white; color: #0B0B0F; border-color: #E5E7EB; }
+.simsim-table-sheet { background: white; color: #0B0B0F; }
+.simsim-table-search { background: white; color: #0B0B0F; border-color: #E5E7EB; }
+.simsim-table-row { color: #0B0B0F; border-color: #F3F4F6; }
+@media (prefers-color-scheme: dark) {
+  .simsim-table-trigger { background: #1A1B22; color: #F3F4F6; border-color: #2E2F38; }
+  .simsim-table-sheet { background: #1A1B22; color: #F3F4F6; }
+  .simsim-table-search { background: #23252E; color: #F3F4F6; border-color: #2E2F38; }
+  .simsim-table-row { color: #F3F4F6; border-color: #2E2F38; }
+}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useResumedPaymentIdempotencyKey } from './hooks/useResumedPaymentIdempotencyKey'
+import './menu.css'
 
 // TASK-PAY-3.6D.4 — واجهة هبوط العودة من صفحة الدفع (Payment-First Callback Landing UI).
 // تحل حالة محاولة الدفع الأصيلة عبر get_payment_status_by_idempotency_key فقط (RPC مُتحقَّقة حيّاً
@@ -141,10 +142,6 @@ export default function PaymentFirstCallbackLanding({
   if (state === CallbackState.RESOLVING) {
     return (
       <div role="status" aria-live="polite" style={{ ...cardStyle, background: '#F8F9FB', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        {/* TASK-PAY-3.6D.4-C.3: هذا المكوّن قد يُعرَض عبر مسار مبكر (early return) قبل <style> الإطار
-            الرئيسي في PublicMenu.jsx — @keyframes spin العام غير مضمون هناك، فنُعرِّفها محلياً هنا،
-            بنفس نمط MenuSkeleton.jsx/OrdersScreen.jsx القائم فعلاً لكل شاشة عرض مبكر مستقلة. */}
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         <span style={{ width: '20px', height: '20px', border: '3px solid #E5E7EB', borderTopColor: brandColor, borderRadius: '50%', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
         <span style={{ ...bodyStyle, fontWeight: '700', color: '#374151' }}>{t('pfCallbackResolving')}</span>
       </div>

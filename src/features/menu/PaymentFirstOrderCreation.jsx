@@ -4,6 +4,7 @@ import { readPaymentCustomerData, clearPaymentCustomerData } from './hooks/payme
 import { useResumedPaymentIdempotencyKey } from './hooks/useResumedPaymentIdempotencyKey'
 import { paymentIdempotencyStorageKey } from './hooks/cartHelpers'
 import { createOrderFromPayment as defaultCreateOrderFromPayment } from './paymentOrderCreationApi'
+import './menu.css'
 
 // TASK-PAY-3.6D.6-B — يوصل PaymentFirstCallbackLanding (3.6D.4، غير مُعدَّلة) بـ
 // create-order-from-payment (Edge Function موجودة فعلاً، 3.6D.6، غير مُعدَّلة) — المُستدعي الوحيد
@@ -152,7 +153,6 @@ export default function PaymentFirstOrderCreation({
   if (phase === OrderCreationPhase.CREATING_ORDER) {
     return (
       <div role="status" aria-live="polite" style={{ ...cardStyle, background: '#F8F9FB', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         <span style={{ width: '20px', height: '20px', border: '3px solid #E5E7EB', borderTopColor: brandColor, borderRadius: '50%', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
         <span style={{ ...bodyStyle, fontWeight: '700', color: '#374151' }}>{t('pfOrderCreatingTitle')}</span>
       </div>

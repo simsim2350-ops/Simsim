@@ -3,6 +3,7 @@ import PaymentFirstCheckoutPanel from './PaymentFirstCheckoutPanel'
 import { CheckoutState } from './hooks/usePaymentFirstCheckout'
 import { initiatePaymentFirstCheckoutViaApi as defaultOrchestrate } from './paymentFirstCheckoutApi'
 import { mapPaymentFirstRejectionReason } from './paymentFirstErrors'
+import './menu.css'
 
 // TASK-PAY-3.6D.10 — نقطة الدخول الحيّة الوحيدة لـ PaymentFirstCheckoutPanel (3.6D.3، غير مُعدَّلة
 // هنا إطلاقاً). يُغلِّفها فقط، بنفس نمط PaymentFirstOrderCreation (3.6D.6-B) تماماً — يعرضها طالما
@@ -74,7 +75,6 @@ export default function PaymentFirstCheckoutEntry({
   if (phase === EntryPhase.REDIRECTING) {
     return (
       <div role="status" aria-live="polite" style={{ ...cardStyle, background: '#F8F9FB', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         <span style={{ width: '17px', height: '17px', border: '2.5px solid #E5E7EB', borderTopColor: brandColor, borderRadius: '50%', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
         <span style={{ fontWeight: '700', fontSize: '13px', color: '#374151' }}>{t('pfRedirectingToPayment')}</span>
       </div>
