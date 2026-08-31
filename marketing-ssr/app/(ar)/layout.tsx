@@ -1,0 +1,13 @@
+import type { Metadata } from 'next'
+import '../styles.css'
+import { marketingSiteUrl } from '@/lib/site-url'
+
+export const metadata: Metadata = {
+  metadataBase: new URL(marketingSiteUrl()),
+  title: { default: 'سمسم | منيو إلكتروني احترافي لمطعمك', template: '%s | سمسم' },
+  description: 'منيو إلكتروني للمطاعم والمقاهي مع QR Code والطلبات والولاء.',
+}
+
+export default function ArabicRootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <html lang="ar" dir="rtl"><body>{children}</body></html>
+}

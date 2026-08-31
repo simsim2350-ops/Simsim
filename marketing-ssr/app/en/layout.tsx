@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import './styles.css'
+import '../styles.css'
 import { marketingSiteUrl } from '@/lib/site-url'
 
 export const metadata: Metadata = {
@@ -8,6 +8,6 @@ export const metadata: Metadata = {
   description: 'منيو إلكتروني للمطاعم والمقاهي مع QR Code والطلبات والولاء.',
 }
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="ar" dir="rtl"><body>{children}</body></html>
+export default function EnglishRootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <html lang="en" dir="ltr"><body>{children}</body></html>
 }
