@@ -2,22 +2,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { MarketingSiteSettings } from '@/lib/marketing-types'
 import { appUrl } from '@/lib/urls'
+import { MobileNavDrawer } from './MobileNavDrawer'
 
 export function MarketingHeader({ settings }: { settings: MarketingSiteSettings }) {
   return <header className="site-header"><div className="container nav-wrap">
     <Link href="/" className="brand" aria-label={`${settings.brandName} — الصفحة الرئيسية`}><Image src={settings.logoPath} width={36} height={36} alt="" priority /><span>{settings.brandName}</span></Link>
     <nav className="nav-desktop" aria-label="التنقل الرئيسي">{settings.navigation.map((item) => <a key={item.href} href={item.href}>{item.label}</a>)}</nav>
     <div className="nav-actions"><a href={appUrl(settings.secondaryCta.href)} className="text-link" data-track-id={settings.secondaryCta.trackingId}>{settings.secondaryCta.label}</a><a href={appUrl(settings.primaryCta.href)} className="button button-primary small" data-track-id={settings.primaryCta.trackingId}>{settings.primaryCta.label}</a></div>
-    <details className="mobile-nav">
-      <summary className="mobile-nav-toggle" aria-label="فتح قائمة التنقل"><span className="mobile-nav-icon" aria-hidden="true" /></summary>
-      <div className="mobile-nav-panel">
-        <nav aria-label="التنقل الرئيسي (جوال)">{settings.navigation.map((item) => <a key={item.href} href={item.href}>{item.label}</a>)}</nav>
-        <div className="mobile-nav-actions">
-          <a href={appUrl(settings.secondaryCta.href)} className="button button-secondary" data-track-id={settings.secondaryCta.trackingId}>{settings.secondaryCta.label}</a>
-          <a href={appUrl(settings.primaryCta.href)} className="button button-primary" data-track-id={settings.primaryCta.trackingId}>{settings.primaryCta.label}</a>
-        </div>
-      </div>
-    </details>
+    <MobileNavDrawer brandName={settings.brandName} logoPath={settings.logoPath} navigation={settings.navigation} secondaryCta={settings.secondaryCta} primaryCta={settings.primaryCta} />
   </div></header>
 }
 
