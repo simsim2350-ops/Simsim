@@ -27,7 +27,7 @@ export type DemoMenuData = {
 }
 
 function localized(ar: unknown, en: unknown): string {
-  return (typeof en === 'string' && en) || (typeof ar === 'string' && ar) || ''
+  return (typeof ar === 'string' && ar) || (typeof en === 'string' && en) || ''
 }
 
 // نفس منطق normalizeOptions في src/components/landing/demo/useInteractiveMenu.js بالتطبيق القديم —

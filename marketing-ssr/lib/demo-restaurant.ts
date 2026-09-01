@@ -15,7 +15,7 @@ export type DemoRestaurantPreview = {
 }
 
 function localized(ar: unknown, en: unknown): string {
-  return (typeof en === 'string' && en) || (typeof ar === 'string' && ar) || ''
+  return (typeof ar === 'string' && ar) || (typeof en === 'string' && en) || ''
 }
 
 // نفس منطق computeBranchOpenStatus/computeOpenStatus في features/menu/helpers.js بالتطبيق القديم،
