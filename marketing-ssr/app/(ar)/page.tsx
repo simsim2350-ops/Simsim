@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
     keywords: seo.keywords,
     alternates: { canonical: seo.canonicalPath },
     robots: seo.robots,
-    openGraph: { type: 'website', locale: 'ar_SA', title: seo.ogTitle || seo.title, description: seo.ogDescription || seo.description, url: seo.canonicalPath, images: seo.ogImage ? [{ url: seo.ogImage, width: 1200, height: 630, alt: seo.ogTitle || seo.title }] : undefined },
+    openGraph: { type: 'website', locale: 'ar_SA', siteName: marketing.settings.brandName, title: seo.ogTitle || seo.title, description: seo.ogDescription || seo.description, url: seo.canonicalPath, images: seo.ogImage ? [{ url: seo.ogImage, width: 1200, height: 630, alt: seo.ogTitle || seo.title }] : undefined },
     twitter: { card: 'summary_large_image', title: seo.ogTitle || seo.title, description: seo.ogDescription || seo.description, images: seo.ogImage ? [seo.ogImage] : undefined },
   }
 }

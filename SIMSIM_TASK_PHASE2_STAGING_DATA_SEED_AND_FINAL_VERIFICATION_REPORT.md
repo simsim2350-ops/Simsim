@@ -188,4 +188,32 @@ You asked me to confirm the current repository/deployment state was still accura
 
 ---
 
-**PHASE 2 COMPLETE — STAGING DATA SEEDED — PREVIEW VERIFIED — MANUALLY TESTED ON MOBILE — WAITING FOR APPROVAL.**
+## Git Commit (final)
+
+**Pre-commit checks performed:**
+1. `git status --short` re-checked — unchanged from every prior check.
+2. Full `git diff`/`git diff --stat` reviewed for every candidate file.
+3. Confirmed the diff for `SectionRenderer.tsx` and `marketing-repository.ts` also carries Phase 1's still-uncommitted changes (`isFirstOfType`/FEATURES handling, the `publicClient` export) — neither phase had been committed before now, and both phases share these two files. Phase 1 was already reviewed and approved earlier in this engagement, so this is expected, not new/unreviewed content. No other file mixes phases.
+4. Scanned every candidate file (`grep` for key/token/secret patterns) — **zero matches**, no secrets.
+5–9. No application code was modified to prepare this commit, no production system was touched, no deployment was made, no `--prod` used, and no destructive git operation (`reset`/`checkout`/`stash`/`clean`) was run.
+
+**Staged (exactly 10 files — only already-reviewed Phase 2 work):**
+`marketing-ssr/app/styles.css`, `marketing-ssr/components/marketing/DemoPhone.tsx`, `marketing-ssr/components/marketing/InteractiveMenuDemo.tsx`, `marketing-ssr/components/marketing/MarketingChrome.tsx`, `marketing-ssr/components/marketing/SectionRenderer.tsx`, `marketing-ssr/lib/demo-menu.ts`, `marketing-ssr/lib/demo-restaurant.ts`, `marketing-ssr/lib/marketing-repository.ts`, plus this report and `SIMSIM_TASK_PHASE2_MARKETING_HERO_DEMO_STATS_FOOTER_REPORT.md`.
+
+**Deliberately excluded from this commit** (pre-existing, unrelated to Phase 2, left untouched in the working tree): Phase-1-only files (`app/(ar)/*`, `app/en/*`, `PublishedMarketingPage.tsx`, both `.gitignore` files), tooling-generated files (`next-env.d.ts`, `AGENTS.md`, `CLAUDE.md`, `tsconfig.tsbuildinfo`), and the large backlog of unrelated report files from earlier, unrelated sessions (E2E cleanup, LogRocket, Sentry, Super Admin audit, etc.).
+
+**Commit result:**
+- **Hash:** `5d7cc0c7278fde90a3e910e89204395139ca7698`
+- **Message:** `feat(marketing-ssr): restore Hero, Interactive Demo, Stats, Footer (Phase 2)`
+- **Stat:** 10 files changed, 904 insertions(+), 17 deletions(-)
+- Branch: `feat/phase2b-stage1-content-adapter` (unchanged — no new branch created, no push performed)
+
+**Post-commit verification:**
+- `git log -1` confirms the commit exists with the hash/message above.
+- `git status --short` confirms the 10 committed files no longer appear as modified/staged.
+
+**Working tree: not fully clean — intentionally.** The remaining `M`/`??` entries are exactly the pre-existing, out-of-scope files listed above (Phase 1's own still-uncommitted work, auto-generated tooling files, and dozens of unrelated historical reports) — none of them are Phase 2 work, and none were touched by this commit. Nothing was reset, stashed, or deleted to reach this state.
+
+---
+
+**PHASE 2 COMPLETE — STAGING DATA SEEDED — PREVIEW VERIFIED — MANUALLY TESTED ON MOBILE — COMMITTED (`5d7cc0c`).**
