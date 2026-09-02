@@ -1,5 +1,5 @@
-import type { Metadata } from 'next'
-import './styles.css'
+import type { Metadata, Viewport } from 'next'
+import '../styles.css'
 import { marketingSiteUrl } from '@/lib/site-url'
 
 export const metadata: Metadata = {
@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   description: 'منيو إلكتروني للمطاعم والمقاهي مع QR Code والطلبات والولاء.',
 }
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+// Matches the existing --orange brand variable in app/styles.css.
+export const viewport: Viewport = { themeColor: '#FF6A00' }
+
+export default function ArabicRootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="ar" dir="rtl"><body>{children}</body></html>
 }
