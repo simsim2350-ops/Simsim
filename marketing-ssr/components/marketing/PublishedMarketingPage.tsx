@@ -1,4 +1,5 @@
 import { MarketingFooter, MarketingHeader } from '@/components/marketing/MarketingChrome'
+import { RevealOnScroll } from '@/components/marketing/RevealOnScroll'
 import { SectionRenderer } from '@/components/marketing/SectionRenderer'
 import { normalizePage, type NormalizedSection } from '@/lib/marketing-content-adapter'
 import type { MarketingPage, MarketingSiteSettings } from '@/lib/marketing-types'
@@ -27,7 +28,8 @@ export function PublishedMarketingPage({ page, settings, plans }: { page: Market
   const sections = normalizePage(page).sections.filter((section) => section.isVisible).sort((a, b) => a.sortOrder - b.sortOrder)
   let featuresSeen = 0
   const faq = faqJsonLd(sections)
-  return <>
+  return <div className={`ss-landing${page.locale === 'en' ? ' ss-ltr' : ''}`} dir={page.locale === 'en' ? 'ltr' : 'rtl'}>
+    <RevealOnScroll />
     <MarketingHeader settings={settings} />
     <main>{sections.map((section) => {
       const isFirstOfType = section.type === 'FEATURES' ? featuresSeen++ === 0 : undefined
@@ -36,5 +38,5 @@ export function PublishedMarketingPage({ page, settings, plans }: { page: Market
     <MarketingFooter settings={settings} />
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(page.seo.jsonLd || []) }} />
     {faq && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faq) }} />}
-  </>
+  </div>
 }
