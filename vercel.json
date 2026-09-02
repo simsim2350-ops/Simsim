@@ -1,16 +1,10 @@
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.logrocket.io https://cdn.logr-in.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://r.lr-ingest.io https://r.logr-in.com; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
-        }
-      ]
-    }
+  "routes": [
+    { "src": "/(.*)", "headers": { "Content-Security-Policy": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.logrocket.io https://cdn.logr-in.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://r.lr-ingest.io https://r.logr-in.com; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests" }, "continue": true },
+    { "src": "/$", "dest": "https://simsim-marketing-ssr-staging.vercel.app/" },
+    { "src": "/en$", "dest": "https://simsim-marketing-ssr-staging.vercel.app/en" },
+    { "src": "/en/(.*)", "dest": "https://simsim-marketing-ssr-staging.vercel.app/en/$1" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
