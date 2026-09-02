@@ -1,0 +1,182 @@
+/* أنماط ثابتة تستبدل تلك التي كانت goober (react-hot-toast) تُحقنها كعنصر <style> وقت التشغيل —
+   محظور بموجب CSP الحالية (style-src-elem 'self'، بلا unsafe-inline). القيم منقولة حرفياً من
+   node_modules/react-hot-toast/src/components/{toaster,toast-bar,toast-icon,checkmark,error,loader}.tsx
+   بلا أي تغيير بصري أو توقيتي. تُحمَّل كملف CSS حقيقي عبر <link> فتسمح بها CSP دون أي استثناء. */
+
+.rht-active {
+  z-index: 9999;
+}
+.rht-active > * {
+  pointer-events: auto;
+}
+
+.rht-toast-bar {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  color: #363636;
+  line-height: 1.3;
+  will-change: transform;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1), 0 3px 3px rgba(0, 0, 0, 0.05);
+  max-width: 350px;
+  pointer-events: auto;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.rht-message {
+  display: flex;
+  justify-content: center;
+  margin: 4px 10px;
+  color: inherit;
+  flex: 1 1 auto;
+  white-space: pre-line;
+}
+
+/* ---- حركة دخول/خروج شريط التوست ---- */
+@keyframes rht-enter-bottom {
+  0% { transform: translate3d(0, 200%, 0) scale(0.6); opacity: 0.5; }
+  100% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
+}
+@keyframes rht-exit-bottom {
+  0% { transform: translate3d(0, 0, -1px) scale(1); opacity: 1; }
+  100% { transform: translate3d(0, 150%, -1px) scale(0.6); opacity: 0; }
+}
+@keyframes rht-enter-top {
+  0% { transform: translate3d(0, -200%, 0) scale(0.6); opacity: 0.5; }
+  100% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
+}
+@keyframes rht-exit-top {
+  0% { transform: translate3d(0, 0, -1px) scale(1); opacity: 1; }
+  100% { transform: translate3d(0, -150%, -1px) scale(0.6); opacity: 0; }
+}
+@keyframes rht-fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes rht-fade-out { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+.rht-anim-enter-bottom { animation: rht-enter-bottom 0.35s cubic-bezier(.21,1.02,.73,1) forwards; }
+.rht-anim-exit-bottom { animation: rht-exit-bottom 0.4s cubic-bezier(.06,.71,.55,1) forwards; }
+.rht-anim-enter-top { animation: rht-enter-top 0.35s cubic-bezier(.21,1.02,.73,1) forwards; }
+.rht-anim-exit-top { animation: rht-exit-top 0.4s cubic-bezier(.06,.71,.55,1) forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rht-anim-enter-bottom, .rht-anim-enter-top { animation: rht-fade-in 0.35s cubic-bezier(.21,1.02,.73,1) forwards; }
+  .rht-anim-exit-bottom, .rht-anim-exit-top { animation: rht-fade-out 0.4s cubic-bezier(.06,.71,.55,1) forwards; }
+}
+
+/* ---- أيقونة قابلة للتخصيص (نص/رمز مخصَّص) ---- */
+@keyframes rht-icon-enter {
+  from { transform: scale(0.6); opacity: 0.4; }
+  to { transform: scale(1); opacity: 1; }
+}
+.rht-animated-icon {
+  position: relative;
+  transform: scale(0.6);
+  opacity: 0.4;
+  min-width: 20px;
+  animation: rht-icon-enter 0.3s 0.12s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* ---- حاوية أيقونة الحالة (تحميل + نجاح/خطأ فوقها) ---- */
+.rht-status-wrapper { position: absolute; }
+.rht-indicator-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 20px;
+  min-height: 20px;
+}
+
+/* ---- مؤشر التحميل (Loader) ---- */
+@keyframes rht-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.rht-loader {
+  width: 12px;
+  height: 12px;
+  box-sizing: border-box;
+  border: 2px solid;
+  border-radius: 100%;
+  border-color: var(--rht-secondary, #e0e0e0);
+  border-right-color: var(--rht-primary, #616161);
+  animation: rht-spin 1s linear infinite;
+}
+
+/* ---- علامة النجاح (Checkmark) ---- */
+@keyframes rht-checkmark-circle {
+  from { transform: scale(0) rotate(45deg); opacity: 0; }
+  to { transform: scale(1) rotate(45deg); opacity: 1; }
+}
+@keyframes rht-checkmark-check {
+  0% { height: 0; width: 0; opacity: 0; }
+  40% { height: 0; width: 6px; opacity: 1; }
+  100% { opacity: 1; height: 10px; }
+}
+.rht-checkmark {
+  width: 20px;
+  opacity: 0;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--rht-primary, #61d345);
+  position: relative;
+  transform: rotate(45deg);
+  animation: rht-checkmark-circle 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation-delay: 100ms;
+}
+.rht-checkmark::after {
+  content: '';
+  box-sizing: border-box;
+  animation: rht-checkmark-check 0.2s ease-out forwards;
+  opacity: 0;
+  animation-delay: 200ms;
+  position: absolute;
+  border-right: 2px solid;
+  border-bottom: 2px solid;
+  border-color: var(--rht-secondary, #fff);
+  bottom: 6px;
+  left: 6px;
+  height: 10px;
+  width: 6px;
+}
+
+/* ---- علامة الخطأ (Error) ---- */
+@keyframes rht-error-circle {
+  from { transform: scale(0) rotate(45deg); opacity: 0; }
+  to { transform: scale(1) rotate(45deg); opacity: 1; }
+}
+@keyframes rht-error-line1 {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes rht-error-line2 {
+  from { transform: scale(0) rotate(90deg); opacity: 0; }
+  to { transform: scale(1) rotate(90deg); opacity: 1; }
+}
+.rht-error {
+  width: 20px;
+  opacity: 0;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--rht-primary, #ff4b4b);
+  position: relative;
+  transform: rotate(45deg);
+  animation: rht-error-circle 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation-delay: 100ms;
+}
+.rht-error::after,
+.rht-error::before {
+  content: '';
+  animation: rht-error-line1 0.15s ease-out forwards;
+  animation-delay: 150ms;
+  position: absolute;
+  border-radius: 3px;
+  opacity: 0;
+  background: var(--rht-secondary, #fff);
+  bottom: 9px;
+  left: 4px;
+  height: 2px;
+  width: 12px;
+}
+.rht-error::before {
+  animation: rht-error-line2 0.15s ease-out forwards;
+  animation-delay: 180ms;
+  transform: rotate(90deg);
+}

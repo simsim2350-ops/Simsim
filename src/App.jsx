@@ -1,6 +1,6 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
-import { Toaster } from 'react-hot-toast'
+import { AppToaster } from './components/AppToaster'
 import { useAuthStore } from './store/authStore'
 import { canAccess, firstAllowedPath } from './lib/permissions'
 import { has as featureHas, state as featureState, accessStatus } from './lib/features'
@@ -151,7 +151,7 @@ function ConfiguredApp() {
   return (
     <RootErrorBoundary>
     <BrowserRouter>
-      <Toaster position="bottom-center" toastOptions={{
+      <AppToaster position="bottom-center" toastOptions={{
         style: { fontFamily:'Tajawal,sans-serif', direction:'rtl', borderRadius:'12px', background:'#0B0B0F', color:'white', fontSize:'14px', fontWeight:'600' },
         success: { iconTheme: { primary:'#10B981', secondary:'white' } },
         error:   { iconTheme: { primary:'#EF4444', secondary:'white' } },
