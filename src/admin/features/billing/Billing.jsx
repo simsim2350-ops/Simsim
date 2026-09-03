@@ -4,7 +4,15 @@ import AdminShell from '../../AdminShell'
 import { useAuthStore } from '../../../store/authStore'
 import { listRestaurants } from '../restaurants/restaurantsApi'
 import { listCapabilities, listCategories, listPlanFeatures, setPlanFeature, deletePlanFeature } from '../catalog/catalogApi'
+import { revalidateMarketing } from '../marketing/marketingApi'
 import PlanFeatureSelector from './PlanFeatureSelector'
+
+// إبطال كاش قسم الأسعار في الموقع التسويقي بعد أي تغيير على الباقات. لا يُفشل
+// العملية الأصلية إن تعطّل (نفس الدرس من حادثة VITE_MARKETING_SITE_URL سابقاً:
+// فشل الإبطال لا يعني فشل الحفظ الفعلي في قاعدة البيانات).
+const revalidatePlans = () => revalidateMarketing({ kind: 'plans', locale: 'ar' }).catch((e) => {
+  console.warn('[billing] فشل إبطال كاش الأسعار — التغيير محفوظ لكن قد يتأخر ظهوره حتى 5 دقائق', e)
+})
 import {
   listPlans, upsertPlan, setPlanActive, deletePlan,
   listSubscriptions, upsertSubscription,
@@ -116,7 +124,7 @@ function PlansTab({ canManage }) {
         ...toAdd.map((k) => setPlanFeature(planId, k, true, null)),
         ...toRemove.map((k) => deletePlanFeature(planId, k)),
       ])
-      toast.success('تم الحفظ'); setEdit(null); load()
+      toast.success('تم الحفظ'); setEdit(null); load(); revalidatePlans()
     }
     catch (e) { toast.error(e?.message || 'فشل الحفظ') }
     finally { setBusy(false) }
@@ -132,13 +140,13 @@ function PlansTab({ canManage }) {
     } catch (e) { toast.error(e?.message || 'تعذّر تحميل مزايا الباقة') }
   }
   const toggle = async (p) => {
-    try { await setPlanActive(p.id, !p.is_active); load() }
+    try { await setPlanActive(p.id, !p.is_active); load(); revalidatePlans() }
     catch (e) { toast.error(e?.message || 'فشل') }
   }
   // حذف نهائي — محميّ خادمياً (يُمنع لو للباقة اشتراكات). الزر يظهر فقط عند 0 مشترك.
   const remove = async (p) => {
     if (!window.confirm(`حذف باقة «${p.name}» نهائياً؟ لا يمكن التراجع.`)) return
-    try { await deletePlan(p.id); toast.success('حُذفت الباقة'); load() }
+    try { await deletePlan(p.id); toast.success('حُذفت الباقة'); load(); revalidatePlans() }
     catch (e) { toast.error(e?.message || 'تعذّر الحذف') }
   }
 
