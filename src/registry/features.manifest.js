@@ -19,6 +19,10 @@
 //   default_value?    (لأنواع limit/option/mode)
 //   allowed_values?   (لنوع mode)
 //   metric?, unit?    (لنوع limit)
+//   is_public?        (تعرض هذه القدرة في تغذية الأسعار العامة marketing_public_plans —
+//                      لا تُظهرها فعلياً إلا إن كانت مضمَّنة في باقة عبر شاشة «الباقات/الحدود»)
+//   public_label?     (النص الموجَّه للعميل. لنوع limit = الاسم القابل للعدّ فقط، مثل
+//                      «فرع»، يُنسَّق آلياً بواسطة marketing_public_plans إلى «حتى N فرع»)
 // ============================================================================
 
 // ---------------------------------------------------------------------------
@@ -46,16 +50,16 @@ export const CATEGORIES = [
 export const CAPABILITIES = [
   // (1) صفحات (kind=page, type=feature)
   { key: 'dashboard', name: 'الرئيسية', kind: 'page', category: 'analytics',  module: 'dashboard', type: 'feature', default_enabled: true, sort_order: 10, icon: '📊', description: 'لوحة المؤشرات الرئيسية', required_permissions: ['owner'] },
-  { key: 'orders',    name: 'الطلبات',   kind: 'page', category: 'operations', module: 'orders',    type: 'feature', default_enabled: true, sort_order: 20, icon: '🛒', description: 'مركز إدارة الطلبات' },
-  { key: 'menu',      name: 'المنيو',    kind: 'page', category: 'menu',       module: 'menu',      type: 'feature', default_enabled: true, sort_order: 30, icon: '📋', description: 'إدارة الأقسام والأصناف' },
-  { key: 'customers', name: 'العملاء',   kind: 'page', category: 'customers',  module: 'customers', type: 'feature', default_enabled: true, sort_order: 40, icon: '👥', description: 'لوحة العملاء' },
-  { key: 'loyalty',   name: 'الولاء والتقييمات', kind: 'page', category: 'loyalty', module: 'loyalty', type: 'feature', default_enabled: true, sort_order: 50, icon: '🎁', description: 'برنامج الولاء والتقييمات' },
-  { key: 'marketing', name: 'العروض والكوبونات', kind: 'page', category: 'marketing', module: 'marketing', type: 'feature', default_enabled: true, sort_order: 60, icon: '📣', description: 'البانرات والكوبونات', required_permissions: ['owner'] },
-  { key: 'branches',  name: 'الفروع',    kind: 'page', category: 'setup',      module: 'branches',  type: 'feature', default_enabled: true, sort_order: 70, icon: '🏢', description: 'إدارة الفروع' },
-  { key: 'tables',    name: 'الطاولات',  kind: 'page', category: 'setup',      module: 'tables',    type: 'feature', default_enabled: true, sort_order: 80, icon: '🪑', description: 'إدارة الطاولات' },
-  { key: 'qr',        name: 'QR Code',   kind: 'page', category: 'setup',      module: 'qr',        type: 'feature', default_enabled: true, sort_order: 90, icon: '📱', description: 'رموز QR' },
-  { key: 'staff',     name: 'الموظفون',  kind: 'page', category: 'setup',      module: 'staff',     type: 'feature', default_enabled: true, sort_order: 100, icon: '🧑‍🍳', description: 'إدارة الموظفين', required_permissions: ['owner'] },
-  { key: 'analytics', name: 'التحليلات', kind: 'page', category: 'analytics',  module: 'analytics', type: 'feature', default_enabled: true, sort_order: 110, icon: '📈', description: 'التحليلات والتقارير' },
+  { key: 'orders',    name: 'الطلبات',   kind: 'page', category: 'operations', module: 'orders',    type: 'feature', default_enabled: true, sort_order: 20, icon: '🛒', description: 'مركز إدارة الطلبات', is_public: true, public_label: 'استقبال الطلبات وإدارتها' },
+  { key: 'menu',      name: 'المنيو',    kind: 'page', category: 'menu',       module: 'menu',      type: 'feature', default_enabled: true, sort_order: 30, icon: '📋', description: 'إدارة الأقسام والأصناف', is_public: true, public_label: 'منيو رقمي احترافي' },
+  { key: 'customers', name: 'العملاء',   kind: 'page', category: 'customers',  module: 'customers', type: 'feature', default_enabled: true, sort_order: 40, icon: '👥', description: 'لوحة العملاء', is_public: true, public_label: 'إدارة قاعدة العملاء' },
+  { key: 'loyalty',   name: 'الولاء والتقييمات', kind: 'page', category: 'loyalty', module: 'loyalty', type: 'feature', default_enabled: true, sort_order: 50, icon: '🎁', description: 'برنامج الولاء والتقييمات', is_public: true, public_label: 'برنامج ولاء ومكافآت للعملاء' },
+  { key: 'marketing', name: 'العروض والكوبونات', kind: 'page', category: 'marketing', module: 'marketing', type: 'feature', default_enabled: true, sort_order: 60, icon: '📣', description: 'البانرات والكوبونات', required_permissions: ['owner'], is_public: true, public_label: 'عروض وكوبونات تسويقية' },
+  { key: 'branches',  name: 'الفروع',    kind: 'page', category: 'setup',      module: 'branches',  type: 'feature', default_enabled: true, sort_order: 70, icon: '🏢', description: 'إدارة الفروع', is_public: true, public_label: 'إدارة عدة فروع' },
+  { key: 'tables',    name: 'الطاولات',  kind: 'page', category: 'setup',      module: 'tables',    type: 'feature', default_enabled: true, sort_order: 80, icon: '🪑', description: 'إدارة الطاولات', is_public: true, public_label: 'إدارة طاولات المطعم' },
+  { key: 'qr',        name: 'QR Code',   kind: 'page', category: 'setup',      module: 'qr',        type: 'feature', default_enabled: true, sort_order: 90, icon: '📱', description: 'رموز QR', is_public: true, public_label: 'QR Code' },
+  { key: 'staff',     name: 'الموظفون',  kind: 'page', category: 'setup',      module: 'staff',     type: 'feature', default_enabled: true, sort_order: 100, icon: '🧑‍🍳', description: 'إدارة الموظفين', required_permissions: ['owner'], is_public: true, public_label: 'إدارة حسابات الموظفين' },
+  { key: 'analytics', name: 'التحليلات', kind: 'page', category: 'analytics',  module: 'analytics', type: 'feature', default_enabled: true, sort_order: 110, icon: '📈', description: 'التحليلات والتقارير', is_public: true, public_label: 'تحليلات ومؤشرات الأداء' },
   { key: 'billing',   name: 'الاشتراك والفوترة', kind: 'page', category: 'billing', module: 'billing', type: 'feature', default_enabled: true, sort_order: 120, icon: '💳', description: 'الاشتراك والفواتير', required_permissions: ['owner'] },
   { key: 'settings',  name: 'الإعدادات', kind: 'page', category: 'setup',      module: 'settings',  type: 'feature', default_enabled: true, sort_order: 130, icon: '⚙️', description: 'إعدادات المطعم', required_permissions: ['owner'] },
 
@@ -66,9 +70,9 @@ export const CAPABILITIES = [
   { key: 'menu_product_details', name: 'تفاصيل المنتج',    kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 35, description: 'فتح نافذة تفاصيل المنتج عند الضغط عليه (عند التعطيل: الضغط لا يفتح شيئاً)' },
   { key: 'menu_cart',            name: 'السلة',             kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 40 },
   { key: 'menu_checkout',        name: 'إتمام الطلب',       kind: 'action',    category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 50 },
-  { key: 'menu_reviews',         name: 'التقييمات',         kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 60 },
-  { key: 'menu_recommendations', name: 'الاقتراحات الذكية', kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 70 },
-  { key: 'branding_hidden',      name: 'إخفاء هوية سمسم',  kind: 'component', category: 'menu', module: 'branding', parent: 'menu', type: 'feature', default_enabled: false, sort_order: 80, icon: '🏷️', description: 'إخفاء عبارة «صمم بواسطة سمسم» من المنيو (ميزة الباقات المدفوعة / White-label)' },
+  { key: 'menu_reviews',         name: 'التقييمات',         kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 60, is_public: true, public_label: 'تقييمات العملاء على المنتجات' },
+  { key: 'menu_recommendations', name: 'الاقتراحات الذكية', kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 70, is_public: true, public_label: 'اقتراحات ذكية للمنتجات' },
+  { key: 'branding_hidden',      name: 'إخفاء هوية سمسم',  kind: 'component', category: 'menu', module: 'branding', parent: 'menu', type: 'feature', default_enabled: false, sort_order: 80, icon: '🏷️', description: 'إخفاء عبارة «صمم بواسطة سمسم» من المنيو (ميزة الباقات المدفوعة / White-label)', is_public: true, public_label: 'إخفاء علامة سمسم (White-label)' },
   { key: 'branding_hideable',    name: 'السماح للمطعم بإخفاء هوية سمسم', kind: 'component', category: 'menu', module: 'branding', parent: 'menu', type: 'feature', default_enabled: false, sort_order: 81, icon: '🎛️', description: 'يمنح المطعم حق إخفاء «صمم بواسطة سمسم» بنفسه من إعداداته (ميزة الباقات المدفوعة)' },
 
   // (2) الهيكل الهرمي — الطلبات (children of 'orders')
@@ -83,9 +87,9 @@ export const CAPABILITIES = [
   { key: 'loyalty_levels',  name: 'المستويات', kind: 'component', category: 'loyalty', module: 'loyalty', parent: 'loyalty', type: 'feature', default_enabled: true, sort_order: 30 },
 
   // (3) عيّنات الحدود (type=limit) — تُسعّر لاحقاً لكل باقة (M3/M5). null = بلا حد افتراضياً.
-  { key: 'products_limit', name: 'حد عدد المنتجات', kind: 'action', category: 'limits', module: 'menu',     type: 'limit', scope: 'restaurant', metric: 'products', unit: 'count', default_value: null, sort_order: 10, description: 'أقصى عدد منتجات (null = بلا حد)' },
-  { key: 'branches_limit', name: 'حد عدد الفروع',   kind: 'action', category: 'limits', module: 'branches', type: 'limit', scope: 'restaurant', metric: 'branches', unit: 'count', default_value: null, sort_order: 20, description: 'أقصى عدد فروع (null = بلا حد)' },
-  { key: 'users_limit',    name: 'حد عدد المستخدمين', kind: 'action', category: 'limits', module: 'staff',  type: 'limit', scope: 'restaurant', metric: 'users', unit: 'count', default_value: null, sort_order: 30, description: 'أقصى عدد موظفين (null = بلا حد)' },
+  { key: 'products_limit', name: 'حد عدد المنتجات', kind: 'action', category: 'limits', module: 'menu',     type: 'limit', scope: 'restaurant', metric: 'products', unit: 'count', default_value: null, sort_order: 10, description: 'أقصى عدد منتجات (null = بلا حد)', is_public: true, public_label: 'منتج' },
+  { key: 'branches_limit', name: 'حد عدد الفروع',   kind: 'action', category: 'limits', module: 'branches', type: 'limit', scope: 'restaurant', metric: 'branches', unit: 'count', default_value: null, sort_order: 20, description: 'أقصى عدد فروع (null = بلا حد)', is_public: true, public_label: 'فرع' },
+  { key: 'users_limit',    name: 'حد عدد المستخدمين', kind: 'action', category: 'limits', module: 'staff',  type: 'limit', scope: 'restaurant', metric: 'users', unit: 'count', default_value: null, sort_order: 30, description: 'أقصى عدد موظفين (null = بلا حد)', is_public: true, public_label: 'موظف' },
 
   // (3) عيّنة وضع (type=mode) — لإثبات النوع (وضع التوصيل)
   { key: 'delivery_mode', name: 'وضع التوصيل', kind: 'option', category: 'operations', module: 'orders', type: 'mode', scope: 'restaurant',

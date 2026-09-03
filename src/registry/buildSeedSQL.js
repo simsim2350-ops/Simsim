@@ -34,12 +34,14 @@ export function buildSeedSQL(manifest) {
       `insert into public.feature_flags(` +
         `key,name,description,type,scope,kind,module,parent_key,category_id,` +
         `lifecycle_status,runtime_status,sort_order,icon,enabled_global,` +
-        `default_value,allowed_values,metric,unit,upgrade_message,tags,required_permissions) values (` +
+        `default_value,allowed_values,metric,unit,upgrade_message,tags,required_permissions,` +
+        `is_public,public_label) values (` +
         `${q(f.key)},${q(f.name)},${q(f.description)},${q(f.type)},${q(f.scope || 'restaurant')},` +
         `${q(f.kind)},${q(f.module)},${q(f.parent)},${catId(f.category)},` +
         `${q(f.lifecycle_status || 'active')},${q(f.runtime_status || 'enabled')},${f.sort_order ?? 0},` +
         `${q(f.icon)},${enabledGlobal},${defaultValue},${jsonb(f.allowed_values)},` +
-        `${q(f.metric)},${q(f.unit)},${q(f.upgrade_message)},${arr(f.tags)},${arr(f.required_permissions)})` +
+        `${q(f.metric)},${q(f.unit)},${q(f.upgrade_message)},${arr(f.tags)},${arr(f.required_permissions)},` +
+        `${f.is_public ? 'true' : 'false'},${q(f.public_label)})` +
         ` on conflict(key) do update set name=excluded.name,description=excluded.description,` +
         `type=excluded.type,scope=excluded.scope,kind=excluded.kind,module=excluded.module,` +
         `parent_key=excluded.parent_key,category_id=excluded.category_id,` +
@@ -47,7 +49,8 @@ export function buildSeedSQL(manifest) {
         `sort_order=excluded.sort_order,icon=excluded.icon,enabled_global=excluded.enabled_global,` +
         `default_value=excluded.default_value,allowed_values=excluded.allowed_values,` +
         `metric=excluded.metric,unit=excluded.unit,upgrade_message=excluded.upgrade_message,` +
-        `tags=excluded.tags,required_permissions=excluded.required_permissions,updated_at=now();`,
+        `tags=excluded.tags,required_permissions=excluded.required_permissions,` +
+        `is_public=excluded.is_public,public_label=excluded.public_label,updated_at=now();`,
     )
   }
 

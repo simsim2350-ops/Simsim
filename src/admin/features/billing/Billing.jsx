@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
 import { useAuthStore } from '../../../store/authStore'
 import { listRestaurants } from '../restaurants/restaurantsApi'
+import { listCapabilities, listPlanFeatures } from '../catalog/catalogApi'
 import {
   listPlans, upsertPlan, setPlanActive, deletePlan,
   listSubscriptions, upsertSubscription,
@@ -78,12 +79,24 @@ function PlansTab({ canManage }) {
   const [error, setError] = useState(null)
   const [edit, setEdit] = useState(null) // الباقة قيد التعديل أو {} للجديدة
   const [busy, setBusy] = useState(false)
+  const [capNames, setCapNames] = useState({}) // feature_key -> الاسم المعروض (من سجل القدرات)
+  const [planFeatures, setPlanFeatures] = useState({}) // plan.id -> [{feature_key,is_included,value}]
 
   const load = () => {
     setLoading(true); setError(null)
     listPlans().then(setRows).catch((e) => setError(e?.message || 'تعذّر التحميل')).finally(() => setLoading(false))
   }
   useEffect(load, [])
+  useEffect(() => {
+    listCapabilities().then((caps) => setCapNames(Object.fromEntries(caps.map((c) => [c.key, c.name])))).catch(() => {})
+  }, [])
+  // ملخّص «✓ الميزة» تحت كل باقة — نفس المصدر الذي تديره شاشة «الباقات» (plan_features)،
+  // بلا نسخة ثانية من بيانات المزايا. أسماء داخلية (سجل القدرات) لأن هذا عرض إداري، لا عام.
+  useEffect(() => {
+    if (!rows.length) { setPlanFeatures({}); return }
+    Promise.all(rows.map((p) => listPlanFeatures(p.id).then((list) => [p.id, list]).catch(() => [p.id, []])))
+      .then((pairs) => setPlanFeatures(Object.fromEntries(pairs)))
+  }, [rows])
 
   const save = async () => {
     if (!edit.name?.trim()) return toast.error('الاسم مطلوب')
@@ -118,7 +131,13 @@ function PlansTab({ canManage }) {
                   <Badge text={CYCLE[p.billing_cycle]} color="#FFB27F" />
                   {!p.is_active && <Badge text="معطّلة" color="#F87171" />}
                 </div>
-                {p.features && <div style={{ fontSize: '11.5px', color: MUTED }}>{p.features}</div>}
+                {(planFeatures[p.id] || []).some((f) => f.is_included) && (
+                  <ul style={{ margin: '4px 0 0', padding: 0, listStyle: 'none', display: 'grid', gap: '2px' }}>
+                    {planFeatures[p.id].filter((f) => f.is_included).map((f) => (
+                      <li key={f.feature_key} style={{ fontSize: '11.5px', color: MUTED }}>✓ {capNames[f.feature_key] || f.feature_key}</li>
+                    ))}
+                  </ul>
+                )}
                 <div style={{ fontSize: '11px', color: MUTED, marginTop: '2px' }}>{num(p.subscribers_count)} مشترك</div>
               </div>
               <div style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '16px', color: 'white' }}>{fmt(p.price)} <span style={{ fontSize: '11px', color: MUTED }}>﷼</span></div>
