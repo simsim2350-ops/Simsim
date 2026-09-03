@@ -38,7 +38,7 @@ export default async function MenuPage({
     )
   }
 
-  const { restaurant, branch, categories, products } = data
+  const { restaurant, branch, branches, categories, products } = data
   const productsByCategory = new Map<string, typeof products>()
   for (const p of products) {
     const key = p.category_id ?? ''
@@ -51,7 +51,7 @@ export default async function MenuPage({
 
   return (
     <div className={`menu-frame${lang === 'en' ? ' lang-en' : ''}`} lang={lang} dir={lang === 'en' ? 'ltr' : 'rtl'}>
-      <RestaurantHeader restaurant={restaurant} branches={[branch]} activeBranch={branch} lang={lang} />
+      <RestaurantHeader restaurant={restaurant} branches={branches} activeBranch={branch} lang={lang} />
 
       <div className="menu-toolbar">
         <a

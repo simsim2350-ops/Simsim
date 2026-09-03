@@ -70,6 +70,7 @@ export async function getAvailableProducts(branchId: string): Promise<Product[]>
 export type MenuPageData = {
   restaurant: Restaurant
   branch: Branch
+  branches: Branch[]
   categories: Category[]
   products: Product[]
 }
@@ -94,5 +95,5 @@ export const loadMenuPage = cache(async function loadMenuPage(slug: string, bran
     getAvailableProducts(branch.id),
   ])
 
-  return { restaurant, branch, categories, products }
+  return { restaurant, branch, branches, categories, products }
 })

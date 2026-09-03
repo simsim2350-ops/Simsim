@@ -74,3 +74,26 @@ html, body {
 
 /* English/LTR variant wrapper — applied per-page, not on <html>, see app/layout.tsx */
 .lang-en { direction: ltr; text-align: left; }
+
+/* Tablet: widen the frame and move products to a 2-column grid. Mobile rules
+   above are untouched below this breakpoint. */
+@media (min-width: 640px) {
+  .menu-frame { max-width: 720px; }
+  .category-section { padding: 20px 24px 4px; }
+  .menu-header { padding: 20px 24px; }
+  .menu-toolbar { padding: 10px 24px 0; }
+  .menu-footer { padding: 20px 24px 32px; }
+  .category-section__grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Desktop: use the available width instead of staying mobile-narrow, and move
+   products to a 3-column grid. Card internals (image/name/price layout) are
+   unchanged — only how many sit per row changes. */
+@media (min-width: 1024px) {
+  .menu-frame { max-width: 1100px; }
+  .category-section { padding: 24px 32px 4px; }
+  .menu-header { padding: 24px 32px; }
+  .menu-toolbar { padding: 12px 32px 0; }
+  .menu-footer { padding: 24px 32px 40px; }
+  .category-section__grid { grid-template-columns: repeat(3, 1fr); }
+}
