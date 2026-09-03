@@ -1,0 +1,36 @@
+import Image from 'next/image'
+import type { Product, Lang } from '@/lib/types'
+
+export function ProductCard({ product, lang, currency, priceColor }: {
+  product: Product
+  lang: Lang
+  currency: string
+  priceColor: string
+}) {
+  const name = lang === 'en' && product.name_en ? product.name_en : product.name
+  const description = lang === 'en' ? product.description_en || product.description : product.description
+
+  return (
+    <article className="product-card">
+      <div className="product-card__media">
+        {product.image_url ? (
+          <Image src={product.image_url} alt={name} fill sizes="96px" className="product-card__image" />
+        ) : (
+          <span className="product-card__emoji" aria-hidden>{product.emoji || '🍽️'}</span>
+        )}
+      </div>
+      <div className="product-card__body">
+        <h3 className="product-card__name">{name}</h3>
+        {description && <p className="product-card__desc">{description}</p>}
+        <div className="product-card__price" style={{ color: priceColor }}>
+          {product.price.toLocaleString(lang === 'en' ? 'en-US' : 'ar-SA')} {currency}
+          {product.compare_price && product.compare_price > product.price && (
+            <span className="product-card__compare">
+              {product.compare_price.toLocaleString(lang === 'en' ? 'en-US' : 'ar-SA')} {currency}
+            </span>
+          )}
+        </div>
+      </div>
+    </article>
+  )
+}

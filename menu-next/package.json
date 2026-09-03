@@ -1,0 +1,26 @@
+{
+  "name": "simsim-menu-next",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Phase 2 read-only POC: customer-facing SimSim menu on Next.js App Router. Not deployed, not linked to production routing. See SIMSIM_MENU_PHASE_2_POC_REPORT.md.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.8",
+    "next": "^16.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "eslint": "^9.20.1",
+    "eslint-config-next": "^16.0.0",
+    "typescript": "^5.7.3"
+  }
+}
