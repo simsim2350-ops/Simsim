@@ -147,8 +147,18 @@ export const publicMarketingPayloadSchema = z.object({
   sections: z.array(marketingSectionSchema),
 })
 
+const planCyclePriceSchema = z.object({
+  price: z.coerce.number().nonnegative(),
+  monthlyEquivalent: z.coerce.number().nonnegative().optional(),
+  savingsAmount: z.coerce.number().nullable().optional(),
+  savingsPercent: z.coerce.number().nullable().optional(),
+})
+
 export const publicPlanSchema = z.object({
-  id: z.string().uuid(), name: z.string().min(1), billingCycle: z.string().min(1), price: z.coerce.number().nonnegative(), sortOrder: z.number().int(),
+  id: z.string().uuid(), name: z.string().min(1), description: z.string().nullable().optional(),
+  ctaText: z.string().nullable().optional(), isRecommended: z.boolean().default(false), sortOrder: z.number().int(),
+  monthly: planCyclePriceSchema.nullable().optional(),
+  yearly: planCyclePriceSchema.nullable().optional(),
   features: z.array(z.object({ key: z.string(), name: z.string(), included: z.boolean(), value: z.unknown().nullable().optional() })),
 })
 

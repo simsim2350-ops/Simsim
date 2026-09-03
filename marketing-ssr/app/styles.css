@@ -457,6 +457,22 @@
 .ss-trust__chip .em { font-size: 19px; }
 
 /* =========================== PRICING =========================== */
+.ss-billing-toggle {
+  display: flex; justify-content: center; align-items: center; gap: 4px;
+  max-width: 320px; margin: 0 auto 28px; padding: 5px;
+  background: var(--ss-primary-soft); border: 1px solid var(--ss-border-2); border-radius: 999px;
+}
+.ss-billing-toggle button {
+  flex: 1; border: none; background: transparent; cursor: pointer;
+  font-family: 'Tajawal', sans-serif; font-weight: 800; font-size: 13.5px; color: var(--ss-muted);
+  padding: 9px 14px; border-radius: 999px; transition: background .15s ease, color .15s ease;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.ss-billing-toggle button.is-active {
+  background: linear-gradient(135deg, var(--ss-primary), var(--ss-primary-dark)); color: #fff;
+  box-shadow: var(--ss-shadow-primary);
+}
+.ss-billing-toggle__hint { font-size: 10.5px; font-weight: 700; opacity: .85; }
 .ss-pricing__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 20px; max-width: 940px; margin-inline: auto; align-items: stretch; }
 .ss-plan {
   background: #fff; border: 1.5px solid var(--ss-border-2);
@@ -478,6 +494,8 @@
 .ss-plan__price { display: flex; align-items: baseline; gap: 6px; margin: 18px 0 4px; }
 .ss-plan__price .amt { font-family: 'Tajawal', sans-serif; font-weight: 900; font-size: clamp(30px, 5vw, 40px); color: var(--ss-ink); line-height: 1; }
 .ss-plan__price .per { color: var(--ss-muted); font-size: 14px; font-weight: 600; }
+.ss-plan__equiv { margin: 0 0 4px; color: var(--ss-muted); font-size: 12.5px; }
+.ss-plan__savings { color: var(--ss-success); font-weight: 700; }
 .ss-plan__feats { margin: 22px 0; display: grid; gap: 11px; }
 .ss-plan__feat { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--ss-text); }
 .ss-plan__feat svg { flex-shrink: 0; margin-top: 2px; }
