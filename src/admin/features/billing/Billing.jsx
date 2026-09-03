@@ -154,7 +154,7 @@ function PlansTab({ canManage }) {
   if (error) return <ErrorState msg={error} onRetry={load} />
   return (
     <div>
-      {canManage && <div style={{ marginBottom: '14px' }}><Button variant="primary" onClick={() => setEdit({ billing_cycle: 'monthly', price: '', sort_order: 0, featureKeys: [], originalFeatureKeys: [] })}>+ باقة جديدة</Button></div>}
+      {canManage && <div style={{ marginBottom: '14px' }}><Button variant="primary" onClick={() => setEdit({ description: '', cta_text: '', is_recommended: false, price_monthly: '', price_yearly: '', sort_order: 0, featureKeys: [], originalFeatureKeys: [] })}>+ باقة جديدة</Button></div>}
       {rows.length === 0 ? <EmptyState msg="لا توجد باقات بعد" /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {rows.map((p) => (
@@ -162,9 +162,10 @@ function PlansTab({ canManage }) {
               <div style={{ flex: 1, minWidth: '160px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
                   <span style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '800', fontSize: '14px', color: 'white' }}>{p.name}</span>
-                  <Badge text={CYCLE[p.billing_cycle]} color="#FFB27F" />
+                  {p.is_recommended && <Badge text="⭐ الأكثر طلباً" color="#FFB27F" />}
                   {!p.is_active && <Badge text="معطّلة" color="#F87171" />}
                 </div>
+                {p.description && <div style={{ fontSize: '11.5px', color: MUTED, marginBottom: '4px' }}>{p.description}</div>}
                 {(planFeatures[p.id] || []).some((f) => f.is_included) && (
                   <ul style={{ margin: '4px 0 0', padding: 0, listStyle: 'none', display: 'grid', gap: '2px' }}>
                     {planFeatures[p.id].filter((f) => f.is_included).map((f) => (
@@ -174,7 +175,10 @@ function PlansTab({ canManage }) {
                 )}
                 <div style={{ fontSize: '11px', color: MUTED, marginTop: '2px' }}>{num(p.subscribers_count)} مشترك</div>
               </div>
-              <div style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '16px', color: 'white' }}>{fmt(p.price)} <span style={{ fontSize: '11px', color: MUTED }}>﷼</span></div>
+              <div style={{ display: 'grid', gap: '2px', textAlign: 'left' }}>
+                {p.price_monthly != null && <div style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '15px', color: 'white' }}>{fmt(p.price_monthly)} <span style={{ fontSize: '10.5px', color: MUTED }}>﷼/شهرياً</span></div>}
+                {p.price_yearly != null && <div style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '15px', color: 'white' }}>{fmt(p.price_yearly)} <span style={{ fontSize: '10.5px', color: MUTED }}>﷼/سنوياً</span></div>}
+              </div>
               {canManage && (
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <Button variant="neutral" onClick={() => openEdit(p)}>تعديل</Button>
@@ -189,12 +193,25 @@ function PlansTab({ canManage }) {
       {edit && (
         <Modal title={edit.id ? 'تعديل باقة' : 'باقة جديدة'} onClose={() => setEdit(null)}>
           <Field label="اسم الباقة"><input className="admin-input" value={edit.name || ''} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></Field>
-          <Field label="الدورة">
-            <select className="admin-select" value={edit.billing_cycle} onChange={(e) => setEdit({ ...edit, billing_cycle: e.target.value })}>
-              <option value="monthly">شهري</option><option value="yearly">سنوي</option>
-            </select>
-          </Field>
-          <Field label="السعر (﷼، شامل الضريبة)"><input className="admin-input" type="number" inputMode="decimal" value={edit.price} onChange={(e) => setEdit({ ...edit, price: e.target.value })} /></Field>
+          <Field label="الوصف العام (اختياري، يظهر للعملاء تحت اسم الباقة)"><textarea className="admin-textarea" value={edit.description || ''} onChange={(e) => setEdit({ ...edit, description: e.target.value })} style={{ minHeight: 56, resize: 'vertical' }} /></Field>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Field label="السعر الشهري (﷼، شامل الضريبة)"><input className="admin-input" type="number" inputMode="decimal" placeholder="—" value={edit.price_monthly ?? ''} onChange={(e) => setEdit({ ...edit, price_monthly: e.target.value })} /></Field>
+            <Field label="السعر السنوي (﷼، شامل الضريبة)"><input className="admin-input" type="number" inputMode="decimal" placeholder="—" value={edit.price_yearly ?? ''} onChange={(e) => setEdit({ ...edit, price_yearly: e.target.value })} /></Field>
+          </div>
+          <div style={{ fontSize: '11px', color: MUTED, margin: '-6px 0 12px' }}>
+            اترك أحدهما فارغاً إن كانت الباقة غير متاحة بتلك الدورة. يجب توفّر سعر واحد على الأقل.
+            {(() => {
+              const m = num(edit.price_monthly); const y = num(edit.price_yearly)
+              if (!edit.price_monthly || !edit.price_yearly || m <= 0) return null
+              const pct = Math.round(((m * 12 - y) / (m * 12)) * 100)
+              return <span> · توفير محسوب تلقائياً عند الاشتراك السنوي: <b style={{ color: pct >= 0 ? '#6EE7B7' : '#F87171' }}>{pct}%</b></span>
+            })()}
+          </div>
+          <Field label="نص زر الدعوة (اختياري، يطغى على النص الافتراضي)"><input className="admin-input" placeholder="ابدأ الآن" value={edit.cta_text || ''} onChange={(e) => setEdit({ ...edit, cta_text: e.target.value })} /></Field>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#D1D5DB', fontSize: '12.5px', margin: '10px 0' }}>
+            <input type="checkbox" checked={!!edit.is_recommended} onChange={(e) => setEdit({ ...edit, is_recommended: e.target.checked })} style={{ accentColor: ACCENT }} />
+            ⭐ الأكثر طلباً (تُميَّز هذه الباقة في صفحة الأسعار العامة)
+          </label>
           <Field label="الترتيب"><input className="admin-input" type="number" value={edit.sort_order ?? 0} onChange={(e) => setEdit({ ...edit, sort_order: e.target.value })} /></Field>
           <Field label="المزايا">
             <PlanFeatureSelector

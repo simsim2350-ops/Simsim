@@ -10,8 +10,10 @@ const call = async (fn, args) => {
 // ===== الباقات =====
 export const listPlans = () => call('admin_list_plans').then((d) => d || [])
 export const upsertPlan = (p) => call('admin_upsert_plan', {
-  p_id: p.id || null, p_name: p.name, p_billing_cycle: p.billing_cycle,
-  p_price: Number(p.price) || 0, p_features: p.features || null, p_sort_order: Number(p.sort_order) || 0,
+  p_id: p.id || null, p_name: p.name, p_description: p.description || null, p_cta_text: p.cta_text || null,
+  p_price_monthly: p.price_monthly === '' || p.price_monthly == null ? null : Number(p.price_monthly),
+  p_price_yearly: p.price_yearly === '' || p.price_yearly == null ? null : Number(p.price_yearly),
+  p_is_recommended: !!p.is_recommended, p_sort_order: Number(p.sort_order) || 0,
 })
 export const setPlanActive = (id, active) => call('admin_set_plan_active', { p_id: id, p_active: active })
 // حذف باقة — محميّ خادمياً: يُمنع إن ارتبط بها أي اشتراك (يرمي خطأً واضحاً)
