@@ -70,10 +70,12 @@ export default function PlanFeatureSelector({ capabilities, categories, selected
                   style={{ ...rowStyle, borderTop: i ? `1px solid ${BORDER}` : 'none', opacity: disabled ? 0.6 : 1 }}>
                   <span style={{ fontSize: '15px' }}>{c.icon || '•'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', color: 'white', fontWeight: '600' }}>{c.name}</div>
+                    {/* للعامّة: النص الأساسي هو public_label (ما يراه العميل) لا الاسم الداخلي.
+                        للداخلي فقط: لا يوجد public_label أصلاً، فيبقى الاسم الداخلي وحده معروضاً. */}
+                    <div style={{ fontSize: '13px', color: 'white', fontWeight: '600' }}>{c.is_public ? (c.public_label || c.name) : c.name}</div>
                     {c.is_public
-                      ? <div style={{ fontSize: '10.5px', color: ACCENT, marginTop: '1px' }}>عام · يظهر للعملاء باسم «{c.public_label || c.name}»</div>
-                      : <div style={{ fontSize: '10.5px', color: MUTED, marginTop: '1px' }}>داخلي فقط</div>}
+                      ? <div style={{ fontSize: '10.5px', color: ACCENT, marginTop: '1px' }}>عام — يظهر في صفحة الأسعار</div>
+                      : <div style={{ fontSize: '10.5px', color: MUTED, marginTop: '1px' }}>داخلي فقط — لا يظهر للعملاء</div>}
                   </div>
                   <span style={toggleTrack(on)}><span style={toggleThumb(on)} /></span>
                 </div>
