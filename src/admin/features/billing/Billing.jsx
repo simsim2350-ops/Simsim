@@ -3,7 +3,8 @@ import { toast } from 'react-hot-toast'
 import AdminShell from '../../AdminShell'
 import { useAuthStore } from '../../../store/authStore'
 import { listRestaurants } from '../restaurants/restaurantsApi'
-import { listCapabilities, listPlanFeatures } from '../catalog/catalogApi'
+import { listCapabilities, listCategories, listPlanFeatures, setPlanFeature, deletePlanFeature } from '../catalog/catalogApi'
+import PlanFeatureSelector from './PlanFeatureSelector'
 import {
   listPlans, upsertPlan, setPlanActive, deletePlan,
   listSubscriptions, upsertSubscription,
@@ -79,7 +80,9 @@ function PlansTab({ canManage }) {
   const [error, setError] = useState(null)
   const [edit, setEdit] = useState(null) // الباقة قيد التعديل أو {} للجديدة
   const [busy, setBusy] = useState(false)
-  const [capNames, setCapNames] = useState({}) // feature_key -> الاسم المعروض (من سجل القدرات)
+  const [caps, setCaps] = useState([]) // كل القدرات (من سجل القدرات) — تُستخدم للأسماء وللمحدّد
+  const [cats, setCats] = useState([])
+  const capNames = useMemo(() => Object.fromEntries(caps.map((c) => [c.key, c.name])), [caps])
   const [planFeatures, setPlanFeatures] = useState({}) // plan.id -> [{feature_key,is_included,value}]
 
   const load = () => {
@@ -88,7 +91,7 @@ function PlansTab({ canManage }) {
   }
   useEffect(load, [])
   useEffect(() => {
-    listCapabilities().then((caps) => setCapNames(Object.fromEntries(caps.map((c) => [c.key, c.name])))).catch(() => {})
+    Promise.all([listCapabilities(), listCategories()]).then(([c, cat]) => { setCaps(c); setCats(cat) }).catch(() => {})
   }, [])
   // ملخّص «✓ الميزة» تحت كل باقة — نفس المصدر الذي تديره شاشة «الباقات» (plan_features)،
   // بلا نسخة ثانية من بيانات المزايا. أسماء داخلية (سجل القدرات) لأن هذا عرض إداري، لا عام.
@@ -101,9 +104,32 @@ function PlansTab({ canManage }) {
   const save = async () => {
     if (!edit.name?.trim()) return toast.error('الاسم مطلوب')
     setBusy(true)
-    try { await upsertPlan(edit); toast.success('تم الحفظ'); setEdit(null); load() }
+    try {
+      const planId = await upsertPlan(edit)
+      // توفيق قائمة المزايا المُختارة مع plan_features الفعلية — بلا نسخة ثانية للبيانات:
+      // نُقارن بما كان محفوظاً فعلياً وقت فتح النموذج (edit.originalFeatureKeys)، لا كل القدرات.
+      const desired = new Set(edit.featureKeys || [])
+      const before = new Set(edit.originalFeatureKeys || [])
+      const toAdd = [...desired].filter((k) => !before.has(k))
+      const toRemove = [...before].filter((k) => !desired.has(k))
+      await Promise.all([
+        ...toAdd.map((k) => setPlanFeature(planId, k, true, null)),
+        ...toRemove.map((k) => deletePlanFeature(planId, k)),
+      ])
+      toast.success('تم الحفظ'); setEdit(null); load()
+    }
     catch (e) { toast.error(e?.message || 'فشل الحفظ') }
     finally { setBusy(false) }
+  }
+  const openEdit = async (p) => {
+    setEdit({ ...p, featureKeys: [], originalFeatureKeys: [] }) // فتح فوري بحالة فارغة، ثم نملؤها فور وصول المزايا
+    try {
+      // كل المفاتيح المُضمَّنة فعلياً (مزايا + حدود معاً) — المحدّد يعرض/يبدّل النوع feature
+      // فقط، لكن نُبقي حدود الباقة كما هي كي لا يمسحها الفرق عند الحفظ (before/after متطابقان لها).
+      const rows = await listPlanFeatures(p.id)
+      const keys = rows.filter((r) => r.is_included).map((r) => r.feature_key)
+      setEdit((cur) => (cur?.id === p.id ? { ...cur, featureKeys: keys, originalFeatureKeys: keys } : cur))
+    } catch (e) { toast.error(e?.message || 'تعذّر تحميل مزايا الباقة') }
   }
   const toggle = async (p) => {
     try { await setPlanActive(p.id, !p.is_active); load() }
@@ -120,7 +146,7 @@ function PlansTab({ canManage }) {
   if (error) return <ErrorState msg={error} onRetry={load} />
   return (
     <div>
-      {canManage && <div style={{ marginBottom: '14px' }}><Button variant="primary" onClick={() => setEdit({ billing_cycle: 'monthly', price: '', sort_order: 0 })}>+ باقة جديدة</Button></div>}
+      {canManage && <div style={{ marginBottom: '14px' }}><Button variant="primary" onClick={() => setEdit({ billing_cycle: 'monthly', price: '', sort_order: 0, featureKeys: [], originalFeatureKeys: [] })}>+ باقة جديدة</Button></div>}
       {rows.length === 0 ? <EmptyState msg="لا توجد باقات بعد" /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {rows.map((p) => (
@@ -143,7 +169,7 @@ function PlansTab({ canManage }) {
               <div style={{ fontFamily: 'Tajawal,sans-serif', fontWeight: '900', fontSize: '16px', color: 'white' }}>{fmt(p.price)} <span style={{ fontSize: '11px', color: MUTED }}>﷼</span></div>
               {canManage && (
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <Button variant="neutral" onClick={() => setEdit(p)}>تعديل</Button>
+                  <Button variant="neutral" onClick={() => openEdit(p)}>تعديل</Button>
                   <Button variant={p.is_active ? 'danger' : 'success'} onClick={() => toggle(p)}>{p.is_active ? 'تعطيل' : 'تفعيل'}</Button>
                   {Number(p.subscribers_count || 0) === 0 && <Button variant="danger" onClick={() => remove(p)}>🗑 حذف</Button>}
                 </div>
@@ -161,8 +187,13 @@ function PlansTab({ canManage }) {
             </select>
           </Field>
           <Field label="السعر (﷼، شامل الضريبة)"><input className="admin-input" type="number" inputMode="decimal" value={edit.price} onChange={(e) => setEdit({ ...edit, price: e.target.value })} /></Field>
-          <Field label="المزايا (اختياري)"><input className="admin-input" value={edit.features || ''} onChange={(e) => setEdit({ ...edit, features: e.target.value })} /></Field>
           <Field label="الترتيب"><input className="admin-input" type="number" value={edit.sort_order ?? 0} onChange={(e) => setEdit({ ...edit, sort_order: e.target.value })} /></Field>
+          <Field label="المزايا">
+            <PlanFeatureSelector
+              capabilities={caps} categories={cats} selected={edit.featureKeys || []}
+              onChange={(next) => setEdit({ ...edit, featureKeys: next })} disabled={!canManage}
+            />
+          </Field>
           <ModalActions busy={busy} onSave={save} onCancel={() => setEdit(null)} />
         </Modal>
       )}
