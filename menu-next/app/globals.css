@@ -1,0 +1,76 @@
+/* Minimal, functional styles for the Phase 2 POC — reuses the current menu's
+   visual language (Tajawal font, orange accent, card-based layout) without
+   copying its CSS wholesale. No animation, no design-system rebuild. */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #F8F9FB;
+  color: #0B0B0F;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.menu-frame {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: #F8F9FB;
+}
+
+.menu-header {
+  background: white;
+  border-bottom: 3px solid;
+  padding: 16px;
+}
+.menu-header__top { display: flex; align-items: center; gap: 12px; }
+.menu-header__logo { border-radius: 14px; object-fit: cover; flex-shrink: 0; }
+.menu-header__logo--placeholder { width: 64px; height: 64px; }
+.menu-header__name { margin: 0; font-size: 19px; font-weight: 900; }
+.menu-header__desc { margin: 4px 0 0; font-size: 12.5px; color: #6B7280; line-height: 1.6; }
+
+.menu-header__branches { display: flex; gap: 8px; margin-top: 14px; overflow-x: auto; }
+.menu-header__branch {
+  flex-shrink: 0; padding: 7px 14px; border-radius: 999px; border: 1.5px solid #E5E7EB;
+  font-size: 12.5px; font-weight: 700; color: #374151; text-decoration: none; white-space: nowrap;
+}
+.menu-header__branch.is-active { color: white; }
+
+.menu-toolbar { display: flex; justify-content: flex-end; padding: 10px 16px 0; }
+.menu-toolbar__lang {
+  font-size: 12px; font-weight: 700; color: #6B7280; text-decoration: none;
+  border: 1px solid #E5E7EB; border-radius: 999px; padding: 5px 12px; background: white;
+}
+
+.category-section { padding: 18px 16px 4px; }
+.category-section__title { font-size: 16px; font-weight: 900; margin: 0 0 10px; }
+.category-section__empty { color: #9CA3AF; font-size: 13px; }
+.category-section__grid { display: grid; gap: 10px; }
+
+.product-card {
+  display: flex; gap: 12px; background: white; border: 1px solid #EEF0F3;
+  border-radius: 14px; padding: 10px; align-items: center;
+}
+.product-card__media {
+  position: relative; width: 72px; height: 72px; flex-shrink: 0; border-radius: 10px;
+  overflow: hidden; background: #F3F4F6; display: flex; align-items: center; justify-content: center;
+}
+.product-card__image { object-fit: cover; }
+.product-card__emoji { font-size: 30px; }
+.product-card__body { flex: 1; min-width: 0; }
+.product-card__name { margin: 0; font-size: 14px; font-weight: 800; }
+.product-card__desc {
+  margin: 3px 0 0; font-size: 12px; color: #6B7280; line-height: 1.5;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.product-card__price { margin-top: 6px; font-size: 13.5px; font-weight: 900; display: flex; gap: 8px; align-items: baseline; }
+.product-card__compare { font-size: 11px; color: #9CA3AF; text-decoration: line-through; font-weight: 600; }
+
+.menu-footer { text-align: center; padding: 20px 16px 32px; font-size: 11px; color: #9CA3AF; }
+
+.menu-empty { text-align: center; padding: 60px 24px; color: #6B7280; }
+.menu-empty h1 { font-size: 20px; color: #0B0B0F; }
+
+/* English/LTR variant wrapper — applied per-page, not on <html>, see app/layout.tsx */
+.lang-en { direction: ltr; text-align: left; }
