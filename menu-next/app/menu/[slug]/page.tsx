@@ -4,6 +4,8 @@ import { t } from '@/lib/i18n'
 import type { Lang } from '@/lib/types'
 import { RestaurantHeader } from '@/components/RestaurantHeader'
 import { CategorySection } from '@/components/CategorySection'
+import { CartWidget } from '@/components/CartWidget'
+import { BranchConflictModal } from '@/components/BranchConflictModal'
 
 type Params = { slug: string }
 type Search = { branch?: string; lang?: string }
@@ -73,11 +75,15 @@ export default async function MenuPage({
             lang={lang}
             currency={currency}
             priceColor={priceColor}
+            branchId={branch.id}
+            branchName={lang === 'en' && branch.name_en ? branch.name_en : branch.name}
           />
         ))
       )}
 
       <footer className="menu-footer">{t(lang).poweredBy}</footer>
+      <CartWidget lang={lang} currency={currency} priceColor={priceColor} branchId={branch.id} slug={slug} products={products} />
+      <BranchConflictModal lang={lang} />
     </div>
   )
 }

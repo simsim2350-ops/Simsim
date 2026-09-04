@@ -12,7 +12,7 @@ export async function getRestaurantBySlug(slug: string): Promise<Restaurant | nu
   if (!supabase) return null
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, slug, name, description, description_en, logo_url, brand_color, price_color, description_color, currency, is_active')
+    .select('id, slug, name, description, description_en, logo_url, brand_color, price_color, description_color, currency, is_active, delivery_enabled, delivery_fee')
     .eq('slug', slug)
     .eq('is_active', true)
     .maybeSingle()
@@ -25,7 +25,7 @@ export async function getActiveBranches(restaurantId: string): Promise<Branch[]>
   if (!supabase) return []
   const { data, error } = await supabase
     .from('branches')
-    .select('id, restaurant_id, name, name_en, is_active, is_primary, sort_order')
+    .select('id, restaurant_id, name, name_en, is_active, is_primary, sort_order, delivery_enabled, delivery_fee, takeaway_enabled, opening_hours, is_paused')
     .eq('restaurant_id', restaurantId)
     .eq('is_active', true)
     .order('sort_order')
@@ -59,7 +59,7 @@ export async function getAvailableProducts(branchId: string): Promise<Product[]>
   if (!supabase) return []
   const { data, error } = await supabase
     .from('products')
-    .select('id, branch_id, category_id, name, name_en, description, description_en, price, compare_price, image_url, emoji, is_available, sort_order')
+    .select('id, branch_id, category_id, name, name_en, description, description_en, price, compare_price, image_url, emoji, is_available, sort_order, options')
     .eq('branch_id', branchId)
     .eq('is_available', true)
     .order('sort_order')

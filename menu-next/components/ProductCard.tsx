@@ -1,11 +1,14 @@
 import Image from 'next/image'
 import type { Product, Lang } from '@/lib/types'
+import { AddToCartButton } from './AddToCartButton'
 
-export function ProductCard({ product, lang, currency, priceColor }: {
+export function ProductCard({ product, lang, currency, priceColor, branchId, branchName }: {
   product: Product
   lang: Lang
   currency: string
   priceColor: string
+  branchId: string
+  branchName: string
 }) {
   const name = lang === 'en' && product.name_en ? product.name_en : product.name
   const description = lang === 'en' ? product.description_en || product.description : product.description
@@ -31,6 +34,14 @@ export function ProductCard({ product, lang, currency, priceColor }: {
           )}
         </div>
       </div>
+      <AddToCartButton
+        product={{ id: product.id, name: product.name, nameEn: product.name_en, price: product.price, imageUrl: product.image_url, emoji: product.emoji, options: product.options }}
+        branchId={branchId}
+        branchName={branchName}
+        currency={currency}
+        priceColor={priceColor}
+        lang={lang}
+      />
     </article>
   )
 }

@@ -13,7 +13,11 @@ export type Restaurant = {
   description_color: string | null
   currency: string | null
   is_active: boolean
+  delivery_enabled: boolean | null
+  delivery_fee: number | null
 }
+
+export type OpeningHoursDay = { open: boolean; from: string; to: string }
 
 export type Branch = {
   id: string
@@ -23,6 +27,11 @@ export type Branch = {
   is_active: boolean
   is_primary: boolean
   sort_order: number
+  delivery_enabled: boolean | null
+  delivery_fee: number | null
+  takeaway_enabled: boolean | null
+  opening_hours: OpeningHoursDay[] | null
+  is_paused: boolean | null
 }
 
 export type Category = {
@@ -50,6 +59,10 @@ export type Product = {
   emoji: string | null
   is_available: boolean
   sort_order: number
+  // Raw products.options JSONB — untyped/untrusted at this layer on purpose
+  // (no DB constraint on its shape). Normalize with normalizeOptionGroups()
+  // before use; never assume it's an array or that entries are well-formed.
+  options: unknown
 }
 
 export type Lang = 'ar' | 'en'
