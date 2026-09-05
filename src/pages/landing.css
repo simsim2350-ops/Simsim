@@ -867,6 +867,36 @@
   .ss-legal-page__nav .ss-btn { padding-inline: 13px; }
 }
 
+/* =========================== 404 PAGE =========================== */
+.ss-notfound-page__card {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.ss-notfound-page__code {
+  font-size: clamp(56px, 12vw, 92px);
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--ss-primary), var(--ss-primary-dark));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 8px;
+}
+.ss-notfound-page__card .ss-legal-page__intro { max-width: 480px; margin-inline: auto; text-align: center; }
+.ss-notfound-page__actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+@media (max-width: 480px) {
+  .ss-notfound-page__actions { flex-direction: column; width: 100%; }
+  .ss-notfound-page__actions .ss-btn { width: 100%; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ss-landing *, .ss-landing *::before, .ss-landing *::after {
     animation-duration: .01ms !important;
