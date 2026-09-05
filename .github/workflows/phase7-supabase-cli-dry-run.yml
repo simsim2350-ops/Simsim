@@ -1,0 +1,100 @@
+name: Phase 7 — Supabase CLI Dry Run Validation
+
+# TEMPORARY validation workflow (Phase 7 — Restaurant Operations E2E prep).
+# Purpose ONLY: prove that GitHub Actions ubuntu-latest -> Supabase CLI ->
+# `db dump --schema-only --dry-run` support chain actually works, before any
+# real schema dump is ever attempted. This is NOT the real dump.
+#
+# Hard safety guarantees, by construction:
+#   - No step references any GitHub Secret of any kind (grep this file for
+#     `secrets.` — there is none). No SUPABASE_ACCESS_TOKEN, no
+#     SUPABASE_DB_PASSWORD, no Supabase credential of any kind is used.
+#   - `supabase link` is never invoked.
+#   - `supabase db dump` is never invoked without `--help` — i.e. it never
+#     actually runs a dump, only prints the CLI's own help text for that
+#     subcommand, which requires no connection to any Supabase project.
+#   - Every `supabase` invocation below is local-only: version printing and
+#     `--help` text. None of them open a network connection to Supabase.
+#   - Manual trigger only (`workflow_dispatch`) — this does not run on every
+#     push/PR, so it adds no CI load beyond an explicit, deliberate run.
+#
+# Safe to delete once Phase 7's real (separately-authorized, separately-run)
+# schema dump has been produced and this validation is no longer needed.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: phase7-supabase-cli-dry-run
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate Supabase CLI dump-command support (no Supabase connection)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI (local binary only — no login, no link)
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Print CLI version
+        run: supabase --version
+
+      - name: "Verify: supabase db dump --help works (local, no connection)"
+        run: supabase db dump --help
+
+      - name: "Verify: --schema-only flag is supported"
+        run: |
+          if supabase db dump --help | grep -q -- '--schema-only'; then
+            echo "OK: --schema-only is supported by this CLI version."
+          else
+            echo "MISSING: --schema-only was not found in 'supabase db dump --help' output." >&2
+            exit 1
+          fi
+
+      - name: "Verify: --dry-run flag is supported"
+        run: |
+          if supabase db dump --help | grep -q -- '--dry-run'; then
+            echo "OK: --dry-run is supported by this CLI version."
+          else
+            echo "MISSING: --dry-run was not found in 'supabase db dump --help' output." >&2
+            exit 1
+          fi
+
+      - name: "Repository structure check (read-only — no files created or modified)"
+        run: |
+          echo "Checking for supabase/config.toml..."
+          if [ -f "supabase/config.toml" ]; then
+            echo "FOUND: supabase/config.toml exists."
+          else
+            echo "NOT FOUND: supabase/config.toml does not exist yet (expected — not yet created, per prior Phase 7 reports)."
+          fi
+
+          echo "Checking for supabase/schema_ci_baseline.sql..."
+          if [ -f "supabase/schema_ci_baseline.sql" ]; then
+            echo "FOUND: supabase/schema_ci_baseline.sql exists."
+          else
+            echo "NOT FOUND: supabase/schema_ci_baseline.sql does not exist yet (expected — no real dump has been produced)."
+          fi
+
+          echo "Listing supabase/ directory contents (source only, no secrets expected):"
+          ls -la supabase/ || echo "supabase/ directory not found."
+
+      - name: Safety summary
+        run: |
+          echo "=================================================================="
+          echo "Phase 7 Supabase CLI Dry Run Validation — safety summary"
+          echo "=================================================================="
+          echo "No Supabase secrets were referenced by this workflow."
+          echo "No 'supabase link' command was executed."
+          echo "No 'supabase db dump' was executed except with --help."
+          echo "No network connection to any Supabase project was made."
+          echo "No schema dump file was generated."
+          echo "This run validated CLI availability and flag support only."
+          echo "=================================================================="

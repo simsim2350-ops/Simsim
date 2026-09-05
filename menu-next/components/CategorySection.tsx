@@ -8,12 +8,16 @@ export function CategorySection({
   lang,
   currency,
   priceColor,
+  branchId,
+  branchName,
 }: {
   category: Category
   products: Product[]
   lang: Lang
   currency: string
   priceColor: string
+  branchId: string
+  branchName: string
 }) {
   const name = lang === 'en' && category.name_en ? category.name_en : category.name
 
@@ -28,7 +32,7 @@ export function CategorySection({
       ) : (
         <div className="category-section__grid">
           {products.map((p) => (
-            <ProductCard key={p.id} product={p} lang={lang} currency={currency} priceColor={priceColor} />
+            <ProductCard key={p.id} product={p} lang={lang} currency={currency} priceColor={priceColor} branchId={branchId} branchName={branchName} />
           ))}
         </div>
       )}

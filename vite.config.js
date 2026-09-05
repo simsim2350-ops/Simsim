@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   test: {
-    exclude: ['**/node_modules/**', '**/dist/**', 'marketing-ssr/**', 'tests/e2e/**'],
+    exclude: ['**/node_modules/**', '**/dist/**', 'marketing-ssr/**', 'menu-next/**', 'tests/e2e/**'],
     setupFiles: ['./src/test/setup.js'],
     coverage: {
       provider: 'v8',
