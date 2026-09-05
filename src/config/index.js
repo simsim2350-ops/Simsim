@@ -17,11 +17,11 @@ export const appConfig = Object.freeze({
   missingKeys,
   mode: env.MODE || 'production',
   isDev: Boolean(env.DEV),
-  // جسر مؤقّت لمرحلة هجرة المنيو الجديد (menu-next) — الدومين الثابت الوحيد
-  // المتاح حالياً لتطبيق menu-next (لا يوجد نطاق فرعي مخصّص بعد). تُبنى منه
-  // روابط فتح/معاينة/QR المنيو في نقاط الدخول المهاجَرة فقط (Dashboard،
-  // الطاولات، صفحة QR، الإعداد الأولي) دون المساس بتوجيه الإنتاج المشترك
-  // (vercel.json) أو أي رابط منيو قديم مطبوع/محفوظ مسبقاً — تلك تبقى كما هي
-  // على simsimmenu.com/menu/:slug (المنيو القديم) للتراجع الفوري عند الحاجة.
-  menuNextBaseUrl: 'https://simsim-menu-next.vercel.app',
+  // الدومين الرسمي للمنيو الجديد (menu-next) — منذ إضافة قاعدة proxy في
+  // vercel.json (`/menu/(.+) → simsim-menu-next.vercel.app/menu/$1`)، هذا
+  // الدومين نفسه (simsimmenu.com) يخدم menu-next مباشرة دون أي تحويل عميل
+  // (redirect)، فبنيت منه روابط فتح/معاينة/QR المنيو في كل نقاط الدخول
+  // (Dashboard، الطاولات، صفحة QR، الإعداد الأولي، الإعدادات، الفروع) لتكون
+  // متطابقة مع الرابط الذي يظهر فعلياً في شريط العنوان للزبون.
+  menuNextBaseUrl: 'https://simsimmenu.com',
 })
