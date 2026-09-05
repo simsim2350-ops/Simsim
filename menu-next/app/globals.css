@@ -37,6 +37,64 @@ html, body {
 }
 .menu-header__branch.is-active { color: white; }
 
+/* ===== Restaurant info depth (ported from the old menu's MenuHeader.jsx) ===== */
+.menu-header__rating { font-size: 11.5px; font-weight: 800; color: #B08A2E; margin-top: 3px; }
+.menu-header__rating span { color: #9CA3AF; font-weight: 700; }
+.menu-header__status { display: inline-flex; align-items: center; gap: 5px; margin-top: 3px; font-size: 11.5px; font-weight: 800; }
+.menu-header__status.is-open { color: #10B981; }
+.menu-header__status.is-closed { color: #EF4444; }
+.menu-header__status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.menu-header__status-detail { color: #6B7280; font-weight: 700; }
+.menu-header__search-btn {
+  flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid #E5E7EB;
+  background: white; cursor: pointer; font-size: 15px;
+}
+.menu-header__location { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.menu-header__address { font-size: 12px; font-weight: 700; color: #6B7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.menu-header__map-link { font-size: 11px; font-weight: 700; text-decoration: none; background: rgba(0,0,0,0.05); padding: 3px 10px; border-radius: 999px; flex-shrink: 0; }
+.menu-header__actions { display: flex; align-items: center; gap: 6px; margin-top: 10px; overflow-x: auto; }
+.menu-header__action-icon {
+  width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; background: white; border: 1.5px solid #E5E7EB;
+  display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 14px;
+}
+.menu-header__allergens-btn {
+  display: flex; align-items: center; gap: 4px; flex-shrink: 0; white-space: nowrap; padding: 6px 10px;
+  border-radius: 999px; border: 1.5px solid #FDE68A; background: #FFFBEB; color: #92400E;
+  font-family: 'Tajawal', sans-serif; font-weight: 700; font-size: 11px; cursor: pointer;
+}
+
+/* ===== Allergens modal (same bottom-sheet pattern as .options-modal) ===== */
+.allergens-modal-overlay {
+  position: fixed; inset: 0; z-index: 220; display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(0,0,0,0.5);
+}
+.allergens-modal {
+  background: white; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 75vh;
+  overflow-y: auto; padding: 4px 20px 20px;
+}
+.allergens-modal__title { font-size: 17px; font-weight: 900; text-align: center; margin: 8px 0 6px; }
+.allergens-modal__desc { font-size: 12px; color: #9CA3AF; text-align: center; margin: 0 0 16px; line-height: 1.6; }
+.allergens-modal__list { display: flex; flex-direction: column; gap: 8px; }
+.allergens-modal__item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #F8F9FB; border-radius: 12px; font-size: 13px; font-weight: 600; }
+.allergens-modal__close-btn {
+  width: 100%; margin-top: 16px; padding: 13px; border-radius: 12px; border: none; background: #F3F4F6;
+  color: #374151; font-family: 'Tajawal', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer;
+}
+
+/* ===== Search overlay (full-screen, same product grid as the regular menu) ===== */
+.search-overlay {
+  position: fixed; inset: 0; z-index: 230; background: #F8F9FB; display: flex; flex-direction: column;
+  max-width: 480px; margin: 0 auto;
+}
+.search-overlay__header { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: white; border-bottom: 1px solid #E5E7EB; flex-shrink: 0; }
+.search-overlay__input {
+  flex: 1; height: 42px; border-radius: 12px; border: 1.5px solid #E5E7EB; padding: 0 14px;
+  font-family: 'Tajawal', sans-serif; font-size: 14px; background: #F8F9FB;
+}
+.search-overlay__close { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid #E5E7EB; background: white; cursor: pointer; }
+.search-overlay__body { flex: 1; overflow-y: auto; padding: 16px; }
+.search-overlay__empty { text-align: center; color: #9CA3AF; font-size: 13px; margin-top: 40px; }
+
 .menu-toolbar { display: flex; justify-content: flex-end; padding: 10px 16px 0; }
 .menu-toolbar__lang {
   font-size: 12px; font-weight: 700; color: #6B7280; text-decoration: none;
