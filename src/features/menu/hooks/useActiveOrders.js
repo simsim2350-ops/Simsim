@@ -93,26 +93,21 @@ export function useActiveOrders(slug, t) {
 
   // مصالحة الحالة: نعيد جلب الحالة الحقيقية للطلبات النشطة من قاعدة البيانات
   // لتعويض أي تحديث فات أثناء انقطاع اتصال realtime (خروج من المتصفح / قفل الشاشة)
-  // TASK-ORD-004: القراءة الآمنة بالرمز (get_orders_status_secure) للطلبات التي تحمل accessToken —
-  // الطلبات القديمة بلا رمز تبقى على get_orders_status حتى تنتهي مهلة localStorage الخاصة بها (12 ساعة)
+  // TASK-ORD-004: القراءة الآمنة بالرمز (get_orders_status_secure) حصراً — TASK-SEC-003 (PHASE 7):
+  // المسار الاحتياطي القديم (get_orders_status، GAP-SEC-003، بلا إثبات ملكية) أُزيل هنا؛ صلاحية
+  // anon/authenticated عليه سُحبت من قاعدة البيانات في نفس المهمة. أي طلب محفوظ محلياً بلا accessToken
+  // (نادر جداً عملياً: يتطلّب أن يكون أُنشئ قبل إضافة الرمز وما زال ضمن نافذة الـ12 ساعة) لن يحصل على
+  // تحديث حيّ بعد الآن ويبقى على آخر حالة معروفة محلياً حتى تنتهي مهلته الطبيعية — تدهور رشيق، لا كسر.
   const reconcileActiveOrders = async () => {
     const list = activeOrdersRef.current || []
     const pending = list.filter(o => o.status !== 'completed' && o.status !== 'cancelled')
-    if (pending.length === 0) return
     const withToken = pending.filter(o => o.accessToken)
-    const withoutToken = pending.filter(o => !o.accessToken)
+    if (withToken.length === 0) return
     try {
-      const results = []
-      if (withToken.length > 0) {
-        const { data } = await supabase.rpc('get_orders_status_secure', {
-          p_orders: withToken.map(o => ({ id: o.id, access_token: o.accessToken })),
-        })
-        if (Array.isArray(data)) results.push(...data)
-      }
-      if (withoutToken.length > 0) {
-        const { data } = await supabase.rpc('get_orders_status', { order_ids: withoutToken.map(o => o.id) })
-        if (Array.isArray(data)) results.push(...data)
-      }
+      const { data } = await supabase.rpc('get_orders_status_secure', {
+        p_orders: withToken.map(o => ({ id: o.id, access_token: o.accessToken })),
+      })
+      const results = Array.isArray(data) ? data : []
       setActiveOrders(prev => prev.map(o => {
         const fresh = results.find(d => d.id === o.id)
         if (!fresh) return o

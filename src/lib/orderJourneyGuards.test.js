@@ -58,8 +58,9 @@ const ORDER_JOURNEY_FN_NAMES = new Set([
 const ALLOWLIST_001 = {
   create_order: 'تُنشئ order_access_token جديداً — لا تتحقق من رمز قائم مسبقاً',
   create_order_from_table_qr: 'تفوّض التحقّق بالكامل لِـ create_order التي تستدعيها داخلياً',
-  get_orders_status: 'GAP-SEC-003 موثَّق عمداً (sql/order_status_reads.sql) — مسار احتياطي مؤقت '
-    + 'لطلبات محفوظة محلياً بلا رمز من قبل PHASE 6؛ تُسحب صلاحية anon عنها في TASK-SEC-003 لاحقاً',
+  get_orders_status: 'GAP-SEC-003 موثَّق عمداً (sql/order_status_reads.sql) — كانت مساراً احتياطياً '
+    + 'مؤقتاً لطلبات محفوظة محلياً بلا رمز من قبل PHASE 6؛ TASK-SEC-003 نُفِّذ (صلاحية anon/authenticated '
+    + 'مسحوبة، لا مسار حيّ يستدعيها بعد الآن) — الدالة نفسها مُبقاة هنا فقط لتبقى مُلتقَطة بهذا الحارس',
 }
 
 // دالة قد تظهر بأكثر من تعريف عبر ملفات متعددة (سجل هجرات تراكمي — كل ملف نسخة زمنية، لا حالة

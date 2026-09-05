@@ -49,10 +49,11 @@ AS $function$
   )
 $function$;
 
--- get_orders_status — GAP-SEC-003 موثَّق: بلا إثبات ملكية (أي id صحيح يُرجع بياناته). **لا تُستخدم
--- لأي طلب جديد** — الواجهة تستعملها فقط كمسار احتياطي مؤقت للطلبات المحفوظة محلياً قبل PHASE 6 (بلا
--- order_access_token) حتى تنتهي مهلة الـ12 ساعة الخاصة بها. تُسحب صلاحية anon عنها في TASK-SEC-003
--- (PHASE 7) بعد التأكد من انتقال كل العملاء — **لا تُسحب الآن**.
+-- get_orders_status — GAP-SEC-003 موثَّق: بلا إثبات ملكية (أي id صحيح يُرجع بياناته). كانت الواجهة
+-- تستعملها كمسار احتياطي مؤقت للطلبات المحفوظة محلياً قبل PHASE 6 (بلا order_access_token) حتى
+-- تنتهي مهلة الـ12 ساعة الخاصة بها. **TASK-SEC-003 (PHASE 7) نُفِّذ الآن** (انظر
+-- sql/task_sec_003_revoke_get_orders_status.sql): المسار الاحتياطي أُزيل من useActiveOrders.js
+-- وصلاحية anon/authenticated سُحبت عن الدالة — لا مسار حيّ يستدعيها بعد الآن. الدالة نفسها لم تُحذف.
 CREATE OR REPLACE FUNCTION public.get_orders_status(order_ids uuid[])
  RETURNS TABLE(id uuid, status text, cancelled_by text, items jsonb, total numeric)
  LANGUAGE sql
