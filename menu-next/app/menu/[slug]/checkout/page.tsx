@@ -3,10 +3,11 @@ import { loadMenuPage } from '@/lib/data'
 import { t } from '@/lib/i18n'
 import type { Lang } from '@/lib/types'
 import { computeBranchOpenStatus, effectiveDeliverySettings } from '@/lib/openStatus'
+import { resolveTableQr } from '@/lib/tableQr'
 import { CheckoutForm } from '@/components/CheckoutForm'
 
 type Params = { slug: string }
-type Search = { branch?: string; lang?: string }
+type Search = { branch?: string; lang?: string; table?: string }
 
 function resolveLang(search: Search): Lang {
   return search.lang === 'en' ? 'en' : 'ar'
@@ -27,7 +28,12 @@ export default async function CheckoutPage({
   const { slug } = await params
   const search = await searchParams
   const lang = resolveLang(search)
-  const data = await loadMenuPage(slug, search.branch)
+  // Re-resolved independently here rather than trusting a value carried over
+  // from the menu page — same "never trust the query string alone" contract
+  // as resolveTableQr's own doc comment. A failed/invalid token falls back
+  // to ?branch= exactly as if no table param had been given.
+  const tableQr = await resolveTableQr(search.table, slug)
+  const data = await loadMenuPage(slug, tableQr?.branchId || search.branch)
 
   if (!data) {
     return (
@@ -63,6 +69,7 @@ export default async function CheckoutPage({
         deliveryFee={delivery.fee}
         takeawayEnabled={takeawayEnabled}
         availableProductIds={products.map((p) => p.id)}
+        resolvedTableName={tableQr?.tableName ?? null}
       />
     </div>
   )

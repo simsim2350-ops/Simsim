@@ -2,13 +2,14 @@ import type { Metadata } from 'next'
 import { loadMenuPage } from '@/lib/data'
 import { t } from '@/lib/i18n'
 import type { Lang } from '@/lib/types'
+import { resolveTableQr } from '@/lib/tableQr'
 import { RestaurantHeader } from '@/components/RestaurantHeader'
 import { CategorySection } from '@/components/CategorySection'
 import { CartWidget } from '@/components/CartWidget'
 import { BranchConflictModal } from '@/components/BranchConflictModal'
 
 type Params = { slug: string }
-type Search = { branch?: string; lang?: string }
+type Search = { branch?: string; lang?: string; table?: string }
 
 function resolveLang(search: Search): Lang {
   return search.lang === 'en' ? 'en' : 'ar'
@@ -27,7 +28,12 @@ export default async function MenuPage({
   const { slug } = await params
   const search = await searchParams
   const lang = resolveLang(search)
-  const data = await loadMenuPage(slug, search.branch)
+  // A resolved table's own branch always wins over ?branch= — same priority
+  // as src/pages/PublicMenu.jsx's effectiveBranchId. A failed/invalid token
+  // resolves to null and falls back to ?branch= exactly as if no table
+  // param had been given at all — never blocks the page.
+  const tableQr = await resolveTableQr(search.table, slug)
+  const data = await loadMenuPage(slug, tableQr?.branchId || search.branch)
 
   if (!data) {
     return (
@@ -82,7 +88,7 @@ export default async function MenuPage({
       )}
 
       <footer className="menu-footer">{t(lang).poweredBy}</footer>
-      <CartWidget lang={lang} currency={currency} priceColor={priceColor} branchId={branch.id} slug={slug} products={products} />
+      <CartWidget lang={lang} currency={currency} priceColor={priceColor} branchId={branch.id} slug={slug} products={products} tableToken={tableQr?.token} />
       <BranchConflictModal lang={lang} />
     </div>
   )

@@ -9,7 +9,7 @@ import { hasSelectableOptions } from '@/lib/options'
 import { ProductOptionsModal } from './ProductOptionsModal'
 import type { CartItem } from '@/lib/cart/types'
 
-export function CartWidget({ lang, currency, priceColor, branchId, slug, products }: { lang: Lang; currency: string; priceColor: string; branchId: string; slug: string; products: Product[] }) {
+export function CartWidget({ lang, currency, priceColor, branchId, slug, products, tableToken }: { lang: Lang; currency: string; priceColor: string; branchId: string; slug: string; products: Product[]; tableToken?: string }) {
   const { items, count, subtotal, increment, decrement, removeItem } = useCart()
   const [open, setOpen] = useState(false)
   // The cart line currently being edited (Phase 6B) — reopens
@@ -32,7 +32,7 @@ export function CartWidget({ lang, currency, priceColor, branchId, slug, product
   // path *segment*, not the route's directory, so from /menu/simsim it would
   // resolve to /menu/simsim/checkout instead of /menu/checkout. Verified with
   // a real click-through during testing, not assumed.
-  const checkoutHref = `/menu/${slug}/checkout?${new URLSearchParams({ branch: branchId, ...(lang === 'en' ? { lang: 'en' } : {}) }).toString()}`
+  const checkoutHref = `/menu/${slug}/checkout?${new URLSearchParams({ branch: branchId, ...(lang === 'en' ? { lang: 'en' } : {}), ...(tableToken ? { table: tableToken } : {}) }).toString()}`
 
   const editingProduct = editingItem ? products.find((p) => p.id === editingItem.productId) : null
 
