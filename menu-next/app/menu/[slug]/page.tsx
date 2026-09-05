@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
-import { loadMenuPage } from '@/lib/data'
+import { loadMenuPage, getRestaurantRating, getCustomerFavorites } from '@/lib/data'
 import { t } from '@/lib/i18n'
 import type { Lang } from '@/lib/types'
 import { resolveTableQr } from '@/lib/tableQr'
+import { computeBranchOpenStatus } from '@/lib/openStatus'
 import { RestaurantHeader } from '@/components/RestaurantHeader'
 import { CategorySection } from '@/components/CategorySection'
 import { CartWidget } from '@/components/CartWidget'
@@ -56,10 +57,39 @@ export default async function MenuPage({
 
   const priceColor = restaurant.price_color || restaurant.brand_color || '#FF6A00'
   const currency = restaurant.currency || 'SAR'
+  const branchName = lang === 'en' && branch.name_en ? branch.name_en : branch.name
+  const openStatus = computeBranchOpenStatus(branch)
+
+  // Restaurant info depth (rating) and the three highlight sections — same
+  // sources/rules/priority order as the old menu's useMenuData.js/MenuBody.jsx:
+  // owner-curated best sellers > owner-curated featured > real order-frequency
+  // favorites > plain categories. Fetched in parallel; neither blocks the other.
+  const [rating, customerFavorites] = await Promise.all([
+    getRestaurantRating(restaurant.id),
+    getCustomerFavorites(restaurant.id, products),
+  ])
+  const manualBestSellers = products.filter((p) => p.is_best_seller === true).slice(0, 4)
+  const featuredProducts = products.filter((p) => p.is_featured === true).slice(0, 4)
+
+  const highlightSections: { key: string; title: string; products: typeof products }[] = [
+    ...(manualBestSellers.length > 0 ? [{ key: 'best-sellers', title: t(lang).manualBestSellers, products: manualBestSellers }] : []),
+    ...(featuredProducts.length > 0 ? [{ key: 'featured', title: t(lang).featuredProducts, products: featuredProducts }] : []),
+    ...(customerFavorites.length > 0 ? [{ key: 'favorites', title: t(lang).customerFavorites, products: customerFavorites }] : []),
+  ]
 
   return (
     <div className={`menu-frame${lang === 'en' ? ' lang-en' : ''}`} lang={lang} dir={lang === 'en' ? 'ltr' : 'rtl'}>
-      <RestaurantHeader restaurant={restaurant} branches={branches} activeBranch={branch} lang={lang} />
+      <RestaurantHeader
+        restaurant={restaurant}
+        branches={branches}
+        activeBranch={branch}
+        lang={lang}
+        rating={rating}
+        openStatus={openStatus}
+        products={products}
+        currency={currency}
+        priceColor={priceColor}
+      />
 
       <div className="menu-toolbar">
         <a
@@ -69,6 +99,19 @@ export default async function MenuPage({
           {t(lang).switchLang}
         </a>
       </div>
+
+      {highlightSections.map((section) => (
+        <CategorySection
+          key={section.key}
+          category={{ id: section.key, branch_id: branch.id, name: section.title, name_en: section.title, emoji: null, cover_url: null, sort_order: -1, is_visible: true }}
+          products={section.products}
+          lang={lang}
+          currency={currency}
+          priceColor={priceColor}
+          branchId={branch.id}
+          branchName={branchName}
+        />
+      ))}
 
       {categories.length === 0 ? (
         <p className="category-section__empty" style={{ padding: '18px 16px' }}>{t(lang).noCategories}</p>
@@ -82,7 +125,7 @@ export default async function MenuPage({
             currency={currency}
             priceColor={priceColor}
             branchId={branch.id}
-            branchName={lang === 'en' && branch.name_en ? branch.name_en : branch.name}
+            branchName={branchName}
           />
         ))
       )}

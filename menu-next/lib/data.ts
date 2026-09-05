@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { supabaseServer } from './supabase/server'
-import type { Restaurant, Branch, Category, Product } from './types'
+import type { Restaurant, Branch, Category, Product, Rating } from './types'
 
 // Data access only — no rendering here. Mirrors the exact same read pattern
 // (tables, filters, ordering) as the current production menu's useMenuData.js,
@@ -12,7 +12,7 @@ export async function getRestaurantBySlug(slug: string): Promise<Restaurant | nu
   if (!supabase) return null
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, slug, name, description, description_en, logo_url, brand_color, price_color, description_color, currency, is_active, delivery_enabled, delivery_fee')
+    .select('id, slug, name, description, description_en, logo_url, brand_color, price_color, description_color, currency, is_active, delivery_enabled, delivery_fee, phone, address, maps_url, social_links, allergens, show_social_links, show_allergens, show_hours, show_description')
     .eq('slug', slug)
     .eq('is_active', true)
     .maybeSingle()
@@ -25,7 +25,7 @@ export async function getActiveBranches(restaurantId: string): Promise<Branch[]>
   if (!supabase) return []
   const { data, error } = await supabase
     .from('branches')
-    .select('id, restaurant_id, name, name_en, is_active, is_primary, sort_order, delivery_enabled, delivery_fee, takeaway_enabled, opening_hours, is_paused')
+    .select('id, restaurant_id, name, name_en, is_active, is_primary, sort_order, delivery_enabled, delivery_fee, takeaway_enabled, opening_hours, is_paused, address, address_en, maps_url, phone')
     .eq('restaurant_id', restaurantId)
     .eq('is_active', true)
     .order('sort_order')
@@ -59,12 +59,48 @@ export async function getAvailableProducts(branchId: string): Promise<Product[]>
   if (!supabase) return []
   const { data, error } = await supabase
     .from('products')
-    .select('id, branch_id, category_id, name, name_en, description, description_en, price, compare_price, image_url, emoji, is_available, sort_order, options')
+    .select('id, branch_id, category_id, name, name_en, description, description_en, price, compare_price, image_url, emoji, is_available, sort_order, options, is_featured, is_best_seller')
     .eq('branch_id', branchId)
     .eq('is_available', true)
     .order('sort_order')
   if (error || !data) return []
   return data as Product[]
+}
+
+// Rating — same RPC and "hide until at least one real review exists" rule as the old
+// menu's useMenuData.js (get_restaurant_rating, unchanged, already live in production).
+export async function getRestaurantRating(restaurantId: string): Promise<Rating> {
+  const supabase = supabaseServer()
+  if (!supabase) return null
+  const { data, error } = await supabase.rpc('get_restaurant_rating', { p_restaurant_id: restaurantId } as never)
+  if (error) return null
+  const row = (Array.isArray(data) ? data[0] : data) as { avg_rating: number; review_count: number } | null
+  if (!row || Number(row.review_count) <= 0) return null
+  return { avg: Number(row.avg_rating), count: Number(row.review_count) }
+}
+
+// "يعجب زبائننا" (Customer Favorites) — ported verbatim from useMenuData.js: rank the branch's
+// own available products by total quantity ordered across get_recent_order_items' real,
+// non-cancelled orders from the last 30 days (that RPC's own window — unchanged), top 4.
+// Same RPC already live and already used for this exact purpose in the old menu.
+export async function getCustomerFavorites(restaurantId: string, products: Product[]): Promise<Product[]> {
+  if (products.length === 0) return []
+  const supabase = supabaseServer()
+  if (!supabase) return []
+  const { data, error } = await supabase.rpc('get_recent_order_items', { p_restaurant_id: restaurantId } as never)
+  if (error || !Array.isArray(data)) return []
+  const salesCount: Record<string, number> = {}
+  for (const order of data as { items: unknown }[]) {
+    const items = Array.isArray(order.items) ? (order.items as { id: string; qty?: number; unavailable?: boolean }[]) : []
+    for (const item of items) {
+      if (item.unavailable) continue
+      salesCount[item.id] = (salesCount[item.id] || 0) + (item.qty || 1)
+    }
+  }
+  return products
+    .filter((p) => salesCount[p.id] > 0)
+    .sort((a, b) => salesCount[b.id] - salesCount[a.id])
+    .slice(0, 4)
 }
 
 export type MenuPageData = {
