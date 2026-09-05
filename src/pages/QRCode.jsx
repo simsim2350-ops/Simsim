@@ -7,6 +7,7 @@ import { useBreakpoint } from '../hooks/useBreakpoint'
 import QRCode from 'qrcode'
 import { fetchBranches } from '../lib/branchesApi'
 import { trackOwnerMilestone } from '../lib/analytics'
+import { appConfig } from '../config'
 
 const QR_COLORS = ['#0B0B0F','#FF6A00','#10B981','#3B82F6','#8B5CF6','#EC4899','#F59E0B','#EF4444']
 
@@ -36,7 +37,7 @@ export default function QRCodePage() {
   }, [restaurant])
 
   const menuURL = restaurant
-    ? `${window.location.origin}/menu/${restaurant.slug}${selectedBranch ? `?branch=${selectedBranch}` : ''}`
+    ? `${appConfig.menuNextBaseUrl}/menu/${restaurant.slug}${selectedBranch ? `?branch=${selectedBranch}` : ''}`
     : ''
 
   useEffect(() => {

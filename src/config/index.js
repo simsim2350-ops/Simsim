@@ -17,4 +17,11 @@ export const appConfig = Object.freeze({
   missingKeys,
   mode: env.MODE || 'production',
   isDev: Boolean(env.DEV),
+  // جسر مؤقّت لمرحلة هجرة المنيو الجديد (menu-next) — الدومين الثابت الوحيد
+  // المتاح حالياً لتطبيق menu-next (لا يوجد نطاق فرعي مخصّص بعد). تُبنى منه
+  // روابط فتح/معاينة/QR المنيو في نقاط الدخول المهاجَرة فقط (Dashboard،
+  // الطاولات، صفحة QR، الإعداد الأولي) دون المساس بتوجيه الإنتاج المشترك
+  // (vercel.json) أو أي رابط منيو قديم مطبوع/محفوظ مسبقاً — تلك تبقى كما هي
+  // على simsimmenu.com/menu/:slug (المنيو القديم) للتراجع الفوري عند الحاجة.
+  menuNextBaseUrl: 'https://simsim-menu-next.vercel.app',
 })

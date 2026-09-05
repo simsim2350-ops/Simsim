@@ -8,6 +8,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { fetchBranches, createBranch, updateBranch, deleteBranch, cloneMenuToBranch } from '../lib/branchesApi'
 import { trackOwnerMilestone } from '../lib/analytics'
+import { appConfig } from '../config'
 
 function Icon({ type, size=16 }) {
   const paths = {
@@ -209,7 +210,7 @@ export default function Branches() {
   }
 
   const branchMenuURL = (branch) => restaurant
-    ? `${window.location.origin}/menu/${restaurant.slug}?branch=${branch.id}`
+    ? `${appConfig.menuNextBaseUrl}/menu/${restaurant.slug}?branch=${branch.id}`
     : ''
 
   const previewBranchMenu = (branch) => window.open(branchMenuURL(branch), '_blank', 'noopener,noreferrer')

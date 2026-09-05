@@ -11,6 +11,7 @@ import { calculateMenuReadiness } from '../lib/menuReadiness'
 import MenuReadinessCard from '../components/MenuReadinessCard'
 import { trackOwnerEvent, trackOwnerMilestone } from '../lib/analytics'
 import { isTimeoutError, withTimeout } from '../lib/asyncTimeout'
+import { appConfig } from '../config'
 
 // تحويل الاسم العربي إلى رابط لاتيني صالح
 const AR_MAP = {
@@ -839,7 +840,7 @@ export default function Onboarding() {
   }
 
   // ===== الرابط + QR =====
-  const menuURL = rest ? `${window.location.origin}/menu/${rest.slug}` : ''
+  const menuURL = rest ? `${appConfig.menuNextBaseUrl}/menu/${rest.slug}` : ''
   useEffect(() => {
     if (stage === 'share' && qrRef.current && menuURL) {
       QRCode.toCanvas(qrRef.current, menuURL, { width: 190, margin: 2, color:{ dark:'#0B0B0F', light:'#FFFFFF' }, errorCorrectionLevel:'H' }).catch(() => {})
