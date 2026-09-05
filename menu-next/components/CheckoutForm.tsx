@@ -22,7 +22,7 @@ type Status = 'idle' | 'submitting' | 'success' | 'error'
 // and src/features/menu/orderErrors.js — not invented.
 export function CheckoutForm({
   slug, restaurantId, branchId, branchName, restaurantName, currency, priceColor, lang,
-  openStatus, deliveryEnabled, deliveryFee, takeawayEnabled, availableProductIds,
+  openStatus, deliveryEnabled, deliveryFee, takeawayEnabled, availableProductIds, resolvedTableName,
 }: {
   slug: string
   restaurantId: string
@@ -37,6 +37,13 @@ export function CheckoutForm({
   deliveryFee: number
   takeawayEnabled: boolean
   availableProductIds: string[]
+  // Non-null only when a real, resolved table-QR token (?table=) is behind
+  // this checkout — same server-verified contract as src/pages/PublicMenu.jsx's
+  // own tableQr. When present, the order is locked to dine-in at this exact
+  // table: the order-type picker and delivery/table inputs are not offered,
+  // matching the legacy app's own behavior (a scanned table QR is not a
+  // suggestion the customer can override).
+  resolvedTableName: string | null
 }) {
   const router = useRouter()
   const { items, count, subtotal, branchId: cartBranchId, idempotencyKey, clearCart } = useCart()
@@ -98,8 +105,13 @@ export function CheckoutForm({
 
   const validate = (): boolean => {
     const next: Record<string, string> = {}
-    if (orderType === 'dine_in' && !tableNumber.trim()) next.tableNumber = strings.errRequired
-    if (orderType === 'delivery' && !deliveryAddress.trim()) next.deliveryAddress = strings.errRequired
+    // A resolved table is already server-verified — nothing to validate for
+    // order type/table/delivery in that case; the picker and those inputs
+    // aren't even rendered (see JSX below).
+    if (!resolvedTableName) {
+      if (orderType === 'dine_in' && !tableNumber.trim()) next.tableNumber = strings.errRequired
+      if (orderType === 'delivery' && !deliveryAddress.trim()) next.deliveryAddress = strings.errRequired
+    }
     if (!customerPhone.trim()) next.customerPhone = strings.errRequired
     else if (!/^5\d{8}$/.test(customerPhone)) next.customerPhone = strings.errPhone
     setErrors(next)
@@ -164,11 +176,11 @@ export function CheckoutForm({
     const rpcArgs = {
       p_restaurant_id: restaurantId,
       p_branch_id: branchId,
-      p_table_number: orderType === 'dine_in' ? tableNumber.trim() : null,
-      p_delivery_address: orderType === 'delivery' ? deliveryAddress.trim() : null,
+      p_table_number: resolvedTableName ?? (orderType === 'dine_in' ? tableNumber.trim() : null),
+      p_delivery_address: resolvedTableName ? null : (orderType === 'delivery' ? deliveryAddress.trim() : null),
       p_customer_name: customerName.trim() || null,
       p_customer_phone: customerPhone,
-      p_type: orderType,
+      p_type: resolvedTableName ? 'dine_in' : orderType,
       p_items: rpcItems,
       p_notes: orderNote.trim(),
       p_coupon_code: null,
@@ -245,33 +257,45 @@ export function CheckoutForm({
         })}
       </div>
 
-      <div className="checkout-form__section">
-        <label className="checkout-form__label">{strings.orderType}</label>
-        <div className="checkout-form__order-type-grid">
-          <button type="button" className={`checkout-form__type-btn${orderType === 'dine_in' ? ' is-active' : ''}`} style={orderType === 'dine_in' ? { borderColor: priceColor, color: priceColor } : undefined} onClick={() => setOrderType('dine_in')}>{strings.orderTypeDineIn}</button>
-          {takeawayEnabled && (
-            <button type="button" className={`checkout-form__type-btn${orderType === 'takeaway' ? ' is-active' : ''}`} style={orderType === 'takeaway' ? { borderColor: priceColor, color: priceColor } : undefined} onClick={() => setOrderType('takeaway')}>{strings.orderTypeTakeaway}</button>
-          )}
-          {deliveryEnabled && (
-            <button type="button" className={`checkout-form__type-btn${orderType === 'delivery' ? ' is-active' : ''}`} style={orderType === 'delivery' ? { borderColor: priceColor, color: priceColor } : undefined} onClick={() => setOrderType('delivery')}>{strings.orderTypeDelivery}</button>
-          )}
-        </div>
-      </div>
-
-      {orderType === 'dine_in' && (
+      {resolvedTableName ? (
+        // A scanned, server-verified table QR locks the order to dine-in at
+        // this exact table — no picker, no manual table entry, matching
+        // src/pages/PublicMenu.jsx's own tableQr behavior.
         <div className="checkout-form__section">
-          <label className="checkout-form__label" htmlFor="tableNumber">{strings.tableNumber} *</label>
-          <input id="tableNumber" type="text" value={tableNumber} onChange={(e) => setTableNumber(e.target.value)} placeholder={strings.tableNumberPh} className="checkout-form__input" />
-          {errors.tableNumber && <span className="checkout-form__error">{errors.tableNumber}</span>}
+          <label className="checkout-form__label">{strings.tableNumber}</label>
+          <div className="checkout-form__input" aria-readonly="true">{resolvedTableName}</div>
         </div>
-      )}
+      ) : (
+        <>
+          <div className="checkout-form__section">
+            <label className="checkout-form__label">{strings.orderType}</label>
+            <div className="checkout-form__order-type-grid">
+              <button type="button" className={`checkout-form__type-btn${orderType === 'dine_in' ? ' is-active' : ''}`} style={orderType === 'dine_in' ? { borderColor: priceColor, color: priceColor } : undefined} onClick={() => setOrderType('dine_in')}>{strings.orderTypeDineIn}</button>
+              {takeawayEnabled && (
+                <button type="button" className={`checkout-form__type-btn${orderType === 'takeaway' ? ' is-active' : ''}`} style={orderType === 'takeaway' ? { borderColor: priceColor, color: priceColor } : undefined} onClick={() => setOrderType('takeaway')}>{strings.orderTypeTakeaway}</button>
+              )}
+              {deliveryEnabled && (
+                <button type="button" className={`checkout-form__type-btn${orderType === 'delivery' ? ' is-active' : ''}`} style={orderType === 'delivery' ? { borderColor: priceColor, color: priceColor } : undefined} onClick={() => setOrderType('delivery')}>{strings.orderTypeDelivery}</button>
+              )}
+            </div>
+          </div>
 
-      {orderType === 'delivery' && (
-        <div className="checkout-form__section">
-          <label className="checkout-form__label" htmlFor="deliveryAddress">{strings.deliveryAddress} *</label>
-          <textarea id="deliveryAddress" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} placeholder={strings.deliveryAddressPh} className="checkout-form__textarea" />
-          {errors.deliveryAddress && <span className="checkout-form__error">{errors.deliveryAddress}</span>}
-        </div>
+          {orderType === 'dine_in' && (
+            <div className="checkout-form__section">
+              <label className="checkout-form__label" htmlFor="tableNumber">{strings.tableNumber} *</label>
+              <input id="tableNumber" type="text" value={tableNumber} onChange={(e) => setTableNumber(e.target.value)} placeholder={strings.tableNumberPh} className="checkout-form__input" />
+              {errors.tableNumber && <span className="checkout-form__error">{errors.tableNumber}</span>}
+            </div>
+          )}
+
+          {orderType === 'delivery' && (
+            <div className="checkout-form__section">
+              <label className="checkout-form__label" htmlFor="deliveryAddress">{strings.deliveryAddress} *</label>
+              <textarea id="deliveryAddress" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} placeholder={strings.deliveryAddressPh} className="checkout-form__textarea" />
+              {errors.deliveryAddress && <span className="checkout-form__error">{errors.deliveryAddress}</span>}
+            </div>
+          )}
+        </>
       )}
 
       <div className="checkout-form__section">
