@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import type { Restaurant, Branch, Product, Lang, Rating } from '@/lib/types'
 import type { OpenStatus } from '@/lib/openStatus'
 import { t } from '@/lib/i18n'
@@ -25,6 +26,7 @@ export function RestaurantHeader({
   products,
   currency,
   priceColor,
+  slug,
 }: {
   restaurant: Restaurant
   branches: Branch[]
@@ -35,6 +37,7 @@ export function RestaurantHeader({
   products: Product[]
   currency: string
   priceColor: string
+  slug: string
 }) {
   const [allergensOpen, setAllergensOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -106,8 +109,12 @@ export function RestaurantHeader({
         </div>
       )}
 
-      {(phone || socialKeys.length > 0 || showAllergensBtn) && (
-        <div className="menu-header__actions">
+      <div className="menu-header__actions">
+        <Link href={`/menu/${slug}/orders${lang === 'en' ? '?lang=en' : ''}`} aria-label={strings.myOrders} className="menu-header__action-icon">
+          🧾
+        </Link>
+        {(phone || socialKeys.length > 0 || showAllergensBtn) && (
+          <>
           {phone && (
             <a href={`tel:${phone}`} aria-label={strings.call} className="menu-header__action-icon">📞</a>
           )}
@@ -124,8 +131,9 @@ export function RestaurantHeader({
               ⚠️ {strings.allergens}
             </button>
           )}
-        </div>
-      )}
+          </>
+        )}
+      </div>
 
       {branches.length > 1 && (
         <nav className="menu-header__branches" aria-label={strings.branches}>

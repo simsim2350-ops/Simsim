@@ -12,7 +12,7 @@ export async function getRestaurantBySlug(slug: string): Promise<Restaurant | nu
   if (!supabase) return null
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, slug, name, description, description_en, logo_url, brand_color, price_color, description_color, currency, is_active, delivery_enabled, delivery_fee, phone, address, maps_url, social_links, allergens, show_social_links, show_allergens, show_hours, show_description')
+    .select('id, slug, name, description, description_en, logo_url, brand_color, price_color, description_color, currency, is_active, delivery_enabled, delivery_fee, phone, address, maps_url, social_links, allergens, show_social_links, show_allergens, show_hours, show_description, recommendations_enabled, recommendations_count')
     .eq('slug', slug)
     .eq('is_active', true)
     .maybeSingle()
@@ -104,6 +104,24 @@ export async function getCustomerFavorites(restaurantId: string, products: Produ
     .filter((p) => salesCount[p.id] > 0)
     .sort((a, b) => salesCount[b.id] - salesCount[a.id])
     .slice(0, 4)
+}
+
+// Cart-wide recommendations (owner-curated, shown regardless of what's in the
+// cart) — same table/filters as src/lib/recommendationsApi.js's
+// fetchActiveCartWideIds, unchanged. Read-only, same public RLS policy
+// ("Public can read active cart-wide recommendations") already in production.
+export async function getActiveCartWideIds(restaurantId: string, branchId: string): Promise<string[]> {
+  const supabase = supabaseServer()
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('cart_wide_recommendations')
+    .select('product_id')
+    .eq('restaurant_id', restaurantId)
+    .eq('branch_id', branchId)
+    .eq('is_active', true)
+    .order('priority')
+  if (error || !data) return []
+  return (data as { product_id: string }[]).map((r) => r.product_id)
 }
 
 export type MenuPageData = {
