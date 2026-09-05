@@ -25,12 +25,15 @@ export async function getActiveBranches(restaurantId: string): Promise<Branch[]>
   if (!supabase) return []
   const { data, error } = await supabase
     .from('branches')
-    .select('id, restaurant_id, name, name_en, is_active, is_primary, sort_order, delivery_enabled, delivery_fee, takeaway_enabled, opening_hours, is_paused, address, address_en, maps_url, phone')
+    .select('id, restaurant_id, name, name_en, is_active, is_primary, sort_order, delivery_enabled, delivery_fee, takeaway_enabled, opening_hours, is_paused, address, address_en, maps_url, phone, menu_clone_status')
     .eq('restaurant_id', restaurantId)
     .eq('is_active', true)
     .order('sort_order')
   if (error || !data) return []
-  return data as Branch[]
+  // Same exclusion as the old menu's useMenuData.js: a branch whose menu clone is still in
+  // progress or failed has no reliable menu content yet — never offer it as selectable.
+  return (data as (Branch & { menu_clone_status: string | null })[])
+    .filter((b) => b.menu_clone_status !== 'copying' && b.menu_clone_status !== 'failed')
 }
 
 export function pickBranch(branches: Branch[], branchId?: string): Branch | null {
@@ -59,7 +62,7 @@ export async function getAvailableProducts(branchId: string): Promise<Product[]>
   if (!supabase) return []
   const { data, error } = await supabase
     .from('products')
-    .select('id, branch_id, category_id, name, name_en, description, description_en, price, compare_price, image_url, emoji, is_available, sort_order, options, is_featured, is_best_seller')
+    .select('id, branch_id, category_id, name, name_en, description, description_en, price, compare_price, image_url, emoji, is_available, sort_order, options, is_featured, is_best_seller, calories')
     .eq('branch_id', branchId)
     .eq('is_available', true)
     .order('sort_order')

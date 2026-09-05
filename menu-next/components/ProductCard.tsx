@@ -2,6 +2,13 @@ import Image from 'next/image'
 import type { Product, Lang } from '@/lib/types'
 import { AddToCartButton } from './AddToCartButton'
 
+// Ported from src/features/menu/helpers.js's getCalorieBadge — same thresholds, same three emoji tiers.
+function calorieBadge(calories: number): string {
+  if (calories < 300) return '🟢'
+  if (calories <= 600) return '🟡'
+  return '🔴'
+}
+
 export function ProductCard({ product, lang, currency, priceColor, branchId, branchName }: {
   product: Product
   lang: Lang
@@ -31,6 +38,9 @@ export function ProductCard({ product, lang, currency, priceColor, branchId, bra
             <span className="product-card__compare">
               {product.compare_price.toLocaleString(lang === 'en' ? 'en-US' : 'ar-SA')} {currency}
             </span>
+          )}
+          {product.calories != null && (
+            <span className="product-card__calories">{calorieBadge(product.calories)} {product.calories}</span>
           )}
         </div>
       </div>

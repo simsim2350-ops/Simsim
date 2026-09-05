@@ -85,6 +85,7 @@ export type Product = {
   options: unknown
   is_featured: boolean | null
   is_best_seller: boolean | null
+  calories: number | null
 }
 
 export type Lang = 'ar' | 'en'

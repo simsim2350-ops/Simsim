@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import type { Category, Product, Lang } from '@/lib/types'
 import { t } from '@/lib/i18n'
 import { ProductCard } from './ProductCard'
@@ -24,7 +25,11 @@ export function CategorySection({
   return (
     <section id={`cat-${category.id}`} className="category-section">
       <h2 className="category-section__title">
-        {category.emoji && <span aria-hidden>{category.emoji} </span>}
+        {category.cover_url ? (
+          <Image src={category.cover_url} alt="" width={28} height={28} className="category-section__cover" aria-hidden />
+        ) : (
+          category.emoji && <span aria-hidden>{category.emoji} </span>
+        )}
         {name}
       </h2>
       {products.length === 0 ? (
