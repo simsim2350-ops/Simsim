@@ -39,7 +39,7 @@ const Tables         = lazyWithRetry(() => import('./pages/Tables'))
 const Dashboard      = lazyWithRetry(() => import('./pages/Dashboard'))
 const Menu           = lazyWithRetry(() => import('./pages/Menu'))
 const Orders         = lazyWithRetry(() => import('./pages/Orders'))
-const PublicMenu     = lazyWithRetry(() => import('./pages/PublicMenu'))
+const MenuRedirect   = lazyWithRetry(() => import('./pages/MenuRedirect'))
 const QRCodePage     = lazyWithRetry(() => import('./pages/QRCode'))
 const Settings       = lazyWithRetry(() => import('./pages/Settings'))
 const Analytics      = lazyWithRetry(() => import('./pages/Analytics'))
@@ -167,7 +167,7 @@ function ConfiguredApp() {
         <Route path="/reset-password"  element={<ResetPassword />} />
         <Route path="/verify-email"    element={<VerifyEmail />} />
         <Route path="/auth/callback"   element={<AuthCallback />} />
-        <Route path="/menu/:slug"      element={<PublicMenu />} />
+        <Route path="/menu/:slug"      element={<MenuRedirect />} />
         <Route path="/staff-login/:slug" element={<StaffLogin />} />
         <Route path="/onboarding"      element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
         <Route path="/dashboard"       element={<ProtectedRoute><RequirePage page="dashboard"><Dashboard /></RequirePage></ProtectedRoute>} />
