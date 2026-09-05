@@ -10,6 +10,7 @@ import { useBreakpoint } from '../hooks/useBreakpoint'
 import { fetchBranches } from '../lib/branchesApi'
 import { fetchAllTables, createTable, updateTable, deleteTable, regenerateTableQr } from '../lib/tablesApi'
 import { printReport } from '../lib/exportUtils'
+import { appConfig } from '../config'
 
 function Icon({ type, size = 16 }) {
   const paths = {
@@ -120,7 +121,7 @@ export default function Tables() {
     }
   }
 
-  const tableQrUrl = (table) => `${window.location.origin}/menu/${restaurant.slug}?branch=${encodeURIComponent(table.branch_id)}&table=${encodeURIComponent(table.qr_token)}`
+  const tableQrUrl = (table) => `${appConfig.menuNextBaseUrl}/menu/${restaurant.slug}?branch=${encodeURIComponent(table.branch_id)}&table=${encodeURIComponent(table.qr_token)}`
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()

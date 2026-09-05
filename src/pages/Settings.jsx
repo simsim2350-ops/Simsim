@@ -12,6 +12,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import { Accordion, AccordionItem } from '../components/Accordion'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { trackOwnerMilestone } from '../lib/analytics'
+import { appConfig } from '../config'
 
 const BRAND_COLORS = ['#FF6A00','#E05D00','#10B981','#3B82F6','#8B5CF6','#EC4899','#F59E0B','#0B0B0F']
 const CURRENCIES = ['SAR - ريال سعودي','AED - درهم إماراتي','KWD - دينار كويتي','BHD - دينار بحريني','QAR - ريال قطري','OMR - ريال عماني','EGP - جنيه مصري']
@@ -825,9 +826,9 @@ export default function Settings() {
                   <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🔗 رابط المنيو</div>
                   <div style={{ padding:'16px 18px' }}>
                     <div style={{ display:'flex', gap:'8px' }}>
-                      <input readOnly value={`${window.location.origin}/menu/${restaurant?.slug}`} style={{ ...inputStyle, direction:'ltr', textAlign:'left', color:'#9CA3AF' }}/>
+                      <input readOnly value={`${appConfig.menuNextBaseUrl}/menu/${restaurant?.slug}`} style={{ ...inputStyle, direction:'ltr', textAlign:'left', color:'#9CA3AF' }}/>
                       <button onClick={async () => {
-                        const url = `${window.location.origin}/menu/${restaurant?.slug}`
+                        const url = `${appConfig.menuNextBaseUrl}/menu/${restaurant?.slug}`
                         try {
                           if (navigator.clipboard && window.isSecureContext) {
                             await navigator.clipboard.writeText(url)
