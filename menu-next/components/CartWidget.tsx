@@ -7,9 +7,24 @@ import { t } from '@/lib/i18n'
 import type { Lang, Product } from '@/lib/types'
 import { hasSelectableOptions } from '@/lib/options'
 import { ProductOptionsModal } from './ProductOptionsModal'
+import { CartRecommendations } from './CartRecommendations'
 import type { CartItem } from '@/lib/cart/types'
 
-export function CartWidget({ lang, currency, priceColor, branchId, slug, products, tableToken }: { lang: Lang; currency: string; priceColor: string; branchId: string; slug: string; products: Product[]; tableToken?: string }) {
+export function CartWidget({
+  lang, currency, priceColor, branchId, branchName, slug, products, tableToken, cartWideIds, recommendationsEnabled, recommendationsCount,
+}: {
+  lang: Lang
+  currency: string
+  priceColor: string
+  branchId: string
+  branchName: string
+  slug: string
+  products: Product[]
+  tableToken?: string
+  cartWideIds: string[]
+  recommendationsEnabled: boolean
+  recommendationsCount: number
+}) {
   const { items, count, subtotal, increment, decrement, removeItem } = useCart()
   const [open, setOpen] = useState(false)
   // The cart line currently being edited (Phase 6B) — reopens
@@ -92,6 +107,17 @@ export function CartWidget({ lang, currency, priceColor, branchId, slug, product
                 )
               })}
             </div>
+            <CartRecommendations
+              products={products}
+              cartWideIds={cartWideIds}
+              recommendationsEnabled={recommendationsEnabled}
+              recommendationsCount={recommendationsCount}
+              branchId={branchId}
+              branchName={branchName}
+              currency={currency}
+              priceColor={priceColor}
+              lang={lang}
+            />
             <div className="cart-sheet__summary">
               <div className="cart-sheet__summary-row">
                 <span>{t(lang).subtotal}</span>

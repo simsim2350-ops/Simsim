@@ -6,10 +6,12 @@ import { useRouter } from 'next/navigation'
 import { useCart } from '@/lib/cart/CartContext'
 import { t } from '@/lib/i18n'
 import type { Lang } from '@/lib/types'
-import { vatBreakdown } from '@/lib/pricing'
+import { vatBreakdown, computeCouponDiscount, type Coupon } from '@/lib/pricing'
 import type { OpenStatus } from '@/lib/openStatus'
 import { supabaseBrowser } from '@/lib/supabase/client'
 import { mapOrderError, priceChangedMessage, itemsUnavailableMessage, networkErrorMessage } from '@/lib/orderErrors'
+import { rememberPhone } from '@/lib/loyalty'
+import { addActiveOrder } from '@/lib/orders/activeOrders'
 
 type OrderType = 'dine_in' | 'takeaway' | 'delivery'
 type Status = 'idle' | 'submitting' | 'success' | 'error'
@@ -59,6 +61,15 @@ export function CheckoutForm({
   const [status, setStatus] = useState<Status>('idle')
   const [errorMessage, setErrorMessage] = useState<string>('')
 
+  // Coupons (#2) — client-side preview only, same fields/rules as
+  // src/features/menu/hooks/useCoupon.js. The real, authoritative validation
+  // already happens server-side inside create_order (unchanged) — this is
+  // purely a UX preview so the customer sees the discount before submitting.
+  const [couponInput, setCouponInput] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null)
+  const [couponError, setCouponError] = useState('')
+  const [applyingCoupon, setApplyingCoupon] = useState(false)
+
   // Synchronous guard against a double-click/double-tap submitting twice
   // before React re-renders the disabled button — the disabled attribute
   // alone is a render away, this ref is checked immediately.
@@ -90,8 +101,42 @@ export function CheckoutForm({
   }
 
   const deliveryFeeApplied = orderType === 'delivery' ? deliveryFee : 0
-  const total = subtotal + deliveryFeeApplied
-  const { tax } = vatBreakdown(total - deliveryFeeApplied)
+  const discountAmount = computeCouponDiscount(appliedCoupon, subtotal)
+  const total = subtotal - discountAmount + deliveryFeeApplied
+  const { tax } = vatBreakdown(subtotal - discountAmount)
+
+  const applyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase()
+    if (!code) return
+    setCouponError('')
+    setApplyingCoupon(true)
+    try {
+      const client = supabaseBrowser()
+      if (!client) { setCouponError(strings.couponInvalid); return }
+      const { data } = await client
+        .from('coupons')
+        .select('id, code, discount_type, discount_value, max_discount_amount, branch_id, expires_at, min_order_amount, usage_limit, usage_count')
+        .eq('restaurant_id', restaurantId)
+        .eq('code', code)
+        .eq('is_active', true)
+        .maybeSingle()
+      const coupon = data as (Coupon & { branch_id: string | null; expires_at: string | null; min_order_amount: number | null; usage_limit: number | null; usage_count: number | null }) | null
+      if (!coupon) { setCouponError(strings.couponInvalid); return }
+      if (coupon.branch_id && coupon.branch_id !== branchId) { setCouponError(strings.couponWrongBranch); return }
+      if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) { setCouponError(strings.couponExpired); return }
+      if (coupon.min_order_amount && subtotal < coupon.min_order_amount) { setCouponError(strings.couponMinOrder(coupon.min_order_amount)); return }
+      if (coupon.usage_limit != null && (coupon.usage_count ?? 0) >= coupon.usage_limit) { setCouponError(strings.couponUsageLimit); return }
+      setAppliedCoupon(coupon)
+    } finally {
+      setApplyingCoupon(false)
+    }
+  }
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null)
+    setCouponInput('')
+    setCouponError('')
+  }
 
   const handlePhoneChange = (raw: string) => {
     let digits = raw.replace(/[^\d]/g, '')
@@ -183,7 +228,7 @@ export function CheckoutForm({
       p_type: resolvedTableName ? 'dine_in' : orderType,
       p_items: rpcItems,
       p_notes: orderNote.trim(),
-      p_coupon_code: null,
+      p_coupon_code: appliedCoupon?.code ?? null,
       p_client_total: total,
       p_idempotency_key: idempotencyKey,
     }
@@ -227,6 +272,22 @@ export function CheckoutForm({
     // and stays fully functional on refresh / direct navigation later.
     clearCart()
     setStatus('success')
+    // Loyalty (#1) is looked up by phone on a later visit — remember it the
+    // same way production does (simsim_phone_<slug>). #4/#8 (My Orders /
+    // Reorder) need this order added to the device's tracked list the moment
+    // it's confirmed real by create_order, not before.
+    rememberPhone(slug, customerPhone)
+    addActiveOrder(slug, {
+      id: data.id,
+      orderNumber: data.order_number,
+      status: 'pending',
+      items: rpcItems.map((i) => ({ id: i.product_id, qty: i.quantity, unavailable: false })),
+      total: data.total,
+      tableNumber: rpcArgs.p_table_number,
+      createdAt: Date.now(),
+      accessToken: data.access_token,
+      branchId,
+    })
     const qs = new URLSearchParams({
       fresh: '1',
       branch: branchName,
@@ -317,10 +378,31 @@ export function CheckoutForm({
         <textarea id="orderNote" value={orderNote} onChange={(e) => setOrderNote(e.target.value.slice(0, 200))} placeholder={strings.orderNotePh} className="checkout-form__textarea" />
       </div>
 
+      <div className="checkout-form__section">
+        <label className="checkout-form__label" htmlFor="couponCode">{strings.couponLabel}</label>
+        {appliedCoupon ? (
+          <div className="checkout-form__coupon-applied">
+            <span>✅ {appliedCoupon.code}</span>
+            <button type="button" onClick={removeCoupon}>{strings.couponRemove}</button>
+          </div>
+        ) : (
+          <div className="checkout-form__coupon-row">
+            <input id="couponCode" type="text" value={couponInput} onChange={(e) => setCouponInput(e.target.value)} placeholder={strings.couponPh} className="checkout-form__input" />
+            <button type="button" onClick={applyCoupon} disabled={applyingCoupon || !couponInput.trim()} className="checkout-form__coupon-apply">{strings.couponApply}</button>
+          </div>
+        )}
+        {couponError && <span className="checkout-form__error">{couponError}</span>}
+      </div>
+
       <div className="checkout-form__summary">
         <div className="checkout-form__summary-row checkout-form__summary-row--muted">
           <span>{strings.vatLine}</span><span>{formatPrice(subtotal)} {currency}</span>
         </div>
+        {discountAmount > 0 && (
+          <div className="checkout-form__summary-row checkout-form__summary-row--muted">
+            <span>{strings.discountLabel}</span><span>-{formatPrice(discountAmount)} {currency}</span>
+          </div>
+        )}
         <div className="checkout-form__summary-row checkout-form__summary-row--muted">
           <span>{strings.vatAmount}</span><span>{formatPrice(tax)} {currency}</span>
         </div>

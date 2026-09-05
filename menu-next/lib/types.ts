@@ -31,6 +31,8 @@ export type Restaurant = {
   show_allergens: boolean | null
   show_hours: boolean | null
   show_description: boolean | null
+  recommendations_enabled: boolean | null
+  recommendations_count: number | null
 }
 
 export type OpeningHoursDay = { open: boolean; from: string; to: string }

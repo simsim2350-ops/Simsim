@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { loadMenuPage, getRestaurantRating, getCustomerFavorites } from '@/lib/data'
+import { loadMenuPage, getRestaurantRating, getCustomerFavorites, getActiveCartWideIds } from '@/lib/data'
 import { t } from '@/lib/i18n'
 import type { Lang } from '@/lib/types'
 import { resolveTableQr } from '@/lib/tableQr'
@@ -64,9 +64,10 @@ export default async function MenuPage({
   // sources/rules/priority order as the old menu's useMenuData.js/MenuBody.jsx:
   // owner-curated best sellers > owner-curated featured > real order-frequency
   // favorites > plain categories. Fetched in parallel; neither blocks the other.
-  const [rating, customerFavorites] = await Promise.all([
+  const [rating, customerFavorites, cartWideIds] = await Promise.all([
     getRestaurantRating(restaurant.id),
     getCustomerFavorites(restaurant.id, products),
+    getActiveCartWideIds(restaurant.id, branch.id),
   ])
   const manualBestSellers = products.filter((p) => p.is_best_seller === true).slice(0, 4)
   const featuredProducts = products.filter((p) => p.is_featured === true).slice(0, 4)
@@ -89,6 +90,7 @@ export default async function MenuPage({
         products={products}
         currency={currency}
         priceColor={priceColor}
+        slug={slug}
       />
 
       <div className="menu-toolbar">
@@ -131,7 +133,19 @@ export default async function MenuPage({
       )}
 
       <footer className="menu-footer">{t(lang).poweredBy}</footer>
-      <CartWidget lang={lang} currency={currency} priceColor={priceColor} branchId={branch.id} slug={slug} products={products} tableToken={tableQr?.token} />
+      <CartWidget
+        lang={lang}
+        currency={currency}
+        priceColor={priceColor}
+        branchId={branch.id}
+        branchName={branchName}
+        slug={slug}
+        products={products}
+        tableToken={tableQr?.token}
+        cartWideIds={cartWideIds}
+        recommendationsEnabled={restaurant.recommendations_enabled !== false}
+        recommendationsCount={restaurant.recommendations_count || 4}
+      />
       <BranchConflictModal lang={lang} />
     </div>
   )
