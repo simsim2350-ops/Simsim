@@ -26,6 +26,7 @@ function lazyWithRetry(importer) {
 // تحميل كسول لكل الصفحات: زبون المنيو لا يحمّل كود اللوحة، والعكس صحيح
 const Landing        = lazyWithRetry(() => import('./pages/Landing'))
 const Legal          = lazyWithRetry(() => import('./pages/Legal'))
+const NotFound       = lazyWithRetry(() => import('./pages/NotFound'))
 const Login          = lazyWithRetry(() => import('./pages/Login'))
 const Register       = lazyWithRetry(() => import('./pages/Register'))
 const ForgotPassword = lazyWithRetry(() => import('./pages/ForgotPassword'))
@@ -197,7 +198,7 @@ function ConfiguredApp() {
         <Route path="/admin/branding"    element={<RequirePlatformAdmin><AdminBranding /></RequirePlatformAdmin>} />
         <Route path="/admin/marketing"   element={<RequirePlatformAdmin><AdminMarketing /></RequirePlatformAdmin>} />
         <Route path="/logrocket-diag"   element={<LogRocketDiag />} />
-        <Route path="*"                element={<Navigate to="/login" replace />} />
+        <Route path="*"                element={<NotFound />} />
       </Routes>
       </Suspense>
     </BrowserRouter>
