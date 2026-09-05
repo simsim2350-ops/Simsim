@@ -1,0 +1,19 @@
+-- TASK-SEC-003 (PHASE 7) — يسحب صلاحية EXECUTE عن get_orders_status من anon/authenticated.
+--
+-- السياق: GAP-SEC-003 (موثَّق أصلاً في sql/order_status_reads.sql) — الدالة كانت بلا أي إثبات
+-- ملكية (أي order_id صالح يُرجع حالته/أصنافه/إجماليه كاملة)، وأُبقيت عمداً حتى يُتأكَّد أن كل
+-- الطلبات المحفوظة محلياً بلا order_access_token (نافذة أقصاها 12 ساعة في localStorage، PHASE 6
+-- وما قبلها) انتهت مهلتها الطبيعية — انظر التعليق الأصلي في sql/order_status_reads.sql.
+--
+-- التنفيذ (SIMSIM_SECURITY_AUDIT_REPORT.md — إصلاح Critical Finding #1):
+--   1) src/features/menu/hooks/useActiveOrders.js لم يعد يستدعي get_orders_status إطلاقاً —
+--      المسار الاحتياطي (withoutToken) أُزيل بالكامل من reconcileActiveOrders(). أي طلب محفوظ
+--      محلياً بلا accessToken (نادر عملياً في هذه المرحلة الزمنية) يبقى على آخر حالة معروفة محلياً
+--      بلا تحديث حيّ حتى تنتهي مهلته — تدهور رشيق (graceful degradation)، لا كسر وظيفي.
+--   2) الدالة نفسها لم تُحذف (قد تُراجَع لاحقاً بقرار منفصل) — فقط صلاحية التنفيذ سُحبت، بحيث لا
+--      يبقى أي مسار حيّ (Anonymous أو Authenticated) يستطيع استدعاءها بعد الآن.
+--   3) get_orders_status_secure (تتحقّق من order_access_token) تبقى المسار الوحيد الفعلي، بلا تغيير.
+--
+-- create_order لم تُغيَّر. لا service_role استُخدم كبديل. لا order_access_token وُضع في كود العميل
+-- بأي شكل غير آمن — الاعتماد يبقى حصراً على ما كان موجوداً بالفعل في localStorage/RPC calls.
+revoke execute on function public.get_orders_status(uuid[]) from anon, authenticated;
