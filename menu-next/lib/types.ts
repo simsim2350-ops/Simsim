@@ -37,6 +37,7 @@ export type Restaurant = {
   show_allergens: boolean | null
   show_hours: boolean | null
   show_description: boolean | null
+  show_prep_time: boolean | null
   recommendations_enabled: boolean | null
   recommendations_count: number | null
   // Full-bleed banner behind the header (Admin's "Cover upload", distinct
@@ -99,6 +100,13 @@ export type Product = {
   is_best_seller: boolean | null
   calories: number | null
 }
+
+// One real, active row from restaurant_tables — only what
+// get_branch_tables_for_menu exposes (never qr_token or any other column).
+// Used for the branch-URL (no QR) manual table-selection dropdown; a
+// resolved table QR never needs this, since it already carries its own
+// trusted table name/id from resolveTableQr().
+export type Table = { id: string; table_number: string }
 
 export type Lang = 'ar' | 'en'
 

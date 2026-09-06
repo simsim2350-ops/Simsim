@@ -10,6 +10,7 @@ import { SOCIAL_ICONS } from './SocialIcons'
 import { AllergensModal } from './AllergensModal'
 import { SearchOverlay } from './SearchOverlay'
 import { useMenuBanners } from '@/lib/banners/BannerContext'
+import { estimatedPrepTime } from '@/lib/prepTime'
 
 // Restaurant info depth ported from the old menu's MenuHeader.jsx: rating,
 // open/closed status + today's hours (or next-opening text), location + map
@@ -28,6 +29,10 @@ export function RestaurantHeader({
   currency,
   priceColor,
   slug,
+  branchLocked = false,
+  activeOrdersCount = 0,
+  deliveryEnabled = false,
+  deliveryFee = 0,
 }: {
   restaurant: Restaurant
   branches: Branch[]
@@ -39,6 +44,20 @@ export function RestaurantHeader({
   currency: string
   priceColor: string
   slug: string
+  // True when the current URL/QR already made an explicit branch choice (a
+  // resolved table QR, or a plain ?branch= link) — the switcher must not
+  // offer a casual way out of that choice (#2, branch isolation). Defaults to
+  // false so any caller that doesn't pass it keeps today's behavior.
+  branchLocked?: boolean
+  // Feeds the estimated prep-time display below (restaurant.show_prep_time) —
+  // defaults to 0 so any caller that doesn't pass it just shows the base
+  // "10-20 min" estimate rather than breaking.
+  activeOrdersCount?: number
+  // Feeds the delivery-fee meta item below — same effectiveDeliverySettings()
+  // resolution already used at checkout, computed once by the page and
+  // passed down rather than recomputed here.
+  deliveryEnabled?: boolean
+  deliveryFee?: number
 }) {
   const [allergensOpen, setAllergensOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -63,6 +82,7 @@ export function RestaurantHeader({
     ? (['instagram', 'whatsapp_social', 'snapchat'] as const).filter((key) => restaurant.social_links?.[key])
     : [])
   const showAllergensBtn = (restaurant.show_allergens ?? true) && Array.isArray(restaurant.allergens) && restaurant.allergens.length > 0
+  const showPrepTime = restaurant.show_prep_time ?? true
 
   return (
     <header className="menu-header" style={{ borderColor: brandColor }}>
@@ -79,6 +99,15 @@ export function RestaurantHeader({
         )}
         <div className="menu-header__hero-scrim" />
       </div>
+
+      {/* Frosted-glass identity card, floating over the hero image — faithful
+          port of src/features/menu/MenuHeader.jsx's own floating card
+          (rgba(255,255,255,0.72) + blur(12px) + 22px radius + the same
+          box-shadow), which wraps exactly this same content there: identity
+          row, location, actions, branch switcher. Reusable — no restaurant-
+          specific values are hardcoded here, only brandColor (already a prop
+          everywhere else in this file). */}
+      <div className="menu-header__card">
       <div className="menu-header__top">
         {restaurant.logo_url ? (
           <Image
@@ -113,9 +142,21 @@ export function RestaurantHeader({
         </button>
       </div>
 
-      {(address || mapsUrl) && (
+      {(address || mapsUrl || showPrepTime || deliveryEnabled) && (
         <div className="menu-header__location">
           {address && <span className="menu-header__address">📍 {address}</span>}
+          {/* Estimated prep time (restaurant.show_prep_time) — ported from
+              src/features/menu/MenuHeader.jsx's own meta row: base 10 minutes
+              + 3 per currently-active order, same "min-max" range. A fresh
+              per-request snapshot here rather than the old header's live
+              realtime-updated counter — proportionate for a Server Component
+              page that already re-renders per request. */}
+          {showPrepTime && <span className="menu-header__prep-time">⏱️ {estimatedPrepTime(activeOrdersCount)} {strings.minShort}</span>}
+          {/* Delivery fee shown upfront while browsing, not only at checkout —
+              same meta item as legacy's own header. */}
+          {deliveryEnabled && (
+            <span className="menu-header__prep-time">🚚 {deliveryFee > 0 ? `${deliveryFee.toFixed(0)} ${currency}` : strings.freeDelivery}</span>
+          )}
           {mapsUrl && (
             <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="menu-header__map-link" style={{ color: brandColor }}>
               {strings.mapBtn}
@@ -156,7 +197,11 @@ export function RestaurantHeader({
         )}
       </div>
 
-      {branches.length > 1 && (
+      {/* #2 branch isolation: a URL/QR that already named an explicit branch
+          must not also offer a one-tap way to a different branch. Only a
+          plain restaurant-level visit (no ?branch=, no resolved table QR)
+          shows this. */}
+      {!branchLocked && branches.length > 1 && (
         <nav className="menu-header__branches" aria-label={strings.branches}>
           {branches.map((b) => {
             const label = lang === 'en' && b.name_en ? b.name_en : b.name
@@ -174,6 +219,7 @@ export function RestaurantHeader({
           })}
         </nav>
       )}
+      </div>
 
       <AllergensModal open={allergensOpen} onClose={() => setAllergensOpen(false)} allergens={restaurant.allergens} lang={lang} />
       <SearchOverlay

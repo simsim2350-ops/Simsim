@@ -127,6 +127,8 @@ const STRINGS = {
     bannerCtaDefault: 'اطلب الآن',
     bannerEnterMenu: 'الدخول إلى المينيو',
     closeOffer: 'إغلاق العرض',
+    minShort: 'د',
+    freeDelivery: 'مجاني',
   },
   en: {
     branches: 'Branches',
@@ -252,6 +254,8 @@ const STRINGS = {
     bannerCtaDefault: 'Order now',
     bannerEnterMenu: 'Enter menu',
     closeOffer: 'Close offer',
+    minShort: 'min',
+    freeDelivery: 'Free',
   },
 } as const
 

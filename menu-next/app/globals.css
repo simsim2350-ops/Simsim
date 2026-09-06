@@ -24,9 +24,30 @@ html, body {
   border-bottom: 3px solid;
   padding: 16px;
 }
-.menu-header__hero { position: relative; width: calc(100% + 32px); height: 140px; margin: -16px -16px 12px; overflow: hidden; background: #F3F4F6; }
+.menu-header__hero { position: relative; width: calc(100% + 32px); height: 140px; margin: -16px -16px -28px; overflow: hidden; background: #F3F4F6; }
 .menu-header__hero-image { object-fit: cover; }
 .menu-header__hero-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.08), transparent 35%, transparent 65%, rgba(0,0,0,.14)); pointer-events: none; }
+/* Frosted-glass identity card — faithful port of src/features/menu/MenuHeader.jsx's
+   own floating card: same tint, same blur radius, same border-radius, same
+   shadow. Floats over .menu-header__hero via the hero's own negative bottom
+   margin above (creates the overlap), not a value hardcoded here, so it works
+   at any hero height. */
+.menu-header__card {
+  /* A CSS custom property indirection here is deliberate, not decorative:
+     Next's production CSS minifier collapses backdrop-filter and
+     -webkit-backdrop-filter into just the -webkit- one when both are given
+     the same literal value, which silently breaks the effect in real
+     Chromium (which needs the unprefixed property, not the -webkit- one) —
+     caught by a real computed-style test against the live deployment, not
+     assumed. Routing both properties through one variable defeats that
+     literal-value comparison so the minifier keeps both declarations. */
+  --menu-header-card-blur: blur(12px);
+  position: relative; z-index: 10; background: rgba(255,255,255,0.72);
+  -webkit-backdrop-filter: var(--menu-header-card-blur);
+  backdrop-filter: var(--menu-header-card-blur);
+  border-radius: 22px; box-shadow: 0 10px 30px rgba(15,17,23,0.16);
+  padding: 14px; margin-bottom: 4px;
+}
 .menu-header__top { display: flex; align-items: center; gap: 12px; }
 .menu-header__logo { border-radius: 14px; object-fit: cover; flex-shrink: 0; }
 .menu-header__logo--placeholder { width: 64px; height: 64px; }
@@ -55,6 +76,7 @@ html, body {
 .menu-header__location { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
 .menu-header__address { font-size: 12px; font-weight: 700; color: #6B7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .menu-header__map-link { font-size: 11px; font-weight: 700; text-decoration: none; background: rgba(0,0,0,0.05); padding: 3px 10px; border-radius: 999px; flex-shrink: 0; }
+.menu-header__prep-time { font-size: 12px; font-weight: 700; color: #374151; white-space: nowrap; }
 .menu-header__actions { display: flex; align-items: center; gap: 6px; margin-top: 10px; overflow-x: auto; }
 .menu-header__action-icon {
   width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; background: white; border: 1.5px solid #E5E7EB;
@@ -620,4 +642,38 @@ html, body {
 .product-card--circles .product-card__price { justify-content: center; }
 
 .product-card__media-add { position: absolute; inset-block-end: 6px; inset-inline-start: 6px; }
+
+/* ===== Category nav (#3) — horizontal, single-row, scrollable tab bar with
+   a click-to-scroll + scroll-spy active tab, ported from the legacy menu's
+   own tab bar (src/features/menu/MenuBody.jsx). Sticky at the very top of
+   the viewport (menu-next has no fixed mini-header to sit below, unlike
+   legacy's `top: 56px`). No wrapping — overflow-x scroll only. */
+.category-nav {
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #fff;
+  border-bottom: 1px solid #E5E7EB;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.category-nav::-webkit-scrollbar { display: none; }
+.category-nav__tab {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 11px 12px 9px;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  background: none;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9CA3AF;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.category-nav__tab.is-active { font-weight: 800; color: #0B0B0F; }
 .product-card--circles .product-card__media-add { inset-block-end: -6px; inset-inline-start: 50%; transform: translateX(-50%); }

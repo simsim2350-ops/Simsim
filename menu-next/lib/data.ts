@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { supabaseServer } from './supabase/server'
-import type { Restaurant, Branch, Category, Product, Rating } from './types'
+import type { Restaurant, Branch, Category, Product, Rating, Table } from './types'
 import type { Banner, DisplayCoupon } from './banners/types'
 
 // Data access only — no rendering here. Mirrors the exact same read pattern
@@ -13,7 +13,7 @@ export async function getRestaurantBySlug(slug: string): Promise<Restaurant | nu
   if (!supabase) return null
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, slug, name, description, description_en, logo_url, brand_color, price_color, description_color, currency, is_active, delivery_enabled, delivery_fee, phone, address, maps_url, social_links, allergens, show_social_links, show_allergens, show_hours, show_description, recommendations_enabled, recommendations_count, cover_url, menu_layout')
+    .select('id, slug, name, description, description_en, logo_url, brand_color, price_color, description_color, currency, is_active, delivery_enabled, delivery_fee, phone, address, maps_url, social_links, allergens, show_social_links, show_allergens, show_hours, show_description, show_prep_time, recommendations_enabled, recommendations_count, cover_url, menu_layout')
     .eq('slug', slug)
     .eq('is_active', true)
     .maybeSingle()
@@ -191,6 +191,34 @@ export async function getActiveRecommendationsMap(restaurantId: string): Promise
     map[row.source_product_id].push(row.recommended_product_id)
   }
   return map
+}
+
+// Active-orders count (feeds the estimated prep-time display, #6 audit) —
+// same RPC already live and used for this exact purpose in the old menu's
+// useMenuData.js. Read-only, no realtime subscription here (that file
+// re-subscribes to keep this live across a long-open tab; menu-next's
+// Server-Component page re-fetches fresh on every request instead, which is
+// the proportionate equivalent for a per-request render).
+export async function getActiveOrdersCount(restaurantId: string, branchId: string): Promise<number> {
+  const supabase = supabaseServer()
+  if (!supabase) return 0
+  const { data, error } = await supabase.rpc('get_active_orders_count', { p_restaurant_id: restaurantId, p_branch_id: branchId } as never)
+  if (error) return 0
+  return Number(data) || 0
+}
+
+// Real, active tables for one branch — for the branch-URL (no QR) manual
+// table-selection dropdown (#1B). Backed by the get_branch_tables_for_menu
+// RPC (restaurant_tables itself is not anon-readable directly), which only
+// ever returns {id, table_number} and re-verifies branchId belongs to this
+// restaurant slug server-side — never trusts the client's own branch choice
+// as a shortcut into another restaurant's tables.
+export async function getBranchTablesForMenu(restaurantSlug: string, branchId: string): Promise<Table[]> {
+  const supabase = supabaseServer()
+  if (!supabase) return []
+  const { data, error } = await supabase.rpc('get_branch_tables_for_menu', { p_restaurant_slug: restaurantSlug, p_branch_id: branchId } as never)
+  if (error || !Array.isArray(data)) return []
+  return data as Table[]
 }
 
 export type MenuPageData = {
