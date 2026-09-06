@@ -13,7 +13,7 @@ export async function getRestaurantBySlug(slug: string): Promise<Restaurant | nu
   if (!supabase) return null
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, slug, name, description, description_en, logo_url, brand_color, price_color, description_color, currency, is_active, delivery_enabled, delivery_fee, phone, address, maps_url, social_links, allergens, show_social_links, show_allergens, show_hours, show_description, recommendations_enabled, recommendations_count')
+    .select('id, slug, name, description, description_en, logo_url, brand_color, price_color, description_color, currency, is_active, delivery_enabled, delivery_fee, phone, address, maps_url, social_links, allergens, show_social_links, show_allergens, show_hours, show_description, recommendations_enabled, recommendations_count, cover_url, menu_layout')
     .eq('slug', slug)
     .eq('is_active', true)
     .maybeSingle()

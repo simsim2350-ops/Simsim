@@ -1,6 +1,5 @@
 import Image from 'next/image'
-import type { Category, Product, Lang } from '@/lib/types'
-import { t } from '@/lib/i18n'
+import type { Category, Product, Lang, MenuLayout } from '@/lib/types'
 import { ProductCard } from './ProductCard'
 
 export function CategorySection({
@@ -8,6 +7,7 @@ export function CategorySection({
   products,
   allProducts,
   recommendationsMap,
+  layout = 'list',
   lang,
   currency,
   priceColor,
@@ -24,6 +24,9 @@ export function CategorySection({
   // avoid forcing every call site to pass it).
   allProducts?: Product[]
   recommendationsMap?: Record<string, string[]>
+  // Admin's "شكل عرض الأصناف" (restaurants.menu_layout) — defaults to 'list',
+  // the same default the database itself uses.
+  layout?: MenuLayout
   lang: Lang
   currency: string
   priceColor: string
@@ -31,6 +34,12 @@ export function CategorySection({
   branchName: string
 }) {
   const name = lang === 'en' && category.name_en ? category.name_en : category.name
+
+  // A category with zero available products is never shown at all — ported
+  // from src/features/menu/MenuBody.jsx's own `if (catProducts.length === 0)
+  // return null`, not an empty-state message (menu-next previously showed one
+  // here; that was a parity gap, not an intentional menu-next behavior).
+  if (products.length === 0) return null
 
   return (
     <section id={`cat-${category.id}`} className="category-section">
@@ -41,16 +50,13 @@ export function CategorySection({
           category.emoji && <span aria-hidden>{category.emoji} </span>
         )}
         {name}
+        <span className="category-section__count">{products.length}</span>
       </h2>
-      {products.length === 0 ? (
-        <p className="category-section__empty">{t(lang).noProducts}</p>
-      ) : (
-        <div className="category-section__grid">
-          {products.map((p) => (
-            <ProductCard key={p.id} product={p} allProducts={allProducts} recommendationsMap={recommendationsMap} lang={lang} currency={currency} priceColor={priceColor} branchId={branchId} branchName={branchName} />
-          ))}
-        </div>
-      )}
+      <div className={`category-section__grid category-section__grid--${layout}`}>
+        {products.map((p) => (
+          <ProductCard key={p.id} product={p} allProducts={allProducts} recommendationsMap={recommendationsMap} layout={layout} lang={lang} currency={currency} priceColor={priceColor} branchId={branchId} branchName={branchName} />
+        ))}
+      </div>
     </section>
   )
 }

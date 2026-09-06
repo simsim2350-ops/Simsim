@@ -119,6 +119,10 @@ export default async function MenuPage({
             products={section.products}
             allProducts={products}
             recommendationsMap={recommendationsMap}
+            // Highlight rails always render as 'grid', regardless of the
+            // restaurant's own menu_layout setting — same as legacy's
+            // MenuBody.jsx (best-sellers/featured force layout="grid").
+            layout="grid"
             lang={lang}
             currency={currency}
             priceColor={priceColor}
@@ -140,6 +144,7 @@ export default async function MenuPage({
               products={productsByCategory.get(category.id) ?? []}
               allProducts={products}
               recommendationsMap={recommendationsMap}
+              layout={restaurant.menu_layout || 'list'}
               lang={lang}
               currency={currency}
               priceColor={priceColor}
