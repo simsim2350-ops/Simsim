@@ -66,6 +66,19 @@ export function RestaurantHeader({
 
   return (
     <header className="menu-header" style={{ borderColor: brandColor }}>
+      {/* Hero banner (Admin's "Cover upload", restaurants.cover_url) — ported
+          from src/features/menu/MenuHeader.jsx: always renders as a full-width
+          band above the identity row, the real cover image if the owner set
+          one, else the same brand-color gradient fallback (never blank).
+          Simplified vs. the old header's fixed-position scroll-parallax
+          treatment — this page is Server-Component-first, so a static band is
+          the proportionate port rather than adding scroll-driven client JS. */}
+      <div className="menu-header__hero" style={!restaurant.cover_url ? { background: `linear-gradient(160deg, ${brandColor}, ${brandColor}88)` } : undefined}>
+        {restaurant.cover_url && (
+          <Image src={restaurant.cover_url} alt="" fill sizes="480px" className="menu-header__hero-image" priority />
+        )}
+        <div className="menu-header__hero-scrim" />
+      </div>
       <div className="menu-header__top">
         {restaurant.logo_url ? (
           <Image

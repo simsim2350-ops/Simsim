@@ -8,6 +8,12 @@ export type SocialLinks = Partial<Record<'instagram' | 'whatsapp_social' | 'snap
 
 export type Allergen = { label?: string; label_en?: string; name?: string; icon?: string } | string
 
+// The 4 real values written by the Admin Dashboard's "شكل عرض الأصناف" setting
+// (src/pages/Settings.jsx) — 'list' is both the DB default and the layout
+// menu-next's ProductCard already renders unconditionally, so only the other
+// three actually change anything (see ProductCard.tsx).
+export type MenuLayout = 'list' | 'grid' | 'showcase' | 'circles'
+
 export type Restaurant = {
   id: string
   slug: string
@@ -33,6 +39,10 @@ export type Restaurant = {
   show_description: boolean | null
   recommendations_enabled: boolean | null
   recommendations_count: number | null
+  // Full-bleed banner behind the header (Admin's "Cover upload", distinct
+  // from the small circular `logo_url`) — restaurant-scoped, not per-branch.
+  cover_url: string | null
+  menu_layout: MenuLayout | null
 }
 
 export type OpeningHoursDay = { open: boolean; from: string; to: string }
