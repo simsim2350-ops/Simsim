@@ -1,5 +1,6 @@
 import type { CartItem } from './cart/types'
 import type { Product } from './types'
+import { hasRequiredOptions } from './options'
 
 // Faithful TypeScript port of src/features/menu/hooks/useSmartSuggestions.js —
 // same priority chain (cart-wide curated -> same-category -> featured
@@ -53,4 +54,24 @@ export function getCartRecommendations({
   }
 
   return [...picked.values()].slice(0, recommendationsCount)
+}
+
+// Per-product companion recommendations (#3b, "goes well with X") — faithful
+// port of src/features/menu/ProductModal.jsx's own `companions` derivation:
+// manual, owner-curated rules only (no algorithmic fallback, unlike cart-wide
+// suggestions above), resolved against the *current* product rows so an
+// unavailable or since-required-optioned product is silently dropped rather
+// than shown broken.
+export function getProductCompanions(sourceProductId: string, products: Product[], recommendationsMap: Record<string, string[]>): Product[] {
+  const ids = recommendationsMap[sourceProductId] || []
+  const seen = new Set<string>()
+  const companions: Product[] = []
+  for (const id of ids) {
+    if (seen.has(id)) continue
+    const product = products.find((p) => p.id === id)
+    if (!product || !product.is_available || hasRequiredOptions(product.options)) continue
+    seen.add(id)
+    companions.push(product)
+  }
+  return companions
 }

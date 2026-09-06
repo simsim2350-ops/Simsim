@@ -9,6 +9,7 @@ import { t } from '@/lib/i18n'
 import { SOCIAL_ICONS } from './SocialIcons'
 import { AllergensModal } from './AllergensModal'
 import { SearchOverlay } from './SearchOverlay'
+import { useMenuBanners } from '@/lib/banners/BannerContext'
 
 // Restaurant info depth ported from the old menu's MenuHeader.jsx: rating,
 // open/closed status + today's hours (or next-opening text), location + map
@@ -42,6 +43,7 @@ export function RestaurantHeader({
   const [allergensOpen, setAllergensOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const strings = t(lang)
+  const { offersCount, openOffers } = useMenuBanners()
 
   // restaurants has no name_en column in the current schema — only description is bilingual.
   const name = restaurant.name
@@ -113,6 +115,12 @@ export function RestaurantHeader({
         <Link href={`/menu/${slug}/orders${lang === 'en' ? '?lang=en' : ''}`} aria-label={strings.myOrders} className="menu-header__action-icon">
           🧾
         </Link>
+        {offersCount > 0 && (
+          <button type="button" className="menu-header__action-icon menu-header__action-icon--badge" onClick={openOffers} aria-label={strings.openOffers}>
+            🎁
+            <span className="menu-header__badge" style={{ background: brandColor }}>{offersCount > 9 ? '9+' : offersCount}</span>
+          </button>
+        )}
         {(phone || socialKeys.length > 0 || showAllergensBtn) && (
           <>
           {phone && (

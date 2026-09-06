@@ -9,8 +9,10 @@ function calorieBadge(calories: number): string {
   return '🔴'
 }
 
-export function ProductCard({ product, lang, currency, priceColor, branchId, branchName }: {
+export function ProductCard({ product, allProducts, recommendationsMap, lang, currency, priceColor, branchId, branchName }: {
   product: Product
+  allProducts?: Product[]
+  recommendationsMap?: Record<string, string[]>
   lang: Lang
   currency: string
   priceColor: string
@@ -46,6 +48,8 @@ export function ProductCard({ product, lang, currency, priceColor, branchId, bra
       </div>
       <AddToCartButton
         product={{ id: product.id, name: product.name, nameEn: product.name_en, price: product.price, imageUrl: product.image_url, emoji: product.emoji, options: product.options }}
+        allProducts={allProducts}
+        recommendationsMap={recommendationsMap}
         branchId={branchId}
         branchName={branchName}
         currency={currency}

@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { supabaseServer } from './supabase/server'
 import type { Restaurant, Branch, Category, Product, Rating } from './types'
+import type { Banner, DisplayCoupon } from './banners/types'
 
 // Data access only — no rendering here. Mirrors the exact same read pattern
 // (tables, filters, ordering) as the current production menu's useMenuData.js,
@@ -122,6 +123,74 @@ export async function getActiveCartWideIds(restaurantId: string, branchId: strin
     .order('priority')
   if (error || !data) return []
   return (data as { product_id: string }[]).map((r) => r.product_id)
+}
+
+// Banners (#2b) — same table/filters/ordering as production's useMenuData.js:
+// select('*') by restaurant, is_active, ordered by display_priority desc then
+// sort_order, then the same client-side branch-scope + starts/ends-at window
+// filter (`relevant`) that file applies after the fetch. Not a new read
+// pattern — ported exactly, including the "select *" (matches whatever
+// columns the admin UI's banner form actually writes, without guessing a
+// trimmed column list).
+export async function getActiveBanners(restaurantId: string, branchId: string): Promise<Banner[]> {
+  const supabase = supabaseServer()
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('banners')
+    .select('*')
+    .eq('restaurant_id', restaurantId)
+    .eq('is_active', true)
+    .order('display_priority', { ascending: false })
+    .order('sort_order')
+  if (error || !data) return []
+  const now = new Date().toISOString()
+  const relevant = (row: Banner) => !row.branch_id || row.branch_id === branchId
+  return (data as Banner[]).filter(
+    (b) => relevant(b) && (!b.starts_at || b.starts_at <= now) && (!b.ends_at || b.ends_at >= now)
+  )
+}
+
+// The offers-drawer's "currently active coupons to advertise" list — same
+// table as Phase 3's coupon-apply lookup in CheckoutForm.tsx, but a different,
+// unrelated read (all active coupons for display vs. one matched by a typed
+// code) — same filters as production's useMenuData.js (is_active + the same
+// branch-scope + not-yet-expired window).
+export async function getActiveCouponsForDisplay(restaurantId: string, branchId: string): Promise<DisplayCoupon[]> {
+  const supabase = supabaseServer()
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('coupons')
+    .select('id, restaurant_id, branch_id, code, discount_type, discount_value, expires_at, is_active')
+    .eq('restaurant_id', restaurantId)
+    .eq('is_active', true)
+  if (error || !data) return []
+  const now = new Date().toISOString()
+  const relevant = (row: DisplayCoupon) => !row.branch_id || row.branch_id === branchId
+  return (data as DisplayCoupon[]).filter((c) => relevant(c) && (!c.expires_at || c.expires_at >= now))
+}
+
+// Per-product companion recommendations (#3b, "goes well with X") — same
+// table/filters as src/lib/recommendationsApi.js's fetchActiveRecommendationsMap,
+// unchanged. Returned as a plain object (not a Map) because this crosses into
+// Client Components as a prop, and Maps aren't serializable across the
+// Server/Client boundary — a representation change only, not a data-structure
+// or query change at the source.
+export async function getActiveRecommendationsMap(restaurantId: string): Promise<Record<string, string[]>> {
+  const supabase = supabaseServer()
+  if (!supabase) return {}
+  const { data, error } = await supabase
+    .from('product_recommendations')
+    .select('source_product_id, recommended_product_id, priority')
+    .eq('restaurant_id', restaurantId)
+    .eq('is_active', true)
+    .order('priority')
+  if (error || !data) return {}
+  const map: Record<string, string[]> = {}
+  for (const row of data as { source_product_id: string; recommended_product_id: string }[]) {
+    if (!map[row.source_product_id]) map[row.source_product_id] = []
+    map[row.source_product_id].push(row.recommended_product_id)
+  }
+  return map
 }
 
 export type MenuPageData = {

@@ -6,6 +6,8 @@ import { ProductCard } from './ProductCard'
 export function CategorySection({
   category,
   products,
+  allProducts,
+  recommendationsMap,
   lang,
   currency,
   priceColor,
@@ -14,6 +16,14 @@ export function CategorySection({
 }: {
   category: Category
   products: Product[]
+  // Full branch product list + companion-recommendation rules (#3b) — a
+  // companion can belong to a different category than the product card it's
+  // suggested from, so resolving it needs the whole branch, not just this
+  // section's own `products`. Optional so this component still works
+  // anywhere companions aren't relevant (none currently, kept optional to
+  // avoid forcing every call site to pass it).
+  allProducts?: Product[]
+  recommendationsMap?: Record<string, string[]>
   lang: Lang
   currency: string
   priceColor: string
@@ -37,7 +47,7 @@ export function CategorySection({
       ) : (
         <div className="category-section__grid">
           {products.map((p) => (
-            <ProductCard key={p.id} product={p} lang={lang} currency={currency} priceColor={priceColor} branchId={branchId} branchName={branchName} />
+            <ProductCard key={p.id} product={p} allProducts={allProducts} recommendationsMap={recommendationsMap} lang={lang} currency={currency} priceColor={priceColor} branchId={branchId} branchName={branchName} />
           ))}
         </div>
       )}

@@ -52,6 +52,14 @@ export function hasSelectableOptions(raw: unknown): boolean {
   return normalizeOptionGroups(raw).length > 0
 }
 
+// Used to filter companion-recommendation candidates (#3b) — a product with a
+// required option group can't be added with a single tap (the customer must
+// choose first), same exclusion src/features/menu/ProductModal.jsx already
+// applies to its own companion suggestions.
+export function hasRequiredOptions(raw: unknown): boolean {
+  return normalizeOptionGroups(raw).some((g) => g.required)
+}
+
 // Order-independent identity for a set of selected choices — two picks of the
 // same choices in a different click order must merge into the same cart
 // line, while any different choice must never merge. Ported pattern from
