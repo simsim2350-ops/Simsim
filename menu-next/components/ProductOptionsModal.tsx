@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useCart } from '@/lib/cart/CartContext'
 import { normalizeOptionGroups, optionsPrice, selectionsFromResolved, type OptionSelections } from '@/lib/options'
+import { getProductCompanions } from '@/lib/recommendations'
 import { t } from '@/lib/i18n'
-import type { Lang } from '@/lib/types'
+import type { Lang, Product } from '@/lib/types'
 import type { SelectedOption } from '@/lib/cart/types'
 
 type ModalProduct = {
@@ -18,9 +19,15 @@ type ModalProduct = {
 }
 
 export function ProductOptionsModal({
-  product, lang, currency, priceColor, branchId, branchName, onClose, editing,
+  product, allProducts, recommendationsMap, lang, currency, priceColor, branchId, branchName, onClose, editing,
 }: {
   product: ModalProduct
+  // Companion recommendations (#3b) — only offered on the "add new item" path
+  // (both provided), never while editing an existing cart line (see the
+  // `!editing` gate below): editing is about adjusting a line already in the
+  // cart, not a moment for discovering something else to add.
+  allProducts?: Product[]
+  recommendationsMap?: Record<string, string[]>
   lang: Lang
   currency: string
   priceColor: string
@@ -36,6 +43,9 @@ export function ProductOptionsModal({
   const strings = t(lang)
   const groups = useMemo(() => normalizeOptionGroups(product.options), [product.options])
   const name = lang === 'en' && product.nameEn ? product.nameEn : product.name
+  const companions = !editing && allProducts && recommendationsMap
+    ? getProductCompanions(product.id, allProducts, recommendationsMap)
+    : []
 
   const [qty, setQty] = useState(editing?.qty ?? 1)
   const [selections, setSelections] = useState<OptionSelections>(() => (editing ? selectionsFromResolved(editing.selectedOptions, groups) : {}))
@@ -156,6 +166,35 @@ export function ProductOptionsModal({
               {missingGroup === group.name && <span className="checkout-form__error">{strings.optionChooseError}</span>}
             </div>
           ))}
+
+          {companions.length > 0 && (
+            <div className="options-modal__companions">
+              <div className="options-modal__companions-title">{strings.companionTitle}</div>
+              <div className="options-modal__companions-row">
+                {companions.map((p) => {
+                  const cName = lang === 'en' && p.name_en ? p.name_en : p.name
+                  return (
+                    <button
+                      type="button"
+                      key={p.id}
+                      className="options-modal__companion"
+                      aria-label={`${strings.addToCart}: ${cName}`}
+                      onClick={() => addToCart({ id: p.id, name: p.name, nameEn: p.name_en, price: p.price, imageUrl: p.image_url, emoji: p.emoji }, branchId, branchName)}
+                    >
+                      <span className="options-modal__companion-media">
+                        {p.image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={p.image_url} alt="" loading="lazy" />
+                        ) : (p.emoji || '🍽️')}
+                      </span>
+                      <span className="options-modal__companion-name">{cName}</span>
+                      <span className="options-modal__companion-price" style={{ color: priceColor }}>{formatPrice(p.price)} {currency}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="options-modal__footer">

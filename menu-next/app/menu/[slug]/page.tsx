@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { loadMenuPage, getRestaurantRating, getCustomerFavorites, getActiveCartWideIds } from '@/lib/data'
+import { loadMenuPage, getRestaurantRating, getCustomerFavorites, getActiveCartWideIds, getActiveBanners, getActiveCouponsForDisplay, getActiveRecommendationsMap } from '@/lib/data'
 import { t } from '@/lib/i18n'
 import type { Lang } from '@/lib/types'
 import { resolveTableQr } from '@/lib/tableQr'
@@ -8,6 +8,9 @@ import { RestaurantHeader } from '@/components/RestaurantHeader'
 import { CategorySection } from '@/components/CategorySection'
 import { CartWidget } from '@/components/CartWidget'
 import { BranchConflictModal } from '@/components/BranchConflictModal'
+import { BannerProvider } from '@/lib/banners/BannerContext'
+import { TopMenuBanner, InlineMenuBanner, FloatingMenuBanner, MenuBannerOverlays } from '@/components/BannerDisplays'
+import { MenuOffersDrawer } from '@/components/MenuOffersDrawer'
 
 type Params = { slug: string }
 type Search = { branch?: string; lang?: string; table?: string }
@@ -64,10 +67,13 @@ export default async function MenuPage({
   // sources/rules/priority order as the old menu's useMenuData.js/MenuBody.jsx:
   // owner-curated best sellers > owner-curated featured > real order-frequency
   // favorites > plain categories. Fetched in parallel; neither blocks the other.
-  const [rating, customerFavorites, cartWideIds] = await Promise.all([
+  const [rating, customerFavorites, cartWideIds, banners, couponsForDisplay, recommendationsMap] = await Promise.all([
     getRestaurantRating(restaurant.id),
     getCustomerFavorites(restaurant.id, products),
     getActiveCartWideIds(restaurant.id, branch.id),
+    getActiveBanners(restaurant.id, branch.id),
+    getActiveCouponsForDisplay(restaurant.id, branch.id),
+    getActiveRecommendationsMap(restaurant.id),
   ])
   const manualBestSellers = products.filter((p) => p.is_best_seller === true).slice(0, 4)
   const featuredProducts = products.filter((p) => p.is_featured === true).slice(0, 4)
@@ -80,73 +86,89 @@ export default async function MenuPage({
 
   return (
     <div className={`menu-frame${lang === 'en' ? ' lang-en' : ''}`} lang={lang} dir={lang === 'en' ? 'ltr' : 'rtl'}>
-      <RestaurantHeader
-        restaurant={restaurant}
-        branches={branches}
-        activeBranch={branch}
-        lang={lang}
-        rating={rating}
-        openStatus={openStatus}
-        products={products}
-        currency={currency}
-        priceColor={priceColor}
-        slug={slug}
-      />
-
-      <div className="menu-toolbar">
-        <a
-          className="menu-toolbar__lang"
-          href={`?${new URLSearchParams({ ...(search.branch ? { branch: search.branch } : {}), lang: lang === 'en' ? 'ar' : 'en' }).toString()}`}
-        >
-          {t(lang).switchLang}
-        </a>
-      </div>
-
-      {highlightSections.map((section) => (
-        <CategorySection
-          key={section.key}
-          category={{ id: section.key, branch_id: branch.id, name: section.title, name_en: section.title, emoji: null, cover_url: null, sort_order: -1, is_visible: true }}
-          products={section.products}
+      <BannerProvider banners={banners} coupons={couponsForDisplay} restaurantId={restaurant.id} branchId={branch.id}>
+        <RestaurantHeader
+          restaurant={restaurant}
+          branches={branches}
+          activeBranch={branch}
           lang={lang}
+          rating={rating}
+          openStatus={openStatus}
+          products={products}
           currency={currency}
           priceColor={priceColor}
-          branchId={branch.id}
-          branchName={branchName}
+          slug={slug}
         />
-      ))}
 
-      {categories.length === 0 ? (
-        <p className="category-section__empty" style={{ padding: '18px 16px' }}>{t(lang).noCategories}</p>
-      ) : (
-        categories.map((category) => (
+        {/* بانر أعلى المنيو — أول عنصر عند اختيار وضع "أعلى المينيو" (#2b) */}
+        <TopMenuBanner brandColor={priceColor} lang={lang} />
+
+        <div className="menu-toolbar">
+          <a
+            className="menu-toolbar__lang"
+            href={`?${new URLSearchParams({ ...(search.branch ? { branch: search.branch } : {}), lang: lang === 'en' ? 'ar' : 'en' }).toString()}`}
+          >
+            {t(lang).switchLang}
+          </a>
+        </div>
+
+        {highlightSections.map((section) => (
           <CategorySection
-            key={category.id}
-            category={category}
-            products={productsByCategory.get(category.id) ?? []}
+            key={section.key}
+            category={{ id: section.key, branch_id: branch.id, name: section.title, name_en: section.title, emoji: null, cover_url: null, sort_order: -1, is_visible: true }}
+            products={section.products}
+            allProducts={products}
+            recommendationsMap={recommendationsMap}
             lang={lang}
             currency={currency}
             priceColor={priceColor}
             branchId={branch.id}
             branchName={branchName}
           />
-        ))
-      )}
+        ))}
 
-      <footer className="menu-footer">{t(lang).poweredBy}</footer>
-      <CartWidget
-        lang={lang}
-        currency={currency}
-        priceColor={priceColor}
-        branchId={branch.id}
-        branchName={branchName}
-        slug={slug}
-        products={products}
-        tableToken={tableQr?.token}
-        cartWideIds={cartWideIds}
-        recommendationsEnabled={restaurant.recommendations_enabled !== false}
-        recommendationsCount={restaurant.recommendations_count || 4}
-      />
-      <BranchConflictModal lang={lang} />
+        {/* بانر منتصف المنيو — بين المختارات والأقسام العادية (#2b) */}
+        <InlineMenuBanner brandColor={priceColor} lang={lang} />
+
+        {categories.length === 0 ? (
+          <p className="category-section__empty" style={{ padding: '18px 16px' }}>{t(lang).noCategories}</p>
+        ) : (
+          categories.map((category) => (
+            <CategorySection
+              key={category.id}
+              category={category}
+              products={productsByCategory.get(category.id) ?? []}
+              allProducts={products}
+              recommendationsMap={recommendationsMap}
+              lang={lang}
+              currency={currency}
+              priceColor={priceColor}
+              branchId={branch.id}
+              branchName={branchName}
+            />
+          ))
+        )}
+
+        <footer className="menu-footer">{t(lang).poweredBy}</footer>
+        <CartWidget
+          lang={lang}
+          currency={currency}
+          priceColor={priceColor}
+          branchId={branch.id}
+          branchName={branchName}
+          slug={slug}
+          products={products}
+          tableToken={tableQr?.token}
+          cartWideIds={cartWideIds}
+          recommendationsEnabled={restaurant.recommendations_enabled !== false}
+          recommendationsCount={restaurant.recommendations_count || 4}
+        />
+        <BranchConflictModal lang={lang} />
+
+        <FloatingMenuBanner brandColor={priceColor} lang={lang} />
+        <MenuBannerOverlays brandColor={priceColor} lang={lang} />
+        <MenuOffersDrawer brandColor={priceColor} lang={lang} />
+      </BannerProvider>
     </div>
   )
 }

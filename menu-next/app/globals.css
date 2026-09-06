@@ -484,3 +484,107 @@ html, body {
   font-family: 'Tajawal', sans-serif; font-weight: 800; font-size: 13px; cursor: pointer;
 }
 .my-orders__review-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ===== Header offers badge icon (#2b entry point) ===== */
+.menu-header__action-icon--badge { position: relative; cursor: pointer; }
+.menu-header__badge {
+  position: absolute; top: -3px; left: -3px; min-width: 15px; height: 15px; display: grid; place-items: center;
+  border-radius: 999px; padding: 0 3px; color: white; border: 1.5px solid white; font-size: 8.5px;
+  font-family: 'Tajawal', sans-serif; font-weight: 900;
+}
+
+/* ===== Companion recommendations inside the options modal (#3b) ===== */
+.options-modal__companions { margin-top: 4px; margin-bottom: 18px; }
+.options-modal__companions-title { font-size: 13.5px; font-weight: 800; margin-bottom: 10px; }
+.options-modal__companions-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 2px; }
+.options-modal__companion {
+  flex-shrink: 0; width: 104px; display: flex; flex-direction: column; gap: 6px; border: 1.5px solid #E5E7EB;
+  border-radius: 14px; padding: 10px; background: white; text-align: start; cursor: pointer;
+}
+.options-modal__companion-media {
+  width: 56px; height: 56px; border-radius: 12px; background: #F8F9FB; display: flex; align-items: center;
+  justify-content: center; font-size: 24px; overflow: hidden;
+}
+.options-modal__companion-media img { width: 100%; height: 100%; object-fit: cover; }
+.options-modal__companion-name { font-size: 12px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.options-modal__companion-price { font-size: 11.5px; font-weight: 800; }
+
+/* ===== Banners (#2b) — same 5 display modes as production, new classes ===== */
+.banner-copy { min-width: 0; flex: 1; }
+.banner-copy__title { color: #101828; font-family: 'Tajawal', sans-serif; font-size: 14px; font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.banner-copy__subtitle { color: #667085; margin-top: 3px; font-size: 11px; line-height: 1.45; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.banner-image { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
+.banner-image--placeholder { display: grid; place-items: center; color: #FF6A00; background: #FFF0EB; }
+.banner-image.is-compact, .banner-image--placeholder.is-compact { width: 54px; height: 44px; border-radius: 10px; flex-shrink: 0; }
+
+.banner-top {
+  margin: 10px 16px 2px; padding: 10px; display: flex; align-items: center; gap: 9px; border-radius: 13px; border: 1px solid;
+}
+.banner-top__icon { width: 32px; height: 32px; display: grid; place-items: center; flex-shrink: 0; border-radius: 9px; color: white; }
+.banner-top__view-btn { min-height: 34px; padding: 6px 8px; flex-shrink: 0; border: none; border-radius: 9px; background: white; font-family: 'Tajawal', sans-serif; font-size: 11px; font-weight: 900; cursor: pointer; }
+
+.banner-inline { margin: 12px 16px 4px; overflow: hidden; border-radius: 15px; background: white; border: 1px solid; box-shadow: 0 4px 12px rgba(16,24,40,.04); }
+.banner-inline__row { display: flex; gap: 10px; align-items: center; padding: 10px; }
+.banner-inline__arrow { width: 36px; height: 36px; display: grid; place-items: center; flex-shrink: 0; border: none; border-radius: 10px; color: white; cursor: pointer; }
+
+.banner-floating {
+  position: fixed; left: max(16px, calc(50% - 224px)); bottom: 92px; z-index: 45; max-width: 180px; min-height: 42px;
+  display: flex; align-items: center; gap: 6px; padding: 8px 10px; border: none; border-radius: 999px; color: white;
+  font-family: 'Tajawal', sans-serif; font-size: 11px; font-weight: 900; cursor: pointer;
+}
+.banner-floating__icon { width: 24px; height: 24px; display: grid; place-items: center; flex-shrink: 0; border-radius: 50%; background: rgba(255,255,255,.2); }
+.banner-floating__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.banner-detail-overlay { position: fixed; inset: 0; z-index: 130; display: flex; align-items: flex-end; justify-content: center; background: rgba(16,24,40,.48); }
+.banner-detail { width: 100%; max-width: 480px; overflow: hidden; border-radius: 22px 22px 0 0; background: white; padding: 14px 16px calc(18px + env(safe-area-inset-bottom)); }
+.banner-detail__handle { width: 40px; height: 4px; margin: 0 auto 12px; border-radius: 999px; background: #D0D5DD; }
+.banner-detail__row { display: flex; gap: 11px; align-items: flex-start; }
+.banner-detail__close { width: 34px; height: 34px; display: grid; place-items: center; flex-shrink: 0; border-radius: 9px; border: 1px solid #E4E7EC; background: white; color: #667085; cursor: pointer; }
+.banner-detail__cta { width: 100%; min-height: 44px; margin-top: 14px; border: none; border-radius: 11px; color: white; font-family: 'Tajawal', sans-serif; font-weight: 900; font-size: 13px; cursor: pointer; }
+
+.banner-fullscreen-overlay { position: fixed; inset: 0; z-index: 140; display: flex; align-items: center; justify-content: center; background: rgba(11,11,15,.94); padding: 20px; }
+.banner-fullscreen { width: 100%; max-width: 420px; overflow: hidden; border-radius: 24px; background: white; }
+.banner-fullscreen__media { position: relative; min-height: 190px; }
+.banner-fullscreen__image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.banner-fullscreen__scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.03), rgba(0,0,0,.44)); }
+.banner-fullscreen__close { position: absolute; top: 12px; left: 12px; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; border: 1px solid rgba(255,255,255,.34); background: rgba(0,0,0,.2); color: white; cursor: pointer; }
+.banner-fullscreen__copy { position: absolute; right: 18px; left: 18px; bottom: 18px; color: white; }
+.banner-fullscreen__title { font-family: 'Tajawal', sans-serif; font-size: 23px; line-height: 1.25; font-weight: 900; }
+.banner-fullscreen__subtitle { margin-top: 5px; font-size: 13px; line-height: 1.55; opacity: .9; }
+.banner-fullscreen__actions { display: grid; gap: 8px; padding: 14px; }
+.banner-fullscreen__cta { min-height: 46px; border: none; border-radius: 12px; color: white; font-family: 'Tajawal', sans-serif; font-size: 14px; font-weight: 900; cursor: pointer; }
+.banner-fullscreen__secondary { min-height: 44px; border: 1px solid #D0D5DD; border-radius: 12px; background: white; color: #344054; font-family: 'Tajawal', sans-serif; font-size: 13px; font-weight: 900; cursor: pointer; }
+
+.banner-popup-overlay { position: fixed; inset: 0; z-index: 130; display: flex; align-items: center; justify-content: center; background: rgba(16,24,40,.48); padding: 20px; }
+.banner-popup { width: 100%; max-width: 380px; overflow: hidden; border-radius: 20px; background: white; box-shadow: 0 20px 50px rgba(16,24,40,.24); }
+.banner-popup__row { display: flex; align-items: flex-start; gap: 10px; padding: 14px 14px 10px; }
+.banner-popup__close { width: 32px; height: 32px; display: grid; place-items: center; flex-shrink: 0; border-radius: 9px; border: 1px solid #E4E7EC; background: white; color: #667085; cursor: pointer; }
+.banner-popup__cta { width: calc(100% - 28px); margin: 0 14px 14px; min-height: 42px; border: none; border-radius: 10px; color: white; font-family: 'Tajawal', sans-serif; font-weight: 900; font-size: 13px; cursor: pointer; }
+
+/* ===== Offers drawer (#2b) ===== */
+.offers-drawer-overlay { position: fixed; inset: 0; z-index: 125; display: flex; align-items: flex-end; justify-content: center; background: rgba(16,24,40,.48); }
+.offers-drawer { width: 100%; max-width: 480px; max-height: 78vh; overflow-y: auto; border-radius: 22px 22px 0 0; background: white; box-shadow: 0 -14px 40px rgba(16,24,40,.22); padding: 10px 16px calc(18px + env(safe-area-inset-bottom)); }
+.offers-drawer__handle { width: 40px; height: 4px; margin: 0 auto 10px; border-radius: 999px; background: #D0D5DD; }
+.offers-drawer__header { display: flex; align-items: center; gap: 9px; padding-bottom: 12px; border-bottom: 1px solid #F2F4F7; }
+.offers-drawer__header-icon { width: 34px; height: 34px; display: grid; place-items: center; flex-shrink: 0; border-radius: 10px; }
+.offers-drawer__header-copy { min-width: 0; flex: 1; }
+.offers-drawer__title { color: #101828; font-family: 'Tajawal', sans-serif; font-size: 15px; font-weight: 900; }
+.offers-drawer__count { margin-top: 2px; color: #667085; font-size: 10.5px; font-weight: 700; }
+.offers-drawer__close { width: 36px; height: 36px; display: grid; place-items: center; flex-shrink: 0; border-radius: 10px; border: 1px solid #E4E7EC; background: white; color: #667085; cursor: pointer; }
+.offers-drawer__list { display: grid; gap: 9px; padding-top: 12px; }
+
+.offer-card { overflow: hidden; border: 1px solid; border-radius: 14px; box-shadow: 0 2px 8px rgba(15,17,23,.035); display: grid; gap: 7px; padding: 9px; }
+.offer-card__banner { min-width: 0; display: flex; align-items: center; gap: 9px; padding: 8px; border-radius: 11px; background: white; border: 1px solid #F2F4F7; }
+.offer-card__banner-media { width: 52px; height: 46px; display: grid; place-items: center; flex-shrink: 0; overflow: hidden; border-radius: 9px; }
+.offer-card__banner-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.offer-card__banner-copy { min-width: 0; flex: 1; }
+.offer-card__banner-title { color: #101828; font-family: 'Tajawal', sans-serif; font-size: 13px; font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.offer-card__banner-subtitle { margin-top: 3px; color: #667085; font-size: 11px; line-height: 1.45; }
+.offer-card__banner-hint { margin-top: 4px; font-size: 10px; font-weight: 800; }
+.offer-card__coupon { min-width: 0; display: flex; align-items: center; gap: 9px; padding: 8px; border-radius: 11px; background: #FFFCF8; border: 1px dashed; }
+.offer-card__coupon-icon { width: 34px; height: 34px; display: grid; place-items: center; flex-shrink: 0; border-radius: 9px; }
+.offer-card__coupon-copy { min-width: 0; flex: 1; }
+.offer-card__coupon-code { color: #101828; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; direction: ltr; text-align: right; font-size: 13px; font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.offer-card__coupon-discount { margin-top: 2px; color: #667085; font-size: 10px; font-weight: 800; }
+.offer-card__copy-btn { flex-shrink: 0; min-height: 38px; padding: 7px 10px; border: none; border-radius: 9px; color: white; font-family: 'Tajawal', sans-serif; font-size: 11px; font-weight: 900; cursor: pointer; }
