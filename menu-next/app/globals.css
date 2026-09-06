@@ -210,22 +210,30 @@ html, body {
 .category-section__count { font-size: 11.5px; font-weight: 700; color: #9CA3AF; margin-inline-start: -2px; }
 .category-section__empty { color: #9CA3AF; font-size: 13px; }
 .category-section__grid { display: grid; gap: 10px; }
-/* "الأكثر طلبًا" only (this round) — same .product-card (layout='list',
-   unchanged component) in a horizontal-scrolling row instead of the
-   standard vertical grid — a scoped descendant override, not a new
-   ProductCard layout variant. Hidden scrollbar matches the same pattern
-   already used by .category-nav. overflow-x is contained to this row
-   alone (never the page). Card media/name are enlarged beyond even the
-   default 'list' layout's own sizing (72px/14px) per this round's explicit
-   request — the row's own width/padding are trimmed to compensate, so the
-   card doesn't grow tall, and the next card still peeks in on mobile. */
+/* "الأكثر طلبًا" only — same .product-card (layout='list', unchanged
+   component) in a horizontal-scrolling row instead of the standard
+   vertical grid — a scoped descendant override, not a new ProductCard
+   layout variant. Hidden scrollbar matches the same pattern already used
+   by .category-nav. overflow-x is contained to this row alone (never the
+   page).
+   This round: the image is the card's primary visual element, so it gets
+   the largest jump (110px, up from 88px) — the card's own width grows only
+   modestly (252px -> 288px) to give it room, not to make the card itself
+   noticeably bigger. The text column actually gains more room than the
+   width increase alone suggests (14px extra) because the image's own
+   growth is smaller than the card's, which is exactly what keeps the
+   2-line description from wrapping prematurely — same clamp everywhere
+   else in the app, just genuinely enough width to fill it with real
+   content instead of clipping early. Still fully horizontal (image beside
+   text, never stacked above it), still peeks the next card on mobile. */
 .category-section__grid--horizontal-scroll {
   display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
 }
 .category-section__grid--horizontal-scroll::-webkit-scrollbar { display: none; }
-.category-section__grid--horizontal-scroll > .product-card { flex: 0 0 auto; width: 252px; padding: 8px; gap: 10px; }
-.category-section__grid--horizontal-scroll .product-card__media { width: 88px; height: 88px; }
-.category-section__grid--horizontal-scroll .product-card__name { font-size: 15px; }
+.category-section__grid--horizontal-scroll > .product-card { flex: 0 0 auto; width: 288px; padding: 8px; gap: 10px; }
+.category-section__grid--horizontal-scroll .product-card__media { width: 110px; height: 110px; }
+.category-section__grid--horizontal-scroll .product-card__name { font-size: 16px; }
+.category-section__grid--horizontal-scroll .product-card__price { font-size: 14px; }
 
 .product-card {
   display: flex; gap: 12px; background: white; border: 1px solid #EEF0F3;
