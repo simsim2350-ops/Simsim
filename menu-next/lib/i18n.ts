@@ -131,6 +131,8 @@ const STRINGS = {
     freeDelivery: 'مجاني',
     allCategories: 'كل الأقسام',
     openAllCategories: 'فتح كل الأقسام',
+    descShowMore: '+ المزيد',
+    descShowLess: 'عرض أقل',
   },
   en: {
     branches: 'Branches',
@@ -260,6 +262,8 @@ const STRINGS = {
     freeDelivery: 'Free',
     allCategories: 'All Categories',
     openAllCategories: 'Open all categories',
+    descShowMore: '+ More',
+    descShowLess: 'Show less',
   },
 } as const
 

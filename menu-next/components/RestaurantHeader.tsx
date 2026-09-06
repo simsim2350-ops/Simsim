@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Restaurant, Branch, Product, Lang, Rating } from '@/lib/types'
@@ -33,6 +33,7 @@ export function RestaurantHeader({
   activeOrdersCount = 0,
   deliveryEnabled = false,
   deliveryFee = 0,
+  langHref,
 }: {
   restaurant: Restaurant
   branches: Branch[]
@@ -45,9 +46,10 @@ export function RestaurantHeader({
   priceColor: string
   slug: string
   // True when the current URL/QR already made an explicit branch choice (a
-  // resolved table QR, or a plain ?branch= link) — the switcher must not
-  // offer a casual way out of that choice (#2, branch isolation). Defaults to
-  // false so any caller that doesn't pass it keeps today's behavior.
+  // resolved table QR, or a plain ?branch= link). No longer drives any UI
+  // here — the branch-switcher list itself was removed from the customer
+  // menu (#4, this round) — kept only so callers/page.tsx don't need
+  // changes; retained for forward-compat, not currently read.
   branchLocked?: boolean
   // Feeds the estimated prep-time display below (restaurant.show_prep_time) —
   // defaults to 0 so any caller that doesn't pass it just shows the base
@@ -58,6 +60,11 @@ export function RestaurantHeader({
   // passed down rather than recomputed here.
   deliveryEnabled?: boolean
   deliveryFee?: number
+  // Pre-built lang-toggle URL (carries ?branch=/?table= forward, computed in
+  // page.tsx where those search params already live) — rendered as one of
+  // the general menu-utility icons floating on the hero (#2, this round),
+  // replacing the old standalone .menu-toolbar link.
+  langHref: string
 }) {
   const [allergensOpen, setAllergensOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -105,6 +112,20 @@ export function RestaurantHeader({
   const description = lang === 'en' ? restaurant.description_en || restaurant.description : restaurant.description
   const brandColor = restaurant.brand_color || '#FF6A00'
 
+  // Description clamp/expand (#1) — same measure-after-render approach as
+  // legacy's own MenuHeader.jsx: only measure while collapsed (2-line
+  // clamp), comparing scrollHeight (full content) to clientHeight (clamped
+  // box) to know whether "+ المزيد" is actually needed — a description that
+  // already fits in 2 lines never shows the toggle.
+  const descRef = useRef<HTMLParagraphElement>(null)
+  const [descExpanded, setDescExpanded] = useState(false)
+  const [descOverflows, setDescOverflows] = useState(false)
+  useEffect(() => {
+    if (descExpanded) return
+    const el = descRef.current
+    if (el) setDescOverflows(el.scrollHeight > el.clientHeight + 2)
+  }, [description, descExpanded])
+
   const address = activeBranch.address || restaurant.address
   const mapsUrl = activeBranch.maps_url || restaurant.maps_url
   const phone = activeBranch.phone || restaurant.phone
@@ -144,6 +165,22 @@ export function RestaurantHeader({
           <Image src={restaurant.cover_url} alt="" fill sizes="480px" className="menu-header__hero-image" priority />
         )}
         <div className="menu-header__hero-scrim" />
+
+        {/* General menu functions (#2, this round) — search, language, my
+            orders. Moved out of the glass card entirely (never duplicated
+            there); fades and becomes non-interactive together with the hero
+            itself since these are plain descendants of it (see globals.css). */}
+        <div className="menu-header__hero-actions">
+          <button type="button" className="menu-header__action-icon" onClick={() => setSearchOpen(true)} aria-label={strings.searchPlaceholder}>
+            🔍
+          </button>
+          <a href={langHref} className="menu-header__action-icon menu-header__lang-toggle" aria-label={strings.switchLang}>
+            {lang === 'en' ? 'ع' : 'EN'}
+          </a>
+          <Link href={`/menu/${slug}/orders${lang === 'en' ? '?lang=en' : ''}`} aria-label={strings.myOrders} className="menu-header__action-icon">
+            🧾
+          </Link>
+        </div>
       </div>
 
       {/* Frosted-glass identity card, floating over the hero image — faithful
@@ -181,11 +218,17 @@ export function RestaurantHeader({
               {hoursDetail && <span className="menu-header__status-detail"> · {hoursDetail}</span>}
             </div>
           )}
-          {(restaurant.show_description ?? true) && description && <p className="menu-header__desc">{description}</p>}
+          {(restaurant.show_description ?? true) && description && (
+            <div>
+              <p ref={descRef} className={`menu-header__desc${descExpanded ? ' is-expanded' : ''}`}>{description}</p>
+              {(descOverflows || descExpanded) && (
+                <button type="button" className="menu-header__desc-toggle" style={{ color: brandColor }} onClick={() => setDescExpanded((v) => !v)}>
+                  {descExpanded ? strings.descShowLess : strings.descShowMore}
+                </button>
+              )}
+            </div>
+          )}
         </div>
-        <button type="button" className="menu-header__search-btn" onClick={() => setSearchOpen(true)} aria-label={strings.searchPlaceholder}>
-          🔍
-        </button>
       </div>
 
       {(address || mapsUrl || showPrepTime || deliveryEnabled) && (
@@ -211,18 +254,17 @@ export function RestaurantHeader({
         </div>
       )}
 
-      <div className="menu-header__actions">
-        <Link href={`/menu/${slug}/orders${lang === 'en' ? '?lang=en' : ''}`} aria-label={strings.myOrders} className="menu-header__action-icon">
-          🧾
-        </Link>
-        {offersCount > 0 && (
-          <button type="button" className="menu-header__action-icon menu-header__action-icon--badge" onClick={openOffers} aria-label={strings.openOffers}>
-            🎁
-            <span className="menu-header__badge" style={{ background: brandColor }}>{offersCount > 9 ? '9+' : offersCount}</span>
-          </button>
-        )}
-        {(phone || socialKeys.length > 0 || showAllergensBtn) && (
-          <>
+      {/* Now that My Orders moved out (#2), this row can genuinely be empty
+          for a restaurant with no active offers/phone/socials/allergens —
+          guarded so an empty flex row never leaves a dangling margin-top gap. */}
+      {(offersCount > 0 || phone || socialKeys.length > 0 || showAllergensBtn) && (
+        <div className="menu-header__actions">
+          {offersCount > 0 && (
+            <button type="button" className="menu-header__action-icon menu-header__action-icon--badge" onClick={openOffers} aria-label={strings.openOffers}>
+              🎁
+              <span className="menu-header__badge" style={{ background: brandColor }}>{offersCount > 9 ? '9+' : offersCount}</span>
+            </button>
+          )}
           {phone && (
             <a href={`tel:${phone}`} aria-label={strings.call} className="menu-header__action-icon">📞</a>
           )}
@@ -239,32 +281,17 @@ export function RestaurantHeader({
               ⚠️ {strings.allergens}
             </button>
           )}
-          </>
-        )}
-      </div>
-
-      {/* #2 branch isolation: a URL/QR that already named an explicit branch
-          must not also offer a one-tap way to a different branch. Only a
-          plain restaurant-level visit (no ?branch=, no resolved table QR)
-          shows this. */}
-      {!branchLocked && branches.length > 1 && (
-        <nav className="menu-header__branches" aria-label={strings.branches}>
-          {branches.map((b) => {
-            const label = lang === 'en' && b.name_en ? b.name_en : b.name
-            const isActive = b.id === activeBranch.id
-            return (
-              <a
-                key={b.id}
-                href={`?branch=${b.id}${lang === 'en' ? '&lang=en' : ''}`}
-                className={`menu-header__branch${isActive ? ' is-active' : ''}`}
-                style={isActive ? { background: brandColor, borderColor: brandColor } : undefined}
-              >
-                {label}
-              </a>
-            )
-          })}
-        </nav>
+        </div>
       )}
+
+      {/* #4, this round — branch selection UI removed from the customer
+          menu entirely: each branch now gets its own QR/URL, so the
+          customer never needs to pick a branch inside the menu itself. The
+          underlying branch-resolution logic (loadMenuPage's own
+          tableQr?.branchId || search.branch priority) is completely
+          untouched — this only removes the switcher UI that used to sit
+          here, never the data layer, never QR resolution, never Branch
+          URLs' own behavior. */}
       </div>
 
       {/* Permanent sticky mini-header — always mounted (never conditionally
