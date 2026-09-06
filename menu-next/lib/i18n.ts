@@ -129,6 +129,8 @@ const STRINGS = {
     closeOffer: 'إغلاق العرض',
     minShort: 'د',
     freeDelivery: 'مجاني',
+    allCategories: 'كل الأقسام',
+    openAllCategories: 'فتح كل الأقسام',
   },
   en: {
     branches: 'Branches',
@@ -256,6 +258,8 @@ const STRINGS = {
     closeOffer: 'Close offer',
     minShort: 'min',
     freeDelivery: 'Free',
+    allCategories: 'All Categories',
+    openAllCategories: 'Open all categories',
   },
 } as const
 

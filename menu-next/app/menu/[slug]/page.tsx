@@ -136,7 +136,7 @@ export default async function MenuPage({
 
         {/* شريط الأقسام الأفقي (#3) — يبقى ملتصقًا أعلى الشاشة، فوق كل المحتوى
             بما فيه صفوف المختارات، تمامًا كما في المنيو القديم. */}
-        <CategoryNav categories={navCategories} brandColor={brandColor} />
+        <CategoryNav categories={navCategories} brandColor={brandColor} lang={lang} />
 
         <div className="menu-toolbar">
           <a

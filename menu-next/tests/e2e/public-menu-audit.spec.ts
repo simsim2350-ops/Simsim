@@ -75,7 +75,7 @@ test('selecting a real table from the dropdown submits create_order with the mat
   expect(calledBody!.p_table_number).toBe('TABLE 5')
 })
 
-test('category nav renders a single horizontal row matching the real, visible categories (no drawer, no hardcoded list)', async ({ page }) => {
+test('category nav renders a single horizontal row matching the real, visible categories, with no hardcoded list', async ({ page }) => {
   await page.goto(`/menu/${SIMSIM}?branch=${SIMSIM_MAIN_BRANCH_ID}`)
   const nav = page.locator('.category-nav')
   await expect(nav).toBeVisible()
@@ -89,8 +89,6 @@ test('category nav renders a single horizontal row matching the real, visible ca
   // favorites) are not counted here, they don't get their own tab.
   expect(tabCount).toBeGreaterThan(0)
   expect(tabCount).toBeLessThanOrEqual(sectionCount)
-  // No supplementary "all categories" drawer button this round (Section 3).
-  await expect(page.locator('text=☰')).toHaveCount(0)
 })
 
 test('clicking a category tab scrolls its section into view and marks that tab active', async ({ page }) => {

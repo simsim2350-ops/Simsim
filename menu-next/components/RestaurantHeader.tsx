@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Restaurant, Branch, Product, Lang, Rating } from '@/lib/types'
@@ -64,6 +64,42 @@ export function RestaurantHeader({
   const strings = t(lang)
   const { offersCount, openOffers } = useMenuBanners()
 
+  // Hero/glass scroll behavior (#2) — faithful port of the exact mechanism
+  // in src/features/menu/MenuHeader.jsx: a single rAF-throttled `scroll`
+  // listener (not a raw per-pixel handler) drives two continuous 0-1
+  // progress values, never a boolean "scrolled" flag. `heroOpacity` fades
+  // the fixed hero out over a 130px window (scrollY 86->216 — legacy's own
+  // tuned constants, reused as-is rather than re-derived, since menu-next's
+  // hero height is close enough that the same feel holds); `compactT` fades
+  // the separate, always-mounted sticky mini-header in over a 42px window
+  // (scrollY 78->120), plus the same small 10px->0 translateY legacy uses.
+  // Both are pure derived values recomputed each throttled tick — there is
+  // no separate boolean state to fall out of sync.
+  const [scrollY, setScrollY] = useState(0)
+  useEffect(() => {
+    let ticking = false
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => { setScrollY(window.scrollY); ticking = false })
+    }
+    // Read the real scroll position once immediately on mount, not only on
+    // the next 'scroll' event — otherwise a page that's already scrolled by
+    // the time this effect attaches (a fast programmatic scroll landing
+    // before hydration finishes, or a browser restoring scroll position on
+    // back-navigation) would leave scrollY stuck at its initial 0 until the
+    // user scrolls again, showing a fully-opaque hero over already-scrolled
+    // content. Found via a real, reproducible flake while testing this
+    // exact scenario (an immediate scrollTo right after navigation), not a
+    // hypothetical.
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
+  const heroOpacity = 1 - clamp01((scrollY - 86) / 130)
+  const compactT = clamp01((scrollY - 78) / 42)
+
   // restaurants has no name_en column in the current schema — only description is bilingual.
   const name = restaurant.name
   const description = lang === 'en' ? restaurant.description_en || restaurant.description : restaurant.description
@@ -93,7 +129,17 @@ export function RestaurantHeader({
           Simplified vs. the old header's fixed-position scroll-parallax
           treatment — this page is Server-Component-first, so a static band is
           the proportionate port rather than adding scroll-driven client JS. */}
-      <div className="menu-header__hero" style={!restaurant.cover_url ? { background: `linear-gradient(160deg, ${brandColor}, ${brandColor}88)` } : undefined}>
+      {/* Reserves the hero's space in normal flow since the real hero below
+          is position:fixed (see globals.css for why). */}
+      <div className="menu-header__hero-spacer" />
+      <div
+        className="menu-header__hero"
+        style={{
+          opacity: heroOpacity,
+          pointerEvents: heroOpacity < 0.5 ? 'none' : 'auto',
+          ...(!restaurant.cover_url ? { background: `linear-gradient(160deg, ${brandColor}, ${brandColor}88)` } : {}),
+        }}
+      >
         {restaurant.cover_url && (
           <Image src={restaurant.cover_url} alt="" fill sizes="480px" className="menu-header__hero-image" priority />
         )}
@@ -219,6 +265,28 @@ export function RestaurantHeader({
           })}
         </nav>
       )}
+      </div>
+
+      {/* Permanent sticky mini-header — always mounted (never conditionally
+          rendered) so it never flickers in/out; invisible and
+          non-interactive until scroll fades it in (see globals.css). */}
+      <div
+        className="menu-header__sticky"
+        style={{
+          opacity: compactT,
+          transform: `translateX(-50%) translateY(${((1 - compactT) * -10).toFixed(1)}px)`,
+          pointerEvents: compactT > 0.5 ? 'auto' : 'none',
+        }}
+      >
+        {restaurant.logo_url ? (
+          <Image src={restaurant.logo_url} alt={name} width={36} height={36} className="menu-header__sticky-logo" />
+        ) : (
+          <div className="menu-header__sticky-logo menu-header__sticky-logo--placeholder" style={{ background: brandColor }} aria-hidden />
+        )}
+        <div style={{ flex: 1 }} />
+        <button type="button" className="menu-header__search-btn" onClick={() => setSearchOpen(true)} aria-label={strings.searchPlaceholder}>
+          🔍
+        </button>
       </div>
 
       <AllergensModal open={allergensOpen} onClose={() => setAllergensOpen(false)} allergens={restaurant.allergens} lang={lang} />
