@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/lib/cart/CartContext'
 import { t } from '@/lib/i18n'
-import type { Lang } from '@/lib/types'
+import type { Lang, Table } from '@/lib/types'
 import { vatBreakdown, computeCouponDiscount, type Coupon } from '@/lib/pricing'
 import type { OpenStatus } from '@/lib/openStatus'
 import { supabaseBrowser } from '@/lib/supabase/client'
@@ -24,7 +24,8 @@ type Status = 'idle' | 'submitting' | 'success' | 'error'
 // and src/features/menu/orderErrors.js — not invented.
 export function CheckoutForm({
   slug, restaurantId, branchId, branchName, restaurantName, currency, priceColor, lang,
-  openStatus, deliveryEnabled, deliveryFee, takeawayEnabled, availableProductIds, resolvedTableName,
+  openStatus, deliveryEnabled, deliveryFee, takeawayEnabled, availableProductIds, resolvedTableName, resolvedTableToken,
+  branchTables,
 }: {
   slug: string
   restaurantId: string
@@ -46,6 +47,22 @@ export function CheckoutForm({
   // matching the legacy app's own behavior (a scanned table QR is not a
   // suggestion the customer can override).
   resolvedTableName: string | null
+  // The raw QR token itself (Phase 6, #3 table-to-invoice) — when present,
+  // submission calls create_order_from_table_qr instead of generic
+  // create_order, so the resulting order row gets a real table_id/source='qr'
+  // (create_order itself is untouched either way; this RPC re-verifies the
+  // token server-side and calls create_order internally). Non-dine-in and
+  // manual-table orders are completely unaffected — they never had this
+  // token and keep calling generic create_order exactly as before.
+  resolvedTableToken: string | null
+  // Section 1B: this branch's own real, active tables (empty when arriving
+  // via a resolved table QR, or when the branch has no tables configured at
+  // all) — server-fetched via get_branch_tables_for_menu, never hardcoded.
+  // When non-empty, dine-in shows a dropdown of real table ids instead of a
+  // free-text field; when empty, falls back to the original free-text input
+  // exactly as before (a restaurant that hasn't set up the table system must
+  // keep working unchanged).
+  branchTables: Table[]
 }) {
   const router = useRouter()
   const { items, count, subtotal, branchId: cartBranchId, idempotencyKey, clearCart } = useCart()
@@ -55,6 +72,7 @@ export function CheckoutForm({
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [tableNumber, setTableNumber] = useState('')
+  const [tableId, setTableId] = useState('')
   const [deliveryAddress, setDeliveryAddress] = useState('')
   const [orderNote, setOrderNote] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -154,7 +172,13 @@ export function CheckoutForm({
     // order type/table/delivery in that case; the picker and those inputs
     // aren't even rendered (see JSX below).
     if (!resolvedTableName) {
-      if (orderType === 'dine_in' && !tableNumber.trim()) next.tableNumber = strings.errRequired
+      if (orderType === 'dine_in') {
+        if (branchTables.length > 0) {
+          if (!tableId) next.tableNumber = strings.errRequired
+        } else if (!tableNumber.trim()) {
+          next.tableNumber = strings.errRequired
+        }
+      }
       if (orderType === 'delivery' && !deliveryAddress.trim()) next.deliveryAddress = strings.errRequired
     }
     if (!customerPhone.trim()) next.customerPhone = strings.errRequired
@@ -218,10 +242,16 @@ export function CheckoutForm({
     // anything else, and the actual param names/shapes above are exactly
     // create_order's real signature, verified against the live schema in
     // Phase 4C, not guessed.
+    // Section 1B: when the branch has real tables, the dropdown's selected
+    // tableId is the source of truth — create_order re-validates it belongs
+    // to this exact restaurant+branch and derives the authoritative
+    // table_number itself, so the client-sent p_table_number is only a
+    // legacy/no-tables-configured fallback, never trusted over p_table_id.
+    const selectedTable = branchTables.find((tb) => tb.id === tableId)
     const rpcArgs = {
       p_restaurant_id: restaurantId,
       p_branch_id: branchId,
-      p_table_number: resolvedTableName ?? (orderType === 'dine_in' ? tableNumber.trim() : null),
+      p_table_number: resolvedTableName ?? (orderType === 'dine_in' ? (selectedTable?.table_number ?? tableNumber.trim()) : null),
       p_delivery_address: resolvedTableName ? null : (orderType === 'delivery' ? deliveryAddress.trim() : null),
       p_customer_name: customerName.trim() || null,
       p_customer_phone: customerPhone,
@@ -231,11 +261,30 @@ export function CheckoutForm({
       p_coupon_code: appliedCoupon?.code ?? null,
       p_client_total: total,
       p_idempotency_key: idempotencyKey,
+      p_table_id: resolvedTableName ? null : (orderType === 'dine_in' ? (selectedTable?.id ?? null) : null),
     }
 
     let result
     try {
-      result = await client.rpc('create_order', rpcArgs as never).single()
+      // #3 table-to-invoice: a resolved QR token calls the dedicated
+      // create_order_from_table_qr RPC (re-verifies the token server-side,
+      // resolves restaurant/branch/table itself — never from the client —
+      // then calls the same unmodified create_order internally and stamps
+      // the resulting order with the real table_id/source='qr'). Everything
+      // else (delivery, takeaway, manual dine-in with a typed table number)
+      // is untouched and still calls generic create_order exactly as before.
+      result = resolvedTableToken
+        ? await client.rpc('create_order_from_table_qr', {
+            p_qr_token: resolvedTableToken,
+            p_items: rpcItems,
+            p_customer_name: rpcArgs.p_customer_name,
+            p_customer_phone: rpcArgs.p_customer_phone,
+            p_notes: rpcArgs.p_notes,
+            p_coupon_code: rpcArgs.p_coupon_code,
+            p_client_total: rpcArgs.p_client_total,
+            p_idempotency_key: idempotencyKey,
+          } as never).single()
+        : await client.rpc('create_order', rpcArgs as never).single()
     } catch {
       // Network exception (offline, DNS, etc.) — never shown as a raw error.
       submittingRef.current = false
@@ -344,7 +393,16 @@ export function CheckoutForm({
           {orderType === 'dine_in' && (
             <div className="checkout-form__section">
               <label className="checkout-form__label" htmlFor="tableNumber">{strings.tableNumber} *</label>
-              <input id="tableNumber" type="text" value={tableNumber} onChange={(e) => setTableNumber(e.target.value)} placeholder={strings.tableNumberPh} className="checkout-form__input" />
+              {branchTables.length > 0 ? (
+                <select id="tableNumber" value={tableId} onChange={(e) => setTableId(e.target.value)} className="checkout-form__input">
+                  <option value="">{strings.tableNumberPh}</option>
+                  {branchTables.map((tb) => (
+                    <option key={tb.id} value={tb.id}>{tb.table_number}</option>
+                  ))}
+                </select>
+              ) : (
+                <input id="tableNumber" type="text" value={tableNumber} onChange={(e) => setTableNumber(e.target.value)} placeholder={strings.tableNumberPh} className="checkout-form__input" />
+              )}
               {errors.tableNumber && <span className="checkout-form__error">{errors.tableNumber}</span>}
             </div>
           )}

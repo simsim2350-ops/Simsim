@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { loadMenuPage } from '@/lib/data'
+import { loadMenuPage, getBranchTablesForMenu } from '@/lib/data'
 import { t } from '@/lib/i18n'
 import type { Lang } from '@/lib/types'
 import { computeBranchOpenStatus, effectiveDeliverySettings } from '@/lib/openStatus'
@@ -52,6 +52,12 @@ export default async function CheckoutPage({
   const openStatus = computeBranchOpenStatus(branch)
   const delivery = effectiveDeliverySettings(branch, restaurant)
   const takeawayEnabled = branch.takeaway_enabled ?? true
+  // Section 1B: a plain branch-URL visit (no resolved table QR) gets a real
+  // dropdown of this branch's own active tables instead of free-text entry.
+  // A resolved table QR already carries its own locked, server-verified
+  // table — it never needs this list. Empty for a branch with no configured
+  // tables (falls back to the existing free-text input in CheckoutForm).
+  const branchTables = tableQr ? [] : await getBranchTablesForMenu(slug, branch.id)
 
   return (
     <div className={`menu-frame${lang === 'en' ? ' lang-en' : ''}`} lang={lang} dir={lang === 'en' ? 'ltr' : 'rtl'}>
@@ -70,6 +76,8 @@ export default async function CheckoutPage({
         takeawayEnabled={takeawayEnabled}
         availableProductIds={products.map((p) => p.id)}
         resolvedTableName={tableQr?.tableName ?? null}
+        resolvedTableToken={tableQr?.token ?? null}
+        branchTables={branchTables}
       />
     </div>
   )

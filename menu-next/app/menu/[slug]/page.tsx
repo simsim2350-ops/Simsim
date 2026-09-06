@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
-import { loadMenuPage, getRestaurantRating, getCustomerFavorites, getActiveCartWideIds, getActiveBanners, getActiveCouponsForDisplay, getActiveRecommendationsMap } from '@/lib/data'
+import { loadMenuPage, getRestaurantRating, getCustomerFavorites, getActiveCartWideIds, getActiveBanners, getActiveCouponsForDisplay, getActiveRecommendationsMap, getActiveOrdersCount } from '@/lib/data'
 import { t } from '@/lib/i18n'
 import type { Lang } from '@/lib/types'
 import { resolveTableQr } from '@/lib/tableQr'
-import { computeBranchOpenStatus } from '@/lib/openStatus'
+import { computeBranchOpenStatus, effectiveDeliverySettings } from '@/lib/openStatus'
 import { RestaurantHeader } from '@/components/RestaurantHeader'
+import { CategoryNav } from '@/components/CategoryNav'
 import { CategorySection } from '@/components/CategorySection'
 import { CartWidget } from '@/components/CartWidget'
 import { BranchConflictModal } from '@/components/BranchConflictModal'
@@ -59,21 +60,47 @@ export default async function MenuPage({
   }
 
   const priceColor = restaurant.price_color || restaurant.brand_color || '#FF6A00'
+  const brandColor = restaurant.brand_color || '#FF6A00'
   const currency = restaurant.currency || 'SAR'
+  // #3 category nav — only real categories that will actually render a
+  // section (already is_visible-filtered by getVisibleCategories, and here
+  // additionally excludes an empty one, matching CategorySection's own
+  // `products.length === 0 -> return null`), in the same Dashboard sort
+  // order as `categories` itself. Never the synthetic highlight-rail
+  // "categories" (best sellers/featured/favorites) built above.
+  const navCategories = categories
+    .filter((c) => (productsByCategory.get(c.id) ?? []).length > 0)
+    .map((c) => ({ id: c.id, name: lang === 'en' && c.name_en ? c.name_en : c.name }))
   const branchName = lang === 'en' && branch.name_en ? branch.name_en : branch.name
   const openStatus = computeBranchOpenStatus(branch)
+  const delivery = effectiveDeliverySettings(branch, restaurant)
+  // Only a resolved TABLE QR locks the branch switcher (#2, branch isolation)
+  // — a table is a physical, one-location context, so offering a one-tap
+  // jump to a different branch while "seated" at this table doesn't make
+  // sense. A plain `?branch=` link is not the same thing: it's the switcher's
+  // own normal navigation mechanism (confirmed by the pre-existing,
+  // already-passing branch.spec.ts, which clicks a branch link and expects
+  // the switcher to still be visible with the new branch marked active
+  // afterwards) — locking on it too would make the switcher unusable after
+  // the first switch. This is a UI-level lock on top of the data layer,
+  // which was already correctly scoped before this change (every fetch below
+  // already keys off the resolved `branch.id`, and a resolved table QR's own
+  // branchId always wins over `search.branch` in the loadMenuPage call
+  // above, regardless of this flag).
+  const branchLocked = Boolean(tableQr)
 
   // Restaurant info depth (rating) and the three highlight sections — same
   // sources/rules/priority order as the old menu's useMenuData.js/MenuBody.jsx:
   // owner-curated best sellers > owner-curated featured > real order-frequency
   // favorites > plain categories. Fetched in parallel; neither blocks the other.
-  const [rating, customerFavorites, cartWideIds, banners, couponsForDisplay, recommendationsMap] = await Promise.all([
+  const [rating, customerFavorites, cartWideIds, banners, couponsForDisplay, recommendationsMap, activeOrdersCount] = await Promise.all([
     getRestaurantRating(restaurant.id),
     getCustomerFavorites(restaurant.id, products),
     getActiveCartWideIds(restaurant.id, branch.id),
     getActiveBanners(restaurant.id, branch.id),
     getActiveCouponsForDisplay(restaurant.id, branch.id),
     getActiveRecommendationsMap(restaurant.id),
+    getActiveOrdersCount(restaurant.id, branch.id),
   ])
   const manualBestSellers = products.filter((p) => p.is_best_seller === true).slice(0, 4)
   const featuredProducts = products.filter((p) => p.is_featured === true).slice(0, 4)
@@ -98,15 +125,26 @@ export default async function MenuPage({
           currency={currency}
           priceColor={priceColor}
           slug={slug}
+          branchLocked={branchLocked}
+          activeOrdersCount={activeOrdersCount}
+          deliveryEnabled={delivery.enabled}
+          deliveryFee={delivery.fee}
         />
 
         {/* بانر أعلى المنيو — أول عنصر عند اختيار وضع "أعلى المينيو" (#2b) */}
         <TopMenuBanner brandColor={priceColor} lang={lang} />
 
+        {/* شريط الأقسام الأفقي (#3) — يبقى ملتصقًا أعلى الشاشة، فوق كل المحتوى
+            بما فيه صفوف المختارات، تمامًا كما في المنيو القديم. */}
+        <CategoryNav categories={navCategories} brandColor={brandColor} />
+
         <div className="menu-toolbar">
           <a
             className="menu-toolbar__lang"
-            href={`?${new URLSearchParams({ ...(search.branch ? { branch: search.branch } : {}), lang: lang === 'en' ? 'ar' : 'en' }).toString()}`}
+            // #2 branch isolation: must carry `table` forward too, or
+            // switching language on a resolved table-QR page would silently
+            // drop the lock and fall back to the primary branch.
+            href={`?${new URLSearchParams({ ...(search.branch ? { branch: search.branch } : {}), ...(search.table ? { table: search.table } : {}), lang: lang === 'en' ? 'ar' : 'en' }).toString()}`}
           >
             {t(lang).switchLang}
           </a>

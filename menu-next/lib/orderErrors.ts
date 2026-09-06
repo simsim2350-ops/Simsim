@@ -25,6 +25,7 @@ const ERROR_MESSAGES: Record<string, { ar: string; en: string }> = {
   'coupon minimum order not met': { ar: 'الطلب أقل من الحد الأدنى لهذا الكوبون', en: "Your order is below this coupon's minimum" },
   'coupon usage limit reached': { ar: 'هذا الكوبون بلغ الحد الأقصى للاستخدام', en: 'This coupon has reached its usage limit' },
   'table qr is unavailable': { ar: 'رمز الطاولة غير متاح — امسح رمز QR مرة أخرى', en: 'Table QR is unavailable — scan the QR code again' },
+  'invalid table selection': { ar: 'الطاولة المختارة غير صالحة — أعد اختيار الطاولة', en: 'Selected table is invalid — please choose the table again' },
 }
 
 const FALLBACK = { ar: 'تعذّر إتمام الطلب. لم يتم تأكيد الطلب — حاول مرة أخرى', en: 'Could not place the order. The order was not confirmed — try again' }
