@@ -11,6 +11,7 @@ import { AllergensModal } from './AllergensModal'
 import { SearchOverlay } from './SearchOverlay'
 import { useMenuBanners } from '@/lib/banners/BannerContext'
 import { estimatedPrepTime } from '@/lib/prepTime'
+import { readActiveOrders } from '@/lib/orders/activeOrders'
 
 // Restaurant info depth ported from the old menu's MenuHeader.jsx: rating,
 // open/closed status + today's hours (or next-opening text), location + map
@@ -126,6 +127,19 @@ export function RestaurantHeader({
     if (el) setDescOverflows(el.scrollHeight > el.clientHeight + 2)
   }, [description, descExpanded])
 
+  // "طلباتي" discoverability (#6, this round) — a real, non-invented count:
+  // this device's own active (pending/preparing/ready) orders for this
+  // restaurant, read from the exact same localStorage list the My Orders
+  // page itself already uses (lib/orders/activeOrders.ts). Client-only (no
+  // localStorage during SSR), so it starts at 0 and fills in after mount —
+  // never a fabricated number, and simply absent (no badge) for a first-
+  // time visitor with no active orders at all.
+  const [myActiveOrdersCount, setMyActiveOrdersCount] = useState(0)
+  useEffect(() => {
+    const active = readActiveOrders(slug).filter((o) => o.status !== 'completed' && o.status !== 'cancelled')
+    setMyActiveOrdersCount(active.length)
+  }, [slug])
+
   const address = activeBranch.address || restaurant.address
   const mapsUrl = activeBranch.maps_url || restaurant.maps_url
   const phone = activeBranch.phone || restaurant.phone
@@ -177,8 +191,16 @@ export function RestaurantHeader({
           <a href={langHref} className="menu-header__action-icon menu-header__lang-toggle" aria-label={strings.switchLang}>
             {lang === 'en' ? 'ع' : 'EN'}
           </a>
-          <Link href={`/menu/${slug}/orders${lang === 'en' ? '?lang=en' : ''}`} aria-label={strings.myOrders} className="menu-header__action-icon">
+          <Link
+            href={`/menu/${slug}/orders${lang === 'en' ? '?lang=en' : ''}`}
+            aria-label={strings.myOrders}
+            title={strings.myOrders}
+            className={`menu-header__action-icon${myActiveOrdersCount > 0 ? ' menu-header__action-icon--badge' : ''}`}
+          >
             🧾
+            {myActiveOrdersCount > 0 && (
+              <span className="menu-header__badge" style={{ background: brandColor }}>{myActiveOrdersCount > 9 ? '9+' : myActiveOrdersCount}</span>
+            )}
           </Link>
         </div>
       </div>
@@ -325,8 +347,16 @@ export function RestaurantHeader({
           <a href={langHref} className="menu-header__action-icon menu-header__lang-toggle" aria-label={strings.switchLang}>
             {lang === 'en' ? 'ع' : 'EN'}
           </a>
-          <Link href={`/menu/${slug}/orders${lang === 'en' ? '?lang=en' : ''}`} aria-label={strings.myOrders} className="menu-header__action-icon">
+          <Link
+            href={`/menu/${slug}/orders${lang === 'en' ? '?lang=en' : ''}`}
+            aria-label={strings.myOrders}
+            title={strings.myOrders}
+            className={`menu-header__action-icon${myActiveOrdersCount > 0 ? ' menu-header__action-icon--badge' : ''}`}
+          >
             🧾
+            {myActiveOrdersCount > 0 && (
+              <span className="menu-header__badge" style={{ background: brandColor }}>{myActiveOrdersCount > 9 ? '9+' : myActiveOrdersCount}</span>
+            )}
           </Link>
         </div>
       </div>
