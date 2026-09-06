@@ -31,25 +31,23 @@ test('glass card does not overflow horizontally on a small mobile viewport', asy
   await expect(page.locator('.menu-header__card')).toBeVisible()
 })
 
-test('a plain restaurant-level visit (no ?branch=, no ?table=) still shows the branch switcher for a multi-branch restaurant', async ({ page }) => {
+test('a plain restaurant-level visit (no ?branch=, no ?table=) never shows a branch-switcher UI, even for a multi-branch restaurant', async ({ page }) => {
+  // Branch selection UI was removed from the customer menu this round (#4)
+  // — each branch now gets its own QR/URL, so this is never shown
+  // regardless of how many branches the restaurant has.
   await page.goto(`/menu/${SIMSIM}`)
-  await expect(page.locator('.menu-header__branches')).toBeVisible()
-  await expect(page.locator('.menu-header__branch')).toHaveCount(2)
+  await expect(page.locator('.menu-header__branches')).toHaveCount(0)
 })
 
-test('a plain ?branch= link still serves that branch AND keeps the switcher usable (it is the switcher\'s own navigation mechanism, not a locked QR context)', async ({ page }) => {
+test('a plain ?branch= link still serves that exact branch (no switcher UI, but the URL mechanism itself is unaffected)', async ({ page }) => {
   await page.goto(`/menu/${SIMSIM}?branch=${SIMSIM_SECOND_BRANCH_ID}`)
   // The explicitly-requested branch is the one actually served — not just a
   // UI label, the real restaurant name still renders correctly for it.
   await expect(page.locator('.menu-header__name')).toContainText('سمسم')
-  // Must remain switchable — matches the pre-existing, already-passing
-  // branch.spec.ts expectation that clicking a branch link keeps the
-  // switcher visible with the new branch marked active afterwards.
-  await expect(page.locator('.menu-header__branches')).toBeVisible()
-  await expect(page.locator('.menu-header__branch.is-active')).toHaveCount(1)
+  await expect(page.locator('.menu-header__branches')).toHaveCount(0)
 })
 
-test('a resolved table-QR URL hides the branch switcher and cannot be redirected to another branch via a manipulated ?branch=', async ({ page }) => {
+test('a resolved table-QR URL cannot be redirected to another branch via a manipulated ?branch=', async ({ page }) => {
   // The QR's own branch is the main branch; appending a *different* branch id
   // alongside the table token must not change which branch is served — the
   // resolved QR's branch always wins (verified at the data layer: loadMenuPage
@@ -63,7 +61,9 @@ test('a resolved table-QR URL hides the branch switcher and cannot be redirected
 
 test('switching language on a resolved table-QR page keeps the table token in the URL', async ({ page }) => {
   await page.goto(`/menu/${SIMSIM}?branch=${SIMSIM_MAIN_BRANCH_ID}&table=${REAL_TABLE_QR_TOKEN}`)
-  await page.locator('.menu-toolbar__lang').click()
+  // Lang toggle moved this round (#2) to a general-menu-utility icon
+  // floating on the hero, replacing the old standalone .menu-toolbar link.
+  await page.locator('.menu-header__lang-toggle').click()
   await expect(page).toHaveURL(new RegExp(`table=${REAL_TABLE_QR_TOKEN}`))
 })
 

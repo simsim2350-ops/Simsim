@@ -88,6 +88,13 @@ export default async function MenuPage({
   // branchId always wins over `search.branch` in the loadMenuPage call
   // above, regardless of this flag).
   const branchLocked = Boolean(tableQr)
+  // Lang-toggle URL (#2, this round) — carries ?branch=/?table= forward
+  // exactly as the old standalone .menu-toolbar link did, so switching
+  // language never silently drops a resolved table-QR lock or an explicit
+  // branch choice. Computed here (where these search params already live)
+  // and passed down as a plain href — RestaurantHeader now renders it as
+  // one of the general menu-utility icons floating on the hero.
+  const langHref = `?${new URLSearchParams({ ...(search.branch ? { branch: search.branch } : {}), ...(search.table ? { table: search.table } : {}), lang: lang === 'en' ? 'ar' : 'en' }).toString()}`
 
   // Restaurant info depth (rating) and the three highlight sections — same
   // sources/rules/priority order as the old menu's useMenuData.js/MenuBody.jsx:
@@ -129,6 +136,7 @@ export default async function MenuPage({
           activeOrdersCount={activeOrdersCount}
           deliveryEnabled={delivery.enabled}
           deliveryFee={delivery.fee}
+          langHref={langHref}
         />
 
         {/* بانر أعلى المنيو — أول عنصر عند اختيار وضع "أعلى المينيو" (#2b) */}
@@ -137,18 +145,6 @@ export default async function MenuPage({
         {/* شريط الأقسام الأفقي (#3) — يبقى ملتصقًا أعلى الشاشة، فوق كل المحتوى
             بما فيه صفوف المختارات، تمامًا كما في المنيو القديم. */}
         <CategoryNav categories={navCategories} brandColor={brandColor} lang={lang} />
-
-        <div className="menu-toolbar">
-          <a
-            className="menu-toolbar__lang"
-            // #2 branch isolation: must carry `table` forward too, or
-            // switching language on a resolved table-QR page would silently
-            // drop the lock and fall back to the primary branch.
-            href={`?${new URLSearchParams({ ...(search.branch ? { branch: search.branch } : {}), ...(search.table ? { table: search.table } : {}), lang: lang === 'en' ? 'ar' : 'en' }).toString()}`}
-          >
-            {t(lang).switchLang}
-          </a>
-        </div>
 
         {highlightSections.map((section) => (
           <CategorySection
