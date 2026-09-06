@@ -112,9 +112,13 @@ export default async function MenuPage({
   const manualBestSellers = products.filter((p) => p.is_best_seller === true).slice(0, 4)
   const featuredProducts = products.filter((p) => p.is_featured === true).slice(0, 4)
 
-  const highlightSections: { key: string; title: string; products: typeof products }[] = [
+  // "الأكثر طلبًا" (featuredProducts, this round) is the one highlight rail
+  // that renders as a horizontal-scrolling row of compact cards instead of
+  // the standard vertical grid — best-sellers and favorites keep their
+  // existing grid presentation untouched, per this round's explicit scope.
+  const highlightSections: { key: string; title: string; products: typeof products; horizontalScroll?: boolean }[] = [
     ...(manualBestSellers.length > 0 ? [{ key: 'best-sellers', title: t(lang).manualBestSellers, products: manualBestSellers }] : []),
-    ...(featuredProducts.length > 0 ? [{ key: 'featured', title: t(lang).featuredProducts, products: featuredProducts }] : []),
+    ...(featuredProducts.length > 0 ? [{ key: 'featured', title: t(lang).featuredProducts, products: featuredProducts, horizontalScroll: true }] : []),
     ...(customerFavorites.length > 0 ? [{ key: 'favorites', title: t(lang).customerFavorites, products: customerFavorites }] : []),
   ]
 
@@ -153,10 +157,14 @@ export default async function MenuPage({
             products={section.products}
             allProducts={products}
             recommendationsMap={recommendationsMap}
-            // Highlight rails always render as 'grid', regardless of the
+            // Highlight rails render as 'grid' by default, regardless of the
             // restaurant's own menu_layout setting — same as legacy's
-            // MenuBody.jsx (best-sellers/featured force layout="grid").
-            layout="grid"
+            // MenuBody.jsx (best-sellers/featured force layout="grid") —
+            // except "الأكثر طلبًا" (horizontalScroll), which uses the
+            // existing compact 'list' card shape inside a horizontal-
+            // scrolling row instead (this round, #7-8).
+            layout={section.horizontalScroll ? 'list' : 'grid'}
+            horizontalScroll={section.horizontalScroll}
             lang={lang}
             currency={currency}
             priceColor={priceColor}

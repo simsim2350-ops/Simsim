@@ -61,7 +61,13 @@ test('an invalid/garbage table token falls back to normal manual entry, not a fo
 test('menu_layout=circles (konoha, real Admin setting) renders circular product cards', async ({ page }) => {
   await page.goto(`/menu/${KONOHA}`)
   await expect(page.locator('.product-card--circles').first()).toBeVisible()
-  await expect(page.locator('.product-card--list')).toHaveCount(0)
+  // Every *regular* category (driven by restaurant.menu_layout) renders
+  // circles, not list — scoped to exclude "الأكثر طلبًا" specifically,
+  // which intentionally always uses compact list-style cards in a
+  // horizontal-scrolling row regardless of the restaurant's own
+  // menu_layout setting (this round; konoha has real featured products,
+  // confirmed live, so that rail does render here).
+  await expect(page.locator('.category-section__grid:not(.category-section__grid--horizontal-scroll) .product-card--list')).toHaveCount(0)
 })
 
 test('menu_layout=grid (simsim, real Admin setting) renders grid product cards with a 2-column section', async ({ page }) => {

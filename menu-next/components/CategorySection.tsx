@@ -8,6 +8,7 @@ export function CategorySection({
   allProducts,
   recommendationsMap,
   layout = 'list',
+  horizontalScroll = false,
   lang,
   currency,
   priceColor,
@@ -27,6 +28,13 @@ export function CategorySection({
   // Admin's "شكل عرض الأصناف" (restaurants.menu_layout) — defaults to 'list',
   // the same default the database itself uses.
   layout?: MenuLayout
+  // "الأكثر طلبًا" only (this round) — renders the same cards (still driven
+  // by `layout`, normally 'list' for this case) in a horizontally-scrolling
+  // row instead of the standard vertical grid. Every other section is
+  // unaffected — this is a pure CSS presentation switch on the wrapping
+  // grid element, not a different component tree or a new ProductCard
+  // layout variant.
+  horizontalScroll?: boolean
   lang: Lang
   currency: string
   priceColor: string
@@ -52,7 +60,7 @@ export function CategorySection({
         {name}
         <span className="category-section__count">{products.length}</span>
       </h2>
-      <div className={`category-section__grid category-section__grid--${layout}`}>
+      <div className={`category-section__grid category-section__grid--${layout}${horizontalScroll ? ' category-section__grid--horizontal-scroll' : ''}`}>
         {products.map((p) => (
           <ProductCard key={p.id} product={p} allProducts={allProducts} recommendationsMap={recommendationsMap} layout={layout} lang={lang} currency={currency} priceColor={priceColor} branchId={branchId} branchName={branchName} />
         ))}
