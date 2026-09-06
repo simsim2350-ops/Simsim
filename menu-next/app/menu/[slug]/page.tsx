@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import { loadMenuPage, getRestaurantRating, getCustomerFavorites, getActiveCartWideIds, getActiveBanners, getActiveCouponsForDisplay, getActiveRecommendationsMap, getActiveOrdersCount } from '@/lib/data'
+import Image from 'next/image'
+import { loadMenuPage, getRestaurantRating, getCustomerFavorites, getActiveCartWideIds, getActiveBanners, getActiveCouponsForDisplay, getActiveRecommendationsMap, getActiveOrdersCount, getMenuBranding } from '@/lib/data'
 import { t } from '@/lib/i18n'
 import type { Lang } from '@/lib/types'
 import { resolveTableQr } from '@/lib/tableQr'
@@ -100,7 +101,7 @@ export default async function MenuPage({
   // sources/rules/priority order as the old menu's useMenuData.js/MenuBody.jsx:
   // owner-curated best sellers > owner-curated featured > real order-frequency
   // favorites > plain categories. Fetched in parallel; neither blocks the other.
-  const [rating, customerFavorites, cartWideIds, banners, couponsForDisplay, recommendationsMap, activeOrdersCount] = await Promise.all([
+  const [rating, customerFavorites, cartWideIds, banners, couponsForDisplay, recommendationsMap, activeOrdersCount, menuBranding] = await Promise.all([
     getRestaurantRating(restaurant.id),
     getCustomerFavorites(restaurant.id, products),
     getActiveCartWideIds(restaurant.id, branch.id),
@@ -108,6 +109,7 @@ export default async function MenuPage({
     getActiveCouponsForDisplay(restaurant.id, branch.id),
     getActiveRecommendationsMap(restaurant.id),
     getActiveOrdersCount(restaurant.id, branch.id),
+    getMenuBranding(restaurant.id),
   ])
   const manualBestSellers = products.filter((p) => p.is_best_seller === true).slice(0, 4)
   const featuredProducts = products.filter((p) => p.is_featured === true).slice(0, 4)
@@ -196,7 +198,31 @@ export default async function MenuPage({
           ))
         )}
 
-        <footer className="menu-footer">{t(lang).poweredBy}</footer>
+        {/* "صُمم بواسطة سمسم" (#2, this round) — fully driven by the real,
+            existing Super Admin setting (platform_branding via the
+            menu_branding RPC, resolved server-side in getMenuBranding).
+            Never rendered unconditionally, never a hardcoded string — the
+            old placeholder POC footer text is gone entirely, replaced by
+            this real feature. Same uniform logic on every restaurant menu. */}
+        {menuBranding?.show && (menuBranding.text || menuBranding.url) && (
+          <footer className="menu-branding" dir="rtl">
+            {menuBranding.url ? (
+              <a href={menuBranding.url} target="_blank" rel="noopener noreferrer" className="menu-branding__link">
+                {menuBranding.variant !== 'text' && (
+                  <Image src="/simsim-s.svg" alt="" width={16} height={16} className="menu-branding__logo" aria-hidden />
+                )}
+                {menuBranding.variant !== 'logo' && menuBranding.text && <span>{menuBranding.text}</span>}
+              </a>
+            ) : (
+              <span className="menu-branding__link">
+                {menuBranding.variant !== 'text' && (
+                  <Image src="/simsim-s.svg" alt="" width={16} height={16} className="menu-branding__logo" aria-hidden />
+                )}
+                {menuBranding.variant !== 'logo' && menuBranding.text && <span>{menuBranding.text}</span>}
+              </span>
+            )}
+          </footer>
+        )}
         <CartWidget
           lang={lang}
           currency={currency}

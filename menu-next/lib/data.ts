@@ -83,6 +83,22 @@ export async function getRestaurantRating(restaurantId: string): Promise<Rating>
   return { avg: Number(row.avg_rating), count: Number(row.review_count) }
 }
 
+// "صُمم بواسطة سمسم" footer (#2, this round) — the real, existing Super
+// Admin setting (public.platform_branding, RPC menu_branding, already
+// live), never a hardcoded footer string. `show` is already the fully
+// resolved decision (platform-level `enabled` AND NOT this restaurant's own
+// `branding_hidden` override) — this function does no additional logic of
+// its own, it only reads what the RPC already decided. Returns null on any
+// failure so the caller can safely render nothing rather than guess.
+export async function getMenuBranding(restaurantId: string): Promise<{ show: boolean; text: string | null; url: string | null; variant: string | null } | null> {
+  const supabase = supabaseServer()
+  if (!supabase) return null
+  const { data, error } = await supabase.rpc('menu_branding', { p_restaurant_id: restaurantId } as never)
+  if (error || !data) return null
+  const row = data as { show?: boolean; text?: string | null; url?: string | null; variant?: string | null }
+  return { show: Boolean(row.show), text: row.text ?? null, url: row.url ?? null, variant: row.variant ?? null }
+}
+
 // "يعجب زبائننا" (Customer Favorites) — ported verbatim from useMenuData.js: rank the branch's
 // own available products by total quantity ordered across get_recent_order_items' real,
 // non-cancelled orders from the last 30 days (that RPC's own window — unchanged), top 4.

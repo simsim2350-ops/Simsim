@@ -1,6 +1,6 @@
-import Image from 'next/image'
 import type { Product, Lang, MenuLayout } from '@/lib/types'
 import { AddToCartButton } from './AddToCartButton'
+import { ProductImageButton } from './ProductImageButton'
 
 // Ported from src/features/menu/helpers.js's getCalorieBadge — same thresholds, same three emoji tiers.
 function calorieBadge(calories: number): string {
@@ -66,13 +66,22 @@ export function ProductCard({ product, allProducts, recommendationsMap, layout =
   return (
     <article className={`product-card product-card--${layout}`}>
       <div className="product-card__media">
-        {product.image_url ? (
-          <Image src={product.image_url} alt={name} fill sizes="96px" className="product-card__image" />
-        ) : (
-          <span className="product-card__emoji" aria-hidden>{product.emoji || '🍽️'}</span>
-        )}
+        <ProductImageButton
+          product={product}
+          name={name}
+          allProducts={allProducts}
+          recommendationsMap={recommendationsMap}
+          branchId={branchId}
+          branchName={branchName}
+          currency={currency}
+          priceColor={priceColor}
+          lang={lang}
+          className="product-card__media-btn"
+        />
         {/* grid/showcase/circles float the add button over the image corner,
-            matching ProductItem.jsx's quick-add positioning for those modes. */}
+            matching ProductItem.jsx's quick-add positioning for those modes.
+            A sibling of the image button (never nested inside it) so a tap
+            on (+) never also triggers "view details". */}
         {layout !== 'list' && <div className="product-card__media-add">{addButton}</div>}
       </div>
       <div className="product-card__body">

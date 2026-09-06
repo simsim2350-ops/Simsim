@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Lang } from '@/lib/types'
 import { t } from '@/lib/i18n'
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 
 // Dual category system — a horizontal, always-visible tab bar plus an "all
 // categories" button that opens a vertical list, both driven by the exact
@@ -63,6 +64,16 @@ export function CategoryNav({
       observer.disconnect()
     }
   }, [categories])
+
+  // Lock background scroll while the drawer is open (this round) — the
+  // Hero/page behind it must stay completely still while the user scrolls
+  // the drawer's own category list, and resume exactly where it was on
+  // close (this is exactly what document.body.style.overflow='hidden'
+  // does — it freezes the current scroll position in place and restores it
+  // untouched on unlock, no manual scroll-position bookkeeping needed).
+  // Same, already-proven technique as the legacy menu's own bottom sheets
+  // (src/hooks/useBodyScrollLock.js), ported once into lib/ for menu-next.
+  useBodyScrollLock(drawerOpen)
 
   // Escape closes the vertical drawer — same pattern as AllergensModal.tsx.
   useEffect(() => {

@@ -212,18 +212,20 @@ html, body {
 .category-section__grid { display: grid; gap: 10px; }
 /* "الأكثر طلبًا" only (this round) — same .product-card (layout='list',
    unchanged component) in a horizontal-scrolling row instead of the
-   standard vertical grid. Cards get a fixed width + flex-shrink:0 so they
-   don't collapse to fit, and a slightly smaller media box than the default
-   list layout to stay genuinely compact per this section's own spec — a
-   scoped descendant override, not a new ProductCard layout variant. Hidden
-   scrollbar matches the same pattern already used by .category-nav.
-   overflow-x is contained to this row alone (never the page). */
+   standard vertical grid — a scoped descendant override, not a new
+   ProductCard layout variant. Hidden scrollbar matches the same pattern
+   already used by .category-nav. overflow-x is contained to this row
+   alone (never the page). Card media/name are enlarged beyond even the
+   default 'list' layout's own sizing (72px/14px) per this round's explicit
+   request — the row's own width/padding are trimmed to compensate, so the
+   card doesn't grow tall, and the next card still peeks in on mobile. */
 .category-section__grid--horizontal-scroll {
   display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
 }
 .category-section__grid--horizontal-scroll::-webkit-scrollbar { display: none; }
-.category-section__grid--horizontal-scroll > .product-card { flex: 0 0 auto; width: 220px; }
-.category-section__grid--horizontal-scroll .product-card__media { width: 60px; height: 60px; }
+.category-section__grid--horizontal-scroll > .product-card { flex: 0 0 auto; width: 252px; padding: 8px; gap: 10px; }
+.category-section__grid--horizontal-scroll .product-card__media { width: 88px; height: 88px; }
+.category-section__grid--horizontal-scroll .product-card__name { font-size: 15px; }
 
 .product-card {
   display: flex; gap: 12px; background: white; border: 1px solid #EEF0F3;
@@ -232,6 +234,14 @@ html, body {
 .product-card__media {
   position: relative; width: 72px; height: 72px; flex-shrink: 0; border-radius: 10px;
   overflow: hidden; background: #F3F4F6; display: flex; align-items: center; justify-content: center;
+}
+/* Product image = view details (this round) — a plain button reset so it
+   fills exactly the same space the bare image/emoji used to, with no visual
+   change; .product-card__media-add (the (+) overlay) is always its sibling,
+   never its child, so a tap on (+) never bubbles into this button too. */
+.product-card__media-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; padding: 0; margin: 0; border: none; background: none; cursor: pointer;
 }
 .product-card__image { object-fit: cover; }
 .product-card__emoji { font-size: 30px; }
@@ -246,6 +256,15 @@ html, body {
 .product-card__calories { font-size: 11px; color: #9CA3AF; font-weight: 700; }
 
 .menu-footer { text-align: center; padding: 20px 16px 32px; font-size: 11px; color: #9CA3AF; }
+/* "صُمم بواسطة سمسم" (#2, this round) — small and out of the way, never
+   competing with menu content, matching this round's compact-spacing
+   direction (deliberately tighter than the old .menu-footer it replaces). */
+.menu-branding { text-align: center; padding: 14px 16px calc(18px + env(safe-area-inset-bottom, 0px)); }
+.menu-branding__link {
+  display: inline-flex; align-items: center; gap: 6px; color: #9CA3AF;
+  font-size: 12px; font-weight: 600; text-decoration: none; line-height: 1.4;
+}
+.menu-branding__logo { flex-shrink: 0; display: block; }
 
 .menu-empty { text-align: center; padding: 60px 24px; color: #6B7280; }
 .menu-empty h1 { font-size: 20px; color: #0B0B0F; }
