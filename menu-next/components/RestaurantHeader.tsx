@@ -296,7 +296,14 @@ export function RestaurantHeader({
 
       {/* Permanent sticky mini-header — always mounted (never conditionally
           rendered) so it never flickers in/out; invisible and
-          non-interactive until scroll fades it in (see globals.css). */}
+          non-interactive until scroll fades it in (see globals.css). Now
+          carries the same general menu functions as the hero-actions row
+          (search/language/my-orders, this round) so they stay reachable
+          after the hero has fully faded — same components/handlers/hrefs
+          reused verbatim (setSearchOpen, langHref, the orders Link), not
+          reimplemented. Same icon order as the hero row so the transition
+          from one to the other reads as one continuous set, not a
+          different, surprising lineup. */}
       <div
         className="menu-header__sticky"
         style={{
@@ -311,9 +318,17 @@ export function RestaurantHeader({
           <div className="menu-header__sticky-logo menu-header__sticky-logo--placeholder" style={{ background: brandColor }} aria-hidden />
         )}
         <div style={{ flex: 1 }} />
-        <button type="button" className="menu-header__search-btn" onClick={() => setSearchOpen(true)} aria-label={strings.searchPlaceholder}>
-          🔍
-        </button>
+        <div className="menu-header__sticky-actions">
+          <button type="button" className="menu-header__action-icon" onClick={() => setSearchOpen(true)} aria-label={strings.searchPlaceholder}>
+            🔍
+          </button>
+          <a href={langHref} className="menu-header__action-icon menu-header__lang-toggle" aria-label={strings.switchLang}>
+            {lang === 'en' ? 'ع' : 'EN'}
+          </a>
+          <Link href={`/menu/${slug}/orders${lang === 'en' ? '?lang=en' : ''}`} aria-label={strings.myOrders} className="menu-header__action-icon">
+            🧾
+          </Link>
+        </div>
       </div>
 
       <AllergensModal open={allergensOpen} onClose={() => setAllergensOpen(false)} allergens={restaurant.allergens} lang={lang} />

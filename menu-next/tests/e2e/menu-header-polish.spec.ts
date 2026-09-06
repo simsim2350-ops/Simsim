@@ -82,7 +82,11 @@ test('my orders icon on the hero navigates to the orders page', async ({ page })
 
 test('the language toggle on the hero switches language and preserves the current URL context', async ({ page }) => {
   await page.goto(`/menu/${KONOHA}`)
-  await page.locator('.menu-header__lang-toggle').click()
+  // Scoped to the hero row specifically — the sticky header now carries its
+  // own matching .menu-header__lang-toggle too (this round), so the bare
+  // class alone matches two elements; see menu-header-sticky-actions.spec.ts
+  // for that one.
+  await page.locator('.menu-header__hero-actions .menu-header__lang-toggle').click()
   await expect(page).toHaveURL(/lang=en/)
   await expect(page.locator('.menu-frame.lang-en')).toBeVisible()
 })

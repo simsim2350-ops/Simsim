@@ -101,6 +101,11 @@ html, body {
 }
 .menu-header__sticky-logo { width: 36px; height: 36px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
 .menu-header__sticky-logo--placeholder { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; }
+/* Search/language/my-orders, this round — same .menu-header__action-icon
+   buttons as the hero-actions row, just grouped here with a tighter gap so
+   three of them plus the logo stay comfortably inside the 56px bar on
+   narrow phones without crowding or overlapping. */
+.menu-header__sticky-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .menu-header__top { display: flex; align-items: center; gap: 12px; }
 .menu-header__logo { border-radius: 14px; object-fit: cover; flex-shrink: 0; }
 .menu-header__logo--placeholder { width: 64px; height: 64px; }

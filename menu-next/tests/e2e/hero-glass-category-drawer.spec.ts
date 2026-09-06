@@ -135,7 +135,10 @@ test.describe('hero + glass scroll behavior', () => {
   test('the sticky mini-header search button works after scrolling past the hero', async ({ page }) => {
     await page.goto(`/menu/${SIMSIM}?branch=${SIMSIM_MAIN_BRANCH_ID}`)
     await scrollAndSettle(page, 400)
-    await page.locator('.menu-header__sticky .menu-header__search-btn').click()
+    // Search is first among the sticky header's general-menu-utility icons
+    // (this round adds language + my-orders alongside it — see
+    // menu-header-sticky-actions.spec.ts for those).
+    await page.locator('.menu-header__sticky .menu-header__sticky-actions .menu-header__action-icon').first().click()
     await expect(page.locator('.search-overlay')).toBeVisible()
   })
 
