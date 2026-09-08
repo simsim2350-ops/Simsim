@@ -51,6 +51,26 @@ export function ProductOptionsModal({
   const [selections, setSelections] = useState<OptionSelections>(() => (editing ? selectionsFromResolved(editing.selectedOptions, groups) : {}))
   const [missingGroup, setMissingGroup] = useState<string | null>(null)
 
+  // Product Details image — object-fit is decided from the photo's own
+  // measured aspect ratio (naturalWidth/naturalHeight), never from the
+  // product itself, so this applies automatically to any future photo too.
+  // 'contain' is the safe default (never crops) until the real photo has
+  // loaded; a dramatic portrait outlier (natural ratio below ~0.65 — e.g. a
+  // source file with letterbox bars baked into it, which are always near
+  // the top/bottom edges) switches to 'cover' instead, which crops
+  // symmetrically from the center and away from those edges — removing the
+  // baked-in bars from view without touching the source file or its URL.
+  // Every photo in the realistic ~1:1 to ~1.3 range (the catalog's normal
+  // case) stays on 'contain' exactly as before.
+  const [imageFit, setImageFit] = useState<'contain' | 'cover'>('contain')
+  const PORTRAIT_OUTLIER_RATIO = 0.65
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const el = e.currentTarget
+    if (el.naturalWidth && el.naturalHeight) {
+      setImageFit(el.naturalWidth / el.naturalHeight < PORTRAIT_OUTLIER_RATIO ? 'cover' : 'contain')
+    }
+  }
+
   // Same WAI-ARIA dialog expectation as the cart sheet and the branch-conflict
   // dialog (Phase 6B accessibility pass) — Escape closes without confirming.
   useEffect(() => {
@@ -137,7 +157,14 @@ export function ProductOptionsModal({
           <div className="options-modal__media">
             <div className="options-modal__media-fill" style={{ backgroundImage: `url(${product.imageUrl})` }} aria-hidden="true" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={product.imageUrl} alt={name} loading="eager" className="options-modal__media-img" />
+            <img
+              src={product.imageUrl}
+              alt={name}
+              loading="eager"
+              className="options-modal__media-img"
+              style={{ objectFit: imageFit }}
+              onLoad={handleImageLoad}
+            />
           </div>
         )}
         <div className="options-modal__header">

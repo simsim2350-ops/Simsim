@@ -473,22 +473,31 @@ html, body {
    system, not a per-image size/crop decision. The container itself is
    wider/shorter than most real product photos (which run ~1:1 to ~5:4), so
    a plain object-fit:contain box would leave a visibly bare gap beside a
-   near-square or portrait photo. Fixed with a two-layer approach instead of
-   guessing crop vs. no-crop per image:
+   near-square or portrait photo. Two parts, both driven only by the photo's
+   own measured pixels (never a product name or other hardcoded signal):
    - A blurred, scaled-up copy of the SAME photo (.media-fill) fills the
-     entire container edge-to-edge — the gap beside/around the real photo
+     entire container edge-to-edge — any gap beside/around the real photo
      reads as an intentional soft backdrop of the product itself, never as
      empty dead space or "a small picture floating in a big empty box".
-   - The real photo (.media-img) sits on top via object-fit: contain — the
-     whole product is always visible, never cropped, never stretched. This
-     is a presentational duplicate of the same public image URL only (same
-     browser cache entry, no extra request); no source file is edited.
+   - The real photo (.media-img) sits on top. Its object-fit is set inline
+     from JS (ProductOptionsModal.tsx) based on the photo's own natural
+     aspect ratio once it loads: 'contain' by default (whole product always
+     visible, never cropped, never stretched) for the catalog's realistic
+     ~1:1 to ~1.3 range; only a dramatic portrait outlier (ratio < ~0.65 —
+     e.g. a source file with letterbox bars baked into it near its top/
+     bottom edges) switches to 'cover', which crops symmetrically from the
+     center and away from those edges, without touching the source file.
+     Both layers duplicate the same public image URL only (same browser
+     cache entry, no extra request) — no source file is ever edited.
    - Container height is fluid via clamp(), never one flat value across all
      viewports (shorter on a narrow phone, capped once the modal hits its
      own 480px width cap) — bounded regardless of the photo's own aspect
-     ratio, so no single photo (tall or wide) can inflate the sheet. */
+     ratio, so no single photo (tall or wide) can inflate the sheet. Slightly
+     taller than the previous pass so a photo with generous internal padding
+     (e.g. a bottle shot with wide side margins baked into a square canvas)
+     still renders at a comfortable visual size under 'contain'. */
 .options-modal__media {
-  position: relative; width: 100%; height: clamp(180px, 46vw, 240px); overflow: hidden;
+  position: relative; width: 100%; height: clamp(200px, 50vw, 260px); overflow: hidden;
   background: #F3F4F6; border-radius: 16px 16px 0 0; flex-shrink: 0;
 }
 .options-modal__media-fill {
@@ -496,7 +505,7 @@ html, body {
   filter: blur(26px) brightness(0.92); transform: scale(1.2);
 }
 .options-modal__media-img {
-  position: relative; width: 100%; height: 100%; object-fit: contain; object-position: center; display: block;
+  position: relative; width: 100%; height: 100%; object-position: center; display: block;
 }
 .options-modal__header {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;

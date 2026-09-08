@@ -44,7 +44,7 @@ test('Product Details still shows the emoji fallback (no image block) for a prod
 })
 
 test.describe('Product Details image — balanced, uniform presentation regardless of source aspect ratio', () => {
-  test('every product photo container is the same height, and the full photo is never cropped or stretched', async ({ page }) => {
+  test('every product photo container is the same height, and the full photo is never stretched', async ({ page }) => {
     if (!(await gotoSimsimIfOpen(page))) { test.skip(true, 'simsim is currently closed — no product access to verify against'); return }
 
     const cards = page.locator('.product-card')
@@ -59,18 +59,18 @@ test.describe('Product Details image — balanced, uniform presentation regardle
       const media = modal.locator('.options-modal__media')
       if (await media.count() > 0) {
         const box = await media.boundingBox()
-        // Fluid via clamp(180px, 46vw, 240px) — a bounded, reasonable range,
+        // Fluid via clamp(200px, 50vw, 260px) — a bounded, reasonable range,
         // and (critically) the SAME height for every product regardless of
         // that product's own photo dimensions, at this fixed viewport.
-        expect(box!.height).toBeGreaterThanOrEqual(175)
-        expect(box!.height).toBeLessThanOrEqual(245)
+        expect(box!.height).toBeGreaterThanOrEqual(195)
+        expect(box!.height).toBeLessThanOrEqual(265)
         if (firstHeight === null) firstHeight = box!.height
         else expect(Math.abs(box!.height - firstHeight)).toBeLessThan(1)
 
-        // Foreground photo: object-fit: contain — never stretched, never
-        // cropped away from its natural ratio.
+        // Foreground photo: object-fit is always contain or cover — never
+        // 'fill' (which would stretch/distort the photo).
         const fit = await modal.locator('.options-modal__media-img').evaluate((el) => getComputedStyle(el).objectFit)
-        expect(fit).toBe('contain')
+        expect(['contain', 'cover']).toContain(fit)
         // Blurred backdrop layer (same photo) fills the container edge to
         // edge, so there is never a visibly bare/empty gap beside the photo.
         await expect(modal.locator('.options-modal__media-fill')).toBeVisible()
@@ -82,6 +82,24 @@ test.describe('Product Details image — balanced, uniform presentation regardle
       await modal.locator('.options-modal__close').click()
     }
     expect(checked).toBeGreaterThan(0)
+  })
+
+  test('a photo with a dramatically different aspect ratio (e.g. letterbox bars baked into the source file) switches to cover, cropping the outlier edges instead of showing the bars', async ({ page }) => {
+    if (!(await gotoSimsimIfOpen(page))) { test.skip(true, 'simsim is currently closed — no product access to verify against'); return }
+
+    // "شاورما صاروخ" is a real, known outlier in this catalog: its source
+    // file is 484x1080 (ratio 0.448) with black letterbox bars baked into
+    // the top/bottom. This asserts the generic ratio-driven rule actually
+    // fires for it — not a hardcoded rule for this product, a real example
+    // of the rule's trigger condition (ratio < ~0.65).
+    const card = page.locator('.product-card', { hasText: 'شاورما صاروخ' }).first()
+    if (await card.count() === 0) { test.skip(true, 'this specific known-outlier product is not present in the current catalog'); return }
+    await card.locator('.product-card__media-btn').click()
+    const modal = page.locator('.options-modal-overlay')
+    await expect(modal).toBeVisible()
+    const img = modal.locator('.options-modal__media-img')
+    await img.evaluate((el: HTMLImageElement) => el.complete ? true : new Promise((res) => { el.onload = res }))
+    await expect(img).toHaveCSS('object-fit', 'cover')
   })
 
   test('the qty stepper and confirm CTA (with price) stay visible without pushing the sheet too tall', async ({ page }) => {
