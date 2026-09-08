@@ -67,10 +67,19 @@ test.describe('Product Details image — balanced, uniform presentation regardle
         if (firstHeight === null) firstHeight = box!.height
         else expect(Math.abs(box!.height - firstHeight)).toBeLessThan(1)
 
-        // Foreground photo: object-fit is always contain or cover — never
-        // 'fill' (which would stretch/distort the photo).
-        const fit = await modal.locator('.options-modal__media-img').evaluate((el) => getComputedStyle(el).objectFit)
-        expect(['contain', 'cover']).toContain(fit)
+        // Foreground photo: Smart Image Framing (lib/smartImageFraming.ts)
+        // sizes it via explicit width/height computed from the photo's own
+        // detected content box, uniformly scaled in both dimensions — never
+        // stretched/distorted (a non-uniform stretch would show as width
+        // and height scaling by different factors from the natural size).
+        const img = modal.locator('.options-modal__media-img')
+        await page.waitForFunction((el) => el && (el as HTMLElement).style.position === 'absolute', await img.elementHandle(), { timeout: 6000 })
+        const scaleInfo = await img.evaluate((el: HTMLImageElement) => {
+          const w = parseFloat(el.style.width)
+          const h = parseFloat(el.style.height)
+          return { scaleX: w / el.naturalWidth, scaleY: h / el.naturalHeight }
+        })
+        expect(Math.abs(scaleInfo.scaleX - scaleInfo.scaleY)).toBeLessThan(0.01)
         // Blurred backdrop layer (same photo) fills the container edge to
         // edge, so there is never a visibly bare/empty gap beside the photo.
         await expect(modal.locator('.options-modal__media-fill')).toBeVisible()
@@ -84,22 +93,33 @@ test.describe('Product Details image — balanced, uniform presentation regardle
     expect(checked).toBeGreaterThan(0)
   })
 
-  test('a photo with a dramatically different aspect ratio (e.g. letterbox bars baked into the source file) switches to cover, cropping the outlier edges instead of showing the bars', async ({ page }) => {
+  test('a photo with letterbox bars baked into the source file is framed so the visible slice excludes them, without cropping the real subject', async ({ page }) => {
     if (!(await gotoSimsimIfOpen(page))) { test.skip(true, 'simsim is currently closed — no product access to verify against'); return }
 
     // "شاورما صاروخ" is a real, known outlier in this catalog: its source
-    // file is 484x1080 (ratio 0.448) with black letterbox bars baked into
-    // the top/bottom. This asserts the generic ratio-driven rule actually
-    // fires for it — not a hardcoded rule for this product, a real example
-    // of the rule's trigger condition (ratio < ~0.65).
+    // file (484x1080) has black bars baked in near the top and bottom ~27%
+    // of its height (verified by direct inspection of the file). This is a
+    // real example of the generic content-detection rule firing correctly
+    // — not a hardcoded rule for this product.
     const card = page.locator('.product-card', { hasText: 'شاورما صاروخ' }).first()
     if (await card.count() === 0) { test.skip(true, 'this specific known-outlier product is not present in the current catalog'); return }
     await card.locator('.product-card__media-btn').click()
     const modal = page.locator('.options-modal-overlay')
     await expect(modal).toBeVisible()
     const img = modal.locator('.options-modal__media-img')
-    await img.evaluate((el: HTMLImageElement) => el.complete ? true : new Promise((res) => { el.onload = res }))
-    await expect(img).toHaveCSS('object-fit', 'cover')
+    await page.waitForFunction((el) => el && (el as HTMLElement).style.position === 'absolute', await img.elementHandle(), { timeout: 6000 })
+
+    const containerHeight = (await modal.locator('.options-modal__media').boundingBox())!.height
+    const { top, height, naturalHeight } = await img.evaluate((el: HTMLImageElement) => ({
+      top: parseFloat(el.style.top), height: parseFloat(el.style.height), naturalHeight: el.naturalHeight,
+    }))
+    // Translate the visible window [0, containerHeight] back into a fraction
+    // of the original source image's height.
+    const visibleStartFraction = (-top) / height
+    const visibleEndFraction = (containerHeight - top) / height
+    expect(visibleStartFraction).toBeGreaterThan(0.15) // excludes the top bar (~27% in the real file)
+    expect(visibleEndFraction).toBeLessThan(0.85) // excludes the bottom bar (~27% in the real file)
+    expect(naturalHeight).toBeGreaterThan(0)
   })
 
   test('the qty stepper and confirm CTA (with price) stay visible without pushing the sheet too tall', async ({ page }) => {
