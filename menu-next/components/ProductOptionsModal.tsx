@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useCart } from '@/lib/cart/CartContext'
 import { normalizeOptionGroups, optionsPrice, selectionsFromResolved, type OptionSelections } from '@/lib/options'
 import { getProductCompanions } from '@/lib/recommendations'
+import { detectContentBox, type FramingResult } from '@/lib/smartImageFraming'
 import { t } from '@/lib/i18n'
 import type { Lang, Product } from '@/lib/types'
 import type { SelectedOption } from '@/lib/cart/types'
@@ -51,25 +52,58 @@ export function ProductOptionsModal({
   const [selections, setSelections] = useState<OptionSelections>(() => (editing ? selectionsFromResolved(editing.selectedOptions, groups) : {}))
   const [missingGroup, setMissingGroup] = useState<string | null>(null)
 
-  // Product Details image — object-fit is decided from the photo's own
-  // measured aspect ratio (naturalWidth/naturalHeight), never from the
-  // product itself, so this applies automatically to any future photo too.
-  // 'contain' is the safe default (never crops) until the real photo has
-  // loaded; a dramatic portrait outlier (natural ratio below ~0.65 — e.g. a
-  // source file with letterbox bars baked into it, which are always near
-  // the top/bottom edges) switches to 'cover' instead, which crops
-  // symmetrically from the center and away from those edges — removing the
-  // baked-in bars from view without touching the source file or its URL.
-  // Every photo in the realistic ~1:1 to ~1.3 range (the catalog's normal
-  // case) stays on 'contain' exactly as before.
-  const [imageFit, setImageFit] = useState<'contain' | 'cover'>('contain')
-  const PORTRAIT_OUTLIER_RATIO = 0.65
-  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const el = e.currentTarget
-    if (el.naturalWidth && el.naturalHeight) {
-      setImageFit(el.naturalWidth / el.naturalHeight < PORTRAIT_OUTLIER_RATIO ? 'cover' : 'contain')
+  // Smart Image Framing (Product Details image) — see lib/smartImageFraming.ts
+  // for the full algorithm. In short: the photo's own pixels are analyzed
+  // once (cached per URL) to find the real subject's bounding box, trimming
+  // large uniform-color margins baked into the source file (internal white
+  // space, or letterbox/black bars) — then the subject itself is scaled to
+  // fill the available container as much as possible without ever cropping
+  // it. Purely content/dimension-driven; no product-specific logic.
+  const mediaRef = useRef<HTMLDivElement>(null)
+  const [framing, setFraming] = useState<FramingResult | null>(null)
+  const [containerSize, setContainerSize] = useState<{ w: number; h: number } | null>(null)
+
+  useEffect(() => {
+    if (!product.imageUrl) return
+    let cancelled = false
+    detectContentBox(product.imageUrl).then((result) => { if (!cancelled) setFraming(result) })
+    return () => { cancelled = true }
+  }, [product.imageUrl])
+
+  useEffect(() => {
+    if (!product.imageUrl || !mediaRef.current) return
+    const measure = () => {
+      const rect = mediaRef.current?.getBoundingClientRect()
+      if (rect) setContainerSize({ w: rect.width, h: rect.height })
     }
-  }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [product.imageUrl])
+
+  // Final placement: scale so the detected content box (not the raw file's
+  // own canvas) fills as much of the container as possible while staying
+  // fully inside it (never crops the subject), then center that box in the
+  // container. Falls back to a plain, unpositioned contain-fit image (the
+  // same safe default this component always had) until both the analysis
+  // and a real container measurement are ready — this only shows briefly
+  // on a genuinely new image; every repeat open of the same photo resolves
+  // from cache before the sheet's own open animation even finishes.
+  const imgStyle = useMemo(() => {
+    if (!framing || !containerSize || !framing.naturalWidth || !framing.naturalHeight) return null
+    const { box, naturalWidth: w, naturalHeight: h } = framing
+    const bboxW = (box.right - box.left) * w
+    const bboxH = (box.bottom - box.top) * h
+    if (bboxW <= 0 || bboxH <= 0 || containerSize.w <= 0 || containerSize.h <= 0) return null
+    const scale = Math.min(containerSize.w / bboxW, containerSize.h / bboxH)
+    const scaledW = w * scale
+    const scaledH = h * scale
+    const bboxCenterX = ((box.left + box.right) / 2) * w
+    const bboxCenterY = ((box.top + box.bottom) / 2) * h
+    const left = containerSize.w / 2 - bboxCenterX * scale
+    const top = containerSize.h / 2 - bboxCenterY * scale
+    return { position: 'absolute' as const, width: scaledW, height: scaledH, left, top, maxWidth: 'none' }
+  }, [framing, containerSize])
 
   // Same WAI-ARIA dialog expectation as the cart sheet and the branch-conflict
   // dialog (Phase 6B accessibility pass) — Escape closes without confirming.
@@ -140,21 +174,20 @@ export function ProductOptionsModal({
     <div className="options-modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
       <div className="options-modal" onClick={(e) => e.stopPropagation()}>
         <div className="options-modal__handle" />
-        {/* Product image — a balanced, general presentation system (see
-            .options-modal__media* in globals.css for the full rationale):
-            a bounded-height container regardless of the source photo's own
-            aspect ratio, an uncropped/undistorted foreground copy (never
-            cuts off part of the product, never stretched), and a softly
-            blurred copy of that SAME photo filling the space behind it —
-            so a photo whose shape doesn't match the container (most real
-            product photos are near-square, the container is wider/shorter)
-            never reads as "a small picture floating in an empty box": the
-            fill is the product's own photo, not flat dead space. No new
-            image, no cropping of the real file — both layers are the exact
-            same product photo. Products without a real photo keep exactly
-            the same emoji-in-title-row they already had. */}
+        {/* Product image — Smart Image Framing (see lib/smartImageFraming.ts
+            for the full algorithm): a bounded-height container regardless
+            of the source photo's own dimensions, a softly blurred copy of
+            the same photo as a visual-filler backdrop only (never relied on
+            to compensate for a small foreground), and the real photo on top
+            scaled/centered around its ACTUAL detected subject — not the
+            raw file's own canvas — so internal white space or letterbox
+            bars baked into the source never make the product look small or
+            show visible junk. The subject itself is never cropped. No new
+            image, no edit to the source file — every layer is the exact
+            same product photo, same URL. Products without a real photo keep
+            exactly the same emoji-in-title-row they already had. */}
         {product.imageUrl && (
-          <div className="options-modal__media">
+          <div className="options-modal__media" ref={mediaRef}>
             <div className="options-modal__media-fill" style={{ backgroundImage: `url(${product.imageUrl})` }} aria-hidden="true" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -162,8 +195,7 @@ export function ProductOptionsModal({
               alt={name}
               loading="eager"
               className="options-modal__media-img"
-              style={{ objectFit: imageFit }}
-              onLoad={handleImageLoad}
+              style={imgStyle ?? undefined}
             />
           </div>
         )}

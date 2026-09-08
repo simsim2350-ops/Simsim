@@ -469,33 +469,26 @@ html, body {
   display: flex; flex-direction: column; overflow: hidden;
 }
 .options-modal__handle { width: 40px; height: 4px; background: #E5E7EB; border-radius: 2px; margin: 12px auto 0; flex-shrink: 0; }
-/* Product image inside Product Details — a general "letterbox" presentation
-   system, not a per-image size/crop decision. The container itself is
-   wider/shorter than most real product photos (which run ~1:1 to ~5:4), so
-   a plain object-fit:contain box would leave a visibly bare gap beside a
-   near-square or portrait photo. Two parts, both driven only by the photo's
-   own measured pixels (never a product name or other hardcoded signal):
+/* Product image inside Product Details — Smart Image Framing (the actual
+   analysis lives in lib/smartImageFraming.ts; this is just the container/
+   layers it renders into):
    - A blurred, scaled-up copy of the SAME photo (.media-fill) fills the
-     entire container edge-to-edge — any gap beside/around the real photo
-     reads as an intentional soft backdrop of the product itself, never as
-     empty dead space or "a small picture floating in a big empty box".
-   - The real photo (.media-img) sits on top. Its object-fit is set inline
-     from JS (ProductOptionsModal.tsx) based on the photo's own natural
-     aspect ratio once it loads: 'contain' by default (whole product always
-     visible, never cropped, never stretched) for the catalog's realistic
-     ~1:1 to ~1.3 range; only a dramatic portrait outlier (ratio < ~0.65 —
-     e.g. a source file with letterbox bars baked into it near its top/
-     bottom edges) switches to 'cover', which crops symmetrically from the
-     center and away from those edges, without touching the source file.
-     Both layers duplicate the same public image URL only (same browser
-     cache entry, no extra request) — no source file is ever edited.
+     entire container edge-to-edge as a soft backdrop only — never relied on
+     to compensate for a small foreground photo.
+   - The real photo (.media-img) sits on top. Its width/height/position are
+     computed in JS from the photo's own detected content bounding box (the
+     actual subject, with internal margins/letterbox bars trimmed out) and
+     applied as an inline style, so it's sized to fill the container around
+     THAT subject rather than the raw file's own canvas — never cropped,
+     never stretched. The plain 100%/100%/center rule here is only the
+     fallback shown for the brief moment (first-ever load of a given photo
+     only; every later open resolves from cache before this is visible)
+     before that computed placement is ready. The transition makes that
+     one-time swap read as a smooth, deliberate zoom rather than a jump.
    - Container height is fluid via clamp(), never one flat value across all
      viewports (shorter on a narrow phone, capped once the modal hits its
      own 480px width cap) — bounded regardless of the photo's own aspect
-     ratio, so no single photo (tall or wide) can inflate the sheet. Slightly
-     taller than the previous pass so a photo with generous internal padding
-     (e.g. a bottle shot with wide side margins baked into a square canvas)
-     still renders at a comfortable visual size under 'contain'. */
+     ratio, so no single photo (tall or wide) can inflate the sheet. */
 .options-modal__media {
   position: relative; width: 100%; height: clamp(200px, 50vw, 260px); overflow: hidden;
   background: #F3F4F6; border-radius: 16px 16px 0 0; flex-shrink: 0;
@@ -505,7 +498,8 @@ html, body {
   filter: blur(26px) brightness(0.92); transform: scale(1.2);
 }
 .options-modal__media-img {
-  position: relative; width: 100%; height: 100%; object-position: center; display: block;
+  position: relative; width: 100%; height: 100%; object-fit: contain; object-position: center; display: block;
+  transition: width 0.18s ease-out, height 0.18s ease-out, left 0.18s ease-out, top 0.18s ease-out;
 }
 .options-modal__header {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
