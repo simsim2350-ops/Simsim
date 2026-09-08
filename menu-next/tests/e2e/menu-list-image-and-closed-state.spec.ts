@@ -43,13 +43,14 @@ test('Product Details still shows the emoji fallback (no image block) for a prod
   await expect(modal.locator('.options-modal__emoji')).toBeVisible()
 })
 
-test.describe('Product Details image — uniform space regardless of source aspect ratio', () => {
-  test('every product photo box is the same fixed height, whatever the source image looks like', async ({ page }) => {
+test.describe('Product Details image — balanced, uniform presentation regardless of source aspect ratio', () => {
+  test('every product photo container is the same height, and the full photo is never cropped or stretched', async ({ page }) => {
     if (!(await gotoSimsimIfOpen(page))) { test.skip(true, 'simsim is currently closed — no product access to verify against'); return }
 
     const cards = page.locator('.product-card')
-    const count = Math.min(await cards.count(), 6)
+    const count = Math.min(await cards.count(), 8)
     let checked = 0
+    let firstHeight: number | null = null
     for (let i = 0; i < count; i++) {
       const card = cards.nth(i)
       await card.locator('.product-card__media-btn').click()
@@ -58,7 +59,18 @@ test.describe('Product Details image — uniform space regardless of source aspe
       const media = modal.locator('.options-modal__media')
       if (await media.count() > 0) {
         const box = await media.boundingBox()
-        expect(Math.round(box!.height)).toBe(180)
+        // Fluid via clamp(160px, 45vw, 220px) — a bounded, reasonable range,
+        // and (critically) the SAME height for every product regardless of
+        // that product's own photo dimensions, at this fixed viewport.
+        expect(box!.height).toBeGreaterThanOrEqual(155)
+        expect(box!.height).toBeLessThanOrEqual(225)
+        if (firstHeight === null) firstHeight = box!.height
+        else expect(Math.abs(box!.height - firstHeight)).toBeLessThan(1)
+
+        // object-fit: contain — never stretched away from its natural ratio.
+        const fit = await modal.locator('.options-modal__media img').evaluate((el) => getComputedStyle(el).objectFit)
+        expect(fit).toBe('contain')
+
         // No emoji shown alongside a real photo.
         await expect(modal.locator('.options-modal__emoji')).toHaveCount(0)
         checked++

@@ -469,20 +469,26 @@ html, body {
   display: flex; flex-direction: column; overflow: hidden;
 }
 .options-modal__handle { width: 40px; height: 4px; background: #E5E7EB; border-radius: 2px; margin: 12px auto 0; flex-shrink: 0; }
-/* Product image inside Product Details (this round) — capped height keeps
-   the qty/confirm CTA reachable without much scrolling even on a short
-   mobile viewport; aspect-ratio (not a fixed height alone) keeps a real
-   photo from ever looking stretched or oddly cropped at different modal
-   widths. */
+/* Product image inside Product Details — a balanced presentation system, not
+   a per-image size/crop decision:
+   - The container's own height is fixed regardless of the source photo's
+     aspect ratio (fluid via clamp(), never one flat value across all
+     viewports — shorter on a narrow phone, capped once the modal hits its
+     own 480px width cap), so no single tall photo can ever inflate the
+     sheet's height.
+   - object-fit: contain (not cover) — the real product photos in this
+     catalog are consistently near-square (~1:1 to ~5:4), so contain already
+     renders them edge-to-edge with negligible letterboxing; the one real
+     outlier shape (a tall/portrait bottle) gets letterboxed on the sides
+     instead of being cropped or forced to balloon the container's height.
+     Never crops, never stretches/distorts, never forces a square look.
+   - background matches the existing product-card media fill (#F3F4F6), so
+     any letterboxed space reads as intentional, not like a broken image. */
 .options-modal__media {
-  /* Fixed height (not aspect-ratio-derived) — this round's fix: a product
-     photo's own aspect ratio no longer influences how tall this box is, so
-     a tall/portrait source (e.g. a water bottle) and a wide/landscape one
-     (e.g. a plate) always occupy the exact same visual space here. */
-  width: 100%; height: 180px; overflow: hidden;
+  width: 100%; height: clamp(160px, 45vw, 220px); overflow: hidden;
   background: #F3F4F6; border-radius: 16px 16px 0 0; flex-shrink: 0;
 }
-.options-modal__media img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+.options-modal__media img { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; }
 .options-modal__header {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: 10px 20px 14px; border-bottom: 1px solid #E5E7EB; flex-shrink: 0;
