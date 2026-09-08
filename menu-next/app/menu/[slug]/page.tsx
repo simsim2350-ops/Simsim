@@ -10,6 +10,7 @@ import { CategoryNav } from '@/components/CategoryNav'
 import { CategorySection } from '@/components/CategorySection'
 import { CartWidget } from '@/components/CartWidget'
 import { BranchConflictModal } from '@/components/BranchConflictModal'
+import { ClosedRestaurantNotice } from '@/components/ClosedRestaurantNotice'
 import { BannerProvider } from '@/lib/banners/BannerContext'
 import { TopMenuBanner, InlineMenuBanner, FloatingMenuBanner, MenuBannerOverlays } from '@/components/BannerDisplays'
 import { MenuOffersDrawer } from '@/components/MenuOffersDrawer'
@@ -145,102 +146,109 @@ export default async function MenuPage({
           langHref={langHref}
         />
 
-        {/* بانر أعلى المنيو — أول عنصر عند اختيار وضع "أعلى المينيو" (#2b) */}
-        <TopMenuBanner brandColor={priceColor} lang={lang} />
+        {/* حالة "المطعم مغلق حاليًا" — العنصر الوحيد أسفل الـHero عندما يكون
+            المطعم مغلقًا (هذه الجولة): تجربة المنيو/الطلب بالكامل أدناه لا
+            تُعرض إطلاقًا في هذه الحالة (بلا Overlay، Server Component بسيط،
+            بلا حاجة لأي منطق جديد — يعتمد فقط على openStatus الموجود). */}
+        <ClosedRestaurantNotice openStatus={openStatus} lang={lang} />
 
-        {/* شريط الأقسام الأفقي (#3) — يبقى ملتصقًا أعلى الشاشة، فوق كل المحتوى
-            بما فيه صفوف المختارات، تمامًا كما في المنيو القديم. */}
-        <CategoryNav categories={navCategories} brandColor={brandColor} lang={lang} />
+        {openStatus.open && (
+          <>
+            {/* بانر أعلى المنيو — أول عنصر عند اختيار وضع "أعلى المينيو" (#2b) */}
+            <TopMenuBanner brandColor={priceColor} lang={lang} />
 
-        {highlightSections.map((section) => (
-          <CategorySection
-            key={section.key}
-            category={{ id: section.key, branch_id: branch.id, name: section.title, name_en: section.title, emoji: null, cover_url: null, sort_order: -1, is_visible: true }}
-            products={section.products}
-            allProducts={products}
-            recommendationsMap={recommendationsMap}
-            // Highlight rails render as 'grid' by default, regardless of the
-            // restaurant's own menu_layout setting — same as legacy's
-            // MenuBody.jsx (best-sellers/featured force layout="grid") —
-            // except "الأكثر طلبًا" (horizontalScroll), which uses the
-            // existing compact 'list' card shape inside a horizontal-
-            // scrolling row instead (this round, #7-8).
-            layout={section.horizontalScroll ? 'list' : 'grid'}
-            horizontalScroll={section.horizontalScroll}
-            lang={lang}
-            currency={currency}
-            priceColor={priceColor}
-            branchId={branch.id}
-            branchName={branchName}
-          />
-        ))}
+            {/* شريط الأقسام الأفقي (#3) — يبقى ملتصقًا أعلى الشاشة، فوق كل المحتوى
+                بما فيه صفوف المختارات، تمامًا كما في المنيو القديم. */}
+            <CategoryNav categories={navCategories} brandColor={brandColor} lang={lang} />
 
-        {/* بانر منتصف المنيو — بين المختارات والأقسام العادية (#2b) */}
-        <InlineMenuBanner brandColor={priceColor} lang={lang} />
+            {highlightSections.map((section) => (
+              <CategorySection
+                key={section.key}
+                category={{ id: section.key, branch_id: branch.id, name: section.title, name_en: section.title, emoji: null, cover_url: null, sort_order: -1, is_visible: true }}
+                products={section.products}
+                allProducts={products}
+                recommendationsMap={recommendationsMap}
+                // Highlight rails render as 'grid' by default, regardless of the
+                // restaurant's own menu_layout setting — same as legacy's
+                // MenuBody.jsx (best-sellers/featured force layout="grid") —
+                // except "الأكثر طلبًا" (horizontalScroll), which uses the
+                // existing compact 'list' card shape inside a horizontal-
+                // scrolling row instead (this round, #7-8).
+                layout={section.horizontalScroll ? 'list' : 'grid'}
+                horizontalScroll={section.horizontalScroll}
+                lang={lang}
+                currency={currency}
+                priceColor={priceColor}
+                branchId={branch.id}
+                branchName={branchName}
+              />
+            ))}
 
-        {categories.length === 0 ? (
-          <p className="category-section__empty" style={{ padding: '18px 16px' }}>{t(lang).noCategories}</p>
-        ) : (
-          categories.map((category) => (
-            <CategorySection
-              key={category.id}
-              category={category}
-              products={productsByCategory.get(category.id) ?? []}
-              allProducts={products}
-              recommendationsMap={recommendationsMap}
-              layout={restaurant.menu_layout || 'list'}
+            {/* بانر منتصف المنيو — بين المختارات والأقسام العادية (#2b) */}
+            <InlineMenuBanner brandColor={priceColor} lang={lang} />
+
+            {categories.length === 0 ? (
+              <p className="category-section__empty" style={{ padding: '18px 16px' }}>{t(lang).noCategories}</p>
+            ) : (
+              categories.map((category) => (
+                <CategorySection
+                  key={category.id}
+                  category={category}
+                  products={productsByCategory.get(category.id) ?? []}
+                  allProducts={products}
+                  recommendationsMap={recommendationsMap}
+                  layout={restaurant.menu_layout || 'list'}
+                  lang={lang}
+                  currency={currency}
+                  priceColor={priceColor}
+                  branchId={branch.id}
+                  branchName={branchName}
+                />
+              ))
+            )}
+
+            {/* "صُمم بواسطة سمسم" (#2, earlier round) — فقط ضمن تجربة المنيو
+                المفتوحة؛ لا علاقة له بالطلب فعليًا لكنه جزء طبيعي من تذييل
+                المنيو القابل للتصفح، فيُخفى مع بقية المحتوى أثناء الإغلاق. */}
+            {menuBranding?.show && (menuBranding.text || menuBranding.url) && (
+              <footer className="menu-branding" dir="rtl">
+                {menuBranding.url ? (
+                  <a href={menuBranding.url} target="_blank" rel="noopener noreferrer" className="menu-branding__link">
+                    {menuBranding.variant !== 'text' && (
+                      <Image src="/simsim-s.svg" alt="" width={16} height={16} className="menu-branding__logo" aria-hidden />
+                    )}
+                    {menuBranding.variant !== 'logo' && menuBranding.text && <span>{menuBranding.text}</span>}
+                  </a>
+                ) : (
+                  <span className="menu-branding__link">
+                    {menuBranding.variant !== 'text' && (
+                      <Image src="/simsim-s.svg" alt="" width={16} height={16} className="menu-branding__logo" aria-hidden />
+                    )}
+                    {menuBranding.variant !== 'logo' && menuBranding.text && <span>{menuBranding.text}</span>}
+                  </span>
+                )}
+              </footer>
+            )}
+            <CartWidget
               lang={lang}
               currency={currency}
               priceColor={priceColor}
               branchId={branch.id}
               branchName={branchName}
+              slug={slug}
+              products={products}
+              tableToken={tableQr?.token}
+              cartWideIds={cartWideIds}
+              recommendationsEnabled={restaurant.recommendations_enabled !== false}
+              recommendationsCount={restaurant.recommendations_count || 4}
             />
-          ))
-        )}
+            <BranchConflictModal lang={lang} />
 
-        {/* "صُمم بواسطة سمسم" (#2, this round) — fully driven by the real,
-            existing Super Admin setting (platform_branding via the
-            menu_branding RPC, resolved server-side in getMenuBranding).
-            Never rendered unconditionally, never a hardcoded string — the
-            old placeholder POC footer text is gone entirely, replaced by
-            this real feature. Same uniform logic on every restaurant menu. */}
-        {menuBranding?.show && (menuBranding.text || menuBranding.url) && (
-          <footer className="menu-branding" dir="rtl">
-            {menuBranding.url ? (
-              <a href={menuBranding.url} target="_blank" rel="noopener noreferrer" className="menu-branding__link">
-                {menuBranding.variant !== 'text' && (
-                  <Image src="/simsim-s.svg" alt="" width={16} height={16} className="menu-branding__logo" aria-hidden />
-                )}
-                {menuBranding.variant !== 'logo' && menuBranding.text && <span>{menuBranding.text}</span>}
-              </a>
-            ) : (
-              <span className="menu-branding__link">
-                {menuBranding.variant !== 'text' && (
-                  <Image src="/simsim-s.svg" alt="" width={16} height={16} className="menu-branding__logo" aria-hidden />
-                )}
-                {menuBranding.variant !== 'logo' && menuBranding.text && <span>{menuBranding.text}</span>}
-              </span>
-            )}
-          </footer>
+            <FloatingMenuBanner brandColor={priceColor} lang={lang} />
+            <MenuBannerOverlays brandColor={priceColor} lang={lang} />
+            <MenuOffersDrawer brandColor={priceColor} lang={lang} />
+          </>
         )}
-        <CartWidget
-          lang={lang}
-          currency={currency}
-          priceColor={priceColor}
-          branchId={branch.id}
-          branchName={branchName}
-          slug={slug}
-          products={products}
-          tableToken={tableQr?.token}
-          cartWideIds={cartWideIds}
-          recommendationsEnabled={restaurant.recommendations_enabled !== false}
-          recommendationsCount={restaurant.recommendations_count || 4}
-        />
-        <BranchConflictModal lang={lang} />
-
-        <FloatingMenuBanner brandColor={priceColor} lang={lang} />
-        <MenuBannerOverlays brandColor={priceColor} lang={lang} />
-        <MenuOffersDrawer brandColor={priceColor} lang={lang} />
       </BannerProvider>
     </div>
   )

@@ -120,9 +120,23 @@ export function ProductOptionsModal({
     <div className="options-modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
       <div className="options-modal" onClick={(e) => e.stopPropagation()}>
         <div className="options-modal__handle" />
+        {/* Product image (this round) — the same real photo shown on its
+            card, never a different/generic one; capped height so it never
+            pushes the qty/confirm CTA out of easy reach on a short mobile
+            screen. Products without a real photo keep exactly the same
+            emoji-in-title-row they already had — no placeholder image
+            invented for them. */}
+        {product.imageUrl && (
+          <div className="options-modal__media">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={product.imageUrl} alt={name} loading="eager" />
+          </div>
+        )}
         <div className="options-modal__header">
           <div className="options-modal__title-row">
-            <span className="options-modal__emoji" aria-hidden>{product.emoji || '🍽️'}</span>
+            {!product.imageUrl && (
+              <span className="options-modal__emoji" aria-hidden>{product.emoji || '🍽️'}</span>
+            )}
             <h3 className="options-modal__name">{name}</h3>
           </div>
           <button type="button" className="options-modal__close" onClick={onClose} aria-label="close">✕</button>
