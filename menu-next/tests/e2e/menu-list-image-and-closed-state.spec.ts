@@ -59,17 +59,21 @@ test.describe('Product Details image — balanced, uniform presentation regardle
       const media = modal.locator('.options-modal__media')
       if (await media.count() > 0) {
         const box = await media.boundingBox()
-        // Fluid via clamp(160px, 45vw, 220px) — a bounded, reasonable range,
+        // Fluid via clamp(180px, 46vw, 240px) — a bounded, reasonable range,
         // and (critically) the SAME height for every product regardless of
         // that product's own photo dimensions, at this fixed viewport.
-        expect(box!.height).toBeGreaterThanOrEqual(155)
-        expect(box!.height).toBeLessThanOrEqual(225)
+        expect(box!.height).toBeGreaterThanOrEqual(175)
+        expect(box!.height).toBeLessThanOrEqual(245)
         if (firstHeight === null) firstHeight = box!.height
         else expect(Math.abs(box!.height - firstHeight)).toBeLessThan(1)
 
-        // object-fit: contain — never stretched away from its natural ratio.
-        const fit = await modal.locator('.options-modal__media img').evaluate((el) => getComputedStyle(el).objectFit)
+        // Foreground photo: object-fit: contain — never stretched, never
+        // cropped away from its natural ratio.
+        const fit = await modal.locator('.options-modal__media-img').evaluate((el) => getComputedStyle(el).objectFit)
         expect(fit).toBe('contain')
+        // Blurred backdrop layer (same photo) fills the container edge to
+        // edge, so there is never a visibly bare/empty gap beside the photo.
+        await expect(modal.locator('.options-modal__media-fill')).toBeVisible()
 
         // No emoji shown alongside a real photo.
         await expect(modal.locator('.options-modal__emoji')).toHaveCount(0)

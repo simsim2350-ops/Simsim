@@ -469,26 +469,35 @@ html, body {
   display: flex; flex-direction: column; overflow: hidden;
 }
 .options-modal__handle { width: 40px; height: 4px; background: #E5E7EB; border-radius: 2px; margin: 12px auto 0; flex-shrink: 0; }
-/* Product image inside Product Details — a balanced presentation system, not
-   a per-image size/crop decision:
-   - The container's own height is fixed regardless of the source photo's
-     aspect ratio (fluid via clamp(), never one flat value across all
-     viewports — shorter on a narrow phone, capped once the modal hits its
-     own 480px width cap), so no single tall photo can ever inflate the
-     sheet's height.
-   - object-fit: contain (not cover) — the real product photos in this
-     catalog are consistently near-square (~1:1 to ~5:4), so contain already
-     renders them edge-to-edge with negligible letterboxing; the one real
-     outlier shape (a tall/portrait bottle) gets letterboxed on the sides
-     instead of being cropped or forced to balloon the container's height.
-     Never crops, never stretches/distorts, never forces a square look.
-   - background matches the existing product-card media fill (#F3F4F6), so
-     any letterboxed space reads as intentional, not like a broken image. */
+/* Product image inside Product Details — a general "letterbox" presentation
+   system, not a per-image size/crop decision. The container itself is
+   wider/shorter than most real product photos (which run ~1:1 to ~5:4), so
+   a plain object-fit:contain box would leave a visibly bare gap beside a
+   near-square or portrait photo. Fixed with a two-layer approach instead of
+   guessing crop vs. no-crop per image:
+   - A blurred, scaled-up copy of the SAME photo (.media-fill) fills the
+     entire container edge-to-edge — the gap beside/around the real photo
+     reads as an intentional soft backdrop of the product itself, never as
+     empty dead space or "a small picture floating in a big empty box".
+   - The real photo (.media-img) sits on top via object-fit: contain — the
+     whole product is always visible, never cropped, never stretched. This
+     is a presentational duplicate of the same public image URL only (same
+     browser cache entry, no extra request); no source file is edited.
+   - Container height is fluid via clamp(), never one flat value across all
+     viewports (shorter on a narrow phone, capped once the modal hits its
+     own 480px width cap) — bounded regardless of the photo's own aspect
+     ratio, so no single photo (tall or wide) can inflate the sheet. */
 .options-modal__media {
-  width: 100%; height: clamp(160px, 45vw, 220px); overflow: hidden;
+  position: relative; width: 100%; height: clamp(180px, 46vw, 240px); overflow: hidden;
   background: #F3F4F6; border-radius: 16px 16px 0 0; flex-shrink: 0;
 }
-.options-modal__media img { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; }
+.options-modal__media-fill {
+  position: absolute; inset: 0; background-size: cover; background-position: center;
+  filter: blur(26px) brightness(0.92); transform: scale(1.2);
+}
+.options-modal__media-img {
+  position: relative; width: 100%; height: 100%; object-fit: contain; object-position: center; display: block;
+}
 .options-modal__header {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: 10px 20px 14px; border-bottom: 1px solid #E5E7EB; flex-shrink: 0;

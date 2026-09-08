@@ -120,17 +120,24 @@ export function ProductOptionsModal({
     <div className="options-modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
       <div className="options-modal" onClick={(e) => e.stopPropagation()}>
         <div className="options-modal__handle" />
-        {/* Product image — the same real photo shown on its card, never a
-            different/generic one; a fixed-height, object-fit:contain
-            container (see .options-modal__media in globals.css) so it never
-            pushes the qty/confirm CTA out of easy reach, and no single
-            photo's own aspect ratio can dominate or get cropped. Products
-            without a real photo keep exactly the same emoji-in-title-row
-            they already had — no placeholder image invented for them. */}
+        {/* Product image — a balanced, general presentation system (see
+            .options-modal__media* in globals.css for the full rationale):
+            a bounded-height container regardless of the source photo's own
+            aspect ratio, an uncropped/undistorted foreground copy (never
+            cuts off part of the product, never stretched), and a softly
+            blurred copy of that SAME photo filling the space behind it —
+            so a photo whose shape doesn't match the container (most real
+            product photos are near-square, the container is wider/shorter)
+            never reads as "a small picture floating in an empty box": the
+            fill is the product's own photo, not flat dead space. No new
+            image, no cropping of the real file — both layers are the exact
+            same product photo. Products without a real photo keep exactly
+            the same emoji-in-title-row they already had. */}
         {product.imageUrl && (
           <div className="options-modal__media">
+            <div className="options-modal__media-fill" style={{ backgroundImage: `url(${product.imageUrl})` }} aria-hidden="true" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={product.imageUrl} alt={name} loading="eager" />
+            <img src={product.imageUrl} alt={name} loading="eager" className="options-modal__media-img" />
           </div>
         )}
         <div className="options-modal__header">
