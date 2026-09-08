@@ -144,9 +144,11 @@ export function RestaurantHeader({
   const mapsUrl = activeBranch.maps_url || restaurant.maps_url
   const phone = activeBranch.phone || restaurant.phone
   const showHours = restaurant.show_hours ?? true
-  const hoursDetail = showHours
-    ? (openStatus.open ? (!openStatus.unknown && openStatus.todayText ? openStatus.todayText : '') : (openStatus.nextText || ''))
-    : ''
+  // Only shown while open (today's hours) — the closed-state next-opening
+  // time now has one single, clear place: ClosedRestaurantNotice below the
+  // Hero (this round's fix for the previous duplicate-message issue). The
+  // small "مغلق الآن" badge itself still shows here as before.
+  const hoursDetail = showHours && openStatus.open && !openStatus.unknown && openStatus.todayText ? openStatus.todayText : ''
 
   const showSocial = (restaurant.show_social_links ?? true) && !!restaurant.social_links
   const socialKeys = (showSocial
@@ -185,9 +187,17 @@ export function RestaurantHeader({
             there); fades and becomes non-interactive together with the hero
             itself since these are plain descendants of it (see globals.css). */}
         <div className="menu-header__hero-actions">
-          <button type="button" className="menu-header__action-icon" onClick={() => setSearchOpen(true)} aria-label={strings.searchPlaceholder}>
-            🔍
-          </button>
+          {/* Search opens product results (add-to-cart included) — this round's
+              fix: not offered while closed, matching "no path to Product
+              Details/Add to Cart while closed" (categories/products below
+              are also not rendered at all in that state — see page.tsx).
+              There is a second, duplicate copy of this same button further
+              down in the sticky/compact header — gated the same way there. */}
+          {openStatus.open && (
+            <button type="button" className="menu-header__action-icon" onClick={() => setSearchOpen(true)} aria-label={strings.searchPlaceholder}>
+              🔍
+            </button>
+          )}
           <a href={langHref} className="menu-header__action-icon menu-header__lang-toggle" aria-label={strings.switchLang}>
             {lang === 'en' ? 'ع' : 'EN'}
           </a>
@@ -341,9 +351,14 @@ export function RestaurantHeader({
         )}
         <div style={{ flex: 1 }} />
         <div className="menu-header__sticky-actions">
-          <button type="button" className="menu-header__action-icon" onClick={() => setSearchOpen(true)} aria-label={strings.searchPlaceholder}>
-            🔍
-          </button>
+          {/* Same closed-state gate as the hero-row copy above — this is a
+              duplicate render of the same search entry point (sticky/compact
+              header shown once the user scrolls), not a separate feature. */}
+          {openStatus.open && (
+            <button type="button" className="menu-header__action-icon" onClick={() => setSearchOpen(true)} aria-label={strings.searchPlaceholder}>
+              🔍
+            </button>
+          )}
           <a href={langHref} className="menu-header__action-icon menu-header__lang-toggle" aria-label={strings.switchLang}>
             {lang === 'en' ? 'ع' : 'EN'}
           </a>
@@ -362,16 +377,18 @@ export function RestaurantHeader({
       </div>
 
       <AllergensModal open={allergensOpen} onClose={() => setAllergensOpen(false)} allergens={restaurant.allergens} lang={lang} />
-      <SearchOverlay
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        products={products}
-        lang={lang}
-        currency={currency}
-        priceColor={priceColor}
-        branchId={activeBranch.id}
-        branchName={lang === 'en' && activeBranch.name_en ? activeBranch.name_en : activeBranch.name}
-      />
+      {openStatus.open && (
+        <SearchOverlay
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          products={products}
+          lang={lang}
+          currency={currency}
+          priceColor={priceColor}
+          branchId={activeBranch.id}
+          branchName={lang === 'en' && activeBranch.name_en ? activeBranch.name_en : activeBranch.name}
+        />
+      )}
     </header>
   )
 }

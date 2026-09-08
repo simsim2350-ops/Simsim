@@ -239,8 +239,14 @@ html, body {
   display: flex; gap: 12px; background: white; border: 1px solid #EEF0F3;
   border-radius: 14px; padding: 10px; align-items: center;
 }
+/* List View image (this round): 72px -> 84px is a ~36% increase in visible
+   area (a deliberate, moderate jump per the requested 30-40% range), not
+   just a linear bump. Only affects the default 'list' layout — grid/
+   showcase/circles (below) and the "الأكثر طلبًا" horizontal row each
+   already declare their own explicit width/height that overrides this, so
+   none of them are affected by this change. */
 .product-card__media {
-  position: relative; width: 72px; height: 72px; flex-shrink: 0; border-radius: 10px;
+  position: relative; width: 84px; height: 84px; flex-shrink: 0; border-radius: 10px;
   overflow: hidden; background: #F3F4F6; display: flex; align-items: center; justify-content: center;
 }
 /* Product image = view details (this round) — a plain button reset so it
@@ -252,7 +258,7 @@ html, body {
   width: 100%; height: 100%; padding: 0; margin: 0; border: none; background: none; cursor: pointer;
 }
 .product-card__image { object-fit: cover; }
-.product-card__emoji { font-size: 30px; }
+.product-card__emoji { font-size: 34px; }
 .product-card__body { flex: 1; min-width: 0; }
 .product-card__name { margin: 0; font-size: 14px; font-weight: 800; }
 .product-card__desc {
@@ -327,6 +333,25 @@ html, body {
 }
 .branch-conflict-cancel { border: 1.5px solid #E5E7EB; background: white; color: #374151; }
 .branch-conflict-confirm { border: none; background: #0B0B0F; color: white; }
+
+/* Closed-restaurant notice — a plain, always-in-flow banner (never
+   position:fixed, no overlay, no dismissal needed) at the very top of the
+   page, above the Hero. Deliberately not a modal: browsing/cart/checkout
+   must stay exactly as clickable as before (checkout's own existing
+   submit-blocking gate is untouched either way), so nothing here ever
+   covers any other element. */
+/* This round's fix: the menu/ordering experience no longer renders below
+   this notice while closed (see page.tsx), so it is now the sole content
+   on the page rather than a thin banner sitting above a full menu — sized
+   and centered accordingly. Neutral palette (not alert-red) since this is
+   routine "come back later" information, not an error. */
+.closed-notice {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; gap: 10px; padding: 72px 24px; min-height: 55vh;
+}
+.closed-notice__icon { font-size: 40px; }
+.closed-notice__title { font-size: 18px; font-weight: 900; color: #1F2937; }
+.closed-notice__body { font-size: 14px; color: #6B7280; }
 
 .cart-bar {
   position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 150;
@@ -444,6 +469,35 @@ html, body {
   display: flex; flex-direction: column; overflow: hidden;
 }
 .options-modal__handle { width: 40px; height: 4px; background: #E5E7EB; border-radius: 2px; margin: 12px auto 0; flex-shrink: 0; }
+/* Product image inside Product Details — a general "letterbox" presentation
+   system, not a per-image size/crop decision. The container itself is
+   wider/shorter than most real product photos (which run ~1:1 to ~5:4), so
+   a plain object-fit:contain box would leave a visibly bare gap beside a
+   near-square or portrait photo. Fixed with a two-layer approach instead of
+   guessing crop vs. no-crop per image:
+   - A blurred, scaled-up copy of the SAME photo (.media-fill) fills the
+     entire container edge-to-edge — the gap beside/around the real photo
+     reads as an intentional soft backdrop of the product itself, never as
+     empty dead space or "a small picture floating in a big empty box".
+   - The real photo (.media-img) sits on top via object-fit: contain — the
+     whole product is always visible, never cropped, never stretched. This
+     is a presentational duplicate of the same public image URL only (same
+     browser cache entry, no extra request); no source file is edited.
+   - Container height is fluid via clamp(), never one flat value across all
+     viewports (shorter on a narrow phone, capped once the modal hits its
+     own 480px width cap) — bounded regardless of the photo's own aspect
+     ratio, so no single photo (tall or wide) can inflate the sheet. */
+.options-modal__media {
+  position: relative; width: 100%; height: clamp(180px, 46vw, 240px); overflow: hidden;
+  background: #F3F4F6; border-radius: 16px 16px 0 0; flex-shrink: 0;
+}
+.options-modal__media-fill {
+  position: absolute; inset: 0; background-size: cover; background-position: center;
+  filter: blur(26px) brightness(0.92); transform: scale(1.2);
+}
+.options-modal__media-img {
+  position: relative; width: 100%; height: 100%; object-fit: contain; object-position: center; display: block;
+}
 .options-modal__header {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: 10px 20px 14px; border-bottom: 1px solid #E5E7EB; flex-shrink: 0;
