@@ -215,27 +215,27 @@ html, body {
    vertical grid — a scoped descendant override, not a new ProductCard
    layout variant. Hidden scrollbar matches the same pattern already used
    by .category-nav. overflow-x is contained to this row alone (never the
-   page).
-   This round: the image is the card's primary visual element, so it gets
-   the largest jump (110px, up from 88px) — the card's own width grows only
-   modestly (252px -> 288px) to give it room, not to make the card itself
-   noticeably bigger. The text column actually gains more room than the
-   width increase alone suggests (14px extra) because the image's own
-   growth is smaller than the card's, which is exactly what keeps the
-   2-line description from wrapping prematurely — same clamp everywhere
-   else in the app, just genuinely enough width to fill it with real
-   content instead of clipping early. Still fully horizontal (image beside
-   text, never stacked above it), still peeks the next card on mobile. */
+   page). Card width stays a fixed 288px at every breakpoint (a horizontal
+   carousel, not a responsive grid column) — see the image-size unification
+   note further below for why the image itself is no longer pinned to its
+   own value here. Still fully horizontal (image beside text, never
+   stacked above it), still peeks the next card on mobile. */
 .category-section__grid--horizontal-scroll {
   display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
 }
 .category-section__grid--horizontal-scroll::-webkit-scrollbar { display: none; }
 .category-section__grid--horizontal-scroll > .product-card { flex: 0 0 auto; width: 288px; padding: 8px; gap: 10px; }
-/* 3-class selector (not 2) so this always outranks the new
-   .product-card--list .product-card__media Cloud-theme size rule below,
-   regardless of source order — this row keeps its own already-enlarged
-   110px untouched by that change. */
-.category-section__grid--horizontal-scroll .product-card--list .product-card__media { width: 110px; height: 110px; }
+/* Image size unification (this round): "الأكثر طلبًا" no longer pins its
+   own 110px — it now simply falls through to the same responsive
+   .product-card--list .product-card__media size used everywhere else in
+   Cloud/List (120/128/136px Mobile/Tablet/Desktop, defined further down),
+   by not declaring an override here at all. Deliberate: this row is meant
+   to visually match Cloud/List's current image size exactly, not to keep
+   its own independent value. The (+) button here already matched: its
+   white color now comes from the shared base .add-to-cart-btn rule (every
+   theme's button, see further down), and its floating position from
+   .product-card__media-add — neither is excluded from this
+   horizontal-scroll variant — so only the image needed this change. */
 .category-section__grid--horizontal-scroll .product-card__name { font-size: 16px; }
 .category-section__grid--horizontal-scroll .product-card__price { font-size: 14px; }
 
@@ -360,9 +360,21 @@ html, body {
 
 /* ===== Phase 4A/4B — cart + checkout ===== */
 
+/* White circular button with a soft shadow, unified across every menu
+   theme (Cloud/List, Grid, Single Image/Showcase, Circular) — previously
+   solid black, and previously only white for Cloud/List specifically (see
+   the now-removed .product-card--list override below this file used to
+   carry). This is the single component AddToCartButton.tsx renders as
+   (grep-verified: the "add-to-cart-btn" class appears nowhere else in the
+   codebase — not in the cart, checkout, or Product Details modal — so
+   this change is fully scoped to the 4 menu-theme product cards by
+   construction, no extra selector needed). Only color/shadow changed;
+   size (34px), shape (circle), icon, touch target and click behavior are
+   all untouched. */
 .add-to-cart-btn {
   flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; border: none;
-  background: #0B0B0F; color: white; font-size: 18px; font-weight: 700; cursor: pointer;
+  background: white; color: #0B0B0F; font-size: 18px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
   display: flex; align-items: center; justify-content: center; align-self: center;
 }
 .add-to-cart-btn:active { transform: scale(0.94); }
@@ -908,12 +920,9 @@ html, body {
    in the outer corner like grid/showcase/circles' own inset-inline-start
    placement (unchanged for them). */
 .product-card--list .product-card__media-add { inset-inline-start: auto; inset-inline-end: 6px; }
-/* White circle + soft shadow instead of the app's usual solid-black (+):
-   sitting on top of a food photo (below), not on the page's own light
-   background, so the shadow alone (no border needed) keeps it legible.
-   Scoped to descendants of .product-card--list only — the shared
-   .add-to-cart-btn rule, and every other layout using it, is untouched. */
-.product-card--list .add-to-cart-btn { background: white; color: #0B0B0F; box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
+/* (+) button color/shadow is no longer set here — the base .add-to-cart-btn
+   rule above is white with a shadow for every theme now, so this
+   list-specific override would just be a no-op duplicate. */
 
 .product-card__media-add { position: absolute; inset-block-end: 6px; inset-inline-start: 6px; }
 
