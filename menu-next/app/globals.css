@@ -259,38 +259,46 @@ html, body {
    Image and دوائر/Circular (still no independently-documented mapping in
    the codebase as of this round either — see the round-1/round-2 task
    reports; carried forward unchanged since no contradicting evidence has
-   turned up). 84px -> 96px -> 128px -> 152px: round 3, another deliberate
-   jump so the image reads clearly as the card's dominant element even on
-   a small phone screen. Scoped to .product-card--list only, so Grid/
-   Single Image/Circular (and the "الأكثر طلبًا" horizontal row, which
-   already sets its own explicit 110px via a higher-specificity 3-class
-   selector below) are untouched. No border/shadow/background frame is
-   added around the image itself — #F3F4F6 above only ever shows behind
-   the emoji fallback (no product photo), never behind an actual photo,
-   since object-fit: cover always fills this box edge-to-edge. */
+   turned up).
+   84px -> 96px -> 128px -> 152px -> 136px: round 3's 152px (mobile) left
+   only ~106px for the text column (358px card - 16 start pad - 152 image
+   - 20+20 gap - 34 (+) button - 10 end pad), which broke the name (wrapped
+   hard), clipped the description, and squeezed the price — reported back
+   after a real Preview review. Round 4 corrects this: 136px is a deliberate
+   middle point — clearly bigger than round 2's 128px (per this round's
+   request to keep growing a little), but nowhere near round 3's 152px,
+   restoring a text column close to round 2's already-proven-comfortable
+   ~140px (now ~132px, an 8px trade-off for the slightly bigger image).
+   Scoped to .product-card--list only, so Grid/Single Image/Circular (and
+   the "الأكثر طلبًا" horizontal row, which already sets its own explicit
+   110px via a higher-specificity 3-class selector below) are untouched.
+   No border/shadow/background frame is added around the image itself —
+   #F3F4F6 above only ever shows behind the emoji fallback (no product
+   photo), never behind an actual photo, since object-fit: cover always
+   fills this box edge-to-edge. */
 .product-card--list .product-card__media {
-  width: 152px; height: 152px;
+  width: 136px; height: 136px;
 }
-/* Balance pass for the bigger image above: .product-card--list has equal
-   (1-class) specificity to the shared .product-card base right above it,
-   and comes later in the file, so these override it for 'list' only —
-   the "الأكثر طلبًا" horizontal row stays protected regardless, since its
-   own .category-section__grid--horizontal-scroll > .product-card override
+/* Balance pass, reverted to round 2's values (round 3 had pushed these
+   further, which — combined with the bigger image — was the other half of
+   the text-space squeeze): .product-card--list has equal (1-class)
+   specificity to the shared .product-card base right above it, and comes
+   later in the file, so these override it for 'list' only — the "الأكثر
+   طلبًا" horizontal row stays protected regardless, since its own
+   .category-section__grid--horizontal-scroll > .product-card override
    (2 classes + combinator) outranks this 1-class selector no matter the
    source order.
-   - gap 16px -> 20px (round 3, up from round 2's 12px -> 16px): more
-     breathing room between the now much-larger image and the text column
-     (and, evenly, before the (+) button), scaled up further to match
-     this round's bigger image jump, so text never reads as stuck to the
-     photo.
-   - padding-inline-start 14px -> 16px only (inline-end/block stay 10px,
-     unchanged from round 2): a touch more inner margin on the image's
-     own side of the card — the visual-right edge in the default RTL
-     menu, and symmetric in the .lang-en LTR variant since these are
+   - gap: back to round 2's 16px (round 3's 20px is reverted) — still a
+     clear step up from the original 12px, still enough breathing room
+     between image and text, without eating further into text width.
+   - padding-inline-start: back to round 2's 14px (round 3's 16px is
+     reverted) only (inline-end/block stay 10px, unchanged since round 2):
+     the image's own inner margin — the visual-right edge in the default
+     RTL menu, symmetric in the .lang-en LTR variant since these are
      logical, not physical, properties — without changing the card's
      overall padding anywhere else. */
 .product-card--list {
-  gap: 20px; padding-inline-start: 16px; padding-inline-end: 10px; padding-block: 10px;
+  gap: 16px; padding-inline-start: 14px; padding-inline-end: 10px; padding-block: 10px;
 }
 /* Product image = view details (this round) — a plain button reset so it
    fills exactly the same space the bare image/emoji used to, with no visual
@@ -340,8 +348,8 @@ html, body {
   .category-section__grid { grid-template-columns: repeat(2, 1fr); }
   /* Cloud theme (list layout) only: cards get wider at this breakpoint, so
      the image grows a little further with them instead of staying pinned
-     at the mobile 152px. */
-  .product-card--list .product-card__media { width: 168px; height: 168px; }
+     at the mobile 136px. */
+  .product-card--list .product-card__media { width: 148px; height: 148px; }
 }
 
 /* Desktop: use the available width instead of staying mobile-narrow, and move
@@ -356,7 +364,7 @@ html, body {
   .category-section__grid { grid-template-columns: repeat(3, 1fr); }
   /* Cloud theme (list layout) only: one more step for the widest cards —
      never a single fixed value across breakpoints. */
-  .product-card--list .product-card__media { width: 184px; height: 184px; }
+  .product-card--list .product-card__media { width: 160px; height: 160px; }
 }
 
 /* ===== Phase 4A/4B — cart + checkout ===== */
