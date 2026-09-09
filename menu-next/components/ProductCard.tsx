@@ -11,14 +11,12 @@ function calorieBadge(calories: number): string {
 
 // 4 layouts, matching src/features/menu/ProductItem.jsx's own 4 branches
 // (list/grid/showcase/circles) driven by the Admin Dashboard's "شكل عرض
-// الأصناف" setting (restaurants.menu_layout). 'list' is both the DB default
-// and this component's original, unchanged design — every other layout
-// reuses the exact same sub-elements (image, name, description, price,
-// AddToCartButton) with CSS-driven structure instead of a separate component
-// tree, since the underlying add-to-cart interaction (tap -> instant add or
-// options modal) is menu-next's own established, unchanged behavior, not
-// itself a "display setting" to reproduce from the old per-card quick-add
-// stepper.
+// الأصناف" setting (restaurants.menu_layout). 'list' is the DB default;
+// every layout (list included) reuses the exact same sub-elements (image,
+// name, description, price, AddToCartButton) with CSS-driven structure
+// instead of a separate component tree, since the underlying add-to-cart
+// interaction (tap -> instant add or options modal) is menu-next's own
+// established, unchanged behavior, not itself a "display setting".
 export function ProductCard({ product, allProducts, recommendationsMap, layout = 'list', lang, currency, priceColor, branchId, branchName }: {
   product: Product
   allProducts?: Product[]
@@ -78,18 +76,18 @@ export function ProductCard({ product, allProducts, recommendationsMap, layout =
           lang={lang}
           className="product-card__media-btn"
         />
-        {/* grid/showcase/circles float the add button over the image corner,
-            matching ProductItem.jsx's quick-add positioning for those modes.
-            A sibling of the image button (never nested inside it) so a tap
-            on (+) never also triggers "view details". */}
-        {layout !== 'list' && <div className="product-card__media-add">{addButton}</div>}
+        {/* Every layout floats the add button over the image corner (list
+            included, as of the Cloud-theme row redesign — CSS repositions
+            it per layout, see .product-card--list .product-card__media-add
+            in globals.css). A sibling of the image button (never nested
+            inside it) so a tap on (+) never also triggers "view details". */}
+        <div className="product-card__media-add">{addButton}</div>
       </div>
       <div className="product-card__body">
         <h3 className="product-card__name">{name}</h3>
         {showDescription && <p className="product-card__desc">{description}</p>}
         {priceBlock}
       </div>
-      {layout === 'list' && addButton}
     </article>
   )
 }
