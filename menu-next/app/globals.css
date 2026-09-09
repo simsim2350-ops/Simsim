@@ -231,7 +231,11 @@ html, body {
 }
 .category-section__grid--horizontal-scroll::-webkit-scrollbar { display: none; }
 .category-section__grid--horizontal-scroll > .product-card { flex: 0 0 auto; width: 288px; padding: 8px; gap: 10px; }
-.category-section__grid--horizontal-scroll .product-card__media { width: 110px; height: 110px; }
+/* 3-class selector (not 2) so this always outranks the new
+   .product-card--list .product-card__media Cloud-theme size rule below,
+   regardless of source order — this row keeps its own already-enlarged
+   110px untouched by that change. */
+.category-section__grid--horizontal-scroll .product-card--list .product-card__media { width: 110px; height: 110px; }
 .category-section__grid--horizontal-scroll .product-card__name { font-size: 16px; }
 .category-section__grid--horizontal-scroll .product-card__price { font-size: 14px; }
 
@@ -239,15 +243,29 @@ html, body {
   display: flex; gap: 12px; background: white; border: 1px solid #EEF0F3;
   border-radius: 14px; padding: 10px; align-items: center;
 }
-/* List View image (this round): 72px -> 84px is a ~36% increase in visible
-   area (a deliberate, moderate jump per the requested 30-40% range), not
-   just a linear bump. Only affects the default 'list' layout — grid/
-   showcase/circles (below) and the "الأكثر طلبًا" horizontal row each
-   already declare their own explicit width/height that overrides this, so
-   none of them are affected by this change. */
+/* List View image: base box shared by every layout (grid/showcase/circles
+   below each override only their own width/height/border-radius on top of
+   this) — position/overflow/background/centering must stay unscoped here
+   or those other layouts lose them. The actual 72px -> 84px -> 96px size
+   growth for 'list' itself lives in the .product-card--list override right
+   after, so this base rule's own width/height (84px) is now only the
+   fallback for any future layout that doesn't declare its own. */
 .product-card__media {
   position: relative; width: 84px; height: 84px; flex-shrink: 0; border-radius: 10px;
   overflow: hidden; background: #F3F4F6; display: flex; align-items: center; justify-content: center;
+}
+/* 'list' = "الغائمة" (Cloud) in the Admin Dashboard's card-style picker —
+   the one layout left unnamed there alongside شبكة/Grid, بطاقة/Single
+   Image and دوائر/Circular. 84px -> 96px is a further ~31% increase in
+   visible area, gradual and moderate like the prior 72px -> 84px round.
+   Scoped to .product-card--list only, so Grid/Single Image/Circular (and
+   the "الأكثر طلبًا" horizontal row, which already sets its own explicit
+   110px) are untouched. No border/shadow/background frame is added around
+   the image itself — #F3F4F6 above only ever shows behind the emoji
+   fallback (no product photo), never behind an actual photo, since
+   object-fit: cover always fills this box edge-to-edge. */
+.product-card--list .product-card__media {
+  width: 96px; height: 96px;
 }
 /* Product image = view details (this round) — a plain button reset so it
    fills exactly the same space the bare image/emoji used to, with no visual
@@ -295,6 +313,10 @@ html, body {
   .menu-toolbar { padding: 10px 24px 0; }
   .menu-footer { padding: 20px 24px 32px; }
   .category-section__grid { grid-template-columns: repeat(2, 1fr); }
+  /* Cloud theme (list layout) only: cards get wider at this breakpoint, so
+     the image grows a little further with them instead of staying pinned
+     at the mobile 96px. */
+  .product-card--list .product-card__media { width: 104px; height: 104px; }
 }
 
 /* Desktop: use the available width instead of staying mobile-narrow, and move
@@ -307,6 +329,9 @@ html, body {
   .menu-toolbar { padding: 12px 32px 0; }
   .menu-footer { padding: 24px 32px 40px; }
   .category-section__grid { grid-template-columns: repeat(3, 1fr); }
+  /* Cloud theme (list layout) only: one more gradual step for the widest
+     cards, still moderate — never a single fixed value across breakpoints. */
+  .product-card--list .product-card__media { width: 112px; height: 112px; }
 }
 
 /* ===== Phase 4A/4B — cart + checkout ===== */
