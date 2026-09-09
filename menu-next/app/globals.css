@@ -260,45 +260,33 @@ html, body {
    the codebase as of this round either — see the round-1/round-2 task
    reports; carried forward unchanged since no contradicting evidence has
    turned up).
-   84px -> 96px -> 128px -> 152px -> 136px: round 3's 152px (mobile) left
-   only ~106px for the text column (358px card - 16 start pad - 152 image
-   - 20+20 gap - 34 (+) button - 10 end pad), which broke the name (wrapped
-   hard), clipped the description, and squeezed the price — reported back
-   after a real Preview review. Round 4 corrects this: 136px is a deliberate
-   middle point — clearly bigger than round 2's 128px (per this round's
-   request to keep growing a little), but nowhere near round 3's 152px,
-   restoring a text column close to round 2's already-proven-comfortable
-   ~140px (now ~132px, an 8px trade-off for the slightly bigger image).
-   Scoped to .product-card--list only, so Grid/Single Image/Circular (and
-   the "الأكثر طلبًا" horizontal row, which already sets its own explicit
-   110px via a higher-specificity 3-class selector below) are untouched.
-   No border/shadow/background frame is added around the image itself —
-   #F3F4F6 above only ever shows behind the emoji fallback (no product
-   photo), never behind an actual photo, since object-fit: cover always
-   fills this box edge-to-edge. */
+   Rounds 1-5 (84 -> 96 -> 128 -> 152 -> 136 -> 132px) all tuned the image
+   size while keeping 'list' inside the same responsive 1/2/3-column grid
+   that grid/showcase/circles use — which is exactly why the text column
+   kept getting squeezed at the 2- and 3-column breakpoints no matter how
+   small the image got there: the column itself, not just the image, was
+   eating the width. Round 6 fixes the actual architecture instead of
+   re-tuning pixels again: 'list' now always renders as a single full-width
+   row (.category-section__grid--list below, matching the exact
+   !important-override convention grid/showcase/circles already use for
+   their own column counts), like a real food-app product list, not a
+   tile grid. With no column-narrowing pressure left, the text column has
+   generous room at every breakpoint, so the image can go back to a plain,
+   modest, request-matched 110-125px range on mobile without any more
+   back-and-forth. Sizes stay scoped to .product-card--list only, so
+   Grid/Single Image/Circular (and the "الأكثر طلبًا" horizontal row, which
+   already sets its own explicit 110px via a higher-specificity 3-class
+   selector below) are untouched. No border/shadow/background frame is
+   added around the image itself — #F3F4F6 above only ever shows behind
+   the emoji fallback (no product photo), never behind an actual photo,
+   since object-fit: cover always fills this box edge-to-edge. The rest of
+   this round's row redesign (no card background/border, a light divider
+   between rows, the (+) button repositioned as a white floating badge on
+   the image) lives with grid/showcase/circles' own layout-variant rules
+   further down this file, for the same reason theirs do: so it wins at
+   every viewport regardless of the responsive rules above. */
 .product-card--list .product-card__media {
-  width: 136px; height: 136px;
-}
-/* Balance pass, reverted to round 2's values (round 3 had pushed these
-   further, which — combined with the bigger image — was the other half of
-   the text-space squeeze): .product-card--list has equal (1-class)
-   specificity to the shared .product-card base right above it, and comes
-   later in the file, so these override it for 'list' only — the "الأكثر
-   طلبًا" horizontal row stays protected regardless, since its own
-   .category-section__grid--horizontal-scroll > .product-card override
-   (2 classes + combinator) outranks this 1-class selector no matter the
-   source order.
-   - gap: back to round 2's 16px (round 3's 20px is reverted) — still a
-     clear step up from the original 12px, still enough breathing room
-     between image and text, without eating further into text width.
-   - padding-inline-start: back to round 2's 14px (round 3's 16px is
-     reverted) only (inline-end/block stay 10px, unchanged since round 2):
-     the image's own inner margin — the visual-right edge in the default
-     RTL menu, symmetric in the .lang-en LTR variant since these are
-     logical, not physical, properties — without changing the card's
-     overall padding anywhere else. */
-.product-card--list {
-  gap: 16px; padding-inline-start: 14px; padding-inline-end: 10px; padding-block: 10px;
+  width: 120px; height: 120px;
 }
 /* Product image = view details (this round) — a plain button reset so it
    fills exactly the same space the bare image/emoji used to, with no visual
@@ -346,10 +334,11 @@ html, body {
   .menu-toolbar { padding: 10px 24px 0; }
   .menu-footer { padding: 20px 24px 32px; }
   .category-section__grid { grid-template-columns: repeat(2, 1fr); }
-  /* Cloud theme (list layout) only: cards get wider at this breakpoint, so
-     the image grows a little further with them instead of staying pinned
-     at the mobile 136px. */
-  .product-card--list .product-card__media { width: 148px; height: 148px; }
+  /* Cloud theme (list layout) only: 'list' is now always a single
+     full-width row (see .category-section__grid--list further down), so
+     this is a plain, modest step-up — never column-narrowing pressure to
+     react to any more. */
+  .product-card--list .product-card__media { width: 128px; height: 128px; }
 }
 
 /* Desktop: use the available width instead of staying mobile-narrow, and move
@@ -362,9 +351,11 @@ html, body {
   .menu-toolbar { padding: 12px 32px 0; }
   .menu-footer { padding: 24px 32px 40px; }
   .category-section__grid { grid-template-columns: repeat(3, 1fr); }
-  /* Cloud theme (list layout) only: one more step for the widest cards —
-     never a single fixed value across breakpoints. */
-  .product-card--list .product-card__media { width: 160px; height: 160px; }
+  /* Cloud theme (list layout) only: one more modest step — still a plain
+     full-width row at this width (see .category-section__grid--list),
+     never a 3-column tile grid, so "using the available space" here means
+     the row's text column, not the image, getting the extra room. */
+  .product-card--list .product-card__media { width: 136px; height: 136px; }
 }
 
 /* ===== Phase 4A/4B — cart + checkout ===== */
@@ -849,15 +840,25 @@ html, body {
 .offer-card__coupon-discount { margin-top: 2px; color: #667085; font-size: 10px; font-weight: 800; }
 .offer-card__copy-btn { flex-shrink: 0; min-height: 38px; padding: 7px 10px; border: none; border-radius: 9px; color: white; font-family: 'Tajawal', sans-serif; font-size: 11px; font-weight: 900; cursor: pointer; }
 
-/* ===== menu_layout (#Admin↔Menu parity) — grid/showcase/circles card variants.
-   'list' is the pre-existing, unchanged default (no --list rule needed: the
-   unmodified base .product-card/.category-section__grid rules above already
-   are that layout). These rules are deliberately placed after the responsive
-   breakpoints above so they win at every viewport width for restaurants that
-   have explicitly chosen a non-default layout. */
+/* ===== menu_layout (#Admin↔Menu parity) — grid/showcase/circles/list card
+   variants. 'list' picked up its own explicit rules here as of round 6
+   (previously it relied only on the unmodified base .product-card/
+   .category-section__grid rules — true through round 5, no longer true).
+   These rules are deliberately placed after the responsive breakpoints
+   above so they win at every viewport width for restaurants that have
+   explicitly chosen a non-default layout (list included, now that it has
+   its own column-count override below, same convention as the other 3). */
 
 .category-section__grid--grid, .category-section__grid--circles { grid-template-columns: repeat(2, 1fr) !important; }
 .category-section__grid--showcase { grid-template-columns: 1fr !important; }
+/* 'list' = product-list row redesign (round 6): always a single full-width
+   row at every breakpoint — never the 2-/3-column tile grid grid/showcase/
+   circles use — which is what actually caused rounds 1-5's repeated
+   text-column squeeze (the column itself narrowing, not just the image).
+   grid-template-columns has no effect on the "الأكثر طلبًا" horizontal-
+   scroll variant of this same class (it's display:flex, set elsewhere), so
+   this is safe to apply unconditionally. */
+.category-section__grid--list { grid-template-columns: 1fr !important; }
 
 .product-card--grid, .product-card--showcase {
   display: block; padding: 0; overflow: hidden; border-radius: 14px;
@@ -874,6 +875,45 @@ html, body {
 .product-card--circles .product-card__body { width: 100%; }
 .product-card--circles .product-card__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .product-card--circles .product-card__price { justify-content: center; }
+
+/* 'list' row redesign (round 6) — a light "product list" row instead of a
+   per-item white card: no background/border/radius of its own (the base
+   .product-card rule above still supplies those for grid/showcase/circles
+   unchanged), a thin bottom divider between rows instead, and the (+)
+   button moved off to the side as a floating badge on the image (below)
+   rather than a 4th flex sibling, so the row's own height is driven only
+   by the image/text content, never the button. Horizontal padding is
+   dropped entirely (padding-inline was 14/10px through round 5) — the
+   .category-section container already supplies the page-level side
+   margin, and a divider-based row conventionally spans that full width
+   rather than adding its own card-like inset on top of it. */
+.product-card--list {
+  gap: 16px; padding: 14px 0;
+  background: none; border: none; border-radius: 0;
+  border-bottom: 1px solid #EEF0F3;
+}
+/* "الأكثر طلبًا" horizontal-scroll row: still a genuine card strip (not a
+   list), so it keeps its own white/bordered/rounded look — restored here
+   since the round-6 rule above would otherwise strip it too (both share
+   .product-card--list). Selector specificity (2 classes) outranks the
+   1-class rule above regardless of source order, same pattern already
+   used for its 110px image size. */
+.category-section__grid--horizontal-scroll .product-card--list {
+  background: white; border: 1px solid #EEF0F3; border-radius: 14px;
+}
+/* (+) repositioned to the image's inline-end corner (visual left in the
+   default RTL menu, mirrored correctly in the .lang-en LTR variant since
+   this is a logical property) — the side facing the text column, so it
+   reads as bridging the image and the row's info instead of sitting off
+   in the outer corner like grid/showcase/circles' own inset-inline-start
+   placement (unchanged for them). */
+.product-card--list .product-card__media-add { inset-inline-start: auto; inset-inline-end: 6px; }
+/* White circle + soft shadow instead of the app's usual solid-black (+):
+   sitting on top of a food photo (below), not on the page's own light
+   background, so the shadow alone (no border needed) keeps it legible.
+   Scoped to descendants of .product-card--list only — the shared
+   .add-to-cart-btn rule, and every other layout using it, is untouched. */
+.product-card--list .add-to-cart-btn { background: white; color: #0B0B0F; box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
 
 .product-card__media-add { position: absolute; inset-block-end: 6px; inset-inline-start: 6px; }
 
