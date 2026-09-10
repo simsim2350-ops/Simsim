@@ -26,7 +26,7 @@ export async function getActiveBranches(restaurantId: string): Promise<Branch[]>
   if (!supabase) return []
   const { data, error } = await supabase
     .from('branches')
-    .select('id, restaurant_id, name, name_en, is_active, is_primary, sort_order, delivery_enabled, delivery_fee, takeaway_enabled, opening_hours, is_paused, address, address_en, maps_url, phone, menu_clone_status')
+    .select('id, restaurant_id, name, name_en, is_active, is_primary, sort_order, delivery_enabled, delivery_fee, takeaway_enabled, car_pickup_enabled, car_pickup_info_label, car_pickup_info_required, opening_hours, is_paused, address, address_en, maps_url, phone, menu_clone_status')
     .eq('restaurant_id', restaurantId)
     .eq('is_active', true)
     .order('sort_order')

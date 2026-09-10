@@ -13,7 +13,7 @@ import { mapOrderError, priceChangedMessage, itemsUnavailableMessage, networkErr
 import { rememberPhone } from '@/lib/loyalty'
 import { addActiveOrder } from '@/lib/orders/activeOrders'
 
-type OrderType = 'dine_in' | 'takeaway' | 'delivery'
+type OrderType = 'dine_in' | 'takeaway' | 'delivery' | 'car_pickup'
 type Status = 'idle' | 'submitting' | 'success' | 'error'
 
 // Client Component — reads the cart from CartContext and renders + submits
@@ -24,7 +24,7 @@ type Status = 'idle' | 'submitting' | 'success' | 'error'
 // and src/features/menu/orderErrors.js — not invented.
 export function CheckoutForm({
   slug, restaurantId, branchId, branchName, restaurantName, currency, priceColor, lang,
-  openStatus, deliveryEnabled, deliveryFee, takeawayEnabled, availableProductIds, resolvedTableName, resolvedTableToken,
+  openStatus, deliveryEnabled, deliveryFee, takeawayEnabled, carPickupEnabled, carPickupInfoLabel, carPickupInfoRequired, availableProductIds, resolvedTableName, resolvedTableToken,
   branchTables,
 }: {
   slug: string
@@ -39,6 +39,15 @@ export function CheckoutForm({
   deliveryEnabled: boolean
   deliveryFee: number
   takeawayEnabled: boolean
+  // Car Pickup (Phase 2) — same conditional-render contract as
+  // takeawayEnabled/deliveryEnabled: false hides the option entirely, true
+  // shows it. info_label is the restaurant's own prompt text for the one
+  // free-text field this order type collects (falls back to a generic
+  // default string when the restaurant hasn't set one); info_required only
+  // matters while carPickupEnabled is true.
+  carPickupEnabled: boolean
+  carPickupInfoLabel: string | null
+  carPickupInfoRequired: boolean
   availableProductIds: string[]
   // Non-null only when a real, resolved table-QR token (?table=) is behind
   // this checkout — same server-verified contract as src/pages/PublicMenu.jsx's
@@ -74,6 +83,7 @@ export function CheckoutForm({
   const [tableNumber, setTableNumber] = useState('')
   const [tableId, setTableId] = useState('')
   const [deliveryAddress, setDeliveryAddress] = useState('')
+  const [carInfo, setCarInfo] = useState('')
   const [orderNote, setOrderNote] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [status, setStatus] = useState<Status>('idle')
@@ -180,6 +190,10 @@ export function CheckoutForm({
         }
       }
       if (orderType === 'delivery' && !deliveryAddress.trim()) next.deliveryAddress = strings.errRequired
+      // Car Pickup (Phase 2): only blocks submission when THIS branch marked
+      // its one info field required — optional stays optional, matching the
+      // task's own point 7 exactly ("Required يمنع الإرسال، Optional يسمح").
+      if (orderType === 'car_pickup' && carPickupInfoRequired && !carInfo.trim()) next.carInfo = strings.errRequired
     }
     if (!customerPhone.trim()) next.customerPhone = strings.errRequired
     else if (!/^5\d{8}$/.test(customerPhone)) next.customerPhone = strings.errPhone
@@ -262,6 +276,13 @@ export function CheckoutForm({
       p_client_total: total,
       p_idempotency_key: idempotencyKey,
       p_table_id: resolvedTableName ? null : (orderType === 'dine_in' ? (selectedTable?.id ?? null) : null),
+      // Car Pickup (Phase 2): only ever sent for this exact order type — every
+      // other type keeps sending null, byte-for-byte the same call it made
+      // before this field existed. create_order (Phase 1) itself already
+      // forces car_info to NULL server-side for any type other than
+      // car_pickup regardless of what's sent, so this is belt-and-suspenders,
+      // not the actual security boundary.
+      p_car_info: orderType === 'car_pickup' ? (carInfo.trim() || null) : null,
     }
 
     let result
@@ -387,6 +408,9 @@ export function CheckoutForm({
               {deliveryEnabled && (
                 <button type="button" className={`checkout-form__type-btn${orderType === 'delivery' ? ' is-active' : ''}`} style={orderType === 'delivery' ? { borderColor: priceColor, color: priceColor } : undefined} onClick={() => setOrderType('delivery')}>{strings.orderTypeDelivery}</button>
               )}
+              {carPickupEnabled && (
+                <button type="button" className={`checkout-form__type-btn${orderType === 'car_pickup' ? ' is-active' : ''}`} style={orderType === 'car_pickup' ? { borderColor: priceColor, color: priceColor } : undefined} onClick={() => setOrderType('car_pickup')}>{strings.orderTypeCarPickup}</button>
+              )}
             </div>
           </div>
 
@@ -412,6 +436,14 @@ export function CheckoutForm({
               <label className="checkout-form__label" htmlFor="deliveryAddress">{strings.deliveryAddress} *</label>
               <textarea id="deliveryAddress" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} placeholder={strings.deliveryAddressPh} className="checkout-form__textarea" />
               {errors.deliveryAddress && <span className="checkout-form__error">{errors.deliveryAddress}</span>}
+            </div>
+          )}
+
+          {orderType === 'car_pickup' && (
+            <div className="checkout-form__section">
+              <label className="checkout-form__label" htmlFor="carInfo">{carPickupInfoLabel || strings.carInfoDefaultLabel}{carPickupInfoRequired ? ' *' : ''}</label>
+              <input id="carInfo" type="text" value={carInfo} onChange={(e) => setCarInfo(e.target.value.slice(0, 200))} placeholder={strings.carInfoPh} className="checkout-form__input" />
+              {errors.carInfo && <span className="checkout-form__error">{errors.carInfo}</span>}
             </div>
           )}
         </>
