@@ -70,6 +70,12 @@ export const CAPABILITIES = [
   { key: 'menu_product_details', name: 'تفاصيل المنتج',    kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 35, description: 'فتح نافذة تفاصيل المنتج عند الضغط عليه (عند التعطيل: الضغط لا يفتح شيئاً)' },
   { key: 'menu_cart',            name: 'السلة',             kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 40 },
   { key: 'menu_checkout',        name: 'إتمام الطلب',       kind: 'action',    category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 50 },
+  // Phone Verification (OTP) — Customer Identity Phase 1 (ADR-40 عبر PCR، وليس
+  // Toggle داخل إعدادات المطعم). runtime_status='preview': مسجَّلة في الكتالوج
+  // وقابلة للربط بباقة من لوحة الأدمن، لكن غير مفروضة فعلياً على create_order
+  // بعد (لا SMS Provider متصل بعد — Phase 1 تأسيس فقط). default_enabled=false:
+  // لا تُمنح لأي مطعم تلقائياً — تحتاج تضمينها بباقة (plan_features) صريحاً.
+  { key: 'phone_verification', name: 'تحقق رقم الهاتف (OTP)', kind: 'component', category: 'customers', module: 'menu', parent: 'menu_checkout', type: 'feature', default_enabled: false, sort_order: 10, icon: '🔐', runtime_status: 'preview', description: 'تحقق من ملكية رقم هاتف العميل عبر رمز OTP لمرة واحدة عند إتمام الطلب (قيد التطوير — Phase 1: تأسيس الهوية وقاعدة البيانات فقط، بلا فرض فعلي على الطلبات وبلا مزوّد SMS متصل)' },
   { key: 'menu_reviews',         name: 'التقييمات',         kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 60, is_public: true, public_label: 'تقييمات العملاء على المنتجات' },
   { key: 'menu_recommendations', name: 'الاقتراحات الذكية', kind: 'component', category: 'menu', module: 'menu', parent: 'menu', type: 'feature', default_enabled: true, sort_order: 70, is_public: true, public_label: 'اقتراحات ذكية للمنتجات' },
   { key: 'branding_hidden',      name: 'إخفاء هوية سمسم',  kind: 'component', category: 'menu', module: 'branding', parent: 'menu', type: 'feature', default_enabled: false, sort_order: 80, icon: '🏷️', description: 'إخفاء عبارة «صمم بواسطة سمسم» من المنيو (ميزة الباقات المدفوعة / White-label)', is_public: true, public_label: 'إخفاء علامة سمسم (White-label)' },
