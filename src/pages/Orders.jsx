@@ -33,11 +33,12 @@ const transitionErrorMessage = (message) => (
     : message
 )
 
-const TYPE_LABEL = { dine_in:'🪑 محلي', takeaway:'🥡 سفري', delivery:'🛵 توصيل' }
+const TYPE_LABEL = { dine_in:'🪑 محلي', takeaway:'🥡 سفري', delivery:'🛵 توصيل', car_pickup:'🚗 استلام من السيارة' }
 const TYPE_META = {
-  dine_in:  { label:'محلي',  emoji:'🪑', c:'#7C3AED', bg:'#F3E8FF' },
-  takeaway: { label:'سفري',  emoji:'🥡', c:'#B45309', bg:'#FEF3C7' },
-  delivery: { label:'توصيل', emoji:'🛵', c:'#0369A1', bg:'#E0F2FE' },
+  dine_in:    { label:'محلي',  emoji:'🪑', c:'#7C3AED', bg:'#F3E8FF' },
+  takeaway:   { label:'سفري',  emoji:'🥡', c:'#B45309', bg:'#FEF3C7' },
+  delivery:   { label:'توصيل', emoji:'🛵', c:'#0369A1', bg:'#E0F2FE' },
+  car_pickup: { label:'من السيارة', emoji:'🚗', c:'#0F766E', bg:'#CCFBF1' },
 }
 const typeChip = (t) => TYPE_META[t] || TYPE_META.dine_in
 
@@ -580,7 +581,7 @@ export default function Orders() {
             </select>
           )}
           <div style={{ display:'flex', gap:'5px' }}>
-            {[['dine_in','🪑 محلي'], ['takeaway','🥡 سفري'], ['delivery','🛵 توصيل']].map(([k,l]) => (
+            {[['dine_in','🪑 محلي'], ['takeaway','🥡 سفري'], ['delivery','🛵 توصيل'], ['car_pickup','🚗 سيارة']].map(([k,l]) => (
               <button key={k} onClick={() => toggleType(k)} style={{ padding:'6px 11px', borderRadius:'9px', border:`1.5px solid ${typeFilter.has(k) ? '#FF6A00' : '#E5E7EB'}`, background: typeFilter.has(k) ? '#FFF0EB' : 'white', color: typeFilter.has(k) ? '#FF6A00' : '#6B7280', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer', whiteSpace:'nowrap' }}>{l}</button>
             ))}
           </div>
@@ -685,6 +686,7 @@ export default function Orders() {
                   {order.type === 'dine_in' && (order.table_name || order.table_number) && <span>طاولة {order.table_name || order.table_number}</span>}
                   {order.source === 'qr' && <span style={{ color:'#C2410C', fontWeight:'800' }}>· QR الطاولة</span>}
                   {order.type === 'delivery' && order.delivery_address && <span>📍 {order.delivery_address}</span>}
+                  {order.type === 'car_pickup' && order.car_info && <span>🚗 {order.car_info}</span>}
                   {order.customer_phone && (
                     <span style={{ direction:'ltr', display:'inline-flex', alignItems:'center', gap:'6px' }}>
                       📱 {order.customer_phone}

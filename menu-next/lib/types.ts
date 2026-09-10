@@ -59,6 +59,13 @@ export type Branch = {
   delivery_enabled: boolean | null
   delivery_fee: number | null
   takeaway_enabled: boolean | null
+  // Car Pickup (Phase 2) — same branch-only, no-restaurant-fallback pattern
+  // as takeaway_enabled. info_label is the restaurant's own free-text prompt
+  // (e.g. "لون السيارة"); null/empty falls back to a generic default label
+  // in CheckoutForm.tsx. info_required only matters when enabled is true.
+  car_pickup_enabled: boolean | null
+  car_pickup_info_label: string | null
+  car_pickup_info_required: boolean | null
   opening_hours: OpeningHoursDay[] | null
   is_paused: boolean | null
   address: string | null

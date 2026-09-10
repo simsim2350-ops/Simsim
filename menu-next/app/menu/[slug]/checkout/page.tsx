@@ -52,6 +52,13 @@ export default async function CheckoutPage({
   const openStatus = computeBranchOpenStatus(branch)
   const delivery = effectiveDeliverySettings(branch, restaurant)
   const takeawayEnabled = branch.takeaway_enabled ?? true
+  // Car Pickup (Phase 2) — same shape as takeawayEnabled: a plain branch
+  // column, no restaurant-level fallback. Already selected by the same
+  // getActiveBranches() query as the rest of `branch` (Phase 1's schema
+  // addition), so no extra request is needed here.
+  const carPickupEnabled = branch.car_pickup_enabled ?? false
+  const carPickupInfoLabel = branch.car_pickup_info_label ?? null
+  const carPickupInfoRequired = branch.car_pickup_info_required ?? false
   // Section 1B: a plain branch-URL visit (no resolved table QR) gets a real
   // dropdown of this branch's own active tables instead of free-text entry.
   // A resolved table QR already carries its own locked, server-verified
@@ -74,6 +81,9 @@ export default async function CheckoutPage({
         deliveryEnabled={delivery.enabled}
         deliveryFee={delivery.fee}
         takeawayEnabled={takeawayEnabled}
+        carPickupEnabled={carPickupEnabled}
+        carPickupInfoLabel={carPickupInfoLabel}
+        carPickupInfoRequired={carPickupInfoRequired}
         availableProductIds={products.map((p) => p.id)}
         resolvedTableName={tableQr?.tableName ?? null}
         resolvedTableToken={tableQr?.token ?? null}

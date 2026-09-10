@@ -50,6 +50,7 @@ const toEditorHours = (oh) => (Array.isArray(oh) && oh.length === 7)
 const EMPTY_FORM = {
   name:'', name_en:'', address:'', address_en:'', phone:'', maps_url:'', is_active:true, hours: defaultHours(),
   deliveryOverride:false, delivery_enabled:false, delivery_fee:'', takeaway_enabled:true,
+  car_pickup_enabled:false, car_pickup_info_label:'', car_pickup_info_required:false,
 }
 
 export default function Branches() {
@@ -106,6 +107,9 @@ export default function Branches() {
       delivery_enabled: branch.delivery_enabled ?? false,
       delivery_fee: branch.delivery_fee != null ? String(branch.delivery_fee) : '',
       takeaway_enabled: branch.takeaway_enabled ?? true,
+      car_pickup_enabled: branch.car_pickup_enabled ?? false,
+      car_pickup_info_label: branch.car_pickup_info_label || '',
+      car_pickup_info_required: branch.car_pickup_info_required ?? false,
     })
     setModalOpen(true)
   }
@@ -119,6 +123,11 @@ export default function Branches() {
     const deliveryFields = form.deliveryOverride
       ? { delivery_enabled: form.delivery_enabled, delivery_fee: Number(form.delivery_fee) || 0 }
       : { delivery_enabled: null, delivery_fee: null }
+    const carPickupFields = {
+      car_pickup_enabled: form.car_pickup_enabled,
+      car_pickup_info_label: form.car_pickup_enabled ? (form.car_pickup_info_label.trim() || null) : null,
+      car_pickup_info_required: form.car_pickup_enabled ? form.car_pickup_info_required : false,
+    }
     setSaving(true)
     try {
       if (editingBranch) {
@@ -128,6 +137,7 @@ export default function Branches() {
           phone: form.phone, maps_url: form.maps_url, is_active: form.is_active,
           opening_hours: form.hours,
           ...deliveryFields, takeaway_enabled: form.takeaway_enabled,
+          ...carPickupFields,
         })
         toast.success('تم تحديث الفرع ✅')
       } else {
@@ -138,6 +148,7 @@ export default function Branches() {
           phone: form.phone, maps_url: form.maps_url, is_active: form.is_active,
           opening_hours: form.hours,
           ...deliveryFields, takeaway_enabled: form.takeaway_enabled,
+          ...carPickupFields,
           menu_clone_status: primary ? 'copying' : 'ready',
           menu_clone_error: null,
           sort_order: branches.length,
@@ -400,6 +411,36 @@ export default function Branches() {
                   <div style={{ position:'absolute', width:'19px', height:'19px', background:'white', borderRadius:'50%', top:'3px', left: form.takeaway_enabled ? '24px' : '3px', transition:'0.3s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
                 </div>
               </label>
+            </div>
+
+            <div style={{ marginBottom:'18px', padding:'12px 14px', background:'#F8F9FB', borderRadius:'11px' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: form.car_pickup_enabled ? '12px' : 0 }}>
+                <span style={{ fontSize:'13px', fontWeight:'700' }}>🚗 استلام من السيارة</span>
+                <label style={{ position:'relative', width:'46px', height:'25px', cursor:'pointer', flexShrink:0 }}>
+                  <input type="checkbox" checked={form.car_pickup_enabled} onChange={e => setForm(f=>({...f,car_pickup_enabled:e.target.checked}))} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
+                  <div style={{ position:'absolute', inset:0, background: form.car_pickup_enabled ? '#10B981' : '#E5E7EB', borderRadius:'26px', transition:'0.3s' }}>
+                    <div style={{ position:'absolute', width:'19px', height:'19px', background:'white', borderRadius:'50%', top:'3px', left: form.car_pickup_enabled ? '24px' : '3px', transition:'0.3s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
+                  </div>
+                </label>
+              </div>
+              {!form.car_pickup_enabled && (
+                <div style={{ fontSize:'11.5px', color:'#9CA3AF' }}>لن يظهر "استلام من السيارة" للعميل في هذا الفرع.</div>
+              )}
+              {form.car_pickup_enabled && (
+                <>
+                  <div style={{ marginBottom:'10px' }}>
+                    <label style={{ ...labelStyle, color:'#6B7280' }}>ما المعلومة التي تريدها من العميل؟</label>
+                    <input style={inputStyle} value={form.car_pickup_info_label} onChange={e => setForm(f=>({...f,car_pickup_info_label:e.target.value}))} placeholder="مثال: لون السيارة" />
+                  </div>
+                  <div>
+                    <label style={{ ...labelStyle, color:'#6B7280' }}>هل هذه المعلومة إلزامية؟</label>
+                    <div style={{ display:'flex', gap:'8px' }}>
+                      <button type="button" onClick={() => setForm(f=>({...f,car_pickup_info_required:true}))} style={{ flex:1, minHeight:'36px', borderRadius:'9px', border:`1.5px solid ${form.car_pickup_info_required ? '#FF6A00' : '#E5E7EB'}`, background: form.car_pickup_info_required ? '#FFF0EB' : 'white', color: form.car_pickup_info_required ? '#FF6A00' : '#6B7280', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12.5px', cursor:'pointer' }}>مطلوبة</button>
+                      <button type="button" onClick={() => setForm(f=>({...f,car_pickup_info_required:false}))} style={{ flex:1, minHeight:'36px', borderRadius:'9px', border:`1.5px solid ${!form.car_pickup_info_required ? '#FF6A00' : '#E5E7EB'}`, background: !form.car_pickup_info_required ? '#FFF0EB' : 'white', color: !form.car_pickup_info_required ? '#FF6A00' : '#6B7280', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12.5px', cursor:'pointer' }}>اختيارية</button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px', padding:'12px 14px', background:'#F8F9FB', borderRadius:'11px' }}>
