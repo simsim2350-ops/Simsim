@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { loadMenuPage, getBranchTablesForMenu } from '@/lib/data'
+import { loadMenuPage, getBranchTablesForMenu, getPhoneVerificationEnabled } from '@/lib/data'
 import { t } from '@/lib/i18n'
 import type { Lang } from '@/lib/types'
 import { computeBranchOpenStatus, effectiveDeliverySettings } from '@/lib/openStatus'
@@ -65,6 +65,11 @@ export default async function CheckoutPage({
   // table — it never needs this list. Empty for a branch with no configured
   // tables (falls back to the existing free-text input in CheckoutForm).
   const branchTables = tableQr ? [] : await getBranchTablesForMenu(slug, branch.id)
+  // Phase 3C.3 — resolved server-side, same trust level as every other flag
+  // on this page (delivery/takeaway/car pickup). When false (today's global
+  // default), CheckoutForm's behavior is byte-for-byte unchanged from before
+  // this phase.
+  const phoneVerificationEnabled = await getPhoneVerificationEnabled(restaurant.id)
 
   return (
     <div className={`menu-frame${lang === 'en' ? ' lang-en' : ''}`} lang={lang} dir={lang === 'en' ? 'ltr' : 'rtl'}>
@@ -88,6 +93,7 @@ export default async function CheckoutPage({
         resolvedTableName={tableQr?.tableName ?? null}
         resolvedTableToken={tableQr?.token ?? null}
         branchTables={branchTables}
+        phoneVerificationEnabled={phoneVerificationEnabled}
       />
     </div>
   )
