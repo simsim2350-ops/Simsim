@@ -14,7 +14,11 @@ import { rememberPhone } from '@/lib/loyalty'
 import { addActiveOrder } from '@/lib/orders/activeOrders'
 
 type OrderType = 'dine_in' | 'takeaway' | 'delivery' | 'car_pickup'
-type Status = 'idle' | 'submitting' | 'success' | 'error'
+// 'verifying' (Phase 3C.3) — only reachable when phoneVerificationEnabled is
+// true AND /api/customer/checkout has just answered 401 (no valid session
+// yet). Never reachable at all when the flag is false — the existing direct
+// RPC path never returns this shape of response.
+type Status = 'idle' | 'submitting' | 'success' | 'error' | 'verifying'
 
 // Client Component — reads the cart from CartContext and renders + submits
 // the order form. Phase 4D connects this to the real, existing create_order
@@ -25,7 +29,7 @@ type Status = 'idle' | 'submitting' | 'success' | 'error'
 export function CheckoutForm({
   slug, restaurantId, branchId, branchName, restaurantName, currency, priceColor, lang,
   openStatus, deliveryEnabled, deliveryFee, takeawayEnabled, carPickupEnabled, carPickupInfoLabel, carPickupInfoRequired, availableProductIds, resolvedTableName, resolvedTableToken,
-  branchTables,
+  branchTables, phoneVerificationEnabled,
 }: {
   slug: string
   restaurantId: string
@@ -72,6 +76,13 @@ export function CheckoutForm({
   // exactly as before (a restaurant that hasn't set up the table system must
   // keep working unchanged).
   branchTables: Table[]
+  // Phase 3C.3 — resolved server-side via the existing Feature Registry
+  // (feature_value, restaurant-override → plan → global-default chain,
+  // platform-admin-controlled, never a restaurant self-toggle). false is
+  // today's global default: when false, every line below this comment that
+  // mentions phoneVerificationEnabled is dead code — submission takes the
+  // exact same direct-RPC path this file already used before this phase.
+  phoneVerificationEnabled: boolean
 }) {
   const router = useRouter()
   const { items, count, subtotal, branchId: cartBranchId, idempotencyKey, clearCart } = useCart()
@@ -97,6 +108,16 @@ export function CheckoutForm({
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null)
   const [couponError, setCouponError] = useState('')
   const [applyingCoupon, setApplyingCoupon] = useState(false)
+
+  // Phase 3C.3 — only ever set/read when phoneVerificationEnabled is true.
+  // otpCode/otpError back the small inline verification step that appears
+  // in place of the submit button after /api/customer/checkout answers 401
+  // (no valid session yet) — never shown, never touched, when the flag is
+  // false. sendingOtp guards the resend button the same way submittingRef
+  // guards the main submit button.
+  const [otpCode, setOtpCode] = useState('')
+  const [otpError, setOtpError] = useState('')
+  const [sendingOtp, setSendingOtp] = useState(false)
 
   // Synchronous guard against a double-click/double-tap submitting twice
   // before React re-renders the disabled button — the disabled attribute
@@ -201,121 +222,17 @@ export function CheckoutForm({
     return Object.keys(next).length === 0
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    // Guard is claimed as the very first thing this handler does, before any
-    // other logic — a second overlapping submit (double-tap, or a second
-    // click event queued before this one finishes its synchronous prefix)
-    // must see the flag already set. Reset in every early-return branch below
-    // so a mere validation failure doesn't leave the form stuck disabled.
-    if (submittingRef.current) return
-    submittingRef.current = true
-
-    if (!openStatus.open) { submittingRef.current = false; return }
-    if (!validate()) { submittingRef.current = false; return }
-
-    // Cart items must still belong to this branch's currently-available
-    // product set — catches an item deleted/made unavailable since it was
-    // added, mirroring production's own validateCartAgainstProducts check
-    // (TASK-CART-003), without needing per-item UI badges (kept minimal,
-    // per this phase's "don't redesign checkout" instruction).
-    const availableSet = new Set(availableProductIds)
-    if (items.some((i) => !availableSet.has(i.productId))) {
-      submittingRef.current = false
-      setStatus('error')
-      setErrorMessage(itemsUnavailableMessage[lang])
-      return
-    }
-
-    setStatus('submitting')
-    setErrorMessage('')
-
-    // options only ever carries {groupName, choiceName} — never a price.
-    // create_order looks up the real choice price itself from the live
-    // products.options row and rejects anything that doesn't match a real
-    // choice, so there is nothing for the client to assert about price here.
-    const rpcItems = items.map((i) => ({
-      product_id: i.productId,
-      quantity: i.qty,
-      notes: '',
-      options: i.selectedOptions.map((o) => ({ groupName: o.groupName, choiceName: o.choiceName })),
-    }))
-
-    const client = supabaseBrowser()
-    if (!client) {
-      submittingRef.current = false
-      setStatus('error')
-      setErrorMessage(networkErrorMessage[lang])
-      return
-    }
-
-    // menu-next has no generated Supabase `Database` type (no codegen step in
-    // this project), so the client's .rpc() falls back to a strict default
-    // overload that rejects a second argument entirely. The `as any` here is
-    // scoped to this one call's argument object only — it does not weaken
-    // anything else, and the actual param names/shapes above are exactly
-    // create_order's real signature, verified against the live schema in
-    // Phase 4C, not guessed.
-    // Section 1B: when the branch has real tables, the dropdown's selected
-    // tableId is the source of truth — create_order re-validates it belongs
-    // to this exact restaurant+branch and derives the authoritative
-    // table_number itself, so the client-sent p_table_number is only a
-    // legacy/no-tables-configured fallback, never trusted over p_table_id.
-    const selectedTable = branchTables.find((tb) => tb.id === tableId)
-    const rpcArgs = {
-      p_restaurant_id: restaurantId,
-      p_branch_id: branchId,
-      p_table_number: resolvedTableName ?? (orderType === 'dine_in' ? (selectedTable?.table_number ?? tableNumber.trim()) : null),
-      p_delivery_address: resolvedTableName ? null : (orderType === 'delivery' ? deliveryAddress.trim() : null),
-      p_customer_name: customerName.trim() || null,
-      p_customer_phone: customerPhone,
-      p_type: resolvedTableName ? 'dine_in' : orderType,
-      p_items: rpcItems,
-      p_notes: orderNote.trim(),
-      p_coupon_code: appliedCoupon?.code ?? null,
-      p_client_total: total,
-      p_idempotency_key: idempotencyKey,
-      p_table_id: resolvedTableName ? null : (orderType === 'dine_in' ? (selectedTable?.id ?? null) : null),
-      // Car Pickup (Phase 2): only ever sent for this exact order type — every
-      // other type keeps sending null, byte-for-byte the same call it made
-      // before this field existed. create_order (Phase 1) itself already
-      // forces car_info to NULL server-side for any type other than
-      // car_pickup regardless of what's sent, so this is belt-and-suspenders,
-      // not the actual security boundary.
-      p_car_info: orderType === 'car_pickup' ? (carInfo.trim() || null) : null,
-    }
-
-    let result
-    try {
-      // #3 table-to-invoice: a resolved QR token calls the dedicated
-      // create_order_from_table_qr RPC (re-verifies the token server-side,
-      // resolves restaurant/branch/table itself — never from the client —
-      // then calls the same unmodified create_order internally and stamps
-      // the resulting order with the real table_id/source='qr'). Everything
-      // else (delivery, takeaway, manual dine-in with a typed table number)
-      // is untouched and still calls generic create_order exactly as before.
-      result = resolvedTableToken
-        ? await client.rpc('create_order_from_table_qr', {
-            p_qr_token: resolvedTableToken,
-            p_items: rpcItems,
-            p_customer_name: rpcArgs.p_customer_name,
-            p_customer_phone: rpcArgs.p_customer_phone,
-            p_notes: rpcArgs.p_notes,
-            p_coupon_code: rpcArgs.p_coupon_code,
-            p_client_total: rpcArgs.p_client_total,
-            p_idempotency_key: idempotencyKey,
-          } as never).single()
-        : await client.rpc('create_order', rpcArgs as never).single()
-    } catch {
-      // Network exception (offline, DNS, etc.) — never shown as a raw error.
-      submittingRef.current = false
-      setStatus('error')
-      setErrorMessage(networkErrorMessage[lang])
-      return
-    }
-
-    const { data, error } = result as { data: { id: string; order_number: string; total: number; price_changed: boolean; access_token: string | null } | null; error: { message: string } | null }
-
+  // Shared by both the phoneVerificationEnabled=false path (client.rpc
+  // result) and the =true path (fetch('/api/customer/checkout') result,
+  // both immediate and post-OTP-retry) — exactly today's existing
+  // success/error handling, unmodified, just no longer duplicated.
+  type OrderResult = { id: string; order_number: string; total: number; price_changed: boolean; access_token: string | null }
+  const finishSubmission = (
+    data: OrderResult | null,
+    error: { message: string } | null,
+    finishedRpcArgs: typeof rpcArgsRef.current,
+    finishedRpcItems: typeof rpcItemsRef.current,
+  ) => {
     if (error) {
       // Full technical error stays in the dev console only — never shown to the customer.
       console.error('create_order error:', error)
@@ -351,9 +268,9 @@ export function CheckoutForm({
       id: data.id,
       orderNumber: data.order_number,
       status: 'pending',
-      items: rpcItems.map((i) => ({ id: i.product_id, qty: i.quantity, unavailable: false })),
+      items: finishedRpcItems!.map((i) => ({ id: i.product_id, qty: i.quantity, unavailable: false })),
       total: data.total,
-      tableNumber: rpcArgs.p_table_number,
+      tableNumber: finishedRpcArgs!.p_table_number,
       createdAt: Date.now(),
       accessToken: data.access_token,
       branchId,
@@ -366,6 +283,298 @@ export function CheckoutForm({
       ...(lang === 'en' ? { lang: 'en' } : {}),
     })
     router.push(`/menu/${slug}/order/${data.id}?${qs.toString()}`)
+  }
+
+  // Phase 3C.3 — only ever populated/read when phoneVerificationEnabled is
+  // true. Holds exactly the same request shape the direct-RPC path already
+  // built, so the post-OTP-verification retry resubmits the identical order
+  // without rebuilding or re-validating anything — nothing about the order
+  // changed, only the auth state.
+  const pendingCheckoutRef = useRef<{ body: Record<string, unknown>; isQr: boolean } | null>(null)
+  const rpcArgsRef = useRef<ReturnType<typeof buildRpcArgs> | null>(null)
+  const rpcItemsRef = useRef<ReturnType<typeof buildRpcItems> | null>(null)
+
+  function buildRpcItems() {
+    // options only ever carries {groupName, choiceName} — never a price.
+    // create_order looks up the real choice price itself from the live
+    // products.options row and rejects anything that doesn't match a real
+    // choice, so there is nothing for the client to assert about price here.
+    return items.map((i) => ({
+      product_id: i.productId,
+      quantity: i.qty,
+      notes: '',
+      options: i.selectedOptions.map((o) => ({ groupName: o.groupName, choiceName: o.choiceName })),
+    }))
+  }
+
+  function buildRpcArgs(rpcItems: ReturnType<typeof buildRpcItems>) {
+    // Section 1B: when the branch has real tables, the dropdown's selected
+    // tableId is the source of truth — create_order re-validates it belongs
+    // to this exact restaurant+branch and derives the authoritative
+    // table_number itself, so the client-sent p_table_number is only a
+    // legacy/no-tables-configured fallback, never trusted over p_table_id.
+    const selectedTable = branchTables.find((tb) => tb.id === tableId)
+    return {
+      p_restaurant_id: restaurantId,
+      p_branch_id: branchId,
+      p_table_number: resolvedTableName ?? (orderType === 'dine_in' ? (selectedTable?.table_number ?? tableNumber.trim()) : null),
+      p_delivery_address: resolvedTableName ? null : (orderType === 'delivery' ? deliveryAddress.trim() : null),
+      p_customer_name: customerName.trim() || null,
+      p_customer_phone: customerPhone,
+      p_type: resolvedTableName ? 'dine_in' : orderType,
+      p_items: rpcItems,
+      p_notes: orderNote.trim(),
+      p_coupon_code: appliedCoupon?.code ?? null,
+      p_client_total: total,
+      p_idempotency_key: idempotencyKey,
+      p_table_id: resolvedTableName ? null : (orderType === 'dine_in' ? (selectedTable?.id ?? null) : null),
+      // Car Pickup (Phase 2): only ever sent for this exact order type — every
+      // other type keeps sending null, byte-for-byte the same call it made
+      // before this field existed. create_order (Phase 1) itself already
+      // forces car_info to NULL server-side for any type other than
+      // car_pickup regardless of what's sent, so this is belt-and-suspenders,
+      // not the actual security boundary.
+      p_car_info: orderType === 'car_pickup' ? (carInfo.trim() || null) : null,
+    }
+  }
+
+  // Phase 3C.3 — the ONLY place this file ever calls the new server-side
+  // boundary. Always same-origin (relative URL), so the browser attaches
+  // the HttpOnly session cookie automatically — nothing here can read or
+  // set it. Returns a 4th field, `unauthorized`, distinct from `error`: a
+  // 401 is not a create_order failure, it's "no valid session yet," which
+  // the caller handles by starting the OTP step, never by showing an error.
+  async function submitViaCheckoutApi(body: Record<string, unknown>): Promise<{ data: OrderResult | null; error: { message: string } | null; unauthorized: boolean }> {
+    let res: Response
+    try {
+      res = await fetch('/api/customer/checkout', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    } catch {
+      return { data: null, error: { message: 'network_error' }, unauthorized: false }
+    }
+    if (res.status === 401) {
+      return { data: null, error: null, unauthorized: true }
+    }
+    let payload: unknown = null
+    try {
+      payload = await res.json()
+    } catch {
+      return { data: null, error: { message: 'network_error' }, unauthorized: false }
+    }
+    if (!res.ok) {
+      const message = payload && typeof payload === 'object' && 'error' in payload ? String((payload as { error: unknown }).error) : 'internal_error'
+      return { data: null, error: { message }, unauthorized: false }
+    }
+    return { data: payload as OrderResult, error: null, unauthorized: false }
+  }
+
+  // Phase 3C.3 — reuses the EXISTING, UNMODIFIED send-phone-otp Edge
+  // Function via the same anon-key browser client already used elsewhere in
+  // this file (coupons, direct RPC calls) — no new call mechanism. A
+  // {status:'rejected'} response (Phase 2.1's IP-abuse layer) is treated
+  // identically to {status:'sent'} on purpose: the backend deliberately
+  // makes these indistinguishable to avoid leaking an abuse-detection
+  // signal, and this UI must not undo that by reacting differently.
+  async function sendOtp(): Promise<boolean> {
+    const client = supabaseBrowser()
+    if (!client) return false
+    try {
+      const { data, error } = await client.functions.invoke('send-phone-otp', { body: { phone: customerPhone } })
+      if (error) return false
+      const status = data && typeof data === 'object' ? (data as { status?: string }).status : null
+      return status === 'sent' || status === 'rejected'
+    } catch {
+      return false
+    }
+  }
+
+  const startVerification = async () => {
+    setStatus('verifying')
+    setOtpError('')
+    setOtpCode('')
+    setSendingOtp(true)
+    const ok = await sendOtp()
+    setSendingOtp(false)
+    if (!ok) {
+      setStatus('error')
+      submittingRef.current = false
+      setErrorMessage(strings.otpErrorSendFailed)
+    }
+  }
+
+  const handleResendOtp = async () => {
+    if (sendingOtp) return
+    setOtpError('')
+    setSendingOtp(true)
+    const ok = await sendOtp()
+    setSendingOtp(false)
+    if (!ok) setOtpError(strings.otpErrorSendFailed)
+  }
+
+  // Phase 3C.3 — the ONLY place this file ever calls the existing, unmodified
+  // verify-otp Route Handler. On success, the browser now holds the session
+  // cookie (set by that endpoint's own Set-Cookie response header — this
+  // code never sees or touches the token itself), so the ORIGINAL pending
+  // order is resubmitted automatically via the same submitViaCheckoutApi()
+  // — no re-validation, no rebuilt payload, just a retry now that a session
+  // exists.
+  const handleOtpVerify = async () => {
+    if (!/^[0-9]{6}$/.test(otpCode)) { setOtpError(strings.otpErrorInvalid); return }
+    setOtpError('')
+    setStatus('submitting')
+    let res: Response
+    try {
+      res = await fetch('/api/customer/verify-otp', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: customerPhone, code: otpCode }),
+      })
+    } catch {
+      setStatus('verifying')
+      setOtpError(strings.otpErrorGeneric)
+      return
+    }
+    let payload: { verified?: boolean } | null = null
+    try {
+      payload = await res.json()
+    } catch {
+      payload = null
+    }
+    if (!res.ok || !payload?.verified) {
+      setStatus('verifying')
+      setOtpError(strings.otpErrorInvalid)
+      return
+    }
+
+    const pending = pendingCheckoutRef.current
+    if (!pending) {
+      // Should not be reachable — verification only ever starts after a
+      // pending checkout body was stored. Fail safely rather than guess.
+      submittingRef.current = false
+      setStatus('error')
+      setErrorMessage(networkErrorMessage[lang])
+      return
+    }
+    const { data, error } = await submitViaCheckoutApi(pending.body)
+    if (error) {
+      finishSubmission(null, error, rpcArgsRef.current, rpcItemsRef.current)
+      return
+    }
+    // A second 401 here (session created moments ago, then immediately
+    // invalid) is treated as a generic error rather than looping back into
+    // another OTP round — same fail-safe posture as the "no pending" branch
+    // above, never a silent retry loop.
+    finishSubmission(data, null, rpcArgsRef.current, rpcItemsRef.current)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    // Guard is claimed as the very first thing this handler does, before any
+    // other logic — a second overlapping submit (double-tap, or a second
+    // click event queued before this one finishes its synchronous prefix)
+    // must see the flag already set. Reset in every early-return branch below
+    // so a mere validation failure doesn't leave the form stuck disabled.
+    if (submittingRef.current) return
+    submittingRef.current = true
+
+    if (!openStatus.open) { submittingRef.current = false; return }
+    if (!validate()) { submittingRef.current = false; return }
+
+    // Cart items must still belong to this branch's currently-available
+    // product set — catches an item deleted/made unavailable since it was
+    // added, mirroring production's own validateCartAgainstProducts check
+    // (TASK-CART-003), without needing per-item UI badges (kept minimal,
+    // per this phase's "don't redesign checkout" instruction).
+    const availableSet = new Set(availableProductIds)
+    if (items.some((i) => !availableSet.has(i.productId))) {
+      submittingRef.current = false
+      setStatus('error')
+      setErrorMessage(itemsUnavailableMessage[lang])
+      return
+    }
+
+    setStatus('submitting')
+    setErrorMessage('')
+
+    const rpcItems = buildRpcItems()
+    const rpcArgs = buildRpcArgs(rpcItems)
+    rpcArgsRef.current = rpcArgs
+    rpcItemsRef.current = rpcItems
+
+    // Phase 3C.3 — the ONLY branch point this phase adds. When the flag is
+    // false (today's global default), execution never reaches the fetch
+    // path below at all — this half is byte-for-byte the same direct-RPC
+    // call this file already made before this phase existed.
+    if (!phoneVerificationEnabled) {
+      const client = supabaseBrowser()
+      if (!client) {
+        submittingRef.current = false
+        setStatus('error')
+        setErrorMessage(networkErrorMessage[lang])
+        return
+      }
+      let result
+      try {
+        // #3 table-to-invoice: a resolved QR token calls the dedicated
+        // create_order_from_table_qr RPC (re-verifies the token server-side,
+        // resolves restaurant/branch/table itself — never from the client —
+        // then calls the same unmodified create_order internally and stamps
+        // the resulting order with the real table_id/source='qr'). Everything
+        // else (delivery, takeaway, manual dine-in with a typed table number)
+        // is untouched and still calls generic create_order exactly as before.
+        result = resolvedTableToken
+          ? await client.rpc('create_order_from_table_qr', {
+              p_qr_token: resolvedTableToken,
+              p_items: rpcItems,
+              p_customer_name: rpcArgs.p_customer_name,
+              p_customer_phone: rpcArgs.p_customer_phone,
+              p_notes: rpcArgs.p_notes,
+              p_coupon_code: rpcArgs.p_coupon_code,
+              p_client_total: rpcArgs.p_client_total,
+              p_idempotency_key: idempotencyKey,
+            } as never).single()
+          : await client.rpc('create_order', rpcArgs as never).single()
+      } catch {
+        // Network exception (offline, DNS, etc.) — never shown as a raw error.
+        submittingRef.current = false
+        setStatus('error')
+        setErrorMessage(networkErrorMessage[lang])
+        return
+      }
+      const { data, error } = result as { data: OrderResult | null; error: { message: string } | null }
+      finishSubmission(data, error, rpcArgs, rpcItems)
+      return
+    }
+
+    // Phase 3C.3 — session-aware path. Same field names/shapes as rpcArgs
+    // above (the Route Handler was built to accept exactly this shape) —
+    // the only difference is customer_id is never part of this body at all;
+    // the server derives it from the session cookie, never from here.
+    const checkoutBody: Record<string, unknown> = resolvedTableToken
+      ? {
+          p_qr_token: resolvedTableToken,
+          p_items: rpcItems,
+          p_customer_name: rpcArgs.p_customer_name,
+          p_customer_phone: rpcArgs.p_customer_phone,
+          p_notes: rpcArgs.p_notes,
+          p_coupon_code: rpcArgs.p_coupon_code,
+          p_client_total: rpcArgs.p_client_total,
+          p_idempotency_key: idempotencyKey,
+        }
+      : rpcArgs
+    pendingCheckoutRef.current = { body: checkoutBody, isQr: Boolean(resolvedTableToken) }
+
+    const { data, error, unauthorized } = await submitViaCheckoutApi(checkoutBody)
+    if (unauthorized) {
+      await startVerification()
+      return
+    }
+    finishSubmission(data, error, rpcArgs, rpcItems)
   }
 
   return (
@@ -518,9 +727,43 @@ export function CheckoutForm({
         </div>
       )}
 
-      <button type="submit" className="checkout-form__submit" style={{ background: openStatus.open ? priceColor : '#E5E7EB' }} disabled={!openStatus.open || status === 'submitting'}>
-        {status === 'submitting' ? strings.processing : status === 'error' ? strings.tryAgain : strings.reviewOrder}
-      </button>
+      {/* Phase 3C.3 — only reachable when phoneVerificationEnabled is true
+          AND the checkout attempt above answered 401. Replaces the submit
+          button entirely while active; the cart/summary above stays visible
+          and unchanged so the customer isn't confused about losing their
+          order. */}
+      {status === 'verifying' ? (
+        <div className="checkout-form__section" role="alert">
+          <p className="checkout-form__label">{strings.otpVerifyTitle}</p>
+          <p>{strings.otpVerifyBody}</p>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            value={otpCode}
+            onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+            placeholder={strings.otpCodePh}
+            className="checkout-form__input"
+          />
+          {otpError && <span className="checkout-form__error">{otpError}</span>}
+          <button
+            type="button"
+            className="checkout-form__submit"
+            style={{ background: priceColor }}
+            disabled={otpCode.length !== 6}
+            onClick={handleOtpVerify}
+          >
+            {strings.otpVerifyButton}
+          </button>
+          <button type="button" className="checkout-form__coupon-apply" disabled={sendingOtp} onClick={handleResendOtp}>
+            {strings.otpResend}
+          </button>
+        </div>
+      ) : (
+        <button type="submit" className="checkout-form__submit" style={{ background: openStatus.open ? priceColor : '#E5E7EB' }} disabled={!openStatus.open || status === 'submitting'}>
+          {status === 'submitting' ? strings.processing : status === 'error' ? strings.tryAgain : strings.reviewOrder}
+        </button>
+      )}
     </form>
   )
 }

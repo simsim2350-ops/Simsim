@@ -99,6 +99,22 @@ export async function getMenuBranding(restaurantId: string): Promise<{ show: boo
   return { show: Boolean(row.show), text: row.text ?? null, url: row.url ?? null, variant: row.variant ?? null }
 }
 
+// Phase 3C.3 — resolves the EXISTING, UNMODIFIED Feature Registry capability
+// `phone_verification` for this restaurant via the EXISTING, UNMODIFIED
+// feature_value() resolver (restaurant override → plan → global default —
+// unchanged, platform-admin-controlled chain, never a restaurant self-toggle).
+// Fails closed to `false` (today's exact checkout behavior) on any error or
+// missing client, matching this file's own null/false-on-failure convention
+// throughout — an RPC hiccup must never accidentally start requiring a
+// session that doesn't exist yet.
+export async function getPhoneVerificationEnabled(restaurantId: string): Promise<boolean> {
+  const supabase = supabaseServer()
+  if (!supabase) return false
+  const { data, error } = await supabase.rpc('feature_value', { p_restaurant_id: restaurantId, p_key: 'phone_verification' } as never)
+  if (error) return false
+  return data === true
+}
+
 // "يعجب زبائننا" (Customer Favorites) — ported verbatim from useMenuData.js: rank the branch's
 // own available products by total quantity ordered across get_recent_order_items' real,
 // non-cancelled orders from the last 30 days (that RPC's own window — unchanged), top 4.
