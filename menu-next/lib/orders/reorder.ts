@@ -13,7 +13,12 @@ export type ReorderResult = {
   skippedCount: number
 }
 
-export async function resolveReorder(order: StoredOrder): Promise<ReorderResult> {
+// Narrowed to just the two fields this function actually reads, so a caller
+// that doesn't have a full StoredOrder (e.g. OrderStatusView.tsx's own
+// OrderStatusData, which never carries orderNumber/tableNumber/etc.) can
+// still reuse this exact same function rather than a second reorder
+// implementation being written for it.
+export async function resolveReorder(order: Pick<StoredOrder, 'items' | 'branchId'>): Promise<ReorderResult> {
   const client = supabaseBrowser()
   if (!client || !order.branchId) return { matched: [], skippedCount: order.items.length }
 

@@ -797,7 +797,10 @@ html, body {
 }
 @keyframes order-status-spin { to { transform: rotate(360deg); } }
 
-.order-status { padding: 24px 16px 60px; max-width: 420px; margin: 0 auto; }
+/* Top padding trimmed from the previous 24px — the brief specifically asks
+   to cut unnecessary top whitespace so the current status is reachable with
+   minimal scroll on a phone. */
+.order-status { padding: 16px 16px 60px; max-width: 420px; margin: 0 auto; }
 
 .order-status__success-banner { text-align: center; margin-bottom: 18px; }
 .order-status__success-icon { font-size: 40px; margin-bottom: 8px; }
@@ -811,11 +814,28 @@ html, body {
 .order-status__row:last-child { border-bottom: none; }
 .order-status__row--total { font-weight: 900; font-size: 15px; padding-top: 8px; }
 
+/* "طلبك الآن" — the single most prominent element on the page, per the
+   brief. Plain white/light per the existing visual language (no new colors
+   beyond the restaurant's own priceColor already used everywhere else on
+   this page) — just given real weight via size and a colored accent border,
+   not a loud fill. */
+.order-status__current {
+  background: white; border: 1.5px solid #EEF0F3; border-inline-start-width: 4px;
+  border-radius: 14px; padding: 16px; margin-bottom: 14px; text-align: center;
+}
+.order-status__current-title { font-size: 12px; font-weight: 700; color: #9CA3AF; margin-bottom: 6px; }
+.order-status__current-label { font-size: 22px; font-weight: 900; }
+.order-status__current-desc { font-size: 13px; color: #6B7280; margin: 6px 0 0; }
+
 .order-status__live {
   display: flex; align-items: center; gap: 6px; justify-content: center; font-size: 11.5px;
   font-weight: 700; color: #10B981; margin-bottom: 14px;
 }
 .order-status__live-dot { width: 7px; height: 7px; border-radius: 50%; background: #10B981; animation: order-status-blink 2s infinite; }
+/* Never claims "live" while the channel isn't actually connected — an amber,
+   non-claiming color instead of the green "تحديث مباشر" dot. */
+.order-status__live--reconnecting { color: #B45309; }
+.order-status__live-dot--off { background: #F59E0B; }
 @keyframes order-status-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
 .order-status__timeline { display: flex; justify-content: space-between; margin: 20px 4px; position: relative; }
@@ -833,7 +853,30 @@ html, body {
 .order-status__cancelled-label { font-weight: 900; font-size: 15px; color: #B91C1C; margin-bottom: 6px; }
 .order-status__cancelled p { font-size: 12.5px; color: #7F1D1D; margin: 2px 0; }
 
-.order-status__completed-note { text-align: center; font-size: 13px; color: #059669; font-weight: 700; margin: 14px 0; }
+/* Order Summary — real order.items only (OrderStatusView.tsx's namedItems).
+   Reuses the exact same .order-status__row/--total rule already defined
+   above for the info card, so the total here reads identically to every
+   other total on this page — not a second style for the same number. */
+.order-status__summary { background: white; border: 1px solid #EEF0F3; border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; }
+.order-status__summary-title { font-size: 12.5px; font-weight: 800; color: #9CA3AF; margin-bottom: 8px; }
+.order-status__summary-list { margin-bottom: 4px; }
+.order-status__summary-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 4px 0; }
+
+/* Order Completion celebration (#9) — reuses .my-orders__stars/__review-input/
+   __review-submit/__reorder-feedback (My Orders' own rating/reorder-feedback
+   styles) verbatim, so a customer sees the same rating UI whether they land
+   here from a fresh order or from My Orders — one visual language, not two. */
+.order-status__celebration { text-align: center; padding: 18px 14px; background: #F0FDF4; border: 1px solid #DCFCE7; border-radius: 14px; margin-bottom: 16px; }
+.order-status__celebration-title { font-size: 19px; font-weight: 900; margin-bottom: 4px; }
+.order-status__celebration p { font-size: 13px; color: #166534; margin: 0 0 12px; }
+.order-status__review { text-align: center; margin-top: 4px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.06); }
+.order-status__review-prompt { font-size: 13.5px; font-weight: 800; margin-bottom: 8px; }
+.order-status__reorder-btn {
+  width: 100%; margin-top: 12px; padding: 12px; border: none; border-radius: 12px; color: white;
+  font-family: 'Tajawal', sans-serif; font-weight: 800; font-size: 14px; cursor: pointer;
+}
+.order-status__reorder-btn:disabled { opacity: 0.6; cursor: default; }
+
 .order-status__updated { text-align: center; font-size: 11px; color: #9CA3AF; margin: 10px 0 4px; }
 .order-status__back { display: block; text-align: center; margin: 16px auto 0; width: fit-content; }
 

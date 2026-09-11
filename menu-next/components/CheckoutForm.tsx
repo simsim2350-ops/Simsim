@@ -276,7 +276,13 @@ export function CheckoutForm({
       id: data.id,
       orderNumber: data.order_number,
       status: 'pending',
-      items: finishedRpcItems!.map((i) => ({ id: i.product_id, qty: i.quantity, unavailable: false })),
+      // finishedRpcItems is items.map(...) (buildRpcItems) — same order, same
+      // length, one entry per cart line — so items[idx] is exactly that
+      // line's own rich CartItem (name/price), never a productId lookup that
+      // could pick the wrong line when the same product appears twice with
+      // different options. Stored so My Orders / this order's own summary
+      // can show real product names without a second fetch.
+      items: finishedRpcItems!.map((i, idx) => ({ id: i.product_id, qty: i.quantity, unavailable: false, name: items[idx]?.name, name_en: items[idx]?.nameEn })),
       total: data.total,
       tableNumber: finishedRpcArgs!.p_table_number,
       createdAt: Date.now(),
@@ -287,6 +293,11 @@ export function CheckoutForm({
       fresh: '1',
       branch: branchName,
       placedAt: new Date().toISOString(),
+      // Additive only — the order-status page's own get_orders_status_secure
+      // RPC never returns branch_id, so this is the one safe way for that
+      // page to reuse the existing Reorder function (which needs it) without
+      // a backend/RPC change.
+      branchId,
       ...(data.access_token ? { token: data.access_token } : {}),
       ...(lang === 'en' ? { lang: 'en' } : {}),
     })

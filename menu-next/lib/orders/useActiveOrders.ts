@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabaseBrowser } from '@/lib/supabase/client'
 import { readActiveOrders, writeActiveOrders } from './activeOrders'
-import type { StoredOrder } from './types'
+import { mergeBroadcastItems, type StoredOrder } from './types'
 
 // Faithful, simplified port of production's
 // src/features/menu/hooks/useActiveOrders.js: localStorage-persisted order
@@ -55,7 +55,7 @@ export function useActiveOrders(slug: string) {
           const p = message.payload as { order_id?: string; status?: StoredOrder['status']; cancelled_by?: string | null; items?: StoredOrder['items']; total?: number } | undefined
           if (!p || p.order_id !== order.id || !p.status) return
           setOrders((prev) => prev.map((o) => (o.id === order.id
-            ? { ...o, status: p.status as StoredOrder['status'], cancelledBy: p.cancelled_by ?? o.cancelledBy, items: p.items ?? o.items, total: p.total ?? o.total }
+            ? { ...o, status: p.status as StoredOrder['status'], cancelledBy: p.cancelled_by ?? o.cancelledBy, items: mergeBroadcastItems(o.items, p.items), total: p.total ?? o.total }
             : o)))
         })
         .subscribe()

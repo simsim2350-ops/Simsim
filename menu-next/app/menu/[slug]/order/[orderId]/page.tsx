@@ -5,7 +5,7 @@ import type { Lang } from '@/lib/types'
 import { OrderStatusView } from '@/components/OrderStatusView'
 
 type Params = { slug: string; orderId: string }
-type Search = { token?: string; fresh?: string; branch?: string; placedAt?: string; lang?: string }
+type Search = { token?: string; fresh?: string; branch?: string; branchId?: string; placedAt?: string; lang?: string }
 
 function resolveLang(search: Search): Lang {
   return search.lang === 'en' ? 'en' : 'ar'
@@ -64,6 +64,7 @@ export default async function OrderStatusPage({
         slug={slug}
         restaurantName={restaurant.name}
         branchName={search.branch ?? null}
+        branchId={search.branchId ?? null}
         placedAt={search.placedAt ?? null}
         currency={currency}
         priceColor={priceColor}
