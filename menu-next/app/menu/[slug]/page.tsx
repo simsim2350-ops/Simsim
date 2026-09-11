@@ -72,7 +72,7 @@ export default async function MenuPage({
   // "categories" (best sellers/featured/favorites) built above.
   const navCategories = categories
     .filter((c) => (productsByCategory.get(c.id) ?? []).length > 0)
-    .map((c) => ({ id: c.id, name: lang === 'en' && c.name_en ? c.name_en : c.name }))
+    .map((c) => ({ id: c.id, name: lang === 'en' && c.name_en ? c.name_en : c.name, count: (productsByCategory.get(c.id) ?? []).length }))
   const branchName = lang === 'en' && branch.name_en ? branch.name_en : branch.name
   const openStatus = computeBranchOpenStatus(branch)
   const delivery = effectiveDeliverySettings(branch, restaurant)

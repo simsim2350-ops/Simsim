@@ -122,7 +122,7 @@ test.describe('Category Drawer locks background scroll', () => {
     const scrollDuringDrawer = await page.evaluate(() => window.scrollY)
     expect(scrollDuringDrawer).toBe(scrollBefore)
 
-    await page.locator('.category-drawer__close-btn').click()
+    await page.locator('.category-drawer__close').click()
     await expect(page.locator('.category-drawer-overlay')).toHaveCount(0)
     const overflowAfter = await page.evaluate(() => getComputedStyle(document.body).overflow)
     expect(overflowAfter).not.toBe('hidden')
