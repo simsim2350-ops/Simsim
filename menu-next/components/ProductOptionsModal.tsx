@@ -16,6 +16,13 @@ type ModalProduct = {
   description?: string | null
   descriptionEn?: string | null
   price: number
+  // Real, already-fetched Product fields (products.compare_price/is_best_seller/
+  // calories) — optional because two of the three call sites into this modal
+  // still pass a slimmer object; when omitted, the badge/row they drive simply
+  // doesn't render (never a fake/zero fallback).
+  comparePrice?: number | null
+  isBestSeller?: boolean | null
+  calories?: number | null
   imageUrl: string | null
   emoji: string | null
   options: unknown
@@ -59,6 +66,15 @@ export function ProductOptionsModal({
   // Guards against a rapid double-tap on Confirm dispatching addToCart/
   // updateCartItem twice before onClose() unmounts this modal.
   const [confirming, setConfirming] = useState(false)
+  // Description clamp: a character-count heuristic (not a DOM measurement)
+  // decides whether "Show more" even appears — simple and avoids a layout-
+  // thrashing ResizeObserver for what is, at most, a 2-line CSS clamp.
+  const DESCRIPTION_CLAMP_THRESHOLD = 100
+  const [descExpanded, setDescExpanded] = useState(false)
+  // Fullscreen single-image viewer — the product only ever has one photo
+  // (products.image_url is a single column, not a gallery), so this is a
+  // simple full-viewport view of that same photo, not a carousel.
+  const [imageExpanded, setImageExpanded] = useState(false)
 
   // Smart Image Framing (Product Details image) — see lib/smartImageFraming.ts
   // for the full algorithm. In short: the photo's own pixels are analyzed
@@ -157,11 +173,17 @@ export function ProductOptionsModal({
 
   // Same WAI-ARIA dialog expectation as the cart sheet and the branch-conflict
   // dialog (Phase 6B accessibility pass) — Escape closes without confirming.
+  // While the lightbox is open, Escape closes just that (it's the top-most
+  // layer) rather than also dismissing the whole product sheet underneath.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (imageExpanded) { setImageExpanded(false); return }
+      onClose()
+    }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onClose, imageExpanded])
 
   const toggleSingle = (gi: number, ci: number) => {
     setSelections((prev) => ({ ...prev, [gi]: ci }))
@@ -225,7 +247,6 @@ export function ProductOptionsModal({
   return (
     <div className="options-modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
       <div className="options-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="options-modal__handle" />
         {/* Product image — Smart Image Framing (see lib/smartImageFraming.ts
             for the full algorithm): a bounded-height container regardless
             of the source photo's own dimensions, a softly blurred copy of
@@ -237,8 +258,11 @@ export function ProductOptionsModal({
             show visible junk. The subject itself is never cropped. No new
             image, no edit to the source file — every layer is the exact
             same product photo, same URL. Products without a real photo keep
-            exactly the same emoji-in-title-row they already had. */}
-        {product.imageUrl && (
+            exactly the same emoji-in-title-row they already had.
+            Close/handle/expand sit as overlays ON the photo (the hero is
+            meant to dominate the top of the sheet) rather than in a
+            separate chrome row above it. */}
+        {product.imageUrl ? (
           <div className="options-modal__media" ref={mediaRef} style={shrunkMediaHeight != null ? { height: shrunkMediaHeight } : undefined}>
             <div className="options-modal__media-fill" style={{ backgroundImage: `url(${product.imageUrl})` }} aria-hidden="true" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -249,28 +273,68 @@ export function ProductOptionsModal({
               className="options-modal__media-img"
               style={imgStyle ?? undefined}
             />
+            <div className="options-modal__handle options-modal__handle--overlay" />
+            <button type="button" className="options-modal__close options-modal__close--overlay" onClick={onClose} aria-label="close">✕</button>
+            <button type="button" className="options-modal__expand" onClick={() => setImageExpanded(true)} aria-label={strings.expandImage}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <div className="options-modal__no-media-bar">
+            <div className="options-modal__handle" />
+            <button type="button" className="options-modal__close" onClick={onClose} aria-label="close">✕</button>
           </div>
         )}
-        <div className="options-modal__header">
+
+        <div className="options-modal__body" ref={bodyRef} onScroll={handleBodyScroll}>
           <div className="options-modal__title-row">
             {!product.imageUrl && (
               <span className="options-modal__emoji" aria-hidden>{product.emoji || '🍽️'}</span>
             )}
             <h3 className="options-modal__name">{name}</h3>
           </div>
-          <button type="button" className="options-modal__close" onClick={onClose} aria-label="close">✕</button>
-        </div>
 
-        <div className="options-modal__body" ref={bodyRef} onScroll={handleBodyScroll}>
-          <div className="options-modal__base-price" style={{ color: priceColor, marginBottom: description ? 4 : undefined }}>
-            {formatPrice(product.price)} {currency}
+          {(product.isBestSeller || (product.comparePrice && product.comparePrice > product.price)) && (
+            <div className="options-modal__badges">
+              {product.isBestSeller && <span className="options-modal__badge-pill options-modal__badge-pill--best">{strings.badgeBestSeller}</span>}
+              {product.comparePrice != null && product.comparePrice > product.price && (
+                <span className="options-modal__badge-pill options-modal__badge-pill--offer">{strings.badgeOffer}</span>
+              )}
+            </div>
+          )}
+
+          <div className="options-modal__price-row">
+            <span className="options-modal__base-price" style={{ color: priceColor }}>
+              {formatPrice(product.price)} {currency}
+            </span>
+            {product.comparePrice != null && product.comparePrice > product.price && (
+              <span className="options-modal__compare-price">{formatPrice(product.comparePrice)} {currency}</span>
+            )}
+            {product.calories != null && (
+              <span className="options-modal__calories">🔥 {product.calories} {strings.calorieUnit}</span>
+            )}
           </div>
-          {description && <p className="options-modal__description">{description}</p>}
+
+          {description && (
+            <div className="options-modal__description-wrap">
+              <p className={`options-modal__description${descExpanded ? '' : ' is-clamped'}`}>{description}</p>
+              {description.length > DESCRIPTION_CLAMP_THRESHOLD && (
+                <button type="button" className="options-modal__desc-toggle" onClick={() => setDescExpanded((v) => !v)}>
+                  {descExpanded ? strings.readLess : strings.readMore}
+                </button>
+              )}
+            </div>
+          )}
 
           {groups.map((group, gi) => (
             <div key={group.name + gi} className="options-modal__group">
               <div className="options-modal__group-header">
-                <span className="options-modal__group-name">{group.name}</span>
+                <div className="options-modal__group-heading">
+                  <span className="options-modal__group-name">{group.name}</span>
+                  <span className="options-modal__group-type">{group.type === 'multiple' ? strings.multiChoiceLabel : strings.singleChoiceLabel}</span>
+                </div>
                 {group.required
                   ? <span className="options-modal__badge options-modal__badge--required">{strings.optionRequired}</span>
                   : <span className="options-modal__badge">{strings.optionOptional}</span>}
@@ -350,6 +414,19 @@ export function ProductOptionsModal({
           </button>
         </div>
       </div>
+
+      {/* Fullscreen single-photo viewer — same photo, same URL, no gallery
+          (products.image_url is one column, not an array); just a bigger,
+          unobstructed look at it. Sits above the sheet itself, closes on
+          Escape/backdrop/close-button without affecting any selection or
+          cart state. */}
+      {imageExpanded && product.imageUrl && (
+        <div className="options-modal__lightbox" onClick={() => setImageExpanded(false)} role="dialog" aria-modal="true" aria-label={strings.expandImage}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={product.imageUrl} alt={name} className="options-modal__lightbox-img" />
+          <button type="button" className="options-modal__lightbox-close" onClick={() => setImageExpanded(false)} aria-label="close">✕</button>
+        </div>
+      )}
     </div>
   )
 }
