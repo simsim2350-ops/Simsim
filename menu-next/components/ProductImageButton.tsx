@@ -50,7 +50,7 @@ export function ProductImageButton({
       </button>
       {detailsOpen && (
         <ProductOptionsModal
-          product={{ id: product.id, name: product.name, nameEn: product.name_en, price: product.price, imageUrl: product.image_url, emoji: product.emoji, options: product.options }}
+          product={{ id: product.id, name: product.name, nameEn: product.name_en, description: product.description, descriptionEn: product.description_en, price: product.price, imageUrl: product.image_url, emoji: product.emoji, options: product.options }}
           allProducts={allProducts}
           recommendationsMap={recommendationsMap}
           lang={lang}

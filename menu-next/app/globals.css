@@ -624,12 +624,14 @@ html, body {
 
 .options-modal-overlay {
   position: fixed; inset: 0; z-index: 220; display: flex; align-items: flex-end; justify-content: center;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.5); animation: options-modal-fade-in 0.2s ease-out;
 }
 .options-modal {
   background: white; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 90vh;
-  display: flex; flex-direction: column; overflow: hidden;
+  display: flex; flex-direction: column; overflow: hidden; animation: options-modal-slide-up 0.22s ease-out;
 }
+@keyframes options-modal-fade-in { from { opacity: 0; } }
+@keyframes options-modal-slide-up { from { transform: translateY(24px); opacity: 0.4; } }
 .options-modal__handle { width: 40px; height: 4px; background: #E5E7EB; border-radius: 2px; margin: 12px auto 0; flex-shrink: 0; }
 /* Product image inside Product Details — Smart Image Framing (the actual
    analysis lives in lib/smartImageFraming.ts; this is just the container/
@@ -674,6 +676,7 @@ html, body {
 
 .options-modal__body { flex: 1; overflow-y: auto; padding: 14px 20px 4px; min-height: 0; }
 .options-modal__base-price { font-size: 15px; font-weight: 900; margin-bottom: 16px; }
+.options-modal__description { font-size: 13px; font-weight: 500; color: #6B7280; line-height: 1.5; margin: 0 0 16px; }
 
 .options-modal__group { margin-bottom: 18px; }
 .options-modal__group-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
@@ -687,13 +690,16 @@ html, body {
 .options-modal__choice {
   display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 11px;
   border: 1.5px solid #E5E7EB; background: white; cursor: pointer; width: 100%; text-align: start;
-  font-family: 'Tajawal', sans-serif;
+  font-family: 'Tajawal', sans-serif; transition: border-color 0.15s ease, background-color 0.15s ease;
 }
+.options-modal__choice:focus-visible { outline: 2px solid #0B0B0F; outline-offset: 2px; }
 .options-modal__mark {
   width: 18px; height: 18px; flex-shrink: 0; border-radius: 50%; border: 2px solid #D1D5DB;
   display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; background: white;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
 }
 .options-modal__mark--square { border-radius: 5px; }
+.options-modal__choice.is-selected .options-modal__mark { transform: scale(1.05); }
 .options-modal__choice-name { flex: 1; font-size: 14px; font-weight: 600; }
 .options-modal__choice-price { font-size: 13px; font-weight: 700; flex-shrink: 0; }
 
@@ -705,11 +711,15 @@ html, body {
   display: flex; align-items: center; border: 1.5px solid #E5E7EB; border-radius: 12px; flex-shrink: 0;
 }
 .options-modal__qty button { width: 38px; height: 44px; border: none; background: none; font-size: 20px; cursor: pointer; }
+.options-modal__qty button:disabled { opacity: 0.35; cursor: default; }
+.options-modal__qty button:focus-visible, .options-modal__close:focus-visible { outline: 2px solid #0B0B0F; outline-offset: 2px; }
 .options-modal__qty span { min-width: 26px; text-align: center; font-size: 15px; font-weight: 800; }
 .options-modal__confirm {
   flex: 1; height: 48px; border: none; border-radius: 14px; color: white; font-weight: 800; font-size: 14px;
   cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 0 16px;
 }
+.options-modal__confirm:disabled { opacity: 0.65; cursor: default; }
+.options-modal__confirm:focus-visible { outline: 2px solid #0B0B0F; outline-offset: 3px; }
 
 @media (min-width: 1024px) {
   .options-modal-overlay { align-items: center; }

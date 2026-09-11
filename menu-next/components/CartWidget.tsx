@@ -135,7 +135,7 @@ export function CartWidget({
 
       {editingItem && editingProduct && (
         <ProductOptionsModal
-          product={{ id: editingProduct.id, name: editingProduct.name, nameEn: editingProduct.name_en, price: editingProduct.price, imageUrl: editingProduct.image_url, emoji: editingProduct.emoji, options: editingProduct.options }}
+          product={{ id: editingProduct.id, name: editingProduct.name, nameEn: editingProduct.name_en, description: editingProduct.description, descriptionEn: editingProduct.description_en, price: editingProduct.price, imageUrl: editingProduct.image_url, emoji: editingProduct.emoji, options: editingProduct.options }}
           lang={lang}
           currency={currency}
           priceColor={priceColor}

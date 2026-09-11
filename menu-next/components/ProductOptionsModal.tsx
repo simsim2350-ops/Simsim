@@ -13,6 +13,8 @@ type ModalProduct = {
   id: string
   name: string
   nameEn: string | null
+  description?: string | null
+  descriptionEn?: string | null
   price: number
   imageUrl: string | null
   emoji: string | null
@@ -44,6 +46,9 @@ export function ProductOptionsModal({
   const strings = t(lang)
   const groups = useMemo(() => normalizeOptionGroups(product.options), [product.options])
   const name = lang === 'en' && product.nameEn ? product.nameEn : product.name
+  // Real product.description(_en) only — never invented. Same lang-fallback
+  // pattern ProductCard.tsx already uses for the menu-list description.
+  const description = lang === 'en' ? product.descriptionEn || product.description : product.description
   const companions = !editing && allProducts && recommendationsMap
     ? getProductCompanions(product.id, allProducts, recommendationsMap)
     : []
@@ -51,6 +56,9 @@ export function ProductOptionsModal({
   const [qty, setQty] = useState(editing?.qty ?? 1)
   const [selections, setSelections] = useState<OptionSelections>(() => (editing ? selectionsFromResolved(editing.selectedOptions, groups) : {}))
   const [missingGroup, setMissingGroup] = useState<string | null>(null)
+  // Guards against a rapid double-tap on Confirm dispatching addToCart/
+  // updateCartItem twice before onClose() unmounts this modal.
+  const [confirming, setConfirming] = useState(false)
 
   // Smart Image Framing (Product Details image) — see lib/smartImageFraming.ts
   // for the full algorithm. In short: the photo's own pixels are analyzed
@@ -60,8 +68,22 @@ export function ProductOptionsModal({
   // fill the available container as much as possible without ever cropping
   // it. Purely content/dimension-driven; no product-specific logic.
   const mediaRef = useRef<HTMLDivElement>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
   const [framing, setFraming] = useState<FramingResult | null>(null)
   const [containerSize, setContainerSize] = useState<{ w: number; h: number } | null>(null)
+  // The media container's own laid-out height before any scroll-shrink is
+  // applied (captured once on mount/resize) — the base the shrink below
+  // subtracts from, so it never has to duplicate the CSS clamp() that sets
+  // that base height in globals.css.
+  const [baseMediaHeight, setBaseMediaHeight] = useState<number | null>(null)
+  // Product Hero: shrinks gradually as the body scrolls up, so the image
+  // never keeps eating screen space once the customer is reading options —
+  // same intent as a drag-to-shrink sheet gesture, but implemented against
+  // the body's own scroll (the sheet itself doesn't have a resize-by-drag
+  // gesture to hook into) so it can't conflict with existing scroll/drag
+  // behavior. rAF-throttled: at most one state update per frame.
+  const [scrollTop, setScrollTop] = useState(0)
+  const rafPending = useRef(false)
 
   useEffect(() => {
     if (!product.imageUrl) return
@@ -74,12 +96,40 @@ export function ProductOptionsModal({
     if (!product.imageUrl || !mediaRef.current) return
     const measure = () => {
       const rect = mediaRef.current?.getBoundingClientRect()
-      if (rect) setContainerSize({ w: rect.width, h: rect.height })
+      if (!rect) return
+      setContainerSize({ w: rect.width, h: rect.height })
+      setBaseMediaHeight((prev) => prev ?? rect.height)
     }
     measure()
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
   }, [product.imageUrl])
+
+  const SHRINK_RANGE = 90
+  const MIN_MEDIA_HEIGHT = 110
+  const shrunkMediaHeight = baseMediaHeight != null
+    ? Math.max(MIN_MEDIA_HEIGHT, baseMediaHeight - Math.min(scrollTop, SHRINK_RANGE))
+    : null
+
+  // Re-measure right after the shrink above changes the container's actual
+  // height, so imgStyle (below) keeps placing the photo correctly around
+  // its detected subject at the new size — reuses the exact same
+  // getBoundingClientRect() read the mount/resize effect already uses,
+  // rather than computing a second, parallel size.
+  useEffect(() => {
+    if (!product.imageUrl || !mediaRef.current || shrunkMediaHeight == null) return
+    const rect = mediaRef.current.getBoundingClientRect()
+    setContainerSize((prev) => (prev && prev.h === rect.height && prev.w === rect.width ? prev : { w: rect.width, h: rect.height }))
+  }, [shrunkMediaHeight, product.imageUrl])
+
+  const handleBodyScroll = () => {
+    if (rafPending.current) return
+    rafPending.current = true
+    requestAnimationFrame(() => {
+      rafPending.current = false
+      setScrollTop(bodyRef.current?.scrollTop ?? 0)
+    })
+  }
 
   // Final placement: scale so the detected content box (not the raw file's
   // own canvas) fills as much of the container as possible while staying
@@ -150,6 +200,7 @@ export function ProductOptionsModal({
   const formatPrice = (n: number) => n.toLocaleString(lang === 'en' ? 'en-US' : 'ar-SA')
 
   const handleConfirm = () => {
+    if (confirming) return
     // Required-group validation — a required "multiple" group only demands at
     // least one choice (the data carries no min/max beyond required/optional,
     // so "at least one" is the only limit that isn't invented); a required
@@ -161,6 +212,7 @@ export function ProductOptionsModal({
       const missing = group.type === 'multiple' ? !Array.isArray(sel) || sel.length === 0 : sel == null
       if (missing) { setMissingGroup(group.name); return }
     }
+    setConfirming(true)
     const productForCart = { id: product.id, name: product.name, nameEn: product.nameEn, price: product.price, imageUrl: product.imageUrl, emoji: product.emoji }
     if (editing) {
       updateCartItem(editing.cartKey, productForCart, selected, qty)
@@ -187,7 +239,7 @@ export function ProductOptionsModal({
             same product photo, same URL. Products without a real photo keep
             exactly the same emoji-in-title-row they already had. */}
         {product.imageUrl && (
-          <div className="options-modal__media" ref={mediaRef}>
+          <div className="options-modal__media" ref={mediaRef} style={shrunkMediaHeight != null ? { height: shrunkMediaHeight } : undefined}>
             <div className="options-modal__media-fill" style={{ backgroundImage: `url(${product.imageUrl})` }} aria-hidden="true" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -209,10 +261,11 @@ export function ProductOptionsModal({
           <button type="button" className="options-modal__close" onClick={onClose} aria-label="close">✕</button>
         </div>
 
-        <div className="options-modal__body">
-          <div className="options-modal__base-price" style={{ color: priceColor }}>
+        <div className="options-modal__body" ref={bodyRef} onScroll={handleBodyScroll}>
+          <div className="options-modal__base-price" style={{ color: priceColor, marginBottom: description ? 4 : undefined }}>
             {formatPrice(product.price)} {currency}
           </div>
+          {description && <p className="options-modal__description">{description}</p>}
 
           {groups.map((group, gi) => (
             <div key={group.name + gi} className="options-modal__group">
@@ -222,7 +275,12 @@ export function ProductOptionsModal({
                   ? <span className="options-modal__badge options-modal__badge--required">{strings.optionRequired}</span>
                   : <span className="options-modal__badge">{strings.optionOptional}</span>}
               </div>
-              <div className="options-modal__choices">
+              <div
+                className="options-modal__choices"
+                role={group.type === 'multiple' ? 'group' : 'radiogroup'}
+                aria-label={group.name}
+                aria-required={group.required}
+              >
                 {group.choices.map((choice, ci) => {
                   const isSelected = group.type === 'multiple'
                     ? Array.isArray(selections[gi]) && (selections[gi] as number[]).includes(ci)
@@ -230,6 +288,8 @@ export function ProductOptionsModal({
                   return (
                     <button
                       type="button"
+                      role={group.type === 'multiple' ? 'checkbox' : 'radio'}
+                      aria-checked={isSelected}
                       key={choice.name + ci}
                       className={`options-modal__choice${isSelected ? ' is-selected' : ''}`}
                       style={isSelected ? { borderColor: priceColor, background: `${priceColor}14` } : undefined}
@@ -280,11 +340,11 @@ export function ProductOptionsModal({
 
         <div className="options-modal__footer">
           <div className="options-modal__qty">
-            <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="decrease">−</button>
+            <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={qty <= 1} aria-label="decrease">−</button>
             <span>{qty}</span>
             <button type="button" onClick={() => setQty((q) => q + 1)} aria-label="increase">+</button>
           </div>
-          <button type="button" className="options-modal__confirm" style={{ background: priceColor }} onClick={handleConfirm}>
+          <button type="button" className="options-modal__confirm" style={{ background: priceColor }} onClick={handleConfirm} disabled={confirming} aria-busy={confirming}>
             <span>{editing ? strings.saveChanges : strings.addToCart}</span>
             <span>{formatPrice(unitPrice * qty)} {currency}</span>
           </button>
