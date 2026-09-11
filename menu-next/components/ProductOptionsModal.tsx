@@ -49,7 +49,7 @@ export function ProductOptionsModal({
   // replaces it in place instead of adding a new one.
   editing?: { cartKey: string; selectedOptions: SelectedOption[]; qty: number }
 }) {
-  const { addToCart, updateCartItem } = useCart()
+  const { addToCart, updateCartItem, items } = useCart()
   const strings = t(lang)
   const groups = useMemo(() => normalizeOptionGroups(product.options), [product.options])
   const name = lang === 'en' && product.nameEn ? product.nameEn : product.name
@@ -66,6 +66,24 @@ export function ProductOptionsModal({
   // Guards against a rapid double-tap on Confirm dispatching addToCart/
   // updateCartItem twice before onClose() unmounts this modal.
   const [confirming, setConfirming] = useState(false)
+  // "يكمل هذا الصنف" (companions) only ever appears once the customer has
+  // actually committed to the main product — never on first opening it
+  // (see the UX brief: seeing upsell for something not yet added reads as
+  // premature). Two ways that becomes true, checked once at mount / once on
+  // a real confirm — never a live subscription, per "استخدم الحالة الموجودة
+  // فقط":
+  // 1) alreadyInCart — the product was already in the cart before this
+  //    modal even opened (e.g. reopened from the menu after adding it).
+  // 2) addedOnce — set the moment THIS confirm click actually adds it.
+  const [alreadyInCart] = useState(() => !editing && items.some((i) => i.productId === product.id))
+  const [addedOnce, setAddedOnce] = useState(false)
+  const showCompanions = !editing && (alreadyInCart || addedOnce) && companions.length > 0
+  // Per-companion "just added" flash — same 900ms convention as
+  // AddToCartButton.tsx's own quick-add feedback elsewhere in this app, not
+  // a persistent "already in cart" lock (the brief explicitly says not to
+  // invent duplicate-prevention here; CartContext already handles repeat
+  // adds correctly on its own).
+  const [flashCompanionId, setFlashCompanionId] = useState<string | null>(null)
   // Description clamp: a character-count heuristic (not a DOM measurement)
   // decides whether "Show more" even appears — simple and avoids a layout-
   // thrashing ResizeObserver for what is, at most, a 2-line CSS clamp.
@@ -238,10 +256,21 @@ export function ProductOptionsModal({
     const productForCart = { id: product.id, name: product.name, nameEn: product.nameEn, price: product.price, imageUrl: product.imageUrl, emoji: product.emoji }
     if (editing) {
       updateCartItem(editing.cartKey, productForCart, selected, qty)
-    } else {
-      addToCart(productForCart, branchId, branchName, selected, qty)
+      onClose()
+      return
     }
-    onClose()
+    const result = addToCart(productForCart, branchId, branchName, selected, qty)
+    // A 'conflict' (a different branch is already in the cart) means the
+    // product was NOT actually added — BranchConflictModal (rendered by a
+    // parent, unchanged here) takes over from here exactly as it already
+    // did before this task; showing "added" + companions for something that
+    // wasn't added would be wrong, so this still just closes.
+    if (result !== 'added') { onClose(); return }
+    if (companions.length > 0) {
+      setAddedOnce(true)
+    } else {
+      onClose()
+    }
   }
 
   return (
@@ -372,25 +401,32 @@ export function ProductOptionsModal({
             </div>
           ))}
 
-          {companions.length > 0 && (
+          {showCompanions && (
             <div className="options-modal__companions">
               <div className="options-modal__companions-title">{strings.companionTitle}</div>
+              <p className="options-modal__companions-subtitle">{strings.companionSubtitle}</p>
               <div className="options-modal__companions-row">
                 {companions.map((p) => {
                   const cName = lang === 'en' && p.name_en ? p.name_en : p.name
+                  const justAdded = flashCompanionId === p.id
                   return (
                     <button
                       type="button"
                       key={p.id}
                       className="options-modal__companion"
                       aria-label={`${strings.addToCart}: ${cName}`}
-                      onClick={() => addToCart({ id: p.id, name: p.name, nameEn: p.name_en, price: p.price, imageUrl: p.image_url, emoji: p.emoji }, branchId, branchName)}
+                      onClick={() => {
+                        addToCart({ id: p.id, name: p.name, nameEn: p.name_en, price: p.price, imageUrl: p.image_url, emoji: p.emoji }, branchId, branchName)
+                        setFlashCompanionId(p.id)
+                        setTimeout(() => setFlashCompanionId((cur) => (cur === p.id ? null : cur)), 900)
+                      }}
                     >
                       <span className="options-modal__companion-media">
                         {p.image_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={p.image_url} alt="" loading="lazy" />
                         ) : (p.emoji || '🍽️')}
+                        <span className="options-modal__companion-badge" style={!justAdded ? { background: priceColor } : undefined} aria-hidden="true">{justAdded ? '✓' : '+'}</span>
                       </span>
                       <span className="options-modal__companion-name">{cName}</span>
                       <span className="options-modal__companion-price" style={{ color: priceColor }}>{formatPrice(p.price)} {currency}</span>
@@ -403,15 +439,27 @@ export function ProductOptionsModal({
         </div>
 
         <div className="options-modal__footer">
-          <div className="options-modal__qty">
-            <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={qty <= 1} aria-label="decrease">−</button>
-            <span>{qty}</span>
-            <button type="button" onClick={() => setQty((q) => q + 1)} aria-label="increase">+</button>
-          </div>
-          <button type="button" className="options-modal__confirm" style={{ background: priceColor }} onClick={handleConfirm} disabled={confirming} aria-busy={confirming}>
-            <span>{editing ? strings.saveChanges : strings.addToCart}</span>
-            <span>{formatPrice(unitPrice * qty)} {currency}</span>
-          </button>
+          {addedOnce ? (
+            // Replaces qty/confirm entirely once the main product is
+            // actually in the cart — matches the brief's mockup exactly
+            // (a single confirmation line, not a lingering editable qty for
+            // a line that's already committed). Re-adding another unit or
+            // changing options now happens the same way any other cart line
+            // is edited — from the cart itself (unchanged, existing flow).
+            <div className="options-modal__added-bar" role="status">{strings.productAddedConfirmation}</div>
+          ) : (
+            <>
+              <div className="options-modal__qty">
+                <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={qty <= 1} aria-label="decrease">−</button>
+                <span>{qty}</span>
+                <button type="button" onClick={() => setQty((q) => q + 1)} aria-label="increase">+</button>
+              </div>
+              <button type="button" className="options-modal__confirm" style={{ background: priceColor }} onClick={handleConfirm} disabled={confirming} aria-busy={confirming}>
+                <span>{editing ? strings.saveChanges : strings.addToCart}</span>
+                <span>{formatPrice(unitPrice * qty)} {currency}</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 

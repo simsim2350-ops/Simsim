@@ -46,7 +46,7 @@ test('menu for a restaurant with real (currently expired) banner/coupon rows: fe
   expect(consoleErrors).toEqual([])
 })
 
-test('a real, active companion recommendation renders inside the product modal and is addable', async ({ page }) => {
+test('a real, active companion recommendation only renders after the main product is added, and is itself addable', async ({ page }) => {
   const consoleErrors: string[] = []
   page.on('pageerror', (err) => consoleErrors.push(err.message))
   await page.goto(`/menu/${SIMSIM}`)
@@ -65,6 +65,17 @@ test('a real, active companion recommendation renders inside the product modal a
   // No option groups on this product — confirms the modal opened for the
   // companion rule, not for options.
   await expect(modal.locator('.options-modal__group')).toHaveCount(0)
+  // UX fix: "يكمل هذا الصنف" (companions) must not appear before the main
+  // product is actually confirmed added — seeing upsell for something not
+  // yet committed to reads as premature.
+  await expect(modal.locator('.options-modal__companions')).toHaveCount(0)
+
+  await modal.locator('.options-modal__confirm').click()
+  await expect(page.locator('.cart-bar')).toBeVisible()
+
+  // Now that the main product is in the cart, the companions section
+  // appears (still inside the same, still-open modal — no reload, no new
+  // modal), and a companion is directly addable.
   await expect(modal.locator('.options-modal__companions')).toBeVisible()
   const companion = modal.locator('.options-modal__companion').first()
   await expect(companion).toBeVisible()
@@ -75,7 +86,6 @@ test('a real, active companion recommendation renders inside the product modal a
   await expect(modal).toBeVisible()
 
   await modal.locator('.options-modal__close').click()
-  await expect(page.locator('.cart-bar')).toBeVisible()
   expect(consoleErrors).toEqual([])
 })
 
