@@ -11,7 +11,7 @@ import { ProductOptionsModal } from './ProductOptionsModal'
 export function AddToCartButton({
   product, allProducts, recommendationsMap, branchId, branchName, currency, priceColor, lang,
 }: {
-  product: { id: string; name: string; nameEn: string | null; description?: string | null; descriptionEn?: string | null; price: number; imageUrl: string | null; emoji: string | null; options: unknown }
+  product: { id: string; name: string; nameEn: string | null; description?: string | null; descriptionEn?: string | null; comparePrice?: number | null; isBestSeller?: boolean | null; calories?: number | null; price: number; imageUrl: string | null; emoji: string | null; options: unknown }
   allProducts?: Product[]
   recommendationsMap?: Record<string, string[]>
   branchId: string

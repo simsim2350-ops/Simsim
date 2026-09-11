@@ -633,6 +633,13 @@ html, body {
 @keyframes options-modal-fade-in { from { opacity: 0; } }
 @keyframes options-modal-slide-up { from { transform: translateY(24px); opacity: 0.4; } }
 .options-modal__handle { width: 40px; height: 4px; background: #E5E7EB; border-radius: 2px; margin: 12px auto 0; flex-shrink: 0; }
+/* Sitting on a photo of unknown color/contrast instead of a plain background
+   — semi-opaque white + shadow (and a blur where supported) so it reads
+   clearly against any product photo, light or dark. */
+.options-modal__handle--overlay {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%); margin: 0; z-index: 2;
+  background: rgba(255,255,255,0.85); box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
 /* Product image inside Product Details — Smart Image Framing (the actual
    analysis lives in lib/smartImageFraming.ts; this is just the container/
    layers it renders into):
@@ -652,10 +659,14 @@ html, body {
    - Container height is fluid via clamp(), never one flat value across all
      viewports (shorter on a narrow phone, capped once the modal hits its
      own 480px width cap) — bounded regardless of the photo's own aspect
-     ratio, so no single photo (tall or wide) can inflate the sheet. */
+     ratio, so no single photo (tall or wide) can inflate the sheet.
+     Height raised from the previous 200-260px range to 260-360px so the
+     photo genuinely reads as the page's hero, not a small thumbnail —
+     still clamp()-bounded, still shrinks further on scroll (see the JS
+     scroll-shrink logic in ProductOptionsModal.tsx, unchanged by this). */
 .options-modal__media {
-  position: relative; width: 100%; height: clamp(200px, 50vw, 260px); overflow: hidden;
-  background: #F3F4F6; border-radius: 16px 16px 0 0; flex-shrink: 0;
+  position: relative; width: 100%; height: clamp(260px, 62vw, 360px); overflow: hidden;
+  background: #F3F4F6; border-radius: 20px 20px 0 0; flex-shrink: 0;
 }
 .options-modal__media-fill {
   position: absolute; inset: 0; background-size: cover; background-position: center;
@@ -665,22 +676,58 @@ html, body {
   position: relative; width: 100%; height: 100%; object-fit: contain; object-position: center; display: block;
   transition: width 0.18s ease-out, height 0.18s ease-out, left 0.18s ease-out, top 0.18s ease-out;
 }
-.options-modal__header {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: 10px 20px 14px; border-bottom: 1px solid #E5E7EB; flex-shrink: 0;
+.options-modal__close {
+  flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid #E5E7EB;
+  background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px;
 }
-.options-modal__title-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.options-modal__emoji { font-size: 24px; flex-shrink: 0; }
-.options-modal__name { margin: 0; font-size: 16px; font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.options-modal__close { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid #E5E7EB; background: white; cursor: pointer; }
+/* Same "unknown photo contrast" treatment as the handle overlay above. */
+.options-modal__close--overlay {
+  position: absolute; top: 12px; inset-inline-end: 12px; z-index: 2; border: none;
+  background: rgba(255,255,255,0.9); box-shadow: 0 1px 6px rgba(0,0,0,0.18);
+}
+.options-modal__expand {
+  position: absolute; bottom: 12px; inset-inline-end: 12px; z-index: 2; border: none; cursor: pointer;
+  width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.9);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: center; color: #111827;
+}
+.options-modal__expand:focus-visible, .options-modal__close--overlay:focus-visible, .options-modal__close:focus-visible {
+  outline: 2px solid #0B0B0F; outline-offset: 2px;
+}
+/* Fallback top bar for a product with no photo — nothing to overlay onto,
+   so handle + close sit in a plain row instead, same as before this task. */
+.options-modal__no-media-bar {
+  position: relative; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px 0; flex-shrink: 0;
+}
+.options-modal__no-media-bar .options-modal__handle { margin: 0; position: absolute; left: 50%; transform: translateX(-50%); }
 
-.options-modal__body { flex: 1; overflow-y: auto; padding: 14px 20px 4px; min-height: 0; }
-.options-modal__base-price { font-size: 15px; font-weight: 900; margin-bottom: 16px; }
-.options-modal__description { font-size: 13px; font-weight: 500; color: #6B7280; line-height: 1.5; margin: 0 0 16px; }
+.options-modal__title-row { display: flex; align-items: center; gap: 10px; min-width: 0; padding-top: 16px; }
+.options-modal__emoji { font-size: 24px; flex-shrink: 0; }
+.options-modal__name { margin: 0; font-size: 19px; font-weight: 900; line-height: 1.3; }
+
+.options-modal__badges { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.options-modal__badge-pill { font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
+.options-modal__badge-pill--best { color: #92400E; background: #FEF3C7; }
+.options-modal__badge-pill--offer { color: #991B1B; background: #FEE2E2; }
+
+.options-modal__body { flex: 1; overflow-y: auto; padding: 0 20px 4px; min-height: 0; }
+.options-modal__price-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-top: 10px; margin-bottom: 4px; }
+.options-modal__base-price { font-size: 17px; font-weight: 900; }
+.options-modal__compare-price { font-size: 13px; font-weight: 600; color: #9CA3AF; text-decoration: line-through; }
+.options-modal__calories { font-size: 12px; font-weight: 700; color: #6B7280; }
+
+.options-modal__description-wrap { margin: 8px 0 16px; }
+.options-modal__description { font-size: 13.5px; font-weight: 500; color: #6B7280; line-height: 1.6; margin: 0; }
+.options-modal__description.is-clamped { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.options-modal__desc-toggle {
+  border: none; background: none; padding: 4px 0 0; font-size: 12.5px; font-weight: 800; cursor: pointer; color: inherit;
+  text-decoration: underline; text-underline-offset: 2px;
+}
 
 .options-modal__group { margin-bottom: 18px; }
-.options-modal__group-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.options-modal__group-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.options-modal__group-heading { display: flex; flex-direction: column; gap: 2px; }
 .options-modal__group-name { font-size: 14px; font-weight: 800; }
+.options-modal__group-type { font-size: 12px; font-weight: 500; color: #9CA3AF; }
 .options-modal__badge {
   font-size: 10px; font-weight: 700; color: #9CA3AF; background: #F3F4F6; padding: 2px 7px; border-radius: 999px;
 }
@@ -712,7 +759,7 @@ html, body {
 }
 .options-modal__qty button { width: 38px; height: 44px; border: none; background: none; font-size: 20px; cursor: pointer; }
 .options-modal__qty button:disabled { opacity: 0.35; cursor: default; }
-.options-modal__qty button:focus-visible, .options-modal__close:focus-visible { outline: 2px solid #0B0B0F; outline-offset: 2px; }
+.options-modal__qty button:focus-visible { outline: 2px solid #0B0B0F; outline-offset: 2px; }
 .options-modal__qty span { min-width: 26px; text-align: center; font-size: 15px; font-weight: 800; }
 .options-modal__confirm {
   flex: 1; height: 48px; border: none; border-radius: 14px; color: white; font-weight: 800; font-size: 14px;
@@ -720,6 +767,21 @@ html, body {
 }
 .options-modal__confirm:disabled { opacity: 0.65; cursor: default; }
 .options-modal__confirm:focus-visible { outline: 2px solid #0B0B0F; outline-offset: 3px; }
+
+/* Fullscreen single-photo viewer (Product Hero "expand") — the exact same
+   photo, just unobstructed; not a gallery (there is no second image to page
+   through). Sits above the sheet's own overlay (z-index 220). */
+.options-modal__lightbox {
+  position: fixed; inset: 0; z-index: 260; background: rgba(0,0,0,0.92);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  animation: options-modal-fade-in 0.15s ease-out;
+}
+.options-modal__lightbox-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+.options-modal__lightbox-close {
+  position: fixed; top: 16px; inset-inline-end: 16px; width: 36px; height: 36px; border-radius: 50%;
+  border: none; background: rgba(255,255,255,0.15); color: white; font-size: 15px; cursor: pointer;
+}
+.options-modal__lightbox-close:focus-visible { outline: 2px solid white; outline-offset: 2px; }
 
 @media (min-width: 1024px) {
   .options-modal-overlay { align-items: center; }
