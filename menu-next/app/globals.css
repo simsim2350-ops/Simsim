@@ -735,7 +735,7 @@ html, body {
 
 .options-modal__choices { display: flex; flex-direction: column; gap: 6px; }
 .options-modal__choice {
-  display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 11px;
+  display: flex; align-items: center; gap: 10px; padding: 13px 14px; border-radius: 11px; min-height: 44px;
   border: 1.5px solid #E5E7EB; background: white; cursor: pointer; width: 100%; text-align: start;
   font-family: 'Tajawal', sans-serif; transition: border-color 0.15s ease, background-color 0.15s ease;
 }
@@ -757,7 +757,7 @@ html, body {
 .options-modal__qty {
   display: flex; align-items: center; border: 1.5px solid #E5E7EB; border-radius: 12px; flex-shrink: 0;
 }
-.options-modal__qty button { width: 38px; height: 44px; border: none; background: none; font-size: 20px; cursor: pointer; }
+.options-modal__qty button { width: 42px; height: 44px; border: none; background: none; font-size: 20px; cursor: pointer; }
 .options-modal__qty button:disabled { opacity: 0.35; cursor: default; }
 .options-modal__qty button:focus-visible { outline: 2px solid #0B0B0F; outline-offset: 2px; }
 .options-modal__qty span { min-width: 26px; text-align: center; font-size: 15px; font-weight: 800; }
