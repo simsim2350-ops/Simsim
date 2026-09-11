@@ -23,11 +23,23 @@ export function CategoryNav({
   // actually render a section — is_visible + at least one available
   // product — and in Dashboard sort order), never the synthetic
   // highlight-rail "categories" (best sellers / featured / favorites).
-  categories: { id: string; name: string }[]
+  categories: { id: string; name: string; count: number }[]
   brandColor: string
   lang: Lang
 }) {
   const strings = t(lang)
+  // Arabic-correct item-count wording for the drawer rows (1 -> "صنف واحد",
+  // 2 -> "صنفان", no leading numeral for either — matching how a native
+  // speaker would actually say it, per the reference design). Kept local to
+  // this component rather than changed inside the shared strings.itemsCount
+  // (used elsewhere, e.g. the Checkout order summary) — 3+ still defers to
+  // that same shared helper, which already handles the >10 rollover back to
+  // singular correctly, so that logic isn't duplicated here.
+  const formatCategoryCount = (n: number) => {
+    if (lang === 'ar' && n === 1) return 'صنف واحد'
+    if (lang === 'ar' && n === 2) return 'صنفان'
+    return strings.itemsCount(n)
+  }
   const [activeId, setActiveId] = useState(categories[0]?.id ?? '')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -123,10 +135,13 @@ export function CategoryNav({
       </div>
 
       {drawerOpen && (
-        <div className="category-drawer-overlay" onClick={() => setDrawerOpen(false)} role="dialog" aria-modal="true" aria-label={strings.allCategories}>
+        <div className="category-drawer-overlay" onClick={() => setDrawerOpen(false)} role="dialog" aria-modal="true" aria-label={strings.categoryMenuTitle}>
           <div className="category-drawer" onClick={(e) => e.stopPropagation()}>
             <div className="options-modal__handle" />
-            <h3 className="category-drawer__title">{strings.allCategories}</h3>
+            <div className="category-drawer__header">
+              <button type="button" className="category-drawer__close" onClick={() => setDrawerOpen(false)} aria-label="close">✕</button>
+              <h3 className="category-drawer__title">{strings.categoryMenuTitle}</h3>
+            </div>
             <div className="category-drawer__list">
               {categories.map((cat) => {
                 const isActive = activeId === cat.id
@@ -135,15 +150,15 @@ export function CategoryNav({
                     key={cat.id}
                     type="button"
                     className={`category-drawer__item${isActive ? ' is-active' : ''}`}
-                    style={isActive ? { color: brandColor, background: `${brandColor}0D` } : undefined}
+                    style={isActive ? { color: brandColor } : undefined}
                     onClick={() => goToCategory(cat.id, true)}
                   >
-                    {cat.name}
+                    <span className="category-drawer__item-name">{cat.name}</span>
+                    <span className="category-drawer__item-count">{formatCategoryCount(cat.count)}</span>
                   </button>
                 )
               })}
             </div>
-            <button type="button" className="category-drawer__close-btn" onClick={() => setDrawerOpen(false)}>{strings.close}</button>
           </div>
         </div>
       )}

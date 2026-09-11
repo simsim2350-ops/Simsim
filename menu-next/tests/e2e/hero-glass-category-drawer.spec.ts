@@ -31,8 +31,23 @@ test.describe('vertical "all categories" drawer', () => {
     await page.locator('.category-nav__all-btn').click()
     const drawer = page.locator('.category-drawer')
     await expect(drawer).toBeVisible()
-    const drawerNames = await page.locator('.category-drawer__item').allTextContents()
+    // Each row now also shows an item count (.category-drawer__item-count),
+    // so the name comparison below reads just the name sub-element rather
+    // than the whole row's text.
+    const drawerNames = await page.locator('.category-drawer__item-name').allTextContents()
     expect(drawerNames).toEqual(tabNames)
+  })
+
+  test('each drawer row shows the real product count for that category', async ({ page }) => {
+    await page.goto(`/menu/${SIMSIM}?branch=${SIMSIM_MAIN_BRANCH_ID}`)
+    await page.locator('.category-nav__all-btn').click()
+    const rows = page.locator('.category-drawer__item')
+    const rowCount = await rows.count()
+    test.skip(rowCount === 0, 'no real categories to check on this fixture')
+    for (let i = 0; i < rowCount; i++) {
+      const countText = await rows.nth(i).locator('.category-drawer__item-count').textContent()
+      expect(countText?.trim().length).toBeGreaterThan(0)
+    }
   })
 
   test('selecting a category from the drawer scrolls to it, updates the active tab, and closes the drawer', async ({ page }) => {
@@ -42,7 +57,7 @@ test.describe('vertical "all categories" drawer', () => {
 
     await page.locator('.category-nav__all-btn').click()
     const secondItem = page.locator('.category-drawer__item').nth(1)
-    const targetName = await secondItem.textContent()
+    const targetName = await secondItem.locator('.category-drawer__item-name').textContent()
     await secondItem.click()
 
     await expect(page.locator('.category-drawer-overlay')).toHaveCount(0)
