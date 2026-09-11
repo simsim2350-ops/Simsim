@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useCart } from '@/lib/cart/CartContext'
-import { normalizeOptionGroups, optionsPrice, selectionsFromResolved, type OptionSelections } from '@/lib/options'
+import { buildCartKey, normalizeOptionGroups, optionsPrice, selectionsFromResolved, type OptionSelections } from '@/lib/options'
 import { getProductCompanions } from '@/lib/recommendations'
 import { detectContentBox, type FramingResult } from '@/lib/smartImageFraming'
 import { t } from '@/lib/i18n'
@@ -49,7 +49,7 @@ export function ProductOptionsModal({
   // replaces it in place instead of adding a new one.
   editing?: { cartKey: string; selectedOptions: SelectedOption[]; qty: number }
 }) {
-  const { addToCart, updateCartItem, items } = useCart()
+  const { addToCart, updateCartItem, removeItem, items } = useCart()
   const strings = t(lang)
   const groups = useMemo(() => normalizeOptionGroups(product.options), [product.options])
   const name = lang === 'en' && product.nameEn ? product.nameEn : product.name
@@ -78,12 +78,12 @@ export function ProductOptionsModal({
   const [alreadyInCart] = useState(() => !editing && items.some((i) => i.productId === product.id))
   const [addedOnce, setAddedOnce] = useState(false)
   const showCompanions = !editing && (alreadyInCart || addedOnce) && companions.length > 0
-  // Per-companion "just added" flash — same 900ms convention as
-  // AddToCartButton.tsx's own quick-add feedback elsewhere in this app, not
-  // a persistent "already in cart" lock (the brief explicitly says not to
-  // invent duplicate-prevention here; CartContext already handles repeat
-  // adds correctly on its own).
-  const [flashCompanionId, setFlashCompanionId] = useState<string | null>(null)
+  // Each companion's own added/not-added state now reads live from
+  // CartContext's `items` (see the render below) instead of a transient
+  // per-tap flash — CartContext is the single source of truth for "is this
+  // companion in the cart", so it stays correct across reopening this modal,
+  // visiting the cart and coming back, or removing the item from the cart
+  // sheet itself.
   // Description clamp: a character-count heuristic (not a DOM measurement)
   // decides whether "Show more" even appears — simple and avoids a layout-
   // thrashing ResizeObserver for what is, at most, a 2-line CSS clamp.
@@ -408,28 +408,57 @@ export function ProductOptionsModal({
               <div className="options-modal__companions-row">
                 {companions.map((p) => {
                   const cName = lang === 'en' && p.name_en ? p.name_en : p.name
-                  const justAdded = flashCompanionId === p.id
-                  return (
+                  // A companion is always added with no selectedOptions (see
+                  // the onClick below — unchanged from before this task), so
+                  // its cart line's key is fully deterministic. Checking
+                  // `items` (CartContext's own live list) for that exact key
+                  // is what makes this reflect real cart state — reopening
+                  // this modal, visiting the cart and coming back, or
+                  // removing it from the cart sheet itself all stay correct
+                  // automatically, with no separate local "added" flag.
+                  const companionCartKey = buildCartKey(p.id, [])
+                  const inCart = items.some((i) => i.cartKey === companionCartKey)
+                  const media = (
+                    <span className="options-modal__companion-media">
+                      {p.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.image_url} alt="" loading="lazy" />
+                      ) : (p.emoji || '🍽️')}
+                      {!inCart && <span className="options-modal__companion-badge" style={{ background: priceColor }} aria-hidden="true">+</span>}
+                    </span>
+                  )
+                  const info = (
+                    <>
+                      <span className="options-modal__companion-name">{cName}</span>
+                      <span className="options-modal__companion-price" style={{ color: priceColor }}>{formatPrice(p.price)} {currency}</span>
+                    </>
+                  )
+                  // Not in cart: the whole card is the add action (same
+                  // touch target as before this task). In cart: the card
+                  // itself is no longer a single button (it would otherwise
+                  // nest a second, differently-purposed button inside it) —
+                  // it becomes a status block with one explicit "إزالة"
+                  // action, using CartContext's own existing removeItem(),
+                  // not a new remove/delete implementation.
+                  return inCart ? (
+                    <div key={p.id} className="options-modal__companion is-added">
+                      {media}
+                      {info}
+                      <span className="options-modal__companion-added-label">✓ {strings.companionAdded}</span>
+                      <button type="button" className="options-modal__companion-remove" onClick={() => removeItem(companionCartKey)}>
+                        {strings.companionRemove}
+                      </button>
+                    </div>
+                  ) : (
                     <button
                       type="button"
                       key={p.id}
                       className="options-modal__companion"
                       aria-label={`${strings.addToCart}: ${cName}`}
-                      onClick={() => {
-                        addToCart({ id: p.id, name: p.name, nameEn: p.name_en, price: p.price, imageUrl: p.image_url, emoji: p.emoji }, branchId, branchName)
-                        setFlashCompanionId(p.id)
-                        setTimeout(() => setFlashCompanionId((cur) => (cur === p.id ? null : cur)), 900)
-                      }}
+                      onClick={() => addToCart({ id: p.id, name: p.name, nameEn: p.name_en, price: p.price, imageUrl: p.image_url, emoji: p.emoji }, branchId, branchName)}
                     >
-                      <span className="options-modal__companion-media">
-                        {p.image_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={p.image_url} alt="" loading="lazy" />
-                        ) : (p.emoji || '🍽️')}
-                        <span className="options-modal__companion-badge" style={!justAdded ? { background: priceColor } : undefined} aria-hidden="true">{justAdded ? '✓' : '+'}</span>
-                      </span>
-                      <span className="options-modal__companion-name">{cName}</span>
-                      <span className="options-modal__companion-price" style={{ color: priceColor }}>{formatPrice(p.price)} {currency}</span>
+                      {media}
+                      {info}
                     </button>
                   )
                 })}
