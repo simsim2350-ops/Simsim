@@ -321,6 +321,7 @@ html, body {
 
 .menu-empty { text-align: center; padding: 60px 24px; color: #6B7280; }
 .menu-empty h1 { font-size: 20px; color: #0B0B0F; }
+.menu-empty p { font-size: 13.5px; margin: 6px 0 18px; line-height: 1.6; }
 
 /* English/LTR variant wrapper — applied per-page, not on <html>, see app/layout.tsx */
 .lang-en { direction: ltr; text-align: left; }
@@ -855,19 +856,23 @@ html, body {
 .checkout-form__coupon-applied button { border: none; background: none; color: #B91C1C; font-weight: 800; font-size: 12px; cursor: pointer; }
 
 /* ===== Loyalty card (#1) — ported balance/threshold/tier logic, new visual treatment ===== */
+/* Deliberately more compact than before (brief: "smaller and more focused
+   than the current design") now that it sits below the current-order card
+   on My Orders — it must read as secondary to "where's my order", never
+   compete with it for attention. */
 .loyalty-card {
-  margin: 0 0 14px; padding: 16px; border-radius: 16px; color: white; position: relative; overflow: hidden;
+  margin: 0 0 14px; padding: 13px 14px; border-radius: 14px; color: white; position: relative; overflow: hidden;
   background: linear-gradient(135deg, #23252E, #141519);
 }
-.loyalty-card__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; font-weight: 800; opacity: 0.9; }
-.loyalty-card__tier { padding: 3px 9px; border-radius: 100px; background: rgba(255,255,255,0.16); font-size: 11px; font-weight: 800; white-space: nowrap; }
-.loyalty-card__balance { font-family: 'Tajawal', sans-serif; font-weight: 900; font-size: 26px; margin-top: 10px; }
-.loyalty-card__balance span { font-size: 12px; font-weight: 700; opacity: 0.8; }
-.loyalty-card__ready { margin-top: 12px; border-radius: 12px; padding: 10px 12px; font-size: 13px; font-weight: 800; }
-.loyalty-card__bar { height: 7px; background: rgba(255,255,255,0.18); border-radius: 100px; overflow: hidden; margin: 12px 0 8px; }
+.loyalty-card__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11.5px; font-weight: 800; opacity: 0.9; }
+.loyalty-card__tier { padding: 2px 8px; border-radius: 100px; background: rgba(255,255,255,0.16); font-size: 10.5px; font-weight: 800; white-space: nowrap; }
+.loyalty-card__balance { font-family: 'Tajawal', sans-serif; font-weight: 900; font-size: 21px; margin-top: 6px; }
+.loyalty-card__balance span { font-size: 11px; font-weight: 700; opacity: 0.8; }
+.loyalty-card__ready { margin-top: 8px; border-radius: 10px; padding: 8px 10px; font-size: 12px; font-weight: 800; }
+.loyalty-card__bar { height: 6px; background: rgba(255,255,255,0.18); border-radius: 100px; overflow: hidden; margin: 8px 0 6px; }
 .loyalty-card__bar-fill { height: 100%; border-radius: 100px; transition: width 0.5s; }
-.loyalty-card__hint { font-size: 11.5px; opacity: 0.9; }
-.loyalty-card__next-tier { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.12); font-size: 11px; opacity: 0.9; }
+.loyalty-card__hint { font-size: 11px; opacity: 0.9; }
+.loyalty-card__next-tier { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.12); font-size: 10.5px; opacity: 0.9; }
 
 /* ===== Cart-wide recommendations (#3) — inside the cart sheet =====
    NOTE: this block renders as its own child of .cart-sheet, a sibling AFTER
@@ -899,21 +904,40 @@ html, body {
 .my-orders__header h1 { font-size: 18px; margin: 0; }
 .my-orders__section-title { font-size: 12px; font-weight: 800; color: #9CA3AF; margin: 18px 2px 10px; }
 .my-orders__card { background: white; border: 1px solid #E5E7EB; border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+/* The current order is the page's single most important thing on it — a
+   colored border + a touch more shadow is enough to read as "this one
+   matters most" without resorting to a loud color fill (brief explicitly
+   asks for calm, not busy). */
+.my-orders__card--active { border-width: 1.5px; box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
 .my-orders__card-row { display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; padding: 3px 0; }
 .my-orders__card-row--muted { color: #6B7280; }
+.my-orders__items-summary { font-size: 12.5px; color: #6B7280; margin: 4px 0 0; line-height: 1.5; }
+/* Compact echo of OrderStatusView.tsx's own .order-status__timeline for this
+   card's smaller context — same dot/label rules, just tighter margins. */
+.order-status__timeline--compact { margin: 14px 2px 2px; }
+.order-status__timeline--compact .order-status__step-label { font-size: 10px; }
 .my-orders__status { font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 100px; background: #F3F4F6; color: #374151; }
 .my-orders__status--pending, .my-orders__status--preparing { background: #FEF3C7; color: #92400E; }
 .my-orders__status--ready { background: #DBEAFE; color: #1E40AF; }
 .my-orders__status--completed { background: #D1FAE5; color: #065F46; }
 .my-orders__status--cancelled { background: #FEE2E2; color: #991B1B; }
 .my-orders__actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-.my-orders__wa-btn, .my-orders__cancel-btn, .my-orders__reorder-btn {
+.my-orders__wa-btn, .my-orders__cancel-btn, .my-orders__reorder-btn, .my-orders__track-btn, .my-orders__details-btn {
   flex: 1; min-width: 120px; text-align: center; padding: 10px; border-radius: 10px; border: none;
   font-family: 'Tajawal', sans-serif; font-weight: 800; font-size: 12.5px; cursor: pointer; text-decoration: none;
+  min-height: 40px; display: inline-flex; align-items: center; justify-content: center;
 }
 .my-orders__wa-btn { background: #ECFDF5; color: #065F46; }
 .my-orders__cancel-btn { background: #FEF2F2; color: #B91C1C; }
-.my-orders__reorder-btn { color: white; }
+.my-orders__reorder-btn, .my-orders__track-btn { color: white; }
+/* Secondary, quiet — must never visually compete with "اطلب مرة أخرى"/
+   "تتبع الطلب" (both filled with the brand's price color) in the same row. */
+.my-orders__details-btn { background: #F3F4F6; color: #374151; flex: 0 0 auto; min-width: 84px; }
+.my-orders__reorder-feedback {
+  margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; font-size: 12.5px; font-weight: 700;
+  background: #ECFDF5; color: #065F46;
+}
+.my-orders__reorder-feedback.is-error { background: #FEF2F2; color: #B91C1C; }
 .my-orders__review { margin-top: 12px; padding-top: 12px; border-top: 1px solid #F3F4F6; }
 .my-orders__stars { display: flex; gap: 4px; margin-bottom: 8px; }
 .my-orders__star { border: none; background: none; font-size: 22px; color: #E5E7EB; cursor: pointer; padding: 0; }
