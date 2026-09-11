@@ -29,6 +29,15 @@
  * anti-enumeration discipline as verify_phone_otp/validate_customer_session
  * themselves.
  *
+ * PHONE <-> SESSION BINDING (Phase 3C.7 — fixes a proven production bug, see
+ * CUSTOMER_IDENTITY_PHONE_VERIFICATION_BYPASS_DIAGNOSTIC_REPORT.md): a valid
+ * session alone is NOT sufficient. validate_customer_session now also
+ * returns the session's own verified phone; this handler rejects the
+ * request (without ever calling create_order) if the phone submitted in
+ * THIS request does not match it — otherwise a customer who verified once
+ * could place orders under any other phone number for the rest of the
+ * session's lifetime without verifying it.
+ *
  * Dependencies injected via buildCheckoutHandler({ db }) — same pattern as
  * verify-otp/handler.js — testable with Vitest, no real Supabase project or
  * Next.js runtime needed.
@@ -83,6 +92,17 @@ export function buildCheckoutHandler({ db }) {
       return json({ error: 'internal_error' }, 500)
     }
 
+    // Phase 3C.7 — the session's own verified phone (from
+    // validate_customer_session, never from the body). customer_sessions has
+    // an ON DELETE CASCADE FK to customer_identities, so a valid session
+    // pointing at a deleted/phoneless identity should not be reachable —
+    // failing closed here rather than assuming that invariant holds.
+    const sessionPhone = sessionResult.phone
+    if (typeof sessionPhone !== 'string' || sessionPhone.length === 0) {
+      console.error(`[checkout:${requestId}] session_valid_but_no_phone`)
+      return json({ error: 'internal_error' }, 500)
+    }
+
     // Step 2 — parse and shape-check the body. Business validation (does the
     // restaurant/branch/product exist, is the phone canonical, is the coupon
     // valid, ...) is NOT duplicated here — that authority stays exactly
@@ -129,6 +149,19 @@ export function buildCheckoutHandler({ db }) {
       ) {
         return json({ error: 'invalid_request' }, 400)
       }
+    }
+
+    // Step 2.5 — Phase 3C.7 phone/session binding check (the actual fix).
+    // The phone submitted in THIS request must canonicalize to the same
+    // value as sessionPhone (the session's own OTP-verified phone). A
+    // mismatch — including a phone that fails to canonicalize at all — gets
+    // the SAME response in both cases, on purpose (no distinguishing
+    // information, same anti-enumeration discipline as the rest of this
+    // boundary): no order is created, and the client is told verification is
+    // required so it can start the OTP flow for the phone actually typed.
+    const submittedPhone = normalizePhone(body.p_customer_phone)
+    if (submittedPhone === null || submittedPhone !== sessionPhone) {
+      return json({ error: 'phone_verification_required' }, 401)
     }
 
     // Step 3 — call the EXISTING, UNMODIFIED order-creation RPCs. customer_id
@@ -203,6 +236,27 @@ function readSessionCookie(cookieHeader) {
     }
   }
   return null
+}
+
+// ——————————— phone canonicalization ———————————
+
+/**
+ * Mirrors CheckoutForm.tsx's handlePhoneChange exactly — the system's one
+ * existing canonical phone shape (5XXXXXXXX, 9 digits, no country code/
+ * leading zero), same as the customer_identities_phone_check DB constraint
+ * and create_order's own p_customer_phone regex. Not a new rule — applying
+ * the same one server-side so +9665XXXXXXXX / 9665XXXXXXXX / 05XXXXXXXX /
+ * 5XXXXXXXX all compare equal. Returns null (never throws) for anything that
+ * doesn't canonicalize to that shape.
+ */
+function normalizePhone(raw) {
+  if (typeof raw !== 'string') return null
+  let digits = raw.replace(/[^\d]/g, '')
+  if (digits.startsWith('00966')) digits = digits.slice(5)
+  else if (digits.startsWith('966')) digits = digits.slice(3)
+  if (digits.startsWith('0')) digits = digits.slice(1)
+  digits = digits.slice(0, 9)
+  return /^5\d{8}$/.test(digits) ? digits : null
 }
 
 // ——————————— safe logging helpers ———————————
