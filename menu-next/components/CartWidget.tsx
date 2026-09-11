@@ -64,7 +64,7 @@ export function CartWidget({
           <div className="cart-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="cart-sheet__handle" />
             <div className="cart-sheet__header">
-              <h3>{t(lang).cartYours} ({count})</h3>
+              <h3>{t(lang).cartYours} <span className="cart-sheet__count">({count})</span></h3>
               <button type="button" className="cart-sheet__close" onClick={() => setOpen(false)} aria-label="close">✕</button>
             </div>
             <div className="cart-sheet__items">
@@ -97,12 +97,14 @@ export function CartWidget({
                       {optsText && <div className="cart-sheet__item-options">{optsText}</div>}
                       <div className="cart-sheet__item-price">{formatPrice(item.price)} {currency}</div>
                     </div>
-                    <div className="cart-sheet__stepper">
-                      <button type="button" onClick={() => decrement(item.cartKey)} aria-label="decrease">−</button>
-                      <span>{item.qty}</span>
-                      <button type="button" onClick={() => increment(item.cartKey)} aria-label="increase">+</button>
+                    <div className="cart-sheet__item-actions">
+                      <div className="cart-sheet__stepper">
+                        <button type="button" onClick={() => decrement(item.cartKey)} aria-label="decrease">−</button>
+                        <span>{item.qty}</span>
+                        <button type="button" onClick={() => increment(item.cartKey)} aria-label="increase">+</button>
+                      </div>
+                      <button type="button" className="cart-sheet__remove" onClick={() => removeItem(item.cartKey)} aria-label="remove">🗑</button>
                     </div>
-                    <button type="button" className="cart-sheet__remove" onClick={() => removeItem(item.cartKey)} aria-label="remove">🗑</button>
                   </div>
                 )
               })}
