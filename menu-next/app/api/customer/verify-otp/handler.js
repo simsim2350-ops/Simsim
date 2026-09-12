@@ -130,7 +130,7 @@ export function buildVerifyOtpHandler({ db }) {
     console.log(`[verify-otp:${requestId}] session_issued maskedPhone=${maskPhone(phone)}`)
 
     const res = json({ verified: true }, 200)
-    res.headers.append('Set-Cookie', buildSessionCookie(token))
+    res.headers.append('Set-Cookie', buildSessionCookie(token, resolveCookieDomain()))
     // `token` is not referenced again after this line — nothing below (there
     // is nothing below) can log or return it.
     return res
@@ -140,19 +140,56 @@ export function buildVerifyOtpHandler({ db }) {
 // ——————————— cookie construction ———————————
 
 /**
- * HttpOnly, Secure, SameSite=Lax, Path=/, Max-Age=2592000 (30 days) — exactly
- * the attribute set specified for Phase 3B. No Domain attribute (host-only
- * cookie, the more conservative default) — not requested, not added.
+ * ARCHITECTURE (SIMSIM_UNIFIED_DOMAIN_3_VERCEL_PROJECTS_EXECUTION_REPORT.md):
+ * every earlier version of this decision — first `x-forwarded-host`, then
+ * (after V-14) the plain `Host` header — depended on the request eventually
+ * telling this handler what the browser's real, public-facing host was.
+ * Four separate investigation reports in this project never settled whether
+ * that is even true for a request proxied through the root vercel.json
+ * (CUSTOMER_SESSION_REPEAT_OTP_FIX_VERIFICATION_REPORT.md,
+ * SECURE_FORWARDED_HOST_FIX_EXECUTION_REPORT.md,
+ * VERCEL_HOST_EVIDENCE_ANALYSIS_REPORT.md,
+ * HOST_RUNTIME_PATH_READONLY_INVESTIGATION_REPORT.md — the last of these
+ * found strong, live evidence via `vercel logs` that the real value is
+ * `simsim-menu-next.vercel.app`, not `simsimmenu.com`, meaning the Host-based
+ * check most likely never activated for real production traffic at all).
+ *
+ * This handler no longer asks the request anything. `CUSTOMER_SESSION_COOKIE_DOMAIN`
+ * is a server-side environment variable — never sent by a client, never a
+ * request header, set (or not set) directly in Vercel's own per-environment
+ * Project settings by whoever controls that dashboard. That is precisely why
+ * it can be trusted unconditionally here where no header ever could be:
+ * nothing served by an HTTP request influences its value.
+ *
+ * Left unset (Preview, Development, or Production before this variable is
+ * configured there) → returns null → `buildSessionCookie()` omits `Domain`
+ * entirely, i.e. exactly today's pre-existing host-only cookie behavior.
+ * Zero behavior change until a project owner deliberately sets it.
  */
-function buildSessionCookie(token) {
-  return [
+function resolveCookieDomain() {
+  const configured = (process.env.CUSTOMER_SESSION_COOKIE_DOMAIN || '').trim().toLowerCase()
+  return configured.length > 0 ? configured : null
+}
+
+/**
+ * HttpOnly, Secure, SameSite=Lax, Path=/, Max-Age=2592000 (30 days) — exactly
+ * the attribute set specified for Phase 3B, unchanged. `Domain` is added
+ * only when `resolveCookieDomain()` returns a configured value — never
+ * unconditionally, and never derived from anything the request itself sent.
+ */
+function buildSessionCookie(token, cookieDomain) {
+  const attrs = [
     `${SESSION_COOKIE_NAME}=${token}`,
     'Path=/',
     `Max-Age=${SESSION_MAX_AGE_SECONDS}`,
     'HttpOnly',
     'Secure',
     'SameSite=Lax',
-  ].join('; ')
+  ]
+  if (cookieDomain) {
+    attrs.push(`Domain=${cookieDomain}`)
+  }
+  return attrs.join('; ')
 }
 
 // ——————————— safe logging helpers ———————————
