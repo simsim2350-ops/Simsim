@@ -130,7 +130,7 @@ export function buildVerifyOtpHandler({ db }) {
     console.log(`[verify-otp:${requestId}] session_issued maskedPhone=${maskPhone(phone)}`)
 
     const res = json({ verified: true }, 200)
-    res.headers.append('Set-Cookie', buildSessionCookie(token, resolveClientHost(req)))
+    res.headers.append('Set-Cookie', buildSessionCookie(token, resolveCookieDomain()))
     // `token` is not referenced again after this line — nothing below (there
     // is nothing below) can log or return it.
     return res
@@ -139,55 +139,45 @@ export function buildVerifyOtpHandler({ db }) {
 
 // ——————————— cookie construction ———————————
 
-// The one production, customer-facing registrable domain (see
-// menuNextBaseUrl in src/config/index.js — every QR/table/menu link
-// generated anywhere in this project already points here, never at the raw
-// Vercel deployment host). Confirmed live: both simsimmenu.com and
-// www.simsimmenu.com serve this exact app (same content, no redirect
-// between them) via the root vercel.json's absolute-URL proxy rule. That is
-// the actual, confirmed cause of CUSTOMER_SESSION_REPEAT_OTP_DIAGNOSTIC_REPORT.md's
-// finding: a session cookie set while on one of these two hosts was never
-// sent back on a later visit that happened to land on the other one.
-const CANONICAL_APEX_DOMAIN = 'simsimmenu.com'
-
 /**
- * The host the BROWSER actually connected to, not necessarily the one this
- * server-side handler is running on. The root vercel.json's absolute-URL
- * proxy rule (`/menu/(.+) -> https://simsim-menu-next.vercel.app/menu/$1`)
- * makes this a reverse proxy from the browser's point of view: Vercel's edge
- * forwards the original client-facing host in `x-forwarded-host`, while the
- * plain `Host` header seen here would otherwise reflect the proxy's own
- * upstream destination. Falls back to `Host` for any request that reaches
- * this handler directly (no proxy involved) — e.g. a Vercel preview
- * deployment, localhost, or the raw simsim-menu-next.vercel.app host itself.
+ * ARCHITECTURE (SIMSIM_UNIFIED_DOMAIN_3_VERCEL_PROJECTS_EXECUTION_REPORT.md):
+ * every earlier version of this decision — first `x-forwarded-host`, then
+ * (after V-14) the plain `Host` header — depended on the request eventually
+ * telling this handler what the browser's real, public-facing host was.
+ * Four separate investigation reports in this project never settled whether
+ * that is even true for a request proxied through the root vercel.json
+ * (CUSTOMER_SESSION_REPEAT_OTP_FIX_VERIFICATION_REPORT.md,
+ * SECURE_FORWARDED_HOST_FIX_EXECUTION_REPORT.md,
+ * VERCEL_HOST_EVIDENCE_ANALYSIS_REPORT.md,
+ * HOST_RUNTIME_PATH_READONLY_INVESTIGATION_REPORT.md — the last of these
+ * found strong, live evidence via `vercel logs` that the real value is
+ * `simsim-menu-next.vercel.app`, not `simsimmenu.com`, meaning the Host-based
+ * check most likely never activated for real production traffic at all).
+ *
+ * This handler no longer asks the request anything. `CUSTOMER_SESSION_COOKIE_DOMAIN`
+ * is a server-side environment variable — never sent by a client, never a
+ * request header, set (or not set) directly in Vercel's own per-environment
+ * Project settings by whoever controls that dashboard. That is precisely why
+ * it can be trusted unconditionally here where no header ever could be:
+ * nothing served by an HTTP request influences its value.
+ *
+ * Left unset (Preview, Development, or Production before this variable is
+ * configured there) → returns null → `buildSessionCookie()` omits `Domain`
+ * entirely, i.e. exactly today's pre-existing host-only cookie behavior.
+ * Zero behavior change until a project owner deliberately sets it.
  */
-function resolveClientHost(req) {
-  const forwarded = req.headers.get('x-forwarded-host')
-  const raw = (forwarded || req.headers.get('host') || '').trim()
-  // A forwarded value can legally be a comma-separated list (multiple
-  // proxies) — only the first entry is the one closest to the real client.
-  return raw.split(',')[0].trim().toLowerCase()
+function resolveCookieDomain() {
+  const configured = (process.env.CUSTOMER_SESSION_COOKIE_DOMAIN || '').trim().toLowerCase()
+  return configured.length > 0 ? configured : null
 }
 
 /**
  * HttpOnly, Secure, SameSite=Lax, Path=/, Max-Age=2592000 (30 days) — exactly
- * the attribute set specified for Phase 3B, unchanged.
- *
- * Domain attribute — the actual fix: added ONLY when the request genuinely
- * arrived under simsimmenu.com's own family (the bare apex or any of its
- * subdomains, e.g. www.simsimmenu.com) — never unconditionally. Setting
- * Domain=simsimmenu.com while the browser is actually talking to some other
- * host (localhost, a Vercel preview deployment, or simsim-menu-next.vercel.app
- * directly) is invalid per RFC 6265 (Domain must be the request's own host or
- * a parent of it) and browsers respond by SILENTLY DROPPING the entire
- * cookie — so every one of those environments must keep getting the original
- * host-only cookie, exactly as before this fix, or session persistence would
- * break there instead. Deliberately never a wider value than the exact
- * registrable domain (never ".com", never anything that isn't
- * simsimmenu.com's own family) — this only unifies the two hosts this one
- * app is actually, legitimately served from.
+ * the attribute set specified for Phase 3B, unchanged. `Domain` is added
+ * only when `resolveCookieDomain()` returns a configured value — never
+ * unconditionally, and never derived from anything the request itself sent.
  */
-function buildSessionCookie(token, clientHost) {
+function buildSessionCookie(token, cookieDomain) {
   const attrs = [
     `${SESSION_COOKIE_NAME}=${token}`,
     'Path=/',
@@ -196,8 +186,8 @@ function buildSessionCookie(token, clientHost) {
     'Secure',
     'SameSite=Lax',
   ]
-  if (clientHost === CANONICAL_APEX_DOMAIN || clientHost.endsWith(`.${CANONICAL_APEX_DOMAIN}`)) {
-    attrs.push(`Domain=${CANONICAL_APEX_DOMAIN}`)
+  if (cookieDomain) {
+    attrs.push(`Domain=${cookieDomain}`)
   }
   return attrs.join('; ')
 }
