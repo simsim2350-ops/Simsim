@@ -130,7 +130,7 @@ export function buildVerifyOtpHandler({ db }) {
     console.log(`[verify-otp:${requestId}] session_issued maskedPhone=${maskPhone(phone)}`)
 
     const res = json({ verified: true }, 200)
-    res.headers.append('Set-Cookie', buildSessionCookie(token))
+    res.headers.append('Set-Cookie', buildSessionCookie(token, resolveClientHost(req)))
     // `token` is not referenced again after this line — nothing below (there
     // is nothing below) can log or return it.
     return res
@@ -139,20 +139,67 @@ export function buildVerifyOtpHandler({ db }) {
 
 // ——————————— cookie construction ———————————
 
+// The one production, customer-facing registrable domain (see
+// menuNextBaseUrl in src/config/index.js — every QR/table/menu link
+// generated anywhere in this project already points here, never at the raw
+// Vercel deployment host). Confirmed live: both simsimmenu.com and
+// www.simsimmenu.com serve this exact app (same content, no redirect
+// between them) via the root vercel.json's absolute-URL proxy rule. That is
+// the actual, confirmed cause of CUSTOMER_SESSION_REPEAT_OTP_DIAGNOSTIC_REPORT.md's
+// finding: a session cookie set while on one of these two hosts was never
+// sent back on a later visit that happened to land on the other one.
+const CANONICAL_APEX_DOMAIN = 'simsimmenu.com'
+
+/**
+ * The host the BROWSER actually connected to, not necessarily the one this
+ * server-side handler is running on. The root vercel.json's absolute-URL
+ * proxy rule (`/menu/(.+) -> https://simsim-menu-next.vercel.app/menu/$1`)
+ * makes this a reverse proxy from the browser's point of view: Vercel's edge
+ * forwards the original client-facing host in `x-forwarded-host`, while the
+ * plain `Host` header seen here would otherwise reflect the proxy's own
+ * upstream destination. Falls back to `Host` for any request that reaches
+ * this handler directly (no proxy involved) — e.g. a Vercel preview
+ * deployment, localhost, or the raw simsim-menu-next.vercel.app host itself.
+ */
+function resolveClientHost(req) {
+  const forwarded = req.headers.get('x-forwarded-host')
+  const raw = (forwarded || req.headers.get('host') || '').trim()
+  // A forwarded value can legally be a comma-separated list (multiple
+  // proxies) — only the first entry is the one closest to the real client.
+  return raw.split(',')[0].trim().toLowerCase()
+}
+
 /**
  * HttpOnly, Secure, SameSite=Lax, Path=/, Max-Age=2592000 (30 days) — exactly
- * the attribute set specified for Phase 3B. No Domain attribute (host-only
- * cookie, the more conservative default) — not requested, not added.
+ * the attribute set specified for Phase 3B, unchanged.
+ *
+ * Domain attribute — the actual fix: added ONLY when the request genuinely
+ * arrived under simsimmenu.com's own family (the bare apex or any of its
+ * subdomains, e.g. www.simsimmenu.com) — never unconditionally. Setting
+ * Domain=simsimmenu.com while the browser is actually talking to some other
+ * host (localhost, a Vercel preview deployment, or simsim-menu-next.vercel.app
+ * directly) is invalid per RFC 6265 (Domain must be the request's own host or
+ * a parent of it) and browsers respond by SILENTLY DROPPING the entire
+ * cookie — so every one of those environments must keep getting the original
+ * host-only cookie, exactly as before this fix, or session persistence would
+ * break there instead. Deliberately never a wider value than the exact
+ * registrable domain (never ".com", never anything that isn't
+ * simsimmenu.com's own family) — this only unifies the two hosts this one
+ * app is actually, legitimately served from.
  */
-function buildSessionCookie(token) {
-  return [
+function buildSessionCookie(token, clientHost) {
+  const attrs = [
     `${SESSION_COOKIE_NAME}=${token}`,
     'Path=/',
     `Max-Age=${SESSION_MAX_AGE_SECONDS}`,
     'HttpOnly',
     'Secure',
     'SameSite=Lax',
-  ].join('; ')
+  ]
+  if (clientHost === CANONICAL_APEX_DOMAIN || clientHost.endsWith(`.${CANONICAL_APEX_DOMAIN}`)) {
+    attrs.push(`Domain=${CANONICAL_APEX_DOMAIN}`)
+  }
+  return attrs.join('; ')
 }
 
 // ——————————— safe logging helpers ———————————
