@@ -9,6 +9,7 @@ import { useBreakpoint } from '../hooks/useBreakpoint'
 import { fetchBranches, createBranch, updateBranch, deleteBranch, cloneMenuToBranch } from '../lib/branchesApi'
 import { trackOwnerMilestone } from '../lib/analytics'
 import { appConfig } from '../config'
+import { supabase } from '../lib/supabase'
 
 function Icon({ type, size=16 }) {
   const paths = {
@@ -47,10 +48,22 @@ const toEditorHours = (oh) => (Array.isArray(oh) && oh.length === 7)
   ? oh.map((h, i) => ({ day: DAY_LABELS[i], open: !!h.open, from: h.from || '09:00', to: h.to || '23:00' }))
   : defaultHours()
 
+// Order → Customer Invoice + Kitchen Ticket → Thermal Printing — Phase 1/2.
+// branches.printer_config is a JSONB column (sql/print_jobs_phase1.sql);
+// this default mirrors its own DB default exactly, so a branch created
+// before this feature existed (falling back to {} from an older row, or
+// simply not yet edited here) still gets sane values instead of a crash.
+const defaultDocPrinterConfig = () => ({ printerName:'', paperWidth:'80mm', enabled:true, autoPrint:false, copies:1 })
+const toEditorPrinterConfig = (pc) => ({
+  customerInvoice: { ...defaultDocPrinterConfig(), ...(pc?.customerInvoice || {}), printerName: pc?.customerInvoice?.printerName || '' },
+  kitchenTicket: { ...defaultDocPrinterConfig(), ...(pc?.kitchenTicket || {}), printerName: pc?.kitchenTicket?.printerName || '' },
+})
+
 const EMPTY_FORM = {
   name:'', name_en:'', address:'', address_en:'', phone:'', maps_url:'', is_active:true, hours: defaultHours(),
   deliveryOverride:false, delivery_enabled:false, delivery_fee:'', takeaway_enabled:true,
   car_pickup_enabled:false, car_pickup_info_label:'', car_pickup_info_required:false,
+  printer_config: toEditorPrinterConfig(null),
 }
 
 export default function Branches() {
@@ -110,6 +123,7 @@ export default function Branches() {
       car_pickup_enabled: branch.car_pickup_enabled ?? false,
       car_pickup_info_label: branch.car_pickup_info_label || '',
       car_pickup_info_required: branch.car_pickup_info_required ?? false,
+      printer_config: toEditorPrinterConfig(branch.printer_config),
     })
     setModalOpen(true)
   }
@@ -138,6 +152,11 @@ export default function Branches() {
           opening_hours: form.hours,
           ...deliveryFields, takeaway_enabled: form.takeaway_enabled,
           ...carPickupFields,
+          printer_config: {
+            customerInvoice: { ...form.printer_config.customerInvoice, printerName: form.printer_config.customerInvoice.printerName.trim() || null, copies: Math.max(1, Math.min(5, Number(form.printer_config.customerInvoice.copies) || 1)) },
+            kitchenTicket: { ...form.printer_config.kitchenTicket, printerName: form.printer_config.kitchenTicket.printerName.trim() || null, copies: Math.max(1, Math.min(5, Number(form.printer_config.kitchenTicket.copies) || 1)) },
+            routes: {},
+          },
         })
         toast.success('تم تحديث الفرع ✅')
       } else {
@@ -173,6 +192,29 @@ export default function Branches() {
       toast.error(err.message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  // Order → Customer Invoice + Kitchen Ticket → Thermal Printing.
+  // Creates a print_jobs row with no order_id at all (create_test_print_job,
+  // sql/print_jobs_phase2_agent.sql) — never an order, payment, loyalty, or
+  // inventory record — and opens the same read-only render view a real
+  // order's print job already uses, so this is a genuine preview of what
+  // will actually print, not a separate mock UI.
+  const [testPrinting, setTestPrinting] = useState(null)
+  const testPrint = async (documentType) => {
+    if (!editingBranch) return
+    setTestPrinting(documentType)
+    try {
+      const { data: job, error } = await supabase.rpc('create_test_print_job', {
+        p_restaurant_id: restaurant.id, p_branch_id: editingBranch.id, p_document_type: documentType,
+      })
+      if (error) throw error
+      window.open(`${appConfig.menuNextBaseUrl}/print/${job.id}?token=${job.view_token}`, '_blank')
+    } catch (err) {
+      toast.error(err.message || 'تعذّرت الطباعة التجريبية')
+    } finally {
+      setTestPrinting(null)
     }
   }
 
@@ -308,7 +350,7 @@ export default function Branches() {
           <div onClick={() => setModalOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.5)' }}/>
           <div style={{ background:'white', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', padding:'20px', position:'relative', maxHeight:'85vh', overflowY:'auto' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', marginBottom:'14px' }}><h3 style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'18px', margin:0 }}>{editingBranch ? 'تعديل الفرع' : 'فرع جديد'}</h3><button aria-label="إغلاق" onClick={() => setModalOpen(false)} style={{ width:'34px', height:'34px', border:'1px solid #E5E7EB', borderRadius:'9px', background:'white', color:'#6B7280', display:'grid', placeItems:'center', cursor:'pointer' }}>×</button></div>
-            <div style={{ display:'flex', gap:'4px', padding:'4px', marginBottom:'16px', background:'#F5F6F8', borderRadius:'11px' }}><button onClick={() => setModalTab('details')} style={{ flex:1, minHeight:'34px', border:0, borderRadius:'8px', background:modalTab==='details'?'white':'transparent', color:modalTab==='details'?'#FF6A00':'#6B7280', boxShadow:modalTab==='details'?'0 1px 4px rgba(17,24,39,0.08)':'none', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'900', cursor:'pointer' }}>معلومات الفرع</button><button onClick={() => setModalTab('operations')} style={{ flex:1, minHeight:'34px', border:0, borderRadius:'8px', background:modalTab==='operations'?'white':'transparent', color:modalTab==='operations'?'#FF6A00':'#6B7280', boxShadow:modalTab==='operations'?'0 1px 4px rgba(17,24,39,0.08)':'none', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'900', cursor:'pointer' }}>التشغيل والطلبات</button></div>
+            <div style={{ display:'flex', gap:'4px', padding:'4px', marginBottom:'16px', background:'#F5F6F8', borderRadius:'11px' }}><button onClick={() => setModalTab('details')} style={{ flex:1, minHeight:'34px', border:0, borderRadius:'8px', background:modalTab==='details'?'white':'transparent', color:modalTab==='details'?'#FF6A00':'#6B7280', boxShadow:modalTab==='details'?'0 1px 4px rgba(17,24,39,0.08)':'none', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'900', cursor:'pointer' }}>معلومات الفرع</button><button onClick={() => setModalTab('operations')} style={{ flex:1, minHeight:'34px', border:0, borderRadius:'8px', background:modalTab==='operations'?'white':'transparent', color:modalTab==='operations'?'#FF6A00':'#6B7280', boxShadow:modalTab==='operations'?'0 1px 4px rgba(17,24,39,0.08)':'none', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'900', cursor:'pointer' }}>التشغيل والطلبات</button>{editingBranch && <button onClick={() => setModalTab('printing')} style={{ flex:1, minHeight:'34px', border:0, borderRadius:'8px', background:modalTab==='printing'?'white':'transparent', color:modalTab==='printing'?'#FF6A00':'#6B7280', boxShadow:modalTab==='printing'?'0 1px 4px rgba(17,24,39,0.08)':'none', fontFamily:'Tajawal,sans-serif', fontSize:'12px', fontWeight:'900', cursor:'pointer' }}>🖨️ الطباعة</button>}</div>
 
             {modalTab === 'details' && <>
             <div style={{ marginBottom:'14px' }}>
@@ -458,6 +500,72 @@ export default function Branches() {
                 سيُنسخ منيو الفرع الرئيسي بالكامل لهذا الفرع الجديد فور الإضافة.
               </div>
             )}
+            </>}
+
+            {modalTab === 'printing' && editingBranch && <>
+            <div style={{ fontSize:'11.5px', color:'#9CA3AF', marginBottom:'14px' }}>
+              كل مستند (فاتورة العميل / تذكرة المطبخ) له طابعة ومقاس ورقة وعدد نسخ مستقل. الطباعة الآلية الفعلية تحتاج Print Agent يعمل داخل المطعم؛ هذه الإعدادات هي ما يستخدمه.
+            </div>
+
+            {[
+              { key:'customerInvoice', title:'🧾 فاتورة العميل', doc:'customer_invoice' },
+              { key:'kitchenTicket', title:'👨‍🍳 تذكرة المطبخ', doc:'kitchen_ticket' },
+            ].map(({ key, title, doc }) => {
+              const pc = form.printer_config[key]
+              const setPc = (patch) => setForm(f => ({ ...f, printer_config: { ...f.printer_config, [key]: { ...f.printer_config[key], ...patch } } }))
+              return (
+                <div key={key} style={{ marginBottom:'16px', padding:'12px 14px', background:'#F8F9FB', borderRadius:'11px' }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px' }}>
+                    <span style={{ fontSize:'13px', fontWeight:'700' }}>{title}</span>
+                    <label style={{ position:'relative', width:'46px', height:'25px', cursor:'pointer', flexShrink:0 }}>
+                      <input type="checkbox" checked={pc.enabled} onChange={e => setPc({ enabled: e.target.checked })} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
+                      <div style={{ position:'absolute', inset:0, background: pc.enabled ? '#10B981' : '#E5E7EB', borderRadius:'26px', transition:'0.3s' }}>
+                        <div style={{ position:'absolute', width:'19px', height:'19px', background:'white', borderRadius:'50%', top:'3px', left: pc.enabled ? '24px' : '3px', transition:'0.3s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
+                      </div>
+                    </label>
+                  </div>
+
+                  {pc.enabled && <>
+                    <div style={{ marginBottom:'10px' }}>
+                      <label style={{ ...labelStyle, color:'#6B7280' }}>اسم/عنوان الطابعة (اختياري — للتوثيق فقط)</label>
+                      <input style={inputStyle} value={pc.printerName} onChange={e => setPc({ printerName: e.target.value })} placeholder="مثال: طابعة الكاشير" />
+                    </div>
+
+                    <div style={{ display:'flex', gap:'10px', marginBottom:'10px' }}>
+                      <div style={{ flex:1 }}>
+                        <label style={{ ...labelStyle, color:'#6B7280' }}>مقاس الورق</label>
+                        <div style={{ display:'flex', gap:'6px' }}>
+                          {['58mm','80mm'].map(w => (
+                            <button key={w} type="button" onClick={() => setPc({ paperWidth: w })} style={{ flex:1, minHeight:'34px', borderRadius:'9px', border:`1.5px solid ${pc.paperWidth===w?'#FF6A00':'#E5E7EB'}`, background: pc.paperWidth===w?'#FFF0EB':'white', color: pc.paperWidth===w?'#FF6A00':'#6B7280', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', cursor:'pointer' }}>{w}</button>
+                          ))}
+                        </div>
+                      </div>
+                      <div style={{ width:'90px' }}>
+                        <label style={{ ...labelStyle, color:'#6B7280' }}>النسخ</label>
+                        <input type="number" min="1" max="5" style={inputStyle} value={pc.copies} onChange={e => setPc({ copies: e.target.value })} />
+                      </div>
+                    </div>
+
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px' }}>
+                      <span style={{ fontSize:'12.5px' }}>طباعة تلقائية عند قبول الطلب</span>
+                      <label style={{ position:'relative', width:'40px', height:'22px', cursor:'pointer', flexShrink:0 }}>
+                        <input type="checkbox" checked={pc.autoPrint} onChange={e => setPc({ autoPrint: e.target.checked })} style={{ opacity:0, width:0, height:0, position:'absolute' }}/>
+                        <div style={{ position:'absolute', inset:0, background: pc.autoPrint ? '#10B981' : '#E5E7EB', borderRadius:'22px', transition:'0.3s' }}>
+                          <div style={{ position:'absolute', width:'16px', height:'16px', background:'white', borderRadius:'50%', top:'3px', left: pc.autoPrint ? '21px' : '3px', transition:'0.3s', boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                        </div>
+                      </label>
+                    </div>
+
+                    <button type="button" onClick={() => testPrint(doc)} disabled={testPrinting === doc} style={{ width:'100%', minHeight:'36px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', color:'#374151', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12.5px', cursor: testPrinting===doc ? 'default':'pointer' }}>
+                      {testPrinting === doc ? 'جارٍ التحضير...' : `طباعة تجريبية — ${title}`}
+                    </button>
+                  </>}
+                </div>
+              )
+            })}
+            <div style={{ fontSize:'11px', color:'#9CA3AF', marginBottom:'6px' }}>
+              الطباعة التجريبية لا تُنشئ طلباً حقيقياً ولا تؤثر على المبيعات أو الإحصائيات.
+            </div>
             </>}
 
             <div style={{ display:'flex', gap:'10px' }}>

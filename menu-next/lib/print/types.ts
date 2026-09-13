@@ -31,6 +31,13 @@ export type PrintJobDocument = {
     documentType: PrintDocumentType
     status: PrintJobStatus
     isReprint: boolean
+    // True for a Settings-page "Test Print" job (sql/print_jobs_phase2_agent.sql's
+    // create_test_print_job) — such a job has no real order_id at all; the
+    // RPC fills `order` with a small, clearly-labeled synthetic sample
+    // instead. No component in this file needs to branch on this flag —
+    // the synthetic order's own content (order number "TEST-0000", a
+    // customer name of "طباعة تجريبية") already makes it visually obvious.
+    isTest: boolean
     createdAt: string
     printedAt: string | null
     lastError: string | null
