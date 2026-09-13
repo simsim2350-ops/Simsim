@@ -8,6 +8,7 @@ import { useBreakpoint } from '../hooks/useBreakpoint'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { vatBreakdown, orderBreakdown, itemsGross } from '../lib/pricing'
 import { fetchBranches } from '../lib/branchesApi'
+import PrintJobsPanel from '../components/PrintJobsPanel'
 
 const STATUS = {
   pending:   { label:'انتظار',      bg:'#FEF3C7', color:'#92400E', next:'preparing', nextLabel:'✓ قبول وتحضير' },
@@ -738,6 +739,10 @@ export default function Orders() {
                       </>
                     )
                   })()}
+                </div>
+
+                <div style={{ marginBottom:'10px' }}>
+                  <PrintJobsPanel orderId={order.id} orderStatus={order.status} />
                 </div>
 
                 <div style={{ display:'flex', gap:'8px' }}>

@@ -1,0 +1,81 @@
+/* Thermal-print render view — CSS Module, scoped to this route only.
+   Deliberately not added to the shared app/globals.css: this page has no
+   relationship to the customer-facing menu it lives alongside. */
+
+.page {
+  min-height: 100vh;
+  background: #F3F4F6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 12px 48px;
+  font-family: 'Tajawal', sans-serif;
+}
+
+/* Actual receipt/ticket surface — width driven by the real paper width
+   (58mm/80mm), never a fixed px guess, via the --paper-width custom
+   property set inline from the fetched printerConfig. */
+.paper {
+  width: var(--paper-width, 80mm);
+  max-width: 100%;
+  background: white;
+  padding: 10px 8px;
+  box-shadow: 0 2px 10px rgba(16, 24, 40, 0.08);
+  font-size: 12px;
+  line-height: 1.55;
+  color: #0B0B0F;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.center { text-align: center; }
+.restaurantName { font-size: 15px; font-weight: 900; margin: 0; }
+.branchName { font-size: 11px; color: #4B5563; margin: 2px 0 0; }
+.logo { max-width: 60%; max-height: 56px; object-fit: contain; margin: 0 auto 6px; display: block; }
+
+.divider { border-top: 1px dashed #9CA3AF; margin: 8px 0; }
+
+.metaRow { display: flex; justify-content: space-between; font-size: 11px; margin: 2px 0; }
+.metaLabel { color: #6B7280; }
+
+.itemsList { margin: 6px 0; }
+.itemRow { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; padding: 3px 0; }
+.itemQty { font-weight: 900; flex-shrink: 0; }
+.itemName { flex: 1; font-weight: 700; }
+.itemPrice { flex-shrink: 0; white-space: nowrap; }
+.itemOptions { font-size: 10.5px; color: #4B5563; padding-inline-start: 14px; margin: 0; }
+.itemNotes { font-size: 10.5px; color: #B91C1C; font-weight: 700; padding-inline-start: 14px; }
+
+.totalsRow { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
+.totalsRow--muted { color: #6B7280; }
+.totalsRow--grand { font-weight: 900; font-size: 15px; padding-top: 6px; border-top: 1px solid #111; margin-top: 4px; }
+
+.footer { text-align: center; font-size: 10.5px; color: #6B7280; margin-top: 10px; }
+
+/* Kitchen ticket — larger, bolder, no financial hierarchy needed. */
+.kitchenHeader { font-size: 13px; font-weight: 900; letter-spacing: 1px; }
+.kitchenItemRow { padding: 6px 0; border-bottom: 1px dotted #D1D5DB; }
+.kitchenQtyName { font-size: 15px; font-weight: 900; display: flex; gap: 8px; }
+.kitchenModifier { font-size: 12.5px; font-weight: 700; padding-inline-start: 20px; }
+.kitchenNotesBox { border: 1.5px solid #111; padding: 6px 8px; margin-top: 8px; font-size: 12.5px; font-weight: 800; }
+
+.statusBadge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+.statusBadge--pending { background: #FEF3C7; color: #92400E; }
+.statusBadge--printing { background: #DBEAFE; color: #1E40AF; }
+.statusBadge--printed { background: #D1FAE5; color: #065F46; }
+.statusBadge--failed { background: #FEE2E2; color: #991B1B; }
+.statusBadge--cancelled { background: #F3F4F6; color: #6B7280; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; width: var(--paper-width, 80mm); max-width: 100%; }
+.actionBtn { flex: 1; min-width: 120px; padding: 11px; border-radius: 11px; border: 1.5px solid #E5E7EB; background: white; font-weight: 800; font-size: 13px; cursor: pointer; font-family: 'Tajawal', sans-serif; }
+.actionBtn--primary { background: #111827; color: white; border-color: #111827; }
+.actionBtn--danger { color: #B91C1C; border-color: #FCA5A5; }
+.actionBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.errorNote { color: #B91C1C; font-size: 12px; font-weight: 700; margin-top: 8px; }
+
+@media print {
+  .page { background: white; padding: 0; }
+  .paper { box-shadow: none; }
+  .noPrint { display: none !important; }
+  @page { margin: 0; }
+}
