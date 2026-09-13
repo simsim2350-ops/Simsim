@@ -739,6 +739,16 @@ export default function Settings() {
                 </div>
                 )}
 
+                {/* إعدادات الطباعة (فاتورة العميل/تذكرة المطبخ) — لكل فرع طابعة ومقاس ورق مستقل، فتُدار من صفحة "الفروع" أيضاً بنفس منطق أوقات العمل أعلاه */}
+                {activeTab === 'operations' && (
+                <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
+                  <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🖨️ الطباعة</div>
+                  <div style={{ padding:'16px 18px', fontSize:'13px', color:'#6B7280', lineHeight:'1.7' }}>
+                    فاتورة العميل وتذكرة المطبخ — كل فرع له طابعة ومقاس ورقة وعدد نسخ مستقل، تُدار من صفحة <a href="/branches" style={{ color:'#FF6A00', fontWeight:'700' }}>🏢 الفروع</a> (اضغط على أي فرع ← تبويب "🖨️ الطباعة").
+                  </div>
+                </div>
+                )}
+
               </div>
             )}
 
