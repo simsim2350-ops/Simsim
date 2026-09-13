@@ -14,8 +14,17 @@ const STATUS_LABEL = { pending: 'قيد الانتظار', printing: 'قيد ا�
 const STATUS_COLOR = { pending: '#92400E', printing: '#1E40AF', printed: '#065F46', failed: '#991B1B', cancelled: '#6B7280' }
 const DOC_LABEL = { customer_invoice: '🧾 فاتورة العميل', kitchen_ticket: '👨‍🍳 تذكرة المطبخ' }
 
-function openJob(job) {
-  window.open(`${appConfig.menuNextBaseUrl}/print/${job.id}?token=${job.view_token}`, '_blank')
+// PHASE 2.5 — returnUrl/returnLabel let the print view's own "Back" go to
+// this exact order (?order=<id> — Orders.jsx now reflects the open detail
+// modal in the URL for exactly this reason) instead of relying on browser
+// history, which a fresh window.open() tab never has anything useful in.
+function openJob(job, orderId) {
+  const params = new URLSearchParams({
+    token: job.view_token,
+    returnUrl: `/orders?order=${orderId}`,
+    returnLabel: 'رجوع لتفاصيل الطلب',
+  })
+  window.open(`${appConfig.menuNextBaseUrl}/print/${job.id}?${params.toString()}`, '_blank')
 }
 
 export default function PrintJobsPanel({ orderId, orderStatus }) {
@@ -70,7 +79,7 @@ export default function PrintJobsPanel({ orderId, orderStatus }) {
                 <div style={{ fontSize: 11, fontWeight: 700, color: STATUS_COLOR[job.status] }}>{STATUS_LABEL[job.status]}</div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button type="button" onClick={() => openJob(job)} style={{ fontSize: 11, border: 'none', background: '#111827', color: 'white', borderRadius: 6, padding: '4px 8px', cursor: 'pointer' }}>فتح</button>
+                <button type="button" onClick={() => openJob(job, orderId)} style={{ fontSize: 11, border: 'none', background: '#111827', color: 'white', borderRadius: 6, padding: '4px 8px', cursor: 'pointer' }}>فتح</button>
                 {job.status === 'failed' && !job.is_reprint && (
                   <button type="button" onClick={() => act(job, 'retry')} style={{ fontSize: 11, border: '1px solid #E5E7EB', background: 'white', borderRadius: 6, padding: '4px 8px', cursor: 'pointer' }}>إعادة المحاولة</button>
                 )}

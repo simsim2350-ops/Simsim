@@ -13,6 +13,10 @@
       "dest": "https://simsim-menu-next.vercel.app/menu/$2"
     },
     {
+      "src": "/(print)/(.+)",
+      "dest": "https://simsim-menu-next.vercel.app/print/$2"
+    },
+    {
       "src": "/api/(customer/.+)",
       "dest": "https://simsim-menu-next.vercel.app/api/$1"
     },
