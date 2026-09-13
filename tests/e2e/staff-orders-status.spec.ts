@@ -233,6 +233,24 @@ test.describe('2.3-D+E — advance order status + undo (cleanup)', () => {
     const undoBtn = page.getByRole('button', { name: /تراجع/ })
     await expect(undoBtn).toBeVisible({ timeout: 10_000 })
 
+    // ── Order → Invoice + Kitchen Ticket → Printing (Phase 1) ────────────────
+    // pending -> preparing is exactly the transition trg_create_print_jobs_on_accept
+    // (sql/print_jobs_phase1.sql) fires on — only meaningful right after this
+    // specific advance, which is why this check lives here rather than as its
+    // own separate advance/undo cycle. Only runs when INITIAL_STATUS is
+    // 'pending' (the only case that reaches this trigger); a 'preparing'/'ready'
+    // starting point advances a step this trigger doesn't fire on, so the panel
+    // may legitimately show nothing new — asserted only in the pending case.
+    if (INITIAL_STATUS === 'pending') {
+      const printBtn = page.getByRole('button', { name: '🖨️ الطباعة' })
+      await expect(printBtn).toBeVisible({ timeout: 10_000 })
+      await printBtn.click()
+      await expect(page.getByText('🧾 فاتورة العميل')).toBeVisible({ timeout: 8_000 })
+      await expect(page.getByText('👨‍🍳 تذكرة المطبخ')).toBeVisible({ timeout: 8_000 })
+      // Close the print-jobs dropdown before continuing (click elsewhere).
+      await printBtn.click()
+    }
+
     // Verify the advance button for the NEW status is now visible in modal
     // (realtime subscription updates selectedOrder → modal re-renders with new status)
     // After pending→preparing, next advance shows "✅ جاهز"
