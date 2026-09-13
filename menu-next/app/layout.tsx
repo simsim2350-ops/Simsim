@@ -1,11 +1,21 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { CANONICAL_ORIGIN } from '@/lib/canonicalOrigin'
 
 // Default document language/direction — Arabic-first, matching the current
 // production menu's default. The English variant (?lang=en) applies its own
 // dir="ltr" wrapper at the page level rather than on <html>, since Next.js
 // layouts don't receive searchParams (by design, for shared route caching).
+//
+// metadataBase — SIMSIM_CANONICAL_ORIGIN_UNIFICATION_EXECUTION_REPORT.md:
+// resolves every relative `alternates.canonical`/`openGraph.url` set by any
+// page in this app against simsimmenu.com, never the host a given request
+// actually arrived on (which the CUSTOMER_SESSION_AND_REPEAT_OTP.md /
+// HOST_RUNTIME_PATH_READONLY_INVESTIGATION_REPORT.md work already showed is
+// not reliably simsimmenu.com itself for proxied traffic). This is metadata
+// only — it has no effect on cookies, routing, or the proxy.
 export const metadata: Metadata = {
+  metadataBase: new URL(CANONICAL_ORIGIN),
   title: 'SimSim Menu (Next.js POC)',
   description: 'Phase 2 read-only proof-of-concept — not the production menu.',
   robots: { index: false, follow: false },
