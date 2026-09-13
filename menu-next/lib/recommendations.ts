@@ -67,6 +67,7 @@ export function getProductCompanions(sourceProductId: string, products: Product[
   const seen = new Set<string>()
   const companions: Product[] = []
   for (const id of ids) {
+    if (id === sourceProductId) continue
     if (seen.has(id)) continue
     const product = products.find((p) => p.id === id)
     if (!product || !product.is_available || hasRequiredOptions(product.options)) continue

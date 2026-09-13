@@ -66,18 +66,14 @@ export function ProductOptionsModal({
   // Guards against a rapid double-tap on Confirm dispatching addToCart/
   // updateCartItem twice before onClose() unmounts this modal.
   const [confirming, setConfirming] = useState(false)
-  // "يكمل هذا الصنف" (companions) only ever appears once the customer has
-  // actually committed to the main product — never on first opening it
-  // (see the UX brief: seeing upsell for something not yet added reads as
-  // premature). Two ways that becomes true, checked once at mount / once on
-  // a real confirm — never a live subscription, per "استخدم الحالة الموجودة
-  // فقط":
-  // 1) alreadyInCart — the product was already in the cart before this
-  //    modal even opened (e.g. reopened from the menu after adding it).
-  // 2) addedOnce — set the moment THIS confirm click actually adds it.
-  const [alreadyInCart] = useState(() => !editing && items.some((i) => i.productId === product.id))
+  // "أكمل وجبتك" (companions) shows from the first open whenever valid
+  // companions exist for this product — independent of whether the main
+  // product itself is in the cart (owner decision: gating visibility on
+  // that made the section appear/disappear unpredictably as the customer
+  // added/removed the main item). addedOnce still only drives the footer's
+  // post-confirm state below, not this section's visibility.
   const [addedOnce, setAddedOnce] = useState(false)
-  const showCompanions = !editing && (alreadyInCart || addedOnce) && companions.length > 0
+  const showCompanions = !editing && companions.length > 0
   // Each companion's own added/not-added state now reads live from
   // CartContext's `items` (see the render below) instead of a transient
   // per-tap flash — CartContext is the single source of truth for "is this
