@@ -20,13 +20,23 @@ import styles from '../../app/print/print.module.css'
 //     website (vercel.json), which is what made the Dashboard's own
 //     generic 404 "Home" button send a staff member there before this
 //     fix; this page never reuses that generic link.
+// returnUrl comes straight from the query string, so it must never be
+// trusted as-is (open-redirect: a crafted /print/..?returnUrl=https://evil
+// link would otherwise send "Back" off-site) — only a same-origin, root-
+// relative path ("/x", not "//x" or "/\x" which browsers also treat as
+// protocol-relative) is accepted; anything else falls back to /dashboard.
+function safeReturnUrl(returnUrl?: string | null): string {
+  if (returnUrl && /^\/(?!\/|\\)/.test(returnUrl)) return returnUrl
+  return '/dashboard'
+}
+
 export function PrintNav({ returnUrl, returnLabel }: { returnUrl?: string | null; returnLabel?: string | null }) {
   const handleBack = () => {
     if (typeof window !== 'undefined' && window.opener && !window.opener.closed) {
       window.close()
       return
     }
-    window.location.href = returnUrl || '/dashboard'
+    window.location.href = safeReturnUrl(returnUrl)
   }
 
   return (
