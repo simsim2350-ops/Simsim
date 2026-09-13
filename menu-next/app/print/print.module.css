@@ -66,6 +66,10 @@
 .statusBadge--failed { background: #FEE2E2; color: #991B1B; }
 .statusBadge--cancelled { background: #F3F4F6; color: #6B7280; }
 
+.printNav { display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 480px; margin: 0 0 14px; padding: 4px 2px; }
+.printNavBack { border: none; background: none; padding: 6px 8px; color: #374151; font-weight: 800; font-size: 13px; cursor: pointer; font-family: 'Tajawal', sans-serif; }
+.printNavHome { color: #6B7280; font-weight: 700; font-size: 12.5px; text-decoration: none; padding: 6px 8px; }
+
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; width: var(--paper-width, 80mm); max-width: 100%; }
 .actionBtn { flex: 1; min-width: 120px; padding: 11px; border-radius: 11px; border: 1.5px solid #E5E7EB; background: white; font-weight: 800; font-size: 13px; cursor: pointer; font-family: 'Tajawal', sans-serif; }
 .actionBtn--primary { background: #111827; color: white; border-color: #111827; }

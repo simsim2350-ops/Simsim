@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
@@ -55,6 +55,7 @@ function Spinner() {
 
 export default function Orders() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { user, restaurant } = useAuthStore()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -68,6 +69,37 @@ export default function Orders() {
   const [queue, setQueue] = useState([]) // طابور الطلبات الجديدة (بانر التنبيه)
   const [cancelTarget, setCancelTarget] = useState(null) // الطلب المُراد إلغاؤه (نافذة السبب)
   const { isMobile } = useBreakpoint()
+
+  // PHASE 2.5 — يعكس نافذة تفاصيل الطلب في الرابط (?order=<id>) فقط لأغراض
+  // التنقّل (لا علاقة له بمنطق الطلب نفسه): يجعل "رجوع" من صفحة الطباعة
+  // (التي تُفتح غالباً في تبويب جديد وتبدأ بتاريخ تصفح خاص بها) تُعيد فتح
+  // نفس الطلب فعلياً، بدل الاعتماد على تاريخ المتصفح الذي لا يملك شيئاً
+  // مفيداً للرجوع إليه في تبويب جديد. restoredFromUrlRef يمنع تأثير مزامنة
+  // الرابط أدناه من حذف ?order=<id> قبل أن تحصل محاولة الاستعادة على فرصتها.
+  const restoredFromUrlRef = useRef(false)
+  useEffect(() => {
+    if (loading) return
+    if (restoredFromUrlRef.current) return
+    restoredFromUrlRef.current = true
+    const wanted = searchParams.get('order')
+    if (!wanted || selectedOrder) return
+    const found = orders.find(o => o.id === wanted)
+    if (found) setSelectedOrder(found)
+  }, [loading, orders]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (selectedOrder) {
+      if (searchParams.get('order') !== selectedOrder.id) {
+        const next = new URLSearchParams(searchParams)
+        next.set('order', selectedOrder.id)
+        setSearchParams(next, { replace: true })
+      }
+    } else if (restoredFromUrlRef.current && searchParams.get('order')) {
+      const next = new URLSearchParams(searchParams)
+      next.delete('order')
+      setSearchParams(next, { replace: true })
+    }
+  }, [selectedOrder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // عرض كانبان أو جدول (يُحفظ)
   const [view, setView] = useState(() => localStorage.getItem('orders_view') || 'kanban')

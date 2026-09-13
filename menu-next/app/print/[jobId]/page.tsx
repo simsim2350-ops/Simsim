@@ -2,10 +2,17 @@ import { getPrintJobDocument } from '@/lib/print/getPrintJobDocument'
 import { CustomerInvoice } from '@/components/print/CustomerInvoice'
 import { KitchenTicket } from '@/components/print/KitchenTicket'
 import { PrintActions } from '@/components/print/PrintActions'
+import { PrintNav } from '@/components/print/PrintNav'
 import styles from '../print.module.css'
 
 type Params = { jobId: string }
-type Search = { token?: string }
+// returnUrl/returnLabel (PHASE 2.5) — same-origin path + label the caller
+// (Orders' print panel, Branches' test-print button) passes so <PrintNav>'s
+// "Back" has a real, context-specific destination instead of relying on
+// browser history, which a fresh window.open() tab never has anything
+// useful in. Never required — <PrintNav> falls back sanely (window.close()
+// via window.opener, else /dashboard) when absent, e.g. a bookmarked link.
+type Search = { token?: string; returnUrl?: string; returnLabel?: string }
 
 // Read-only, token-gated render route for one Print Job (Order → Customer
 // Invoice + Kitchen Ticket → Thermal Printing, Phase 1). A Server
@@ -35,6 +42,7 @@ export default async function PrintJobPage({
   if (!doc) {
     return (
       <div className={styles.page} dir="rtl" lang="ar">
+        <PrintNav returnUrl={search.returnUrl} returnLabel={search.returnLabel} />
         <div className={styles.paper}>
           <p className={styles.center} style={{ fontWeight: 800 }}>تعذّر فتح هذا المستند</p>
           <p className={styles.center} style={{ fontSize: 12, color: '#6B7280' }}>الرابط غير صحيح أو انتهت صلاحيته.</p>
@@ -49,6 +57,7 @@ export default async function PrintJobPage({
 
   return (
     <div className={styles.page} dir="rtl" lang="ar" style={{ '--paper-width': docConfig.paperWidth } as React.CSSProperties}>
+      <PrintNav returnUrl={search.returnUrl} returnLabel={search.returnLabel} />
       {doc.job.documentType === 'customer_invoice' ? <CustomerInvoice doc={doc} /> : <KitchenTicket doc={doc} />}
       <PrintActions jobId={doc.job.id} token={token} initialStatus={doc.job.status} initialError={doc.job.lastError} />
     </div>

@@ -210,7 +210,11 @@ export default function Branches() {
         p_restaurant_id: restaurant.id, p_branch_id: editingBranch.id, p_document_type: documentType,
       })
       if (error) throw error
-      window.open(`${appConfig.menuNextBaseUrl}/print/${job.id}?token=${job.view_token}`, '_blank')
+      // PHASE 2.5 — same returnUrl/returnLabel convention as PrintJobsPanel.jsx,
+      // so the print view's "Back" returns here (Branches) instead of relying
+      // on browser history, which a fresh window.open() tab never has.
+      const params = new URLSearchParams({ token: job.view_token, returnUrl: '/branches', returnLabel: 'رجوع للفروع' })
+      window.open(`${appConfig.menuNextBaseUrl}/print/${job.id}?${params.toString()}`, '_blank')
     } catch (err) {
       toast.error(err.message || 'تعذّرت الطباعة التجريبية')
     } finally {
