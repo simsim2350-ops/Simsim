@@ -80,6 +80,10 @@
 @media print {
   .page { background: white; padding: 0; }
   .paper { box-shadow: none; }
-  .noPrint { display: none !important; }
+  /* :global — PrintNav.tsx/PrintActions.tsx apply this as a literal,
+     unscoped "noPrint" class (not styles.noPrint), so without :global()
+     CSS Modules hashes this selector to something the DOM class never
+     matches and nothing here is actually hidden when printing. */
+  :global(.noPrint) { display: none !important; }
   @page { margin: 0; }
 }
