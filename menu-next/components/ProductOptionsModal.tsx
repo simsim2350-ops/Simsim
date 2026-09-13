@@ -68,11 +68,7 @@ export function ProductOptionsModal({
   const [confirming, setConfirming] = useState(false)
   // "أكمل وجبتك" (companions) shows from the first open whenever valid
   // companions exist for this product — independent of whether the main
-  // product itself is in the cart (owner decision: gating visibility on
-  // that made the section appear/disappear unpredictably as the customer
-  // added/removed the main item). addedOnce still only drives the footer's
-  // post-confirm state below, not this section's visibility.
-  const [addedOnce, setAddedOnce] = useState(false)
+  // product itself is in the cart.
   const showCompanions = !editing && companions.length > 0
   // Each companion's own added/not-added state now reads live from
   // CartContext's `items` (see the render below) instead of a transient
@@ -255,18 +251,15 @@ export function ProductOptionsModal({
       onClose()
       return
     }
-    const result = addToCart(productForCart, branchId, branchName, selected, qty)
-    // A 'conflict' (a different branch is already in the cart) means the
-    // product was NOT actually added — BranchConflictModal (rendered by a
-    // parent, unchanged here) takes over from here exactly as it already
-    // did before this task; showing "added" + companions for something that
-    // wasn't added would be wrong, so this still just closes.
-    if (result !== 'added') { onClose(); return }
-    if (companions.length > 0) {
-      setAddedOnce(true)
-    } else {
-      onClose()
-    }
+    // Whether 'added' or 'conflict' (a different branch is already in the
+    // cart — BranchConflictModal, rendered by a parent, takes over from
+    // here), the base product's own add attempt is done: close immediately,
+    // with no artificial delay, returning to the menu underneath. This is
+    // the base product's own path only — a companion's addToCart (below)
+    // never calls onClose(), so adding/removing companions keeps the
+    // customer on this same product details view.
+    addToCart(productForCart, branchId, branchName, selected, qty)
+    onClose()
   }
 
   return (
@@ -464,27 +457,15 @@ export function ProductOptionsModal({
         </div>
 
         <div className="options-modal__footer">
-          {addedOnce ? (
-            // Replaces qty/confirm entirely once the main product is
-            // actually in the cart — matches the brief's mockup exactly
-            // (a single confirmation line, not a lingering editable qty for
-            // a line that's already committed). Re-adding another unit or
-            // changing options now happens the same way any other cart line
-            // is edited — from the cart itself (unchanged, existing flow).
-            <div className="options-modal__added-bar" role="status">{strings.productAddedConfirmation}</div>
-          ) : (
-            <>
-              <div className="options-modal__qty">
-                <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={qty <= 1} aria-label="decrease">−</button>
-                <span>{qty}</span>
-                <button type="button" onClick={() => setQty((q) => q + 1)} aria-label="increase">+</button>
-              </div>
-              <button type="button" className="options-modal__confirm" style={{ background: priceColor }} onClick={handleConfirm} disabled={confirming} aria-busy={confirming}>
-                <span>{editing ? strings.saveChanges : strings.addToCart}</span>
-                <span>{formatPrice(unitPrice * qty)} {currency}</span>
-              </button>
-            </>
-          )}
+          <div className="options-modal__qty">
+            <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={qty <= 1} aria-label="decrease">−</button>
+            <span>{qty}</span>
+            <button type="button" onClick={() => setQty((q) => q + 1)} aria-label="increase">+</button>
+          </div>
+          <button type="button" className="options-modal__confirm" style={{ background: priceColor }} onClick={handleConfirm} disabled={confirming} aria-busy={confirming}>
+            <span>{editing ? strings.saveChanges : strings.addToCart}</span>
+            <span>{formatPrice(unitPrice * qty)} {currency}</span>
+          </button>
         </div>
       </div>
 
