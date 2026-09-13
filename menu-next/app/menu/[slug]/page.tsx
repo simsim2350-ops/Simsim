@@ -276,12 +276,22 @@ export async function generateMetadata({
   const description = (lang === 'en' ? restaurant.description_en || restaurant.description : restaurant.description)
     || restaurant.name
 
+  // Canonical/OG URL — SIMSIM_CANONICAL_ORIGIN_UNIFICATION_EXECUTION_REPORT.md:
+  // always advertises simsimmenu.com for this exact page, regardless of
+  // whether this specific request arrived via simsimmenu.com or
+  // www.simsimmenu.com (both proxy here identically) — so a shared/QR link
+  // never points at the non-canonical host, matching the branch/table query
+  // params if the customer arrived via a table QR code.
+  const canonicalPath = `/menu/${slug}${search.branch ? `?branch=${encodeURIComponent(search.branch)}` : ''}`
+
   return {
     title: `${restaurant.name} | SimSim Menu`,
     description,
+    alternates: { canonical: canonicalPath },
     openGraph: {
       title: restaurant.name,
       description,
+      url: canonicalPath,
       images: restaurant.logo_url ? [{ url: restaurant.logo_url }] : undefined,
       locale: lang === 'en' ? 'en_US' : 'ar_SA',
     },
