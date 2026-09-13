@@ -905,6 +905,39 @@ html, body {
 }
 .checkout-form__coupon-applied button { border: none; background: none; color: #B91C1C; font-weight: 800; font-size: 12px; cursor: pointer; }
 
+/* ===== Professional phone-verification UX — OTP panel =====
+   Same tokens as the rest of .checkout-form (radius, border color, error
+   red, muted grays, --checkout-focus-color) — no new colors/shadows. */
+.otp-panel__title { margin-bottom: 4px; }
+.otp-panel__body { font-size: 13px; color: #6B7280; margin: 0 0 14px; line-height: 1.5; }
+
+/* A single real <input> (opacity 0) sits over these 6 decorative cells and
+   is the only interactive/focusable/autofillable element — see
+   components/checkout/OtpInput.tsx for why. dir:ltr so digits always read
+   left-to-right even on an RTL page, matching .checkout-form__phone-row. */
+.otp-input { position: relative; width: max-content; margin: 0 auto 4px; }
+.otp-input__control { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: none; padding: 0; margin: 0; cursor: text; }
+.otp-input__cells { display: flex; gap: 8px; pointer-events: none; }
+.otp-input__cell {
+  width: 44px; height: 52px; border: 1.5px solid #E5E7EB; border-radius: 11px; background: white;
+  display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; color: #0B0B0F;
+}
+.otp-input__cell.is-filled { border-color: #D1D5DB; }
+.otp-input__cell.is-active { border-color: var(--checkout-focus-color, #0B0B0F); box-shadow: 0 0 0 3px rgba(11,11,15,0.08); }
+.otp-input--error .otp-input__cell { border-color: #EF4444; }
+.otp-input--disabled .otp-input__cell { opacity: 0.6; }
+@media (max-width: 360px) {
+  .otp-input__cells { gap: 6px; }
+  .otp-input__cell { width: 38px; height: 48px; font-size: 18px; }
+}
+
+.otp-panel__resend { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 12px 0 16px; font-size: 12px; }
+.otp-panel__resend-prompt { color: #9CA3AF; font-weight: 600; }
+.otp-panel__resend-btn { border: none; background: none; padding: 0; color: #1B1D24; font-weight: 800; font-size: 12px; cursor: pointer; font-family: 'Tajawal', sans-serif; }
+.otp-panel__resend-btn:disabled { color: #9CA3AF; cursor: not-allowed; }
+.otp-panel__resend-success { color: #065F46; font-weight: 800; }
+.otp-panel__confirm { margin-top: 4px; }
+
 /* ===== Loyalty card (#1) — ported balance/threshold/tier logic, new visual treatment ===== */
 /* Deliberately more compact than before (brief: "smaller and more focused
    than the current design") now that it sits below the current-order card

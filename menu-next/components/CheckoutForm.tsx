@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/lib/cart/CartContext'
@@ -20,6 +20,16 @@ import { VehicleInfoForm } from './checkout/VehicleInfoForm'
 import { CouponInput } from './checkout/CouponInput'
 import { PriceSummary } from './checkout/PriceSummary'
 import { CheckoutCTA } from './checkout/CheckoutCTA'
+import { OtpVerificationPanel } from './checkout/OtpVerificationPanel'
+
+// Mirrors the real, existing backend resend cooldown — sql/customer_identity_
+// phase2_otp_delivery.sql (and phase1.sql): "otp_last_sent_at ... < interval
+// '60 seconds' then raise exception 'otp_cooldown'". Surfaced here as a
+// client-side countdown/UX throttle only (never a security boundary — the
+// server enforces its own cooldown/rate-limit regardless of this timer, and
+// deliberately answers a cooldown-rejected resend the same as a successful
+// one, see sendOtp() below). Not an invented business rule.
+const RESEND_COOLDOWN_SECONDS = 60
 
 type OrderType = 'dine_in' | 'takeaway' | 'delivery' | 'car_pickup'
 // 'verifying' (Phase 3C.3) — only reachable when phoneVerificationEnabled is
@@ -118,14 +128,53 @@ export function CheckoutForm({
   const [applyingCoupon, setApplyingCoupon] = useState(false)
 
   // Phase 3C.3 — only ever set/read when phoneVerificationEnabled is true.
-  // otpCode/otpError back the small inline verification step that appears
-  // in place of the submit button after /api/customer/checkout answers 401
-  // (no valid session yet) — never shown, never touched, when the flag is
-  // false. sendingOtp guards the resend button the same way submittingRef
-  // guards the main submit button.
+  // otpCode/otpError back the verification panel that appears in place of
+  // the submit button after /api/customer/checkout answers 401 (no valid
+  // session yet) — never shown, never touched, when the flag is false.
+  // sendingOtp guards the resend button the same way submittingRef guards
+  // the main submit button.
   const [otpCode, setOtpCode] = useState('')
   const [otpError, setOtpError] = useState('')
   const [sendingOtp, setSendingOtp] = useState(false)
+  // otpActive: whether the OTP panel itself should stay on screen. Kept
+  // deliberately separate from `status` — status still legitimately becomes
+  // 'submitting' for the real post-verification order retry (unchanged
+  // behavior), but that used to also hide the OTP panel entirely mid
+  // verify-otp request (since the panel's old condition was
+  // `status === 'verifying'`, and handleOtpVerify set status to
+  // 'submitting' while checking the code). otpActive fixes that: it's true
+  // for the whole OTP step (idle entry, in-flight verify, wrong-code error,
+  // resend) and only turns false once verification actually succeeds (right
+  // before the existing order-submission retry) or the step can't continue
+  // at all (initial send failure / no pending checkout body).
+  const [otpActive, setOtpActive] = useState(false)
+  // True only while the verify-otp request itself is in flight — a
+  // dedicated flag so this panel's own "جارٍ التحقق..." state never depends
+  // on / collides with the order-submission `status`.
+  const [verifyingOtp, setVerifyingOtp] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [resendSucceeded, setResendSucceeded] = useState(false)
+  const cooldownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const resendSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (cooldownIntervalRef.current) clearInterval(cooldownIntervalRef.current)
+    if (resendSuccessTimeoutRef.current) clearTimeout(resendSuccessTimeoutRef.current)
+  }, [])
+
+  const startResendCooldown = () => {
+    if (cooldownIntervalRef.current) clearInterval(cooldownIntervalRef.current)
+    setResendCooldown(RESEND_COOLDOWN_SECONDS)
+    cooldownIntervalRef.current = setInterval(() => {
+      setResendCooldown((s) => {
+        if (s <= 1) {
+          if (cooldownIntervalRef.current) clearInterval(cooldownIntervalRef.current)
+          return 0
+        }
+        return s - 1
+      })
+    }, 1000)
+  }
 
   // Synchronous guard against a double-click/double-tap submitting twice
   // before React re-renders the disabled button — the disabled attribute
@@ -133,6 +182,11 @@ export function CheckoutForm({
   const submittingRef = useRef(false)
 
   const formatPrice = (n: number) => n.toLocaleString(lang === 'en' ? 'en-US' : 'ar-SA')
+  // Derived, display-only — never a new data source: customerPhone is the
+  // same 9-digit national number this form already collects/validates.
+  // Masked to the last 4 digits so the OTP panel can confirm "we texted
+  // you" without showing the full number.
+  const maskedPhone = customerPhone.length === 9 ? `•••••${customerPhone.slice(-4)}` : null
 
   if (count === 0) {
     return (
@@ -412,26 +466,36 @@ export function CheckoutForm({
   }
 
   const startVerification = async () => {
+    setOtpActive(true)
     setStatus('verifying')
     setOtpError('')
     setOtpCode('')
+    setResendSucceeded(false)
     setSendingOtp(true)
     const ok = await sendOtp()
     setSendingOtp(false)
     if (!ok) {
+      setOtpActive(false)
       setStatus('error')
       submittingRef.current = false
       setErrorMessage(strings.otpErrorSendFailed)
+      return
     }
+    startResendCooldown()
   }
 
   const handleResendOtp = async () => {
-    if (sendingOtp) return
+    if (sendingOtp || resendCooldown > 0) return
     setOtpError('')
+    setResendSucceeded(false)
     setSendingOtp(true)
     const ok = await sendOtp()
     setSendingOtp(false)
-    if (!ok) setOtpError(strings.otpErrorSendFailed)
+    if (!ok) { setOtpError(strings.otpErrorSendFailed); return }
+    setResendSucceeded(true)
+    startResendCooldown()
+    if (resendSuccessTimeoutRef.current) clearTimeout(resendSuccessTimeoutRef.current)
+    resendSuccessTimeoutRef.current = setTimeout(() => setResendSucceeded(false), 2500)
   }
 
   // Phase 3C.3 — the ONLY place this file ever calls the existing, unmodified
@@ -442,9 +506,12 @@ export function CheckoutForm({
   // — no re-validation, no rebuilt payload, just a retry now that a session
   // exists.
   const handleOtpVerify = async () => {
+    // Guards a rapid double-tap on Confirm the same way submittingRef guards
+    // the main submit button — checked first, before any other logic.
+    if (verifyingOtp) return
     if (!/^[0-9]{6}$/.test(otpCode)) { setOtpError(strings.otpErrorInvalid); return }
     setOtpError('')
-    setStatus('submitting')
+    setVerifyingOtp(true)
     let res: Response
     try {
       res = await fetch('/api/customer/verify-otp', {
@@ -454,7 +521,7 @@ export function CheckoutForm({
         body: JSON.stringify({ phone: customerPhone, code: otpCode }),
       })
     } catch {
-      setStatus('verifying')
+      setVerifyingOtp(false)
       setOtpError(strings.otpErrorGeneric)
       return
     }
@@ -465,7 +532,7 @@ export function CheckoutForm({
       payload = null
     }
     if (!res.ok || !payload?.verified) {
-      setStatus('verifying')
+      setVerifyingOtp(false)
       setOtpError(strings.otpErrorInvalid)
       return
     }
@@ -474,12 +541,20 @@ export function CheckoutForm({
     if (!pending) {
       // Should not be reachable — verification only ever starts after a
       // pending checkout body was stored. Fail safely rather than guess.
+      setVerifyingOtp(false)
+      setOtpActive(false)
       submittingRef.current = false
       setStatus('error')
       setErrorMessage(networkErrorMessage[lang])
       return
     }
+    // Verified — leave the OTP panel and let the existing order-submission
+    // status/CTA take over for the retry below, exactly as it already did
+    // before this task (no new navigation, no change to this transition).
+    setOtpActive(false)
+    setStatus('submitting')
     const { data, error } = await submitViaCheckoutApi(pending.body)
+    setVerifyingOtp(false)
     if (error) {
       finishSubmission(null, error, rpcArgsRef.current, rpcItemsRef.current)
       return
@@ -708,41 +783,29 @@ export function CheckoutForm({
         </div>
       )}
 
-      {/* Phase 3C.3 — only reachable when phoneVerificationEnabled is true
-          AND the checkout attempt above answered 401. Replaces the submit
-          button entirely while active; the cart/summary above stays visible
-          and unchanged so the customer isn't confused about losing their
-          order. Left exactly as it was — same DOM shape, same classes, same
-          handlers — since this Checkout Redesign task is UI/structure only
-          and this flow is already independently verified security-sensitive
-          business logic, not touched here. */}
-      {status === 'verifying' ? (
-        <div className="checkout-form__section" role="alert">
-          <p className="checkout-form__label">{strings.otpVerifyTitle}</p>
-          <p>{strings.otpVerifyBody}</p>
-          <input
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            value={otpCode}
-            onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-            placeholder={strings.otpCodePh}
-            className="checkout-form__input"
-          />
-          {otpError && <span className="checkout-form__error">{otpError}</span>}
-          <button
-            type="button"
-            className="checkout-form__submit"
-            style={{ background: priceColor }}
-            disabled={otpCode.length !== 6}
-            onClick={handleOtpVerify}
-          >
-            {strings.otpVerifyButton}
-          </button>
-          <button type="button" className="checkout-form__coupon-apply" disabled={sendingOtp} onClick={handleResendOtp}>
-            {strings.otpResend}
-          </button>
-        </div>
+      {/* Phase 3C.3, given a professional UX pass — only reachable when
+          phoneVerificationEnabled is true AND the checkout attempt above
+          answered 401. Replaces the submit button entirely while active
+          (otpActive, not status — see its declaration above for why); the
+          cart/summary above stays visible and unchanged so the customer
+          isn't confused about losing their order. Same verify-otp Route
+          Handler, same Customer Session cookie, same post-verify checkout
+          retry as before — this pass is UI/interaction only. */}
+      {otpActive ? (
+        <OtpVerificationPanel
+          maskedPhone={maskedPhone}
+          otpCode={otpCode}
+          onOtpChange={(next) => { setOtpCode(next); setOtpError('') }}
+          otpError={otpError}
+          verifying={verifyingOtp}
+          onVerify={handleOtpVerify}
+          sendingOtp={sendingOtp}
+          resendCooldown={resendCooldown}
+          onResend={handleResendOtp}
+          resendSucceeded={resendSucceeded}
+          priceColor={priceColor}
+          lang={lang}
+        />
       ) : (
         <CheckoutCTA
           status={status}
