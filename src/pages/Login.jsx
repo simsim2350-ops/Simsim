@@ -101,7 +101,7 @@ export default function Login() {
           <div style={styles.formHeader}>
             <div style={styles.eyebrow}>مرحباً بعودتك 👋</div>
             <h2 style={styles.formTitle}>تسجيل الدخول</h2>
-            <p style={styles.formSub}>أدخل بياناتك للوصول إلى لوحة تحكم مطعمك</p>
+            <p style={styles.formSub}>أدخل بياناتك للوصول إلى لوحة تحكم مطعمك ✅</p>
           </div>
 
           <div style={{ marginBottom: '8px' }} />
