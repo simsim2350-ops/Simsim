@@ -1,11 +1,20 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+
+// PrintJobsPanel.jsx imports the real supabase client at module scope
+// (`../lib/supabase`, eager createClient()) — under CI's pinned Node 20
+// (no native WebSocket) that throws inside @supabase/realtime-js the
+// moment this module is imported, even though these tests only need the
+// two pure functions below and never call any supabase method. Mocking
+// it out (same vi.mock('./supabase', ...) pattern src/lib/analytics.test.js
+// already uses) avoids constructing a real client entirely.
+vi.mock('../lib/supabase', () => ({ supabase: {} }))
+
 import { deriveOverallStatus, latestOfType } from './PrintJobsPanel'
 
 // Unit tests for the unified "طباعة الطلب" button's state-machine logic —
 // the part of this task most at risk of a subtle bug (falsely reporting
 // success when only one of the two documents actually printed). No
-// component render, no supabase/window.open mocking needed: both
-// functions are pure.
+// component render, no window.open mocking needed: both functions are pure.
 
 const job = (document_type, status, overrides = {}) => ({
   id: `${document_type}-id`, document_type, status, is_reprint: false, view_token: 'tok', created_at: '2026-01-01', ...overrides,
