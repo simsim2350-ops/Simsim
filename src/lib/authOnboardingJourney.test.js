@@ -41,8 +41,16 @@ describe('auth and onboarding journey contract', () => {
     expect(app).toContain('resolveUserDestination()} replace')
     expect(app).toContain('AuthBootstrapError')
     expect(protectedRoute).toContain("authState === 'ERROR'")
-    expect(app).not.toContain('new Promise(() => {})')
-    expect(app).not.toContain('window.location.reload()')
+    // كان القرار الأصلي هنا يمنع أي إعادة تحميل/Promise معلّقة *بلا شرط* لأي خطأ —
+    // لأن ذلك كان يخفي التشخيص الحقيقي ويُبقي المستخدم على شاشة تحميل لا تنتهي (راجع
+    // DEPLOYMENT_UPDATE_ROOT_CAUSE_REPORT.md). الإصلاح الحالي لا يُلغي ذاك القرار: يسمح
+    // بإعادة تحميل *محكومة* فقط لفشل chunk محدد (نشرة جديدة حذفت ملف JS قديم كان لا يزال
+    // مرجعاً في تبويب مفتوح)، مرة واحدة فقط لكل جلسة تبويب (علَم sessionStorage يمنع أي
+    // حلقة)، بينما أي خطأ آخر ما زال يصل لـRootErrorBoundary مباشرة بلا إعادة تحميل إطلاقاً.
+    expect(app).toContain('function isChunkLoadError(error)')
+    expect(app).toContain('CHUNK_RELOAD_FLAG')
+    expect(app).toContain('isChunkLoadError(error) && !hasAttemptedChunkReload()')
+    expect(app).toContain('window.location.reload()')
   })
 
   it('يعرض Onboarding خطأ قابلًا لإعادة المحاولة ويحمي إنشاء المطعم والمنيو من التكرار', () => {
