@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { AppToaster } from './components/AppToaster'
 import { useAuthStore } from './store/authStore'
@@ -9,15 +9,57 @@ import { appConfig } from './config'
 import RequirePlatformAdmin from './admin/RequirePlatformAdmin'
 import LogRocketDiag from './pages/LogRocketDiag'
 import ProtectedRoute, { PageLoader, AuthBootstrapError } from './components/ProtectedRoute'
+import { checkForNewDeployment } from './lib/deploymentVersion'
 
-// فشل تحميل chunk يجب أن يصل إلى RootErrorBoundary فورًا؛ لا نعيد التحميل قسرًا ولا نرجع
-// Promise معلقة لأن أيًا منهما يخفي التشخيص ويُبقي المستخدم على شاشة تحميل لا تنتهي.
+// نشرة جديدة على main تحذف ملفات JS القديمة ذات الـhash من dist/assets — تبويب مفتوح
+// منذ قبل النشرة قد يطلب import() ديناميكياً لصفحة لم تُحمَّل بعد بـhash لم يعد موجوداً.
+// هذا هو "stale chunk" الحقيقي، ويُعالَج بإعادة تحميل تلقائية واحدة فقط لكل جلسة تبويب
+// (علَم في sessionStorage يمنع حلقة تحديث لا نهائية): الفشل الأول من نوع chunk تحديداً
+// (وليس أي خطأ JS آخر) → إعادة تحميل الصفحة (تجلب index.html + الحزمة الصحيحة الحالية
+// من النشرة الجديدة). أي فشل من نفس النوع *بعد* تلك الإعادة (نفس التبويب) لم يعد يمكن
+// تفسيره كحزمة قديمة — الصفحة حمّلت الحزمة الحالية للتو — فهو خطأ حقيقي يجب أن يصل إلى
+// RootErrorBoundary بوضوح، لا أن يُخفى خلف حلقة تحديث لا نهائية.
+const CHUNK_RELOAD_FLAG = 'simsim:chunkReloadAttempted'
+
+// رسائل ثابتة وموثّقة عبر المتصفحات الحديثة (Chromium/Firefox/Safari) لفشل import()
+// الديناميكي تحديداً بسبب عدم توفّر الملف/فشل الشبكة — وليس أي استثناء JS عادي داخل
+// الوحدة نفسها (ذاك يُرمى بعد نجاح التحميل، برسالة مختلفة تماماً، فلا يُطابق هنا).
+function isChunkLoadError(error) {
+  const message = String(error?.message || '')
+  return /failed to fetch dynamically imported module|error loading dynamically imported module|importing a module script failed|unable to preload css/i.test(message)
+}
+
+function hasAttemptedChunkReload() {
+  try {
+    return sessionStorage.getItem(CHUNK_RELOAD_FLAG) === '1'
+  } catch {
+    // تعذّر الوصول لـsessionStorage (مثلاً تصفح خاص بإعدادات معيّنة) — لا نخاطر
+    // بحلقة تحديث محتملة، فنتعامل مع المحاولة كأنها استُهلكت أصلاً.
+    return true
+  }
+}
+
+function markChunkReloadAttempted() {
+  try {
+    sessionStorage.setItem(CHUNK_RELOAD_FLAG, '1')
+  } catch {
+    /* تجاهل — أفضل من كسر التطبيق لأجل تشخيص إضافي غير ضروري */
+  }
+}
+
 function lazyWithRetry(importer) {
   return lazy(async () => {
     try {
       return await importer()
     } catch (error) {
       console.error('[Route chunk] ERROR', error)
+      if (isChunkLoadError(error) && !hasAttemptedChunkReload()) {
+        markChunkReloadAttempted()
+        window.location.reload()
+        // إعادة التحميل تُنهي تنفيذ JS الحالي فعلياً بمجرد بدئها؛ Promise لا يُحسم أبداً
+        // بدل رمي الخطأ الآن — تفادياً لأي وميض لشاشة RootErrorBoundary قبل أن يكتمل التنقّل.
+        return new Promise(() => {})
+      }
       throw error
     }
   })
@@ -137,9 +179,24 @@ function RequirePage({ page, children }) {
   return children
 }
 
+// شريط غير مزعج (لا يحجب التطبيق، لا يُغلق تلقائياً بلا إذن المستخدم) يظهر فقط عند تأكيد
+// وجود نشرة جديدة فعلياً (deploymentVersion.js). لا إعادة تحميل تلقائية بلا ضغطة صريحة —
+// تفادياً لفقدان عمل غير محفوظ (نموذج مفتوح، إلخ) لا نملك طريقة عامة لرصده هنا.
+function UpdateBanner({ onReload }) {
+  return (
+    <div dir="rtl" role="status" style={{ position:'fixed', insetInlineStart:0, insetInlineEnd:0, bottom:0, zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', gap:12, padding:'10px 16px', background:'#111827', color:'white', fontFamily:'Tajawal,sans-serif', fontSize:13, fontWeight:700, boxShadow:'0 -2px 12px rgba(0,0,0,0.18)' }}>
+      <span>🔄 تحديث جديد لسمسم متوفر</span>
+      <button type="button" onClick={onReload} style={{ background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', border:'none', borderRadius:8, padding:'6px 14px', fontFamily:'inherit', fontWeight:800, fontSize:12.5, cursor:'pointer' }}>
+        تحديث الآن
+      </button>
+    </div>
+  )
+}
+
 function ConfiguredApp() {
   const initialize = useAuthStore((s) => s.initialize)
   const loadFeatures = useAuthStore((s) => s.loadFeatures)
+  const [updateAvailable, setUpdateAvailable] = useState(false)
   useEffect(() => {
     initialize()
     // إعادة تحميل خريطة القدرات عند عودة التركيز للنافذة — تسري تغييرات السجل
@@ -149,9 +206,23 @@ function ConfiguredApp() {
     return () => window.removeEventListener('focus', onFocus)
   }, [])
 
+  // اكتشاف نشرة جديدة: فحص واحد عند بدء التطبيق، وفحص آخر عند عودة التبويب للظهور
+  // بعد غياب (لا polling دوري) — راجع src/lib/deploymentVersion.js.
+  useEffect(() => {
+    let cancelled = false
+    const runCheck = () => {
+      checkForNewDeployment().then((isNew) => { if (isNew && !cancelled) setUpdateAvailable(true) })
+    }
+    runCheck()
+    const onVisibility = () => { if (document.visibilityState === 'visible') runCheck() }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => { cancelled = true; document.removeEventListener('visibilitychange', onVisibility) }
+  }, [])
+
   return (
     <RootErrorBoundary>
     <BrowserRouter>
+      {updateAvailable && <UpdateBanner onReload={() => window.location.reload()} />}
       <AppToaster position="bottom-center" toastOptions={{
         style: { fontFamily:'Tajawal,sans-serif', direction:'rtl', borderRadius:'12px', background:'#0B0B0F', color:'white', fontSize:'14px', fontWeight:'600' },
         success: { iconTheme: { primary:'#10B981', secondary:'white' } },
