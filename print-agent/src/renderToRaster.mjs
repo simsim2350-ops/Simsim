@@ -36,6 +36,14 @@ export async function renderUrlToRaster(url, paperWidth) {
   const browser = await chromium.launch()
   try {
     const page = await browser.newPage({ viewport: { width, height: 100 } })
+    // Without this, page.screenshot() below uses the default "screen"
+    // media type, so the /print/[jobId] page's own @media print rules
+    // (which hide PrintNav's "Back"/"Home" and PrintActions' buttons/
+    // status badge via the .noPrint class) never apply — a real thermal
+    // receipt would then print that browser-only UI chrome too. Emulating
+    // "print" here makes this agent rasterize exactly what a real print
+    // dialog would send, matching what window.print()'s own output shows.
+    await page.emulateMedia({ media: 'print' })
     await page.goto(url, { waitUntil: 'networkidle' })
     const pngBuffer = await page.screenshot({ fullPage: true })
     return pngToRaster(pngBuffer, width)
