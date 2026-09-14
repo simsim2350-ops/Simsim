@@ -14,11 +14,15 @@ const STATUS_LABEL = { pending: 'قيد الانتظار', printing: 'قيد ا�
 const STATUS_COLOR = { pending: '#92400E', printing: '#1E40AF', printed: '#065F46', failed: '#991B1B', cancelled: '#6B7280' }
 const DOC_LABEL = { customer_invoice: '🧾 فاتورة العميل', kitchen_ticket: '👨‍🍳 تذكرة المطبخ' }
 
-// Unified-print polling: real DB-state polling (never a fake progress bar)
-// bounded so an abandoned/blocked tab can never leave the button spinning
-// forever — matches the same bounded-wait convention PrintActions.tsx uses
-// for its own sibling-job wait.
-const POLL_TIMEOUT_MS = 60_000
+// Unified-print polling: real DB-state polling (never a fake progress bar).
+// Bound set comfortably above PrintActions.tsx's own worst case (its
+// WAIT_FOR_SIBLING_TIMEOUT_MS 100s + its own DEFAULT_HANG_TIMEOUT_MS 90s,
+// so a stalled Kitchen Ticket wait plus a stalled Customer Invoice print
+// both still resolve for real before this gives up) plus margin for
+// network latency — this stays a "give up watching" bound, not the thing
+// that decides success (see pollUntilDone's own force-fail branch below
+// for what actually happens if a job is still stuck when this elapses).
+const POLL_TIMEOUT_MS = 210_000
 const POLL_INTERVAL_MS = 2_000
 
 // PHASE 2.5 — returnUrl/returnLabel let the print view's own "Back" go to
@@ -49,6 +53,14 @@ export function latestOfType(jobs, type) {
     if (jobs[i].document_type === type) return jobs[i]
   }
   return null
+}
+
+// A job that never reached a terminal state (printed/failed/cancelled)
+// within the outer poll's bound is what the Dashboard-side hang-detection
+// backstop force-fails — extracted as a pure predicate so this decision
+// is unit-tested independently of the actual RPC call.
+export function isStuckJob(job) {
+  return !!job && (job.status === 'printing' || job.status === 'pending')
 }
 
 // Aggregates the two independent per-document statuses into the ONE status
@@ -95,14 +107,41 @@ export default function PrintJobsPanel({ orderId, orderStatus }) {
     load()
   }
 
+  // Outer hang-detection backstop. PrintActions.tsx's own hang-timeout
+  // (see ROOT CAUSE comment there) resolves a job that's actively being
+  // watched by a print tab — but if that tab was closed before its own
+  // timer could ever fire (the JS in a closed tab simply stops running,
+  // so nothing inside it can save it), print_jobs.status would otherwise
+  // sit at 'printing' forever with nothing left to move it. This is the
+  // ONLY layer that can still catch that specific case, since it runs
+  // from the Dashboard tab, not the (possibly closed) print tab. On
+  // timeout it force-writes 'failed' directly via the SAME token-gated
+  // set_print_job_status RPC PrintActions.tsx itself calls (the job's
+  // view_token is already loaded in `jobs` — no new access path). This
+  // is hang DETECTION only: it is never used to assume/declare success.
+  const forceFailIfStillStuck = async (job) => {
+    if (!isStuckJob(job)) return
+    await supabase.rpc('set_print_job_status', {
+      p_print_job_id: job.id, p_token: job.view_token, p_status: 'failed',
+      p_error: 'انتهت المهلة دون تأكيد اكتمال الطباعة (رُصد من لوحة الطلبات)',
+    })
+  }
+
   const pollUntilDone = () => {
     const startedAt = Date.now()
     const tick = async () => {
       const list = await load()
-      const st = deriveOverallStatus(latestOfType(list || [], 'customer_invoice'), latestOfType(list || [], 'kitchen_ticket'))
+      const invoiceJob = latestOfType(list || [], 'customer_invoice')
+      const ticketJob = latestOfType(list || [], 'kitchen_ticket')
+      const st = deriveOverallStatus(invoiceJob, ticketJob)
       if (st === 'success') { toast.success('تم طباعة الطلب'); setActing(false); return }
       if (st === 'failed') { setActing(false); return }
-      if (Date.now() - startedAt > POLL_TIMEOUT_MS) { setActing(false); return }
+      if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
+        await Promise.all([forceFailIfStillStuck(invoiceJob), forceFailIfStillStuck(ticketJob)])
+        await load()
+        setActing(false)
+        return
+      }
       pollTimerRef.current = setTimeout(tick, POLL_INTERVAL_MS)
     }
     tick()

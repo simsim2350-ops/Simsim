@@ -9,7 +9,7 @@ import { describe, it, expect, vi } from 'vitest'
 // already uses) avoids constructing a real client entirely.
 vi.mock('../lib/supabase', () => ({ supabase: {} }))
 
-import { deriveOverallStatus, latestOfType } from './PrintJobsPanel'
+import { deriveOverallStatus, isStuckJob, latestOfType } from './PrintJobsPanel'
 
 // Unit tests for the unified "طباعة الطلب" button's state-machine logic —
 // the part of this task most at risk of a subtle bug (falsely reporting
@@ -66,5 +66,29 @@ describe('deriveOverallStatus', () => {
 
   it('prioritizes "failed" over "printing" — a real failure must never be hidden behind a spinner', () => {
     expect(deriveOverallStatus(job('customer_invoice', 'failed'), job('kitchen_ticket', 'printing'))).toBe('failed')
+  })
+})
+
+// Regression tests for the "جاري طباعة الطلب..." stuck-forever bug
+// (order #0180): the Dashboard-side hang-detection backstop's decision of
+// which jobs are eligible to be force-failed once the outer poll gives up.
+describe('isStuckJob (Dashboard-side hang-detection backstop)', () => {
+  it('a job stuck in "printing" (the exact order #0180 symptom) is stuck', () => {
+    expect(isStuckJob(job('customer_invoice', 'printing'))).toBe(true)
+  })
+
+  it('a job that never even started ("pending") is also stuck if the poll gave up on it', () => {
+    expect(isStuckJob(job('kitchen_ticket', 'pending'))).toBe(true)
+  })
+
+  it('a job already at a terminal state is never force-failed', () => {
+    expect(isStuckJob(job('customer_invoice', 'printed'))).toBe(false)
+    expect(isStuckJob(job('customer_invoice', 'failed'))).toBe(false)
+    expect(isStuckJob(job('customer_invoice', 'cancelled'))).toBe(false)
+  })
+
+  it('a missing job is never force-failed (nothing to act on)', () => {
+    expect(isStuckJob(null)).toBe(false)
+    expect(isStuckJob(undefined)).toBe(false)
   })
 })
