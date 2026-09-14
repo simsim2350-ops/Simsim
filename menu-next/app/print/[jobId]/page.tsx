@@ -20,7 +20,12 @@ type Params = { jobId: string }
 // required for a manually-opened/bookmarked link (PrintActions only
 // auto-prints once, and only while the job is still 'pending' — see its
 // own comment for why that guard matters).
-type Search = { token?: string; returnUrl?: string; returnLabel?: string; autoprint?: string; waitForJobId?: string; waitForToken?: string }
+//
+// hangTimeoutMs — test-only override for PrintActions' hang-detection
+// timer (see its own DEFAULT_HANG_TIMEOUT_MS comment); clamped there to
+// never exceed the real 90s default, so this can only ever make the
+// safety net stricter/faster, never weaker. Absent in every real usage.
+type Search = { token?: string; returnUrl?: string; returnLabel?: string; autoprint?: string; waitForJobId?: string; waitForToken?: string; hangTimeoutMs?: string }
 
 // Read-only, token-gated render route for one Print Job (Order → Customer
 // Invoice + Kitchen Ticket → Thermal Printing, Phase 1). A Server
@@ -75,6 +80,7 @@ export default async function PrintJobPage({
         autoprint={search.autoprint === '1'}
         waitForJobId={search.waitForJobId}
         waitForToken={search.waitForToken}
+        hangTimeoutMs={search.hangTimeoutMs ? Number(search.hangTimeoutMs) : undefined}
       />
     </div>
   )
