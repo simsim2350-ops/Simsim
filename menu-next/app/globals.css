@@ -1196,31 +1196,12 @@ html, body {
 .product-card--grid .product-card__emoji { font-size: 40px; }
 .product-card--showcase .product-card__emoji { font-size: 48px; }
 
-/* gap: 10px (tighter than the base 12px) — a deliberately closer bond between
-   circle/name/price than the bordered-card layouts get, since there's no
-   card frame here to visually group them; the image itself already carries
-   plenty of separation from its neighbor via the grid gap. */
-.product-card--circles { display: flex; flex-direction: column; align-items: center; text-align: center; background: none; border: none; padding: 6px 4px; gap: 10px; }
+.product-card--circles { display: flex; flex-direction: column; align-items: center; text-align: center; background: none; border: none; padding: 6px 4px; }
 .product-card--circles .product-card__media { width: 100%; max-width: 136px; height: auto; aspect-ratio: 1 / 1; border-radius: 50%; border: 3px solid white; box-shadow: 0 6px 18px rgba(0,0,0,.1); }
 .product-card--circles .product-card__emoji { font-size: 50px; }
 .product-card--circles .product-card__body { width: 100%; }
-.product-card--circles .product-card__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0; }
-/* Calorie badge dropped here only (content-density: a slim circular card has
-   no room for a 3rd piece of info next to the price without wrapping — it
-   was overflowing onto its own line next to "<price> <currency>", reading as
-   clutter). Name + price stay, exactly like every other layout still shows
-   the calorie badge. direction:ltr keeps "<number> <currency-code>" in one
-   stable left-to-right reading order (e.g. "٦ SAR") instead of the mixed
-   Arabic-numeral/Latin-code bidi reordering that made it read confusingly
-   in this RTL card; white-space:nowrap is the overflow fix; justify-
-   content:center keeps the single remaining line centered under the circle. */
-.product-card--circles .product-card__price { justify-content: center; white-space: nowrap; margin-top: 0; direction: ltr; }
-.product-card--circles .product-card__calories { display: none; }
-/* (+) sized up a step from the shared 34px base to stay proportionate to the
-   larger 136px circle (was tuned for the old 96px one) — same bottom-center
-   floating position, just a touch bigger and a slightly stronger shadow so
-   it reads clearly against a photo instead of nearly disappearing into it. */
-.product-card--circles .add-to-cart-btn { width: 38px; height: 38px; font-size: 19px; box-shadow: 0 3px 10px rgba(0,0,0,.22); }
+.product-card--circles .product-card__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.product-card--circles .product-card__price { justify-content: center; }
 
 /* 'list' row redesign (round 6) — a light "product list" row instead of a
    per-item white card: no background/border/radius of its own (the base
