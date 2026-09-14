@@ -52,6 +52,14 @@
 
 .footer { text-align: center; font-size: 10.5px; color: #6B7280; margin-top: 10px; }
 
+/* Customer Invoice only — compact social/contact footer, reusing the
+   restaurant's own configured restaurants.social_links. Deliberately
+   small/muted (not a marketing section): a receipt, not an ad. */
+.socialTitle { font-size: 11px; font-weight: 800; margin: 0 0 4px; }
+.socialList { margin: 2px 0; }
+.socialRow { display: flex; justify-content: space-between; gap: 8px; font-size: 10.5px; padding: 2px 0; }
+.socialValue { color: #4B5563; overflow-wrap: anywhere; text-align: left; }
+
 /* Kitchen ticket — larger, bolder, no financial hierarchy needed. */
 .kitchenHeader { font-size: 13px; font-weight: 900; letter-spacing: 1px; }
 .kitchenItemRow { padding: 6px 0; border-bottom: 1px dotted #D1D5DB; }

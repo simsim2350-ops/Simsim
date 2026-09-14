@@ -12,7 +12,15 @@ type Params = { jobId: string }
 // browser history, which a fresh window.open() tab never has anything
 // useful in. Never required — <PrintNav> falls back sanely (window.close()
 // via window.opener, else /dashboard) when absent, e.g. a bookmarked link.
-type Search = { token?: string; returnUrl?: string; returnLabel?: string }
+//
+// autoprint/waitForJobId/waitForToken (unified "طباعة الطلب" button) — set
+// by Orders' PrintJobsPanel.jsx when it opens this tab as part of one
+// combined print action, so the staff member doesn't have to click
+// "طباعة" again on a page they didn't consciously choose to open. Never
+// required for a manually-opened/bookmarked link (PrintActions only
+// auto-prints once, and only while the job is still 'pending' — see its
+// own comment for why that guard matters).
+type Search = { token?: string; returnUrl?: string; returnLabel?: string; autoprint?: string; waitForJobId?: string; waitForToken?: string }
 
 // Read-only, token-gated render route for one Print Job (Order → Customer
 // Invoice + Kitchen Ticket → Thermal Printing, Phase 1). A Server
@@ -59,7 +67,15 @@ export default async function PrintJobPage({
     <div className={styles.page} dir="rtl" lang="ar" style={{ '--paper-width': docConfig.paperWidth } as React.CSSProperties}>
       <PrintNav returnUrl={search.returnUrl} returnLabel={search.returnLabel} />
       {doc.job.documentType === 'customer_invoice' ? <CustomerInvoice doc={doc} /> : <KitchenTicket doc={doc} />}
-      <PrintActions jobId={doc.job.id} token={token} initialStatus={doc.job.status} initialError={doc.job.lastError} />
+      <PrintActions
+        jobId={doc.job.id}
+        token={token}
+        initialStatus={doc.job.status}
+        initialError={doc.job.lastError}
+        autoprint={search.autoprint === '1'}
+        waitForJobId={search.waitForJobId}
+        waitForToken={search.waitForToken}
+      />
     </div>
   )
 }

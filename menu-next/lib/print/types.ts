@@ -67,6 +67,11 @@ export type PrintJobDocument = {
     currency: string
     phone: string | null
     address: string | null
+    // Same restaurants.social_links/show_social_links columns the
+    // customer-facing menu header already reads — never a duplicate
+    // field. Only ever read by CustomerInvoice, never KitchenTicket.
+    socialLinks: Partial<Record<'instagram' | 'whatsapp_social' | 'snapchat' | 'twitter' | 'tiktok', string>> | null
+    showSocialLinks: boolean
   }
   branch: {
     name: string

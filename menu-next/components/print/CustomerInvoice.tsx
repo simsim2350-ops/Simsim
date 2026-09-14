@@ -5,6 +5,19 @@ const ORDER_TYPE_LABEL: Record<string, string> = {
   dine_in: 'محلي', takeaway: 'سفري', delivery: 'توصيل', car_pickup: 'استلام من السيارة',
 }
 
+// Same 5 keys/labels/icons Settings.jsx already uses to configure
+// restaurants.social_links (src/pages/Settings.jsx's `socials` array) —
+// kept in this exact order so the invoice footer matches what staff see
+// when they edit it. Customer Invoice only; KitchenTicket never imports
+// this or reads restaurant.socialLinks at all.
+const SOCIAL_FIELDS: { key: 'instagram' | 'whatsapp_social' | 'snapchat' | 'twitter' | 'tiktok'; icon: string; label: string }[] = [
+  { key: 'instagram', icon: '📷', label: 'إنستقرام' },
+  { key: 'whatsapp_social', icon: '💬', label: 'واتساب' },
+  { key: 'snapchat', icon: '👻', label: 'سناب شات' },
+  { key: 'twitter', icon: '🐦', label: 'تويتر / X' },
+  { key: 'tiktok', icon: '🎵', label: 'تيك توك' },
+]
+
 // Same formatting call as every price elsewhere in this app (e.g.
 // CheckoutForm.tsx's own formatPrice) — no new number-formatting convention.
 function fmt(n: number) {
@@ -28,6 +41,9 @@ export function CustomerInvoice({ doc }: { doc: PrintJobDocument }) {
   const { date, time } = fmtDateTime(order.createdAt)
   const hasDiscount = order.discountAmount > 0
   const hasDelivery = order.deliveryFee > 0
+  const socialRows = restaurant.showSocialLinks
+    ? SOCIAL_FIELDS.filter((f) => restaurant.socialLinks?.[f.key]?.trim())
+    : []
 
   return (
     <div className={styles.paper} dir="rtl" lang="ar">
@@ -97,6 +113,22 @@ export function CustomerInvoice({ doc }: { doc: PrintJobDocument }) {
         </>
       )}
 
+      {socialRows.length > 0 && (
+        <>
+          <div className={styles.divider} />
+          <p className={`${styles.center} ${styles.socialTitle}`}>تابعونا / تواصلوا معنا</p>
+          <div className={styles.socialList}>
+            {socialRows.map((f) => (
+              <div key={f.key} className={styles.socialRow}>
+                <span>{f.icon} {f.label}</span>
+                <span className={styles.socialValue} dir="ltr">{restaurant.socialLinks![f.key]}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className={styles.divider} />
       <p className={styles.footer}>شكراً لطلبكم — {restaurant.name}</p>
     </div>
   )
