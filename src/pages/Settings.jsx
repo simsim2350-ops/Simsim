@@ -27,10 +27,9 @@ const MENU_LAYOUT_OPTIONS = [
 
 // معاينة Wireframe بسيطة بحتة لكل نمط — مربعات/دوائر وخطوط رمادية تمثّل موضع
 // الصورة والنص فقط، بلا Emoji وبلا صور حقيقية وبلا بيانات أصناف وهمية (يطابق
-// المرجع البصري المعتمد لهذه الشاشة). نفس المكوّن يُستخدم لكل من المعاينة
-// المصغّرة داخل كل بطاقة اختيار (scale="sm") ولوحة المعاينة الحية الأكبر أسفلها
-// (scale="lg") — نفس الفكرة والشكل، أبعاد أكبر فقط، دون أن تتحوّل لأي "صفحة
-// منيو" كاملة.
+// المرجع البصري المعتمد لهذه الشاشة). تُستخدم حالياً داخل كل بطاقة اختيار
+// (scale="sm" فقط) — قسم "المعاينة الحية" الذي كان يستخدم scale="lg" أُزيل.
+// الخاصية scale أُبقيت في التوقيع لبساطة عدم لمس منطق المكوّن نفسه.
 function LayoutWireframePreview({ layout, scale = 'sm' }) {
   const sm = scale === 'sm'
   if (layout === 'list') {
@@ -661,15 +660,6 @@ export default function Settings() {
                         <div style={{ fontSize:'10px', color:'#9CA3AF' }}>{opt.desc}</div>
                       </div>
                     ))}
-                  </div>
-                  <div style={{ padding:'16px 18px', borderTop:'1px solid #F0F1F3', background:'#FAFAFB' }}>
-                    <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', color:'#6B7280', marginBottom:'10px', display:'flex', alignItems:'center', gap:'6px' }}>
-                      <span style={{ width:'6px', height:'6px', borderRadius:'50%', background:'#22C55E', flexShrink:0 }}/>
-                      معاينة حية — {MENU_LAYOUT_OPTIONS.find(o => o.key === restForm.menu_layout)?.label}
-                    </div>
-                    <div style={{ maxWidth:'280px', margin:'0 auto', background:'white', borderRadius:'14px', padding:'12px', border:'1px solid #EEF0F3' }}>
-                      <LayoutWireframePreview layout={restForm.menu_layout} scale="lg" />
-                    </div>
                   </div>
                 </div>
 
