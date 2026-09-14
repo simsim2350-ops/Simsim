@@ -1,0 +1,36 @@
+-- SIMSIM — Unified Print Button + Customer Invoice Social Media footer
+-- ============================================================
+-- Applied live via the Supabase MCP `apply_migration` tool (migration name
+-- print_jobs_customer_invoice_social_links) — this file is the same
+-- narrative-reference copy convention already used by
+-- print_jobs_phase1.sql / print_jobs_phase2_agent.sql. To roll back:
+-- CREATE OR REPLACE FUNCTION get_print_job_document with the two
+-- 'restaurant' jsonb_build_object calls reverted to omit socialLinks/
+-- showSocialLinks (see git history for the exact prior version).
+--
+-- Only ONE thing changed at the database layer for this whole task: the
+-- restaurant object returned by get_print_job_document now also includes
+-- socialLinks/showSocialLinks — both existing columns
+-- (restaurants.social_links jsonb, restaurants.show_social_links boolean)
+-- already populated via the existing Settings page (src/pages/Settings.jsx)
+-- and already used by the customer-facing menu header
+-- (menu-next/components/RestaurantHeader.tsx). No new column, no new
+-- table, no duplicate field — this task's own instruction not to
+-- introduce unnecessary database complexity is satisfied by reusing this
+-- exactly as-is.
+--
+-- Same function signature (uuid, text) — no GRANT change needed (still
+-- `GRANT EXECUTE ... TO anon, authenticated`, unchanged from Phase 1).
+--
+-- The "ONE unified print button" requirement (Part 1 of this task) needed
+-- NO database change at all: print_jobs already auto-creates BOTH
+-- customer_invoice and kitchen_ticket rows together the moment an order is
+-- accepted (see create_print_jobs_on_accept()/trg_create_print_jobs_on_accept
+-- in print_jobs_phase1.sql) — the unified button is a pure client-side
+-- orchestration improvement over the existing per-job print/retry RPCs
+-- (set_print_job_status, retry_print_job, get_print_job_document), all
+-- unchanged. See the execution report for the full design rationale.
+--
+-- CREATE OR REPLACE FUNCTION public.get_print_job_document(p_print_job_id uuid, p_token text)
+-- — see live function definition (identical) in this migration's actual
+-- applied SQL, or `pg_get_functiondef` on the live database.
