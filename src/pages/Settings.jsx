@@ -22,7 +22,7 @@ const MENU_LAYOUT_OPTIONS = [
   { key:'list', label:'قائمة', desc:'صورة صغيرة جانبية' },
   { key:'grid', label:'شبكة', desc:'صورة كبيرة مربعة' },
   { key:'showcase', label:'بطاقة', desc:'صورة كبيرة بعمود واحد' },
-  { key:'circles', label:'دوائر', desc:'صورة دائرية أنيقة، 3 في الصف' },
+  { key:'circles', label:'دوائر', desc:'صورة دائرية أنيقة، عنصران في الصف' },
 ]
 
 // بيانات نموذجية ثابتة (وليست بيانات المطعم الفعلية) لمعاينة "شكل عرض الأصناف" —
@@ -51,9 +51,11 @@ function MenuLayoutPreviewItem({ layout, item, scale }) {
     )
   }
   if (layout === 'circles') {
+    // عنصران في الصف (بدل 3) — دائرة أكبر تستغل مساحة العمود الأوسع جيدًا بدل أن
+    // تبقى صغيرة وسط فراغ كبير حولها.
     return (
-      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', gap: sm?'2px':'6px' }}>
-        <div style={{ width: sm?'26px':'64px', height: sm?'26px':'64px', borderRadius:'50%', background:'#F8F9FB', border: sm?'1.5px solid white':'3px solid white', boxShadow:'0 3px 10px rgba(0,0,0,.08)', display:'flex', alignItems:'center', justifyContent:'center', fontSize: sm?'13px':'30px' }}>{item.emoji}</div>
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', gap: sm?'3px':'8px' }}>
+        <div style={{ width: sm?'34px':'84px', height: sm?'34px':'84px', borderRadius:'50%', background:'#F8F9FB', border: sm?'1.5px solid white':'3px solid white', boxShadow:'0 3px 10px rgba(0,0,0,.08)', display:'flex', alignItems:'center', justifyContent:'center', fontSize: sm?'17px':'40px' }}>{item.emoji}</div>
         <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize: sm?'7px':'11px', color:'#0B0B0F', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:'100%' }}>{item.name}</div>
         <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize: sm?'6.5px':'10px', color:'#FF6A00' }}>{item.price} ﷼</div>
       </div>
@@ -72,13 +74,26 @@ function MenuLayoutPreviewItem({ layout, item, scale }) {
 }
 
 // ترتيب 3 أصناف نموذجية حسب النمط: قائمة (عمود واحد) / شبكة (عمودان) / بطاقة
-// (عمود واحد، صنف وحيد) / دوائر (3 أعمدة — يطابق تماماً تعديل menu-next الحقيقي).
+// (عمود واحد، صنف وحيد) / دوائر (عمودان — يطابق تعديل menu-next الحقيقي). نفس
+// الأصناف الثلاثة ثابتة دائماً (لا تغيير في بيانات العينة) — عندما يتبقى صنف
+// وحيد في آخر صف (شبكة/دوائر بـ3 أصناف على عمودين)، يُمركَّز بعرض عمود واحد بدل
+// أن يبقى ملتصقاً بجانب واحد وسط فراغ غير مبرر.
 function MenuLayoutPreviewGrid({ layout, scale = 'sm' }) {
   const items = layout === 'showcase' ? MENU_LAYOUT_PREVIEW_ITEMS.slice(0, 1) : MENU_LAYOUT_PREVIEW_ITEMS
-  const cols = layout === 'showcase' || layout === 'list' ? 1 : layout === 'circles' ? 3 : 2
+  const cols = layout === 'showcase' || layout === 'list' ? 1 : 2
+  const orphanLast = cols > 1 && items.length % cols === 1
   return (
     <div style={{ display:'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: scale==='sm' ? '4px' : '10px' }}>
-      {items.map((item, i) => <MenuLayoutPreviewItem key={i} layout={layout} item={item} scale={scale} />)}
+      {items.map((item, i) => {
+        const isOrphan = orphanLast && i === items.length - 1
+        const cell = <MenuLayoutPreviewItem layout={layout} item={item} scale={scale} />
+        if (!isOrphan) return <div key={i}>{cell}</div>
+        return (
+          <div key={i} style={{ gridColumn:'1 / -1', display:'flex', justifyContent:'center' }}>
+            <div style={{ width:`calc(${100 / cols}% - ${scale==='sm' ? 2 : 5}px)` }}>{cell}</div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -657,8 +672,8 @@ export default function Settings() {
                         {restForm.menu_layout === opt.key && (
                           <div style={{ position:'absolute', top:'6px', insetInlineEnd:'6px', width:'18px', height:'18px', borderRadius:'50%', background:'#FF6A00', color:'white', fontSize:'11px', fontWeight:'900', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 6px rgba(255,106,0,.4)' }}>✓</div>
                         )}
-                        <div style={{ marginBottom:'10px' }}>
-                          <MenuLayoutPreviewGrid layout={opt.key} scale="sm" />
+                        <div style={{ minHeight:'90px', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'8px' }}>
+                          <div style={{ width:'100%' }}><MenuLayoutPreviewGrid layout={opt.key} scale="sm" /></div>
                         </div>
                         <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', color: restForm.menu_layout===opt.key ? '#FF6A00' : '#374151', marginBottom:'2px' }}>{opt.label}</div>
                         <div style={{ fontSize:'10px', color:'#9CA3AF' }}>{opt.desc}</div>
