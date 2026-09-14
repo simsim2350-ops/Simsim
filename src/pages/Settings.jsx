@@ -25,33 +25,24 @@ const MENU_LAYOUT_OPTIONS = [
   { key:'circles', label:'دوائر', desc:'صورة دائرية أنيقة، عنصران في الصف' },
 ]
 
-// بيانات نموذجية ثابتة (وليست بيانات المطعم الفعلية، ولا هوية مطعم بعينها) لمعاينة
-// "شكل عرض الأصناف" — صور أصناف حقيقية فعلاً مرفوعة على Supabase Storage الخاص
-// بالمشروع (نفس نطاق img-src المسموح به أصلاً في CSP، لا اتصال خارجي جديد) بدل
-// أي Emoji أو أيقونة، لتُظهر لصاحب المطعم شكلاً واقعياً لا رمزياً. اختيرت 3 صور
-// نظيفة الخلفية وخالية من أي شعار/علامة تجارية ظاهرة عليها (رُوجعت يدوياً — عدة
-// صور أخرى كانت تحمل شعارات جهات أخرى فاستُبعدت). نفس الأصناف الثلاث تُستخدم في
-// كل من المعاينة المصغّرة والمعاينة الحية، بنفس ألوان الهوية الحالية (#FF6A00
-// للسعر) دون أي لون جديد.
+// بيانات نموذجية ثابتة (وليست بيانات المطعم الفعلية) لمعاينة "شكل عرض الأصناف" —
+// نفس العناصر الثلاثة تُستخدم في كل من المعاينة المصغّرة داخل كل بطاقة اختيار
+// ولوحة المعاينة الحية الكبيرة أسفلها، بنفس ألوان الهوية الحالية (#FF6A00 للسعر،
+// لا ألوان جديدة).
 const MENU_LAYOUT_PREVIEW_ITEMS = [
-  { photo:'https://gpwwnuuicywsvmmhxngs.supabase.co/storage/v1/object/public/restaurant-media/04ff6967-95b0-4a59-8f29-f454c412e7c8/products/1782662648869.jpg', name:'شكشوكة بيت', price:'22' },
-  { photo:'https://gpwwnuuicywsvmmhxngs.supabase.co/storage/v1/object/public/restaurant-media/04ff6967-95b0-4a59-8f29-f454c412e7c8/products/1782507010602.jpg', name:'شاورما دجاج', price:'28' },
-  { photo:'https://gpwwnuuicywsvmmhxngs.supabase.co/storage/v1/object/public/restaurant-media/04ff6967-95b0-4a59-8f29-f454c412e7c8/products/1782508416111.jpg', name:'قلاية عدس', price:'18' },
+  { emoji:'🍔', name:'برجر لحم مشوي', price:'32' },
+  { emoji:'🍕', name:'بيتزا مارغريتا', price:'45' },
+  { emoji:'🥗', name:'سلطة سيزر', price:'22' },
 ]
 
-function PreviewImg({ src, style }) {
-  return <img src={src} alt="" loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', ...style }} />
-}
-
 // صنف نموذجي واحد بأربعة أشكال (list/grid/showcase/circles) — نفس بنية العرض
-// الحقيقية في menu-next (ProductCard.tsx) مبسّطة لمقياس المعاينة فقط، وبصورة
-// حقيقية بدل الأيقونة.
+// الحقيقية في menu-next (ProductCard.jsx) مبسّطة لمقياس المعاينة فقط.
 function MenuLayoutPreviewItem({ layout, item, scale }) {
   const sm = scale === 'sm'
   if (layout === 'list') {
     return (
       <div style={{ display:'flex', alignItems:'center', gap: sm?'6px':'12px', padding: sm?'4px 0':'8px 0', borderBottom:'1px solid #F0F1F3' }}>
-        <div style={{ width: sm?'22px':'48px', height: sm?'22px':'48px', borderRadius: sm?'5px':'10px', overflow:'hidden', flexShrink:0 }}><PreviewImg src={item.photo} /></div>
+        <div style={{ width: sm?'22px':'48px', height: sm?'22px':'48px', borderRadius: sm?'5px':'10px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize: sm?'12px':'24px', flexShrink:0 }}>{item.emoji}</div>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize: sm?'8px':'13px', color:'#0B0B0F', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{item.name}</div>
           <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize: sm?'7px':'12px', color:'#FF6A00', marginTop:'2px' }}>{item.price} ﷼</div>
@@ -60,11 +51,11 @@ function MenuLayoutPreviewItem({ layout, item, scale }) {
     )
   }
   if (layout === 'circles') {
-    // عنصران في الصف (يطابق تعديل menu-next الحقيقي) — دائرة أكبر تستغل مساحة
-    // العمود الأوسع جيدًا بدل أن تبقى صغيرة وسط فراغ كبير حولها.
+    // عنصران في الصف (بدل 3) — دائرة أكبر تستغل مساحة العمود الأوسع جيدًا بدل أن
+    // تبقى صغيرة وسط فراغ كبير حولها.
     return (
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', gap: sm?'3px':'8px' }}>
-        <div style={{ width: sm?'34px':'84px', height: sm?'34px':'84px', borderRadius:'50%', overflow:'hidden', border: sm?'1.5px solid white':'3px solid white', boxShadow:'0 3px 10px rgba(0,0,0,.08)' }}><PreviewImg src={item.photo} /></div>
+        <div style={{ width: sm?'34px':'84px', height: sm?'34px':'84px', borderRadius:'50%', background:'#F8F9FB', border: sm?'1.5px solid white':'3px solid white', boxShadow:'0 3px 10px rgba(0,0,0,.08)', display:'flex', alignItems:'center', justifyContent:'center', fontSize: sm?'17px':'40px' }}>{item.emoji}</div>
         <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize: sm?'7px':'11px', color:'#0B0B0F', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:'100%' }}>{item.name}</div>
         <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize: sm?'6.5px':'10px', color:'#FF6A00' }}>{item.price} ﷼</div>
       </div>
@@ -73,7 +64,7 @@ function MenuLayoutPreviewItem({ layout, item, scale }) {
   // grid و showcase يتشاركان نفس شكل البطاقة — showcase فقط بصورة أطول (4/3 بدل 1/1)
   return (
     <div style={{ background:'white', borderRadius: sm?'6px':'12px', border:'1px solid #F0F1F3', overflow:'hidden' }}>
-      <div style={{ width:'100%', aspectRatio: layout==='showcase' ? '4/3':'1/1' }}><PreviewImg src={item.photo} /></div>
+      <div style={{ width:'100%', aspectRatio: layout==='showcase' ? '4/3':'1/1', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize: sm ? '14px' : (layout==='showcase'?'34px':'28px') }}>{item.emoji}</div>
       <div style={{ padding: sm?'4px 5px':'8px 10px' }}>
         <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize: sm?'7.5px':'12px', color:'#0B0B0F', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{item.name}</div>
         <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize: sm?'7px':'11px', color:'#FF6A00', marginTop:'2px' }}>{item.price} ﷼</div>
@@ -82,47 +73,27 @@ function MenuLayoutPreviewItem({ layout, item, scale }) {
   )
 }
 
-// رأس صفحة منيو مصغّر ومحايد (لا يعتمد على هوية مطعم بعينها: اسم عام "مطعمي" +
-// دائرة تدرّج بلون الهوية بدل شعار حقيقي) + اسم قسم — لتقديم كل معاينة كـ"صفحة
-// منيو حقيقية مصغّرة" بدل مجرد بطاقات أصناف معزولة، كما طُلب صراحةً.
-function MiniMenuHeader({ scale }) {
-  const sm = scale === 'sm'
-  return (
-    <div style={{ marginBottom: sm?'6px':'10px' }}>
-      <div style={{ display:'flex', alignItems:'center', gap: sm?'4px':'7px', marginBottom: sm?'4px':'7px' }}>
-        <div style={{ width: sm?'13px':'20px', height: sm?'13px':'20px', borderRadius:'50%', background:'linear-gradient(135deg,#FF6A00,#E05D00)', flexShrink:0 }} />
-        <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize: sm?'7px':'11px', color:'#0B0B0F' }}>مطعمي</div>
-      </div>
-      <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize: sm?'6px':'9px', color:'#9CA3AF', paddingBottom: sm?'4px':'7px', borderBottom:'1px solid #EDEFF2' }}>🍽️ الأطباق الرئيسية</div>
-    </div>
-  )
-}
-
-// "صفحة منيو مصغّرة" كاملة لنمط واحد: رأس محايد + قسم + ترتيب الأصناف حسب النمط —
-// قائمة (عمود واحد) / شبكة (عمودان) / بطاقة (عمود واحد، صنف وحيد) / دوائر
-// (عمودان — يطابق تعديل menu-next الحقيقي). نفس الأصناف الثلاث ثابتة دائماً —
-// عندما يتبقى صنف وحيد في آخر صف (شبكة/دوائر بـ3 أصناف على عمودين)، يُمركَّز
-// بعرض عمود واحد بدل أن يبقى ملتصقاً بجانب واحد وسط فراغ غير مبرر.
+// ترتيب 3 أصناف نموذجية حسب النمط: قائمة (عمود واحد) / شبكة (عمودان) / بطاقة
+// (عمود واحد، صنف وحيد) / دوائر (عمودان — يطابق تعديل menu-next الحقيقي). نفس
+// الأصناف الثلاثة ثابتة دائماً (لا تغيير في بيانات العينة) — عندما يتبقى صنف
+// وحيد في آخر صف (شبكة/دوائر بـ3 أصناف على عمودين)، يُمركَّز بعرض عمود واحد بدل
+// أن يبقى ملتصقاً بجانب واحد وسط فراغ غير مبرر.
 function MenuLayoutPreviewGrid({ layout, scale = 'sm' }) {
   const items = layout === 'showcase' ? MENU_LAYOUT_PREVIEW_ITEMS.slice(0, 1) : MENU_LAYOUT_PREVIEW_ITEMS
   const cols = layout === 'showcase' || layout === 'list' ? 1 : 2
   const orphanLast = cols > 1 && items.length % cols === 1
-  const sm = scale === 'sm'
   return (
-    <div style={{ background:'#FAFBFC', borderRadius: sm?'8px':'12px', border:'1px solid #EEF0F3', padding: sm?'6px':'10px' }}>
-      <MiniMenuHeader scale={scale} />
-      <div style={{ display:'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: sm ? '4px' : '10px' }}>
-        {items.map((item, i) => {
-          const isOrphan = orphanLast && i === items.length - 1
-          const cell = <MenuLayoutPreviewItem layout={layout} item={item} scale={scale} />
-          if (!isOrphan) return <div key={i}>{cell}</div>
-          return (
-            <div key={i} style={{ gridColumn:'1 / -1', display:'flex', justifyContent:'center' }}>
-              <div style={{ width:`calc(${100 / cols}% - ${sm ? 2 : 5}px)` }}>{cell}</div>
-            </div>
-          )
-        })}
-      </div>
+    <div style={{ display:'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: scale==='sm' ? '4px' : '10px' }}>
+      {items.map((item, i) => {
+        const isOrphan = orphanLast && i === items.length - 1
+        const cell = <MenuLayoutPreviewItem layout={layout} item={item} scale={scale} />
+        if (!isOrphan) return <div key={i}>{cell}</div>
+        return (
+          <div key={i} style={{ gridColumn:'1 / -1', display:'flex', justifyContent:'center' }}>
+            <div style={{ width:`calc(${100 / cols}% - ${scale==='sm' ? 2 : 5}px)` }}>{cell}</div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -701,7 +672,7 @@ export default function Settings() {
                         {restForm.menu_layout === opt.key && (
                           <div style={{ position:'absolute', top:'6px', insetInlineEnd:'6px', width:'18px', height:'18px', borderRadius:'50%', background:'#FF6A00', color:'white', fontSize:'11px', fontWeight:'900', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 6px rgba(255,106,0,.4)' }}>✓</div>
                         )}
-                        <div style={{ minHeight:'150px', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'8px' }}>
+                        <div style={{ minHeight:'90px', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'8px' }}>
                           <div style={{ width:'100%' }}><MenuLayoutPreviewGrid layout={opt.key} scale="sm" /></div>
                         </div>
                         <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', color: restForm.menu_layout===opt.key ? '#FF6A00' : '#374151', marginBottom:'2px' }}>{opt.label}</div>
