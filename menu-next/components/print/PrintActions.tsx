@@ -122,31 +122,60 @@ export function PrintActions({
   // document of the pair, e.g. Kitchen Ticket), it first polls the sibling
   // job's real status via the same token-gated get_print_job_document RPC
   // every caller already uses — not a fixed timer — until the sibling
-  // leaves pending/printing or the bounded timeout above is hit, THEN
-  // prints. This keeps both windows opened synchronously in one click
-  // (avoids popup-blocker issues with a delayed second window.open) while
-  // still printing Customer Invoice before Kitchen Ticket in the common case.
+  // reaches a real terminal state or the bounded timeout above is hit.
+  // Opening both windows synchronously in one click (avoids popup-blocker
+  // issues with a delayed second window.open) while still deciding
+  // Kitchen Ticket's fate strictly from the Customer Invoice's OWN real
+  // outcome:
+  //   sibling PRINTED           -> print this document (the happy path)
+  //   sibling FAILED            -> do NOT print — this job is marked
+  //                                'failed' too instead, so both the
+  //                                Dashboard's aggregate status and this
+  //                                tab itself clearly explain why nothing
+  //                                printed
+  //   sibling never resolved    -> same as FAILED (never resolved =
+  //   (timed out waiting)          not a confirmed success, so this must
+  //                                never print on an unconfirmed guess)
+  // A prior version of this effect treated "sibling left pending/printing"
+  // as "safe to proceed" regardless of which terminal state it actually
+  // reached — so a FAILED Customer Invoice would still let Kitchen Ticket
+  // print. Fixed: only a confirmed PRINTED sibling ever leads to printing.
   useEffect(() => {
     if (!autoprint || autoprintFired.current || initialStatus !== 'pending') return
     autoprintFired.current = true
     let cancelled = false
 
-    async function waitForSibling() {
-      if (!waitForJobId || !waitForToken) return
+    async function resolveSiblingOutcome(): Promise<PrintJobStatus | 'timeout'> {
       const client = supabaseBrowser()
-      if (!client) return
+      if (!client) return 'timeout'
       const deadline = Date.now() + WAIT_FOR_SIBLING_TIMEOUT_MS
       while (!cancelled && Date.now() < deadline) {
         const { data } = await client.rpc('get_print_job_document', {
           p_print_job_id: waitForJobId, p_token: waitForToken,
         } as never)
         const siblingStatus = (data as { job?: { status?: PrintJobStatus } } | null)?.job?.status
-        if (siblingStatus && siblingStatus !== 'pending' && siblingStatus !== 'printing') return
+        if (siblingStatus && siblingStatus !== 'pending' && siblingStatus !== 'printing') return siblingStatus
         await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_SIBLING_POLL_MS))
       }
+      return 'timeout'
     }
 
-    waitForSibling().then(() => { if (!cancelled) handlePrint() })
+    async function run() {
+      if (!waitForJobId || !waitForToken) {
+        // No sibling to wait for — this is the first/only document (e.g.
+        // Customer Invoice itself), unaffected by any of the above.
+        await handlePrint()
+        return
+      }
+      const outcome = await resolveSiblingOutcome()
+      if (cancelled) return
+      if (outcome === 'printed') { await handlePrint(); return }
+      await updateStatus('failed', outcome === 'failed'
+        ? 'لم تبدأ طباعة هذا المستند لأن فاتورة العميل فشلت'
+        : 'لم تبدأ طباعة هذا المستند لتعذّر تأكيد نجاح فاتورة العميل خلال الوقت المتوقع')
+    }
+
+    run()
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

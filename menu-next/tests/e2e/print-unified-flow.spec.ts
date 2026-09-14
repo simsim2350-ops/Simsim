@@ -28,6 +28,10 @@ const SEQ_INVOICE_JOB_ID = process.env.UNIFIED_FLOW_SEQ_INVOICE_JOB_ID
 const SEQ_INVOICE_TOKEN = process.env.UNIFIED_FLOW_SEQ_INVOICE_TOKEN
 const SEQ_TICKET_JOB_ID = process.env.UNIFIED_FLOW_SEQ_TICKET_JOB_ID
 const SEQ_TICKET_TOKEN = process.env.UNIFIED_FLOW_SEQ_TICKET_TOKEN
+const FAILED_INVOICE_JOB_ID = process.env.UNIFIED_FLOW_FAILED_INVOICE_JOB_ID
+const FAILED_INVOICE_TOKEN = process.env.UNIFIED_FLOW_FAILED_INVOICE_TOKEN
+const TICKET_FOR_FAILED_INVOICE_JOB_ID = process.env.UNIFIED_FLOW_TICKET_FOR_FAILED_INVOICE_JOB_ID
+const TICKET_FOR_FAILED_INVOICE_TOKEN = process.env.UNIFIED_FLOW_TICKET_FOR_FAILED_INVOICE_TOKEN
 
 // Stubs window.print() to a no-op spy (a real print dialog can't run
 // headless) — installed before navigation so it's in place before
@@ -124,4 +128,26 @@ test('Kitchen Ticket waits for a real Customer Invoice resolution before printin
   ).toBe(1)
 
   await context.close()
+})
+
+// Corrective fix on top of the above: a FAILED Customer Invoice must
+// never let Kitchen Ticket print. The original wait-for-sibling logic
+// treated "sibling left pending/printing" as "safe to proceed" regardless
+// of which terminal state it reached — so a FAILED invoice still let the
+// ticket auto-print. Fixed to only proceed on a confirmed PRINTED
+// sibling; any other outcome (FAILED, or the wait timing out without a
+// resolution) marks Kitchen Ticket FAILED too instead of printing it.
+test('Customer Invoice FAILED -> Kitchen Ticket does not print, and is marked FAILED too', async ({ page }) => {
+  test.skip(
+    !FAILED_INVOICE_JOB_ID || !FAILED_INVOICE_TOKEN || !TICKET_FOR_FAILED_INVOICE_JOB_ID || !TICKET_FOR_FAILED_INVOICE_TOKEN,
+    'requires UNIFIED_FLOW_FAILED_INVOICE_JOB_ID/TOKEN (status=failed) and UNIFIED_FLOW_TICKET_FOR_FAILED_INVOICE_JOB_ID/TOKEN (status=pending)'
+  )
+  await stubPrint(page)
+  await page.goto(
+    `/print/${TICKET_FOR_FAILED_INVOICE_JOB_ID}?token=${TICKET_FOR_FAILED_INVOICE_TOKEN}&autoprint=1&waitForJobId=${FAILED_INVOICE_JOB_ID}&waitForToken=${FAILED_INVOICE_TOKEN}`
+  )
+  await expect(statusBadge(page)).toHaveText('فشلت الطباعة', { timeout: 10_000 })
+  await expect(page.getByText('لأن فاتورة العميل فشلت', { exact: false })).toBeVisible()
+  const printCalls = await page.evaluate(() => (window as unknown as { __printCalls: number }).__printCalls)
+  expect(printCalls).toBe(0)
 })
