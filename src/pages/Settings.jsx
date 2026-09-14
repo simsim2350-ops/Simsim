@@ -14,6 +14,75 @@ import { useBreakpoint } from '../hooks/useBreakpoint'
 import { trackOwnerMilestone } from '../lib/analytics'
 import { appConfig } from '../config'
 
+// "شكل عرض الأصناف": 4 أنماط فقط (لا يوجد نمط "مختلط/Mixed") — نفس مفاتيح
+// menu_layout التي يقرأها menu-next (src/pages/Settings.jsx يبقى المصدر الوحيد لهذه
+// القيمة). hoisted من داخل الـJSX السابق إلى ثابت وحيد لإعادة استخدامه في عنوان
+// لوحة المعاينة الحية أدناه، دون إعادة إنشاء المصفوفة في كل render.
+const MENU_LAYOUT_OPTIONS = [
+  { key:'list', label:'قائمة', desc:'صورة صغيرة جانبية' },
+  { key:'grid', label:'شبكة', desc:'صورة كبيرة مربعة' },
+  { key:'showcase', label:'بطاقة', desc:'صورة كبيرة بعمود واحد' },
+  { key:'circles', label:'دوائر', desc:'صورة دائرية أنيقة، 3 في الصف' },
+]
+
+// بيانات نموذجية ثابتة (وليست بيانات المطعم الفعلية) لمعاينة "شكل عرض الأصناف" —
+// نفس العناصر الثلاثة تُستخدم في كل من المعاينة المصغّرة داخل كل بطاقة اختيار
+// ولوحة المعاينة الحية الكبيرة أسفلها، بنفس ألوان الهوية الحالية (#FF6A00 للسعر،
+// لا ألوان جديدة).
+const MENU_LAYOUT_PREVIEW_ITEMS = [
+  { emoji:'🍔', name:'برجر لحم مشوي', price:'32' },
+  { emoji:'🍕', name:'بيتزا مارغريتا', price:'45' },
+  { emoji:'🥗', name:'سلطة سيزر', price:'22' },
+]
+
+// صنف نموذجي واحد بأربعة أشكال (list/grid/showcase/circles) — نفس بنية العرض
+// الحقيقية في menu-next (ProductCard.jsx) مبسّطة لمقياس المعاينة فقط.
+function MenuLayoutPreviewItem({ layout, item, scale }) {
+  const sm = scale === 'sm'
+  if (layout === 'list') {
+    return (
+      <div style={{ display:'flex', alignItems:'center', gap: sm?'6px':'12px', padding: sm?'4px 0':'8px 0', borderBottom:'1px solid #F0F1F3' }}>
+        <div style={{ width: sm?'22px':'48px', height: sm?'22px':'48px', borderRadius: sm?'5px':'10px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize: sm?'12px':'24px', flexShrink:0 }}>{item.emoji}</div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize: sm?'8px':'13px', color:'#0B0B0F', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{item.name}</div>
+          <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize: sm?'7px':'12px', color:'#FF6A00', marginTop:'2px' }}>{item.price} ﷼</div>
+        </div>
+      </div>
+    )
+  }
+  if (layout === 'circles') {
+    return (
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', gap: sm?'2px':'6px' }}>
+        <div style={{ width: sm?'26px':'64px', height: sm?'26px':'64px', borderRadius:'50%', background:'#F8F9FB', border: sm?'1.5px solid white':'3px solid white', boxShadow:'0 3px 10px rgba(0,0,0,.08)', display:'flex', alignItems:'center', justifyContent:'center', fontSize: sm?'13px':'30px' }}>{item.emoji}</div>
+        <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize: sm?'7px':'11px', color:'#0B0B0F', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:'100%' }}>{item.name}</div>
+        <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize: sm?'6.5px':'10px', color:'#FF6A00' }}>{item.price} ﷼</div>
+      </div>
+    )
+  }
+  // grid و showcase يتشاركان نفس شكل البطاقة — showcase فقط بصورة أطول (4/3 بدل 1/1)
+  return (
+    <div style={{ background:'white', borderRadius: sm?'6px':'12px', border:'1px solid #F0F1F3', overflow:'hidden' }}>
+      <div style={{ width:'100%', aspectRatio: layout==='showcase' ? '4/3':'1/1', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize: sm ? '14px' : (layout==='showcase'?'34px':'28px') }}>{item.emoji}</div>
+      <div style={{ padding: sm?'4px 5px':'8px 10px' }}>
+        <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize: sm?'7.5px':'12px', color:'#0B0B0F', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{item.name}</div>
+        <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize: sm?'7px':'11px', color:'#FF6A00', marginTop:'2px' }}>{item.price} ﷼</div>
+      </div>
+    </div>
+  )
+}
+
+// ترتيب 3 أصناف نموذجية حسب النمط: قائمة (عمود واحد) / شبكة (عمودان) / بطاقة
+// (عمود واحد، صنف وحيد) / دوائر (3 أعمدة — يطابق تماماً تعديل menu-next الحقيقي).
+function MenuLayoutPreviewGrid({ layout, scale = 'sm' }) {
+  const items = layout === 'showcase' ? MENU_LAYOUT_PREVIEW_ITEMS.slice(0, 1) : MENU_LAYOUT_PREVIEW_ITEMS
+  const cols = layout === 'showcase' || layout === 'list' ? 1 : layout === 'circles' ? 3 : 2
+  return (
+    <div style={{ display:'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: scale==='sm' ? '4px' : '10px' }}>
+      {items.map((item, i) => <MenuLayoutPreviewItem key={i} layout={layout} item={item} scale={scale} />)}
+    </div>
+  )
+}
+
 const BRAND_COLORS = ['#FF6A00','#E05D00','#10B981','#3B82F6','#8B5CF6','#EC4899','#F59E0B','#0B0B0F']
 const CURRENCIES = ['SAR - ريال سعودي','AED - درهم إماراتي','KWD - دينار كويتي','BHD - دينار بحريني','QAR - ريال قطري','OMR - ريال عماني','EGP - جنيه مصري']
 const COMMON_ALLERGENS = [
@@ -575,62 +644,35 @@ export default function Settings() {
                 <div style={{ background:'white', borderRadius:'16px', border:'1px solid #E5E7EB', overflow:'hidden' }}>
                   <div style={{ padding:'14px 18px', borderBottom:'1px solid #E5E7EB', fontSize:'14px', fontWeight:'800' }}>🧩 شكل عرض الأصناف</div>
                   <div style={{ padding:'16px 18px', display:'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr', gap:'10px' }}>
-                    {[
-                      { key:'list', label:'قائمة', desc:'صورة صغيرة جانبية' },
-                      { key:'grid', label:'شبكة', desc:'صورة كبيرة مربعة' },
-                      { key:'showcase', label:'بطاقة', desc:'صورة كبيرة بعمود واحد' },
-                      { key:'circles', label:'دوائر', desc:'صورة دائرية أنيقة' },
-                    ].map(opt => (
+                    {MENU_LAYOUT_OPTIONS.map(opt => (
                       <div
                         key={opt.key}
                         onClick={() => setRestForm(f => ({ ...f, menu_layout: opt.key }))}
                         style={{
-                          padding:'12px 8px', borderRadius:'14px', cursor:'pointer', textAlign:'center',
+                          position:'relative', padding:'12px 8px', borderRadius:'14px', cursor:'pointer', textAlign:'center',
                           border: `2px solid ${restForm.menu_layout === opt.key ? '#FF6A00' : '#E5E7EB'}`,
                           background: restForm.menu_layout === opt.key ? '#FFF7F2' : 'white',
                         }}
                       >
-                        {opt.key === 'list' && (
-                          <div style={{ display:'flex', flexDirection:'column', gap:'4px', marginBottom:'10px' }}>
-                            {[1,2,3].map(i => (
-                              <div key={i} style={{ display:'flex', alignItems:'center', gap:'5px', background:'#F8F9FB', borderRadius:'6px', padding:'4px' }}>
-                                <div style={{ width:'18px', height:'18px', borderRadius:'4px', background:'#E5E7EB', flexShrink:0 }}/>
-                                <div style={{ flex:1, height:'4px', background:'#E5E7EB', borderRadius:'2px' }}/>
-                              </div>
-                            ))}
-                          </div>
+                        {restForm.menu_layout === opt.key && (
+                          <div style={{ position:'absolute', top:'6px', insetInlineEnd:'6px', width:'18px', height:'18px', borderRadius:'50%', background:'#FF6A00', color:'white', fontSize:'11px', fontWeight:'900', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 6px rgba(255,106,0,.4)' }}>✓</div>
                         )}
-                        {opt.key === 'grid' && (
-                          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'4px', marginBottom:'10px' }}>
-                            {[1,2,3,4].map(i => (
-                              <div key={i} style={{ background:'#F8F9FB', borderRadius:'6px', padding:'5px' }}>
-                                <div style={{ width:'100%', height:'20px', background:'#E5E7EB', borderRadius:'4px', marginBottom:'3px' }}/>
-                                <div style={{ width:'70%', height:'3px', background:'#E5E7EB', borderRadius:'2px' }}/>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {opt.key === 'showcase' && (
-                          <div style={{ marginBottom:'10px' }}>
-                            <div style={{ width:'100%', height:'46px', background:'#E5E7EB', borderRadius:'6px', marginBottom:'4px' }}/>
-                            <div style={{ width:'100%', height:'3px', background:'#E5E7EB', borderRadius:'2px', marginBottom:'3px' }}/>
-                            <div style={{ width:'60%', height:'3px', background:'#E5E7EB', borderRadius:'2px' }}/>
-                          </div>
-                        )}
-                        {opt.key === 'circles' && (
-                          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'10px', justifyItems:'center' }}>
-                            {[1,2,3,4].map(i => (
-                              <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'3px' }}>
-                                <div style={{ width:'26px', height:'26px', borderRadius:'50%', background:'#F0F1F3', boxShadow:'inset 0 0 0 1px #E5E7EB' }}/>
-                                <div style={{ width:'70%', height:'3px', background:'#E5E7EB', borderRadius:'2px' }}/>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        <div style={{ marginBottom:'10px' }}>
+                          <MenuLayoutPreviewGrid layout={opt.key} scale="sm" />
+                        </div>
                         <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', color: restForm.menu_layout===opt.key ? '#FF6A00' : '#374151', marginBottom:'2px' }}>{opt.label}</div>
                         <div style={{ fontSize:'10px', color:'#9CA3AF' }}>{opt.desc}</div>
                       </div>
                     ))}
+                  </div>
+                  <div style={{ padding:'16px 18px', borderTop:'1px solid #F0F1F3', background:'#FAFAFB' }}>
+                    <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'12px', color:'#6B7280', marginBottom:'10px', display:'flex', alignItems:'center', gap:'6px' }}>
+                      <span style={{ width:'6px', height:'6px', borderRadius:'50%', background:'#22C55E', flexShrink:0 }}/>
+                      معاينة حية — {MENU_LAYOUT_OPTIONS.find(o => o.key === restForm.menu_layout)?.label}
+                    </div>
+                    <div style={{ maxWidth:'280px', margin:'0 auto', background:'white', borderRadius:'14px', padding:'12px', border:'1px solid #EEF0F3' }}>
+                      <MenuLayoutPreviewGrid layout={restForm.menu_layout} scale="lg" />
+                    </div>
                   </div>
                 </div>
 
