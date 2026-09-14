@@ -1170,12 +1170,13 @@ html, body {
    its own column-count override below, same convention as the other 3). */
 
 .category-section__grid--grid { grid-template-columns: repeat(2, 1fr) !important; }
-/* 3 per row at every breakpoint (mobile included) — same !important-override
-   convention as the other 3 layouts above, so it wins regardless of the
-   responsive 1-/2-/3-column base rules. The circle itself (below) is capped
-   at its current 96px but allowed to shrink with the column on narrow
-   viewports, so 3-per-row never overlaps or gets uncomfortably tight. */
-.category-section__grid--circles { grid-template-columns: repeat(3, 1fr) !important; }
+/* 2 per row (reverted from a brief 3-per-row round — 3 circles read as too
+   small/cramped on mobile). Same !important-override convention as the other
+   layouts, so it wins at every breakpoint. The circle itself (below) is now
+   sized to fill a 2-column mobile row well (was a smaller fixed 96px), still
+   capped by max-width and allowed to shrink with the column so it never
+   overlaps on an unusually narrow viewport. */
+.category-section__grid--circles { grid-template-columns: repeat(2, 1fr) !important; }
 .category-section__grid--showcase { grid-template-columns: 1fr !important; }
 /* 'list' = product-list row redesign (round 6): always a single full-width
    row at every breakpoint — never the 2-/3-column tile grid grid/showcase/
@@ -1196,8 +1197,8 @@ html, body {
 .product-card--showcase .product-card__emoji { font-size: 48px; }
 
 .product-card--circles { display: flex; flex-direction: column; align-items: center; text-align: center; background: none; border: none; padding: 6px 4px; }
-.product-card--circles .product-card__media { width: 100%; max-width: 96px; height: auto; aspect-ratio: 1 / 1; border-radius: 50%; border: 3px solid white; box-shadow: 0 6px 18px rgba(0,0,0,.1); }
-.product-card--circles .product-card__emoji { font-size: 38px; }
+.product-card--circles .product-card__media { width: 100%; max-width: 136px; height: auto; aspect-ratio: 1 / 1; border-radius: 50%; border: 3px solid white; box-shadow: 0 6px 18px rgba(0,0,0,.1); }
+.product-card--circles .product-card__emoji { font-size: 50px; }
 .product-card--circles .product-card__body { width: 100%; }
 .product-card--circles .product-card__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .product-card--circles .product-card__price { justify-content: center; }
