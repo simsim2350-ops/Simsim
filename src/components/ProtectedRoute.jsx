@@ -1,13 +1,14 @@
 import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import SimsimLoader from './SimsimLoader'
 
-export function PageLoader({ phase = 'AUTH_SESSION' }) {
+// phase يبقى في التوقيع (يُمرَّر من كل نقاط الاستدعاء الحالية عبر bootstrapStage) رغم
+// أنه لم يعد يُعرَض بصرياً — تفادياً لتعديل أي موضع استدعاء لهذا المكوّن؛ التشخيص
+// النصي القديم استُبدل بتجربة SIMSIM البسيطة (SimsimLoader) دون أي نص تقني ظاهر.
+export function PageLoader({ phase = 'AUTH_SESSION' }) { // eslint-disable-line no-unused-vars
   return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#0B0B0F', color:'white', gap:'12px', fontFamily:'Tajawal,sans-serif' }} role="status" aria-live="polite">
-      <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      <strong style={{ fontSize:'16px' }}>جارٍ تجهيز حسابك…</strong>
-      <span style={{ color:'#B7BBC3', fontSize:'12px' }}>مرحلة التهيئة: {phase}</span>
+    <div style={{ height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0B0B0F' }} role="status" aria-live="polite" aria-label="جارٍ تجهيز حسابك">
+      <SimsimLoader />
     </div>
   )
 }

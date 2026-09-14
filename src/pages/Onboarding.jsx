@@ -12,6 +12,7 @@ import MenuReadinessCard from '../components/MenuReadinessCard'
 import { trackOwnerEvent, trackOwnerMilestone } from '../lib/analytics'
 import { isTimeoutError, withTimeout } from '../lib/asyncTimeout'
 import { appConfig } from '../config'
+import SimsimLoader from '../components/SimsimLoader'
 
 // تحويل الاسم العربي إلى رابط لاتيني صالح
 const AR_MAP = {
@@ -905,11 +906,8 @@ export default function Onboarding() {
 
   if (stage === 'loading') {
     return (
-      <div style={{ ...bg, alignItems:'center', flexDirection:'column', gap:'12px' }} role="status" aria-live="polite" data-onboarding-phase={initializationPhase}>
-        <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-        <strong style={{ color:'white', fontFamily:'Tajawal,sans-serif', fontSize:'16px' }}>جارٍ تجهيز حسابك…</strong>
-        <span style={{ color:'#C9CDD4', fontFamily:'Tajawal,sans-serif', fontSize:'12px' }}>مرحلة التهيئة: {initializationPhase}</span>
+      <div style={{ ...bg, alignItems:'center', justifyContent:'center' }} role="status" aria-live="polite" aria-label="جارٍ تجهيز حسابك" data-onboarding-phase={initializationPhase}>
+        <SimsimLoader />
       </div>
     )
   }
