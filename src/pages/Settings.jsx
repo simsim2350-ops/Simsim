@@ -13,6 +13,7 @@ import { Accordion, AccordionItem } from '../components/Accordion'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { trackOwnerMilestone } from '../lib/analytics'
 import { appConfig } from '../config'
+import { invalidateMenuCache } from '../lib/menuCacheInvalidation'
 
 // "شكل عرض الأصناف": 4 أنماط فقط (لا يوجد نمط "مختلط/Mixed") — نفس مفاتيح
 // menu_layout التي يقرأها menu-next. الترتيب (شبكة/قائمة أعلى، دوائر/بطاقة أسفل)
@@ -109,6 +110,7 @@ export default function Settings() {
     setSavingBrand(true)
     try {
       await setMenuBrandingHidden(!brandingHidden.usable)
+      invalidateMenuCache({ restaurantId: restaurant.id })
       await loadFeatures()
       toast.success('تم التحديث ✅')
     } catch (e) { toast.error(e.message || 'تعذّر التحديث، جرّب ثانية') } finally { setSavingBrand(false) }
@@ -229,6 +231,7 @@ export default function Settings() {
         })
         .eq('id', restaurant.id)
       if (error) throw error
+      invalidateMenuCache({ restaurantId: restaurant.id, slug: restaurant.slug })
       await fetchRestaurant(user.id)
       toast.success('تم حفظ إعدادات المطعم ✅')
     } catch (err) {
@@ -245,6 +248,7 @@ export default function Settings() {
       const url = await compressAndUploadImage(file, restaurant.id, 'logo')
       const { error } = await supabase.from('restaurants').update({ logo_url: url }).eq('id', restaurant.id)
       if (error) throw error
+      invalidateMenuCache({ restaurantId: restaurant.id, slug: restaurant.slug })
       setRestForm(f => ({ ...f, logo_url: url }))
       await fetchRestaurant(user.id)
       toast.success('تم تحديث الشعار ✅')
@@ -265,6 +269,7 @@ export default function Settings() {
       const url = await compressAndUploadImage(file, restaurant.id, 'cover')
       const { error } = await supabase.from('restaurants').update({ cover_url: url }).eq('id', restaurant.id)
       if (error) throw error
+      invalidateMenuCache({ restaurantId: restaurant.id, slug: restaurant.slug })
       setRestForm(f => ({ ...f, cover_url: url }))
       await fetchRestaurant(user.id)
       toast.success('تم تحديث صورة الغلاف ✅')
@@ -314,6 +319,7 @@ export default function Settings() {
       .update({ is_active: !restaurant.is_active })
       .eq('id', restaurant.id)
     if (error) { toast.error(error.message); return }
+    invalidateMenuCache({ restaurantId: restaurant.id, slug: restaurant.slug })
     await fetchRestaurant(user.id)
     toast.success(restaurant.is_active ? 'تم إيقاف المطعم مؤقتاً' : 'تم تفعيل المطعم ✅')
   }
@@ -331,6 +337,7 @@ export default function Settings() {
     setDeletingRestaurant(true)
     try {
       await deleteOwnedRestaurant({ restaurantId: restaurant.id, ownerId: user.id, client: supabase })
+      invalidateMenuCache({ restaurantId: restaurant.id, slug: restaurant.slug })
       setConfirmDeleteAll(false)
       await signOut()
       navigate('/', { replace:true })

@@ -17,7 +17,19 @@ function calorieBadge(calories: number): string {
 // instead of a separate component tree, since the underlying add-to-cart
 // interaction (tap -> instant add or options modal) is menu-next's own
 // established, unchanged behavior, not itself a "display setting".
-export function ProductCard({ product, allProducts, recommendationsMap, layout = 'list', lang, currency, priceColor, branchId, branchName }: {
+// Real rendered widths per layout (menu-next/app/globals.css), used for the
+// `sizes` hint below — was a flat, wrong "96px" for every layout before
+// (SIMSIM_MENU_PERFORMANCE_AUDIT_REPORT.md §4/§7). Approximate but far closer
+// than the previous single value; not meant to be pixel-perfect for every
+// breakpoint, just no longer actively wrong.
+const IMAGE_SIZES_BY_LAYOUT: Record<MenuLayout, string> = {
+  list: '(min-width: 1024px) 136px, (min-width: 600px) 128px, 120px',
+  grid: '(min-width: 1024px) 350px, (min-width: 600px) 300px, 45vw',
+  showcase: '(min-width: 1024px) 1100px, (min-width: 600px) 720px, 100vw',
+  circles: '136px',
+}
+
+export function ProductCard({ product, allProducts, recommendationsMap, layout = 'list', lang, currency, priceColor, branchId, branchName, priority = false }: {
   product: Product
   allProducts?: Product[]
   recommendationsMap?: Record<string, string[]>
@@ -27,6 +39,11 @@ export function ProductCard({ product, allProducts, recommendationsMap, layout =
   priceColor: string
   branchId: string
   branchName: string
+  // True for exactly one product on the page — the first one rendered,
+  // which is the LCP candidate. Set by CategorySection, see there for how
+  // it picks that single product. Default false preserves old behavior for
+  // every other card.
+  priority?: boolean
 }) {
   const name = lang === 'en' && product.name_en ? product.name_en : product.name
   const description = lang === 'en' ? product.description_en || product.description : product.description
@@ -75,6 +92,8 @@ export function ProductCard({ product, allProducts, recommendationsMap, layout =
           priceColor={priceColor}
           lang={lang}
           className="product-card__media-btn"
+          priority={priority}
+          sizes={IMAGE_SIZES_BY_LAYOUT[layout]}
         />
         {/* Every layout floats the add button over the image corner (list
             included, as of the Cloud-theme row redesign — CSS repositions

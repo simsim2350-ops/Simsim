@@ -157,7 +157,7 @@ export default function Branches() {
             kitchenTicket: { ...form.printer_config.kitchenTicket, printerName: form.printer_config.kitchenTicket.printerName.trim() || null, copies: Math.max(1, Math.min(5, Number(form.printer_config.kitchenTicket.copies) || 1)) },
             routes: {},
           },
-        })
+        }, restaurant.id)
         toast.success('تم تحديث الفرع ✅')
       } else {
         const primary = branches.find(b => b.is_primary)
@@ -176,10 +176,10 @@ export default function Branches() {
         if (primary) {
           try {
             await cloneMenuToBranch(primary.id, newBranch.id, restaurant.id)
-            await updateBranch(newBranch.id, { menu_clone_status:'ready', menu_clone_error:null })
+            await updateBranch(newBranch.id, { menu_clone_status:'ready', menu_clone_error:null }, restaurant.id)
             toast.success('تم إضافة الفرع ونسخ المنيو إليه 🎉')
           } catch (cloneErr) {
-            await updateBranch(newBranch.id, { menu_clone_status:'failed', menu_clone_error:(cloneErr?.message || 'clone_failed').slice(0, 240) }).catch(() => {})
+            await updateBranch(newBranch.id, { menu_clone_status:'failed', menu_clone_error:(cloneErr?.message || 'clone_failed').slice(0, 240) }, restaurant.id).catch(() => {})
             toast.error('أُضيف الفرع لكن نسخة المنيو تحتاج إعادة محاولة قبل نشره.')
           }
         } else {
@@ -230,13 +230,13 @@ export default function Branches() {
     }
     setRetryingBranchId(branch.id)
     try {
-      await updateBranch(branch.id, { menu_clone_status:'copying', menu_clone_error:null })
+      await updateBranch(branch.id, { menu_clone_status:'copying', menu_clone_error:null }, restaurant.id)
       await cloneMenuToBranch(primary.id, branch.id, restaurant.id, true)
-      await updateBranch(branch.id, { menu_clone_status:'ready', menu_clone_error:null })
+      await updateBranch(branch.id, { menu_clone_status:'ready', menu_clone_error:null }, restaurant.id)
       toast.success('اكتملت نسخة المنيو وأصبح الفرع جاهزًا ✅')
       await loadBranches()
     } catch (error) {
-      await updateBranch(branch.id, { menu_clone_status:'failed', menu_clone_error:(error?.message || 'clone_failed').slice(0, 240) }).catch(() => {})
+      await updateBranch(branch.id, { menu_clone_status:'failed', menu_clone_error:(error?.message || 'clone_failed').slice(0, 240) }, restaurant.id).catch(() => {})
       toast.error('تعذّرت إعادة النسخ. جرّب مرة أخرى أو راجع المنيو.')
       await loadBranches()
     } finally {
@@ -246,7 +246,7 @@ export default function Branches() {
 
   const removeBranch = async (branch) => {
     try {
-      await deleteBranch(branch.id)
+      await deleteBranch(branch.id, restaurant.id)
       toast.success('تم حذف الفرع')
       loadBranches()
     } catch (err) {
@@ -255,13 +255,13 @@ export default function Branches() {
   }
 
   const toggleActive = async (branch) => {
-    await updateBranch(branch.id, { is_active: !branch.is_active })
+    await updateBranch(branch.id, { is_active: !branch.is_active }, restaurant.id)
     loadBranches()
     toast.success(branch.is_active ? 'تم تعطيل الفرع 🚫' : 'تم تفعيل الفرع ✅')
   }
 
   const togglePaused = async (branch) => {
-    await updateBranch(branch.id, { is_paused: !branch.is_paused })
+    await updateBranch(branch.id, { is_paused: !branch.is_paused }, restaurant.id)
     loadBranches()
     toast.success(branch.is_paused ? 'تم إلغاء الإغلاق المؤقت ✅' : 'تم إغلاق الفرع مؤقتاً 🚫')
   }

@@ -14,6 +14,7 @@ import { fetchBranches } from '../lib/branchesApi'
 import { calculateMenuReadiness } from '../lib/menuReadiness'
 import { isFirstOwnerContentItem } from '../lib/ownerActivation'
 import { trackOwnerMilestone } from '../lib/analytics'
+import { invalidateMenuCache } from '../lib/menuCacheInvalidation'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -122,6 +123,7 @@ export default function Menu() {
     try {
       const { error } = await supabase.from('restaurants').update(patch).eq('id', restaurant.id)
       if (error) throw error
+      invalidateMenuCache({ restaurantId: restaurant.id, slug: restaurant.slug })
       if (user) await fetchRestaurant(user.id)
     } catch (e) {
       toast.error('تعذّر حفظ إعدادات الاقتراحات')
@@ -217,6 +219,7 @@ export default function Menu() {
         }
         toast.success('تم إضافة القسم 🎉')
       }
+      invalidateMenuCache({ restaurantId: restaurant.id, branchId: currentBranchId })
       setCatModal(false)
       fetchAll()
     } catch (err) {
@@ -244,12 +247,14 @@ export default function Menu() {
   const deleteCat = async (id) => {
     const { error } = await supabase.from('categories').delete().eq('id', id)
     if (error) { toast.error(error.message); return }
+    invalidateMenuCache({ restaurantId: restaurant.id, branchId: currentBranchId })
     toast.success('تم الحذف')
     fetchAll()
   }
 
   const toggleCatVisibility = async (cat) => {
     await supabase.from('categories').update({ is_visible: !cat.is_visible }).eq('id', cat.id)
+    invalidateMenuCache({ restaurantId: restaurant.id, branchId: currentBranchId })
     fetchAll()
     toast.success(cat.is_visible ? 'تم الإخفاء 🚫' : 'تم الإظهار ✅')
   }
@@ -277,6 +282,8 @@ export default function Menu() {
       console.error('Sort order save failed:', failedResult.error)
       toast.error(failedResult.error.message || 'تعذّر حفظ الترتيب')
       fetchAll()
+    } else {
+      invalidateMenuCache({ restaurantId: restaurant.id, branchId: currentBranchId })
     }
   }
 
@@ -301,6 +308,8 @@ export default function Menu() {
       console.error('Sort order save failed:', failedResult.error)
       toast.error(failedResult.error.message || 'تعذّر حفظ الترتيب')
       fetchAll()
+    } else {
+      invalidateMenuCache({ restaurantId: restaurant.id, branchId: currentBranchId })
     }
   }
 
@@ -532,6 +541,7 @@ export default function Menu() {
           props: { source: 'menu_admin' },
         })
       }
+      invalidateMenuCache({ restaurantId: restaurant.id, branchId: currentBranchId })
       setProdModal(false)
       fetchAll()
     } catch (err) {
@@ -584,12 +594,14 @@ export default function Menu() {
   const deleteProd = async (id) => {
     const { error } = await supabase.from('products').delete().eq('id', id)
     if (error) { toast.error(error.message); return }
+    invalidateMenuCache({ restaurantId: restaurant.id, branchId: currentBranchId })
     toast.success('تم الحذف')
     fetchAll()
   }
 
   const toggleProdAvailability = async (prod) => {
     await supabase.from('products').update({ is_available: !prod.is_available }).eq('id', prod.id)
+    invalidateMenuCache({ restaurantId: restaurant.id, branchId: currentBranchId })
     fetchAll()
     toast.success(prod.is_available ? 'تم الإخفاء 🚫' : 'تم الإظهار ✅')
   }

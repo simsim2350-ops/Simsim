@@ -14,6 +14,7 @@ export function CategorySection({
   priceColor,
   branchId,
   branchName,
+  firstSection = false,
 }: {
   category: Category
   products: Product[]
@@ -40,6 +41,12 @@ export function CategorySection({
   priceColor: string
   branchId: string
   branchName: string
+  // True only for the very first CategorySection rendered on the page (set
+  // by page.tsx) — this section's own first product then becomes the single
+  // priority-loaded image on the whole page (the LCP candidate). Every
+  // other section/product keeps the old default lazy behavior.
+  // (SIMSIM_MENU_PERFORMANCE_AUDIT_REPORT.md §4/§7/§14.)
+  firstSection?: boolean
 }) {
   const name = lang === 'en' && category.name_en ? category.name_en : category.name
 
@@ -61,8 +68,8 @@ export function CategorySection({
         <span className="category-section__count">{products.length}</span>
       </h2>
       <div className={`category-section__grid category-section__grid--${layout}${horizontalScroll ? ' category-section__grid--horizontal-scroll' : ''}`}>
-        {products.map((p) => (
-          <ProductCard key={p.id} product={p} allProducts={allProducts} recommendationsMap={recommendationsMap} layout={layout} lang={lang} currency={currency} priceColor={priceColor} branchId={branchId} branchName={branchName} />
+        {products.map((p, i) => (
+          <ProductCard key={p.id} product={p} allProducts={allProducts} recommendationsMap={recommendationsMap} layout={layout} lang={lang} currency={currency} priceColor={priceColor} branchId={branchId} branchName={branchName} priority={firstSection && i === 0} />
         ))}
       </div>
     </section>
