@@ -24,4 +24,16 @@ export const appConfig = Object.freeze({
   // (Dashboard، الطاولات، صفحة QR، الإعداد الأولي، الإعدادات، الفروع) لتكون
   // متطابقة مع الرابط الذي يظهر فعلياً في شريط العنوان للزبون.
   menuNextBaseUrl: 'https://simsimmenu.com',
+  // رابط menu-next المباشر (وراء simsimmenu.com نفسه)، لازم لأن Vercel لهذا
+  // المشروع لا يُمرّر (proxy) إلا `/menu/*`، `/print/*`، `/api/customer/*` —
+  // مسار `/api/revalidate` الجديد (Performance Optimization Phase 2) غير
+  // موجود ضمن تلك القواعد، فيجب استدعاؤه من الدومين الحقيقي لـmenu-next
+  // مباشرة، لا عبر simsimmenu.com.
+  menuNextDirectBaseUrl: env.VITE_MENU_NEXT_DIRECT_BASE_URL || 'https://simsim-menu-next.vercel.app',
+  // سر مشترك (best-effort، ليس سرّاً حقيقياً — أي متغيّر VITE_ يُشحن ضمن كود
+  // المتصفح العام) يُرسل مع كل طلب إبطال كاش إلى menu-next. إن لم يُضبط هنا
+  // (أو في REVALIDATE_SECRET على Vercel لمشروع menu-next)، الإبطال الفوري لا
+  // يعمل ويعتمد Dashboard فقط على مهلة الـTTL الاحتياطية (5 دقائق) في
+  // menu-next/lib/data.ts — لا كسر، فقط تحديث أبطأ.
+  revalidateSecret: env.VITE_REVALIDATE_SECRET || '',
 })

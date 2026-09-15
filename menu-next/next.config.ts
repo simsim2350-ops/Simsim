@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
   // from its own real domain instead, avoiding any collision, with zero
   // difference in behavior whether this deployment is reached directly or
   // through the simsimmenu.com proxy (same-origin either way in practice).
-  assetPrefix: 'https://simsim-menu-next.vercel.app',
+  assetPrefix: process.env.LOCAL_PERF_TEST ? undefined : 'https://simsim-menu-next.vercel.app',
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '*.supabase.co', pathname: '/storage/v1/object/public/**' },

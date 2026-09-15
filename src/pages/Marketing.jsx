@@ -8,6 +8,7 @@ import AppShell from '../components/AppShell'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { fetchBranches } from '../lib/branchesApi'
+import { invalidateMenuCache } from '../lib/menuCacheInvalidation'
 
 function Icon({ type, size = 18 }) {
   const paths = {
@@ -289,6 +290,7 @@ export default function Marketing() {
         if (error) throw error
         toast.success('تم إضافة البانر')
       }
+      invalidateMenuCache({ restaurantId: restaurant.id })
       setBannerModalOpen(false)
       await fetchAll()
     } catch (error) {
@@ -302,6 +304,7 @@ export default function Marketing() {
     if (!banner) return
     const { error } = await supabase.from('banners').delete().eq('id', banner.id)
     if (error) { toast.error(error.message); return }
+    invalidateMenuCache({ restaurantId: restaurant.id })
     toast.success('تم حذف البانر')
     await fetchAll()
   }
@@ -309,6 +312,7 @@ export default function Marketing() {
   const toggleBannerActive = async (banner) => {
     const { error } = await supabase.from('banners').update({ is_active:!banner.is_active }).eq('id', banner.id)
     if (error) { toast.error(error.message); return }
+    invalidateMenuCache({ restaurantId: restaurant.id })
     toast.success(banner.is_active ? 'تم تعطيل البانر' : 'تم تفعيل البانر')
     setOpenMenu(null)
     await fetchAll()
@@ -348,6 +352,7 @@ export default function Marketing() {
         if (error) throw error
         toast.success('تم إضافة الكوبون')
       }
+      invalidateMenuCache({ restaurantId: restaurant.id })
       setCouponModalOpen(false)
       await fetchAll()
     } catch (error) {
@@ -361,6 +366,7 @@ export default function Marketing() {
     if (!coupon) return
     const { error } = await supabase.from('coupons').delete().eq('id', coupon.id)
     if (error) { toast.error(error.message); return }
+    invalidateMenuCache({ restaurantId: restaurant.id })
     toast.success('تم حذف الكوبون')
     await fetchAll()
   }
@@ -368,6 +374,7 @@ export default function Marketing() {
   const toggleCouponActive = async (coupon) => {
     const { error } = await supabase.from('coupons').update({ is_active:!coupon.is_active }).eq('id', coupon.id)
     if (error) { toast.error(error.message); return }
+    invalidateMenuCache({ restaurantId: restaurant.id })
     toast.success(coupon.is_active ? 'تم تعطيل الكوبون' : 'تم تفعيل الكوبون')
     setOpenMenu(null)
     await fetchAll()

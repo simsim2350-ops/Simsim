@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { withTimeout } from './asyncTimeout'
+import { invalidateMenuCache } from './menuCacheInvalidation'
 
 // طبقة وصول بيانات موحّدة لجدول branches + عملية نسخ المنيو عند إنشاء فرع جديد
 
@@ -35,10 +36,15 @@ export async function createBranch(restaurantId, fields) {
     { operation: 'branch_create' },
   )
   if (error) throw error
+  invalidateMenuCache({ restaurantId, branchId: data.id })
   return data
 }
 
-export async function updateBranch(id, fields) {
+// restaurantId اختياري تقنياً (Supabase لا يحتاجه لتحديد الصف)، لكنه لازم
+// عمليًا لإبطال كاش menu-next الصحيح — كل نداء حالي لهذه الدالة في
+// Branches.jsx يملك restaurant.id متاحاً في نطاقه فعلاً (Performance
+// Optimization Phase 2).
+export async function updateBranch(id, fields, restaurantId) {
   const { data, error } = await supabase
     .from('branches')
     .update(fields)
@@ -46,12 +52,14 @@ export async function updateBranch(id, fields) {
     .select()
     .single()
   if (error) throw error
+  invalidateMenuCache({ restaurantId, branchId: id })
   return data
 }
 
-export async function deleteBranch(id) {
+export async function deleteBranch(id, restaurantId) {
   const { error } = await supabase.from('branches').delete().eq('id', id)
   if (error) throw error
+  invalidateMenuCache({ restaurantId, branchId: id })
 }
 
 // نسخ منيو الفرع الأساسي بالكامل عبر RPC ذري: الأقسام والأصناف ينجحان معاً أو لا يتغير شيء.

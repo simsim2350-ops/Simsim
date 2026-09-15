@@ -161,7 +161,7 @@ export default async function MenuPage({
                 بما فيه صفوف المختارات، تمامًا كما في المنيو القديم. */}
             <CategoryNav categories={navCategories} brandColor={brandColor} lang={lang} />
 
-            {highlightSections.map((section) => (
+            {highlightSections.map((section, i) => (
               <CategorySection
                 key={section.key}
                 category={{ id: section.key, branch_id: branch.id, name: section.title, name_en: section.title, emoji: null, cover_url: null, sort_order: -1, is_visible: true }}
@@ -181,6 +181,7 @@ export default async function MenuPage({
                 priceColor={priceColor}
                 branchId={branch.id}
                 branchName={branchName}
+                firstSection={i === 0}
               />
             ))}
 
@@ -190,7 +191,7 @@ export default async function MenuPage({
             {categories.length === 0 ? (
               <p className="category-section__empty" style={{ padding: '18px 16px' }}>{t(lang).noCategories}</p>
             ) : (
-              categories.map((category) => (
+              categories.map((category, i) => (
                 <CategorySection
                   key={category.id}
                   category={category}
@@ -203,6 +204,7 @@ export default async function MenuPage({
                   priceColor={priceColor}
                   branchId={branch.id}
                   branchName={branchName}
+                  firstSection={highlightSections.length === 0 && i === 0}
                 />
               ))
             )}

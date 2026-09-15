@@ -19,6 +19,7 @@ import { ProductOptionsModal } from './ProductOptionsModal'
 // rather than converting the whole card to a client component.
 export function ProductImageButton({
   product, name, allProducts, recommendationsMap, branchId, branchName, currency, priceColor, lang, className,
+  priority = false, sizes = '96px',
 }: {
   product: Product
   name: string
@@ -30,6 +31,18 @@ export function ProductImageButton({
   priceColor: string
   lang: Lang
   className?: string
+  // Performance Optimization Phase 5 (SIMSIM_MENU_PERFORMANCE_AUDIT_REPORT.md
+  // §4/§7/§14): both default to the OLD behavior (no priority, flat 96px) if
+  // the caller doesn't pass them, so nothing here changes unless ProductCard
+  // explicitly opts a specific image in. `priority` should be true for only
+  // the single first visible product image on the page (the likely LCP
+  // element) — see ProductCard.tsx/CategorySection.tsx for how that one
+  // image is chosen. `sizes` should reflect this image's REAL rendered
+  // width for the active layout, computed by ProductCard (which knows the
+  // layout; this component doesn't) — the previous hardcoded "96px" was
+  // wrong for every layout except circles.
+  priority?: boolean
+  sizes?: string
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const strings = t(lang)
@@ -43,7 +56,7 @@ export function ProductImageButton({
         aria-label={`${strings.viewDetails}: ${name}`}
       >
         {product.image_url ? (
-          <Image src={product.image_url} alt={name} fill sizes="96px" className="product-card__image" />
+          <Image src={product.image_url} alt={name} fill sizes={sizes} priority={priority} className="product-card__image" />
         ) : (
           <span className="product-card__emoji" aria-hidden>{product.emoji || '🍽️'}</span>
         )}

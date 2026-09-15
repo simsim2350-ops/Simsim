@@ -323,6 +323,35 @@ html, body {
 .menu-empty h1 { font-size: 20px; color: #0B0B0F; }
 .menu-empty p { font-size: 13.5px; margin: 6px 0 18px; line-height: 1.6; }
 
+/* Loading skeleton (app/menu/[slug]/loading.tsx) — Performance Optimization
+   Phase 7. Same gray tokens as the rest of this file's own image
+   placeholders (#F3F4F6 background fallback / #E5E7EB), no new colors. Pure
+   CSS pulse, no JS. */
+.menu-skeleton__hero { height: 140px; background: #F3F4F6; border-radius: 0 0 20px 20px; }
+.menu-skeleton__body { padding: 16px; }
+.menu-skeleton__title { width: 55%; height: 20px; border-radius: 6px; background: #E5E7EB; margin-bottom: 14px; }
+.menu-skeleton__nav { display: flex; gap: 8px; margin-bottom: 18px; }
+.menu-skeleton__pill { display: inline-block; width: 72px; height: 30px; border-radius: 100px; background: #E5E7EB; }
+.menu-skeleton__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.menu-skeleton__card-image { width: 100%; aspect-ratio: 1 / 1; border-radius: 10px; background: #F3F4F6; margin-bottom: 8px; }
+.menu-skeleton__card-line { width: 90%; height: 10px; border-radius: 4px; background: #E5E7EB; margin-bottom: 6px; }
+.menu-skeleton__card-line--short { width: 40%; }
+.menu-skeleton__hero,
+.menu-skeleton__title,
+.menu-skeleton__pill,
+.menu-skeleton__card-image,
+.menu-skeleton__card-line {
+  animation: menu-skeleton-pulse 1.6s ease-in-out infinite;
+}
+@keyframes menu-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-skeleton__hero, .menu-skeleton__title, .menu-skeleton__pill,
+  .menu-skeleton__card-image, .menu-skeleton__card-line { animation: none; }
+}
+
 /* English/LTR variant wrapper — applied per-page, not on <html>, see app/layout.tsx */
 .lang-en { direction: ltr; text-align: left; }
 
