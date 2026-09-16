@@ -9,6 +9,7 @@ import { hasSelectableOptions } from '@/lib/options'
 import { ProductOptionsModal } from './ProductOptionsModal'
 import { CartRecommendations } from './CartRecommendations'
 import type { CartItem } from '@/lib/cart/types'
+import { startCheckoutNavigation } from '@/lib/checkoutNavDiagnostics'
 
 export function CartWidget({
   lang, currency, priceColor, branchId, branchName, slug, products, tableToken, cartWideIds, recommendationsEnabled, recommendationsCount,
@@ -126,7 +127,7 @@ export function CartWidget({
                 <span>{formatPrice(subtotal)} {currency}</span>
               </div>
             </div>
-            <Link href={checkoutHref} prefetch={false} className="cart-sheet__checkout-btn" style={{ background: priceColor }} onClick={() => setOpen(false)}>
+            <Link href={checkoutHref} prefetch={false} className="cart-sheet__checkout-btn" style={{ background: priceColor }} onClick={() => { setOpen(false); startCheckoutNavigation(checkoutHref) }}>
               {t(lang).goToCheckout}
             </Link>
           </div>

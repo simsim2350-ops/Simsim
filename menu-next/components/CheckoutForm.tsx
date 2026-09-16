@@ -21,6 +21,7 @@ import { CouponInput } from './checkout/CouponInput'
 import { PriceSummary } from './checkout/PriceSummary'
 import { CheckoutCTA } from './checkout/CheckoutCTA'
 import { OtpVerificationPanel } from './checkout/OtpVerificationPanel'
+import { markCheckoutNavigationCompleted } from '@/lib/checkoutNavDiagnostics'
 
 // Mirrors the real, existing backend resend cooldown — sql/customer_identity_
 // phase2_otp_delivery.sql (and phase1.sql): "otp_last_sent_at ... < interval
@@ -180,6 +181,18 @@ export function CheckoutForm({
   // before React re-renders the disabled button — the disabled attribute
   // alone is a render away, this ref is checked immediately.
   const submittingRef = useRef(false)
+
+  // Diagnostic-only (see lib/checkoutNavDiagnostics.ts) — signals that
+  // Checkout navigation actually completed and the real form is what's
+  // about to render, not merely that this component mounted (which also
+  // happens for the empty-cart/branch-conflict states returned below —
+  // deliberately excluded here so a completion event can't be confused
+  // with those unrelated, always-fast states).
+  useEffect(() => {
+    if (count === 0) return
+    if (cartBranchId && cartBranchId !== branchId) return
+    markCheckoutNavigationCompleted()
+  }, [])
 
   const formatPrice = (n: number) => n.toLocaleString(lang === 'en' ? 'en-US' : 'ar-SA')
   // Derived, display-only — never a new data source: customerPhone is the
