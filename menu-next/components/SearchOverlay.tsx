@@ -5,6 +5,7 @@ import type { Product, Lang } from '@/lib/types'
 import { rankProducts } from '@/lib/searchUtils'
 import { ProductCard } from './ProductCard'
 import { t } from '@/lib/i18n'
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 
 // Search overlay — same ranking algorithm as the old menu's SearchOverlay.jsx
 // (lib/searchUtils.ts, ported verbatim), rendered with the exact same
@@ -25,6 +26,10 @@ export function SearchOverlay({
 }) {
   const [query, setQuery] = useState('')
   const strings = t(lang)
+
+  // Global mobile scroll/touch conflict fix — see
+  // SIMSIM_MENU_GLOBAL_SCROLL_TOUCH_FIX_EXECUTION_REPORT.md.
+  useBodyScrollLock(open)
 
   useEffect(() => {
     if (!open) return
