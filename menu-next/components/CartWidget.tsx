@@ -126,7 +126,7 @@ export function CartWidget({
                 <span>{formatPrice(subtotal)} {currency}</span>
               </div>
             </div>
-            <Link href={checkoutHref} className="cart-sheet__checkout-btn" style={{ background: priceColor }} onClick={() => setOpen(false)}>
+            <Link href={checkoutHref} prefetch={false} className="cart-sheet__checkout-btn" style={{ background: priceColor }} onClick={() => setOpen(false)}>
               {t(lang).goToCheckout}
             </Link>
           </div>
