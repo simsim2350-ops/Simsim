@@ -24,7 +24,13 @@ export default defineConfig({
     command: 'npm run build && npm run start -- -p 4500',
     url: 'http://127.0.0.1:4500',
     reuseExistingServer: false,
-    timeout: 120_000,
+    // Test-infrastructure-only bump (Phase 3 Final Release Verification):
+    // `next build` alone (compile + typecheck) measured ~100s on this
+    // machine before `next start` even begins — 120s left no margin and
+    // caused every local run to time out before a single test executed.
+    // No application behavior changes; this only affects how long
+    // Playwright waits for its own webServer to become ready.
+    timeout: 240_000,
   },
 
   projects: [

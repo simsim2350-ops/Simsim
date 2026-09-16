@@ -42,6 +42,93 @@ const TYPE_META = {
   car_pickup: { label:'من السيارة', emoji:'🚗', c:'#0F766E', bg:'#CCFBF1' },
 }
 const typeChip = (t) => TYPE_META[t] || TYPE_META.dine_in
+const isActive = (st) => ['pending','preparing','ready'].includes(st)
+
+// كارت الطلب (كانبان) — على مستوى الوحدة عمداً (PHASE 3, root-cause fix):
+// كان مُعرَّفاً داخل Orders() فيُعاد إنشاؤه كنوع مكوّن جديد كل مرة يُعاد فيها رسم
+// الأب (كل 20 ثانية عبر setInterval، أو عند أي حدث Realtime) — ما يجبر React على
+// إلغاء تركيب/إعادة تركيب كل كروت الطلبات المعروضة في كل مرة. بما أن هذا الكارت
+// يتتبّع إيماءة سحب لمسية عبر useRef (touch)، فإعادة التركيب أثناء سحب جارٍ يُصفّر
+// تلك الحالة وقد يُسقط الإيماءة بصمت. رفعه لمستوى الوحدة يجعل هويته ثابتة عبر
+// إعادات الرسم، فلا يُعاد تركيبه إلا عند تغيّر props فعلياً.
+export function OrderCard({ order, now, th, isVIP, onAdvance, onCancel, onSelect }) {
+  const s = STATUS[order.status] || STATUS.pending
+  const items = Array.isArray(order.items) ? order.items : []
+  const m = Math.max(0, Math.floor((now - new Date(order.created_at).getTime()) / 60000))
+  const fmtElapsed = (mins) => mins < 1 ? 'الآن' : mins < 60 ? `${mins} د` : `${Math.floor(mins/60)} س ${mins%60} د`
+  const ts = m >= th.late
+    ? { c:'#DC2626', bg:'#FEE2E2' }
+    : m >= th.warn ? { c:'#B45309', bg:'#FEF3C7' } : { c:'#059669', bg:'#D1FAE5' }
+  const late = isActive(order.status) && m >= th.late
+  const fresh = order.status === 'pending' && m < 2
+  const tc = typeChip(order.type)
+  const touch = useRef({ x:0, y:0, sw:false })
+  const canAdvance = !!STATUS[order.status]?.next
+  return (
+    <div
+      onTouchStart={(e) => { const t = e.touches[0]; touch.current = { x:t.clientX, y:t.clientY, sw:false } }}
+      onTouchEnd={(e) => {
+        const t = e.changedTouches[0]
+        const dx = t.clientX - touch.current.x, dy = t.clientY - touch.current.y
+        if (Math.abs(dx) > 70 && Math.abs(dy) < 40) {
+          touch.current.sw = true
+          if (canAdvance && dx < 0) onAdvance(order)         // سحب لليسار = تقديم الحالة
+          else if (order.status === 'pending' && dx > 0) onCancel(order) // سحب لليمين = إلغاء (قبل القبول فقط)
+        }
+      }}
+      onClick={() => { if (touch.current.sw) { touch.current.sw = false; return } onSelect(order) }}
+      style={{
+        background:'white', borderRadius:'13px', border:'1px solid #E5E7EB',
+        borderRight:`4px solid ${late ? '#DC2626' : s.color}`,
+        padding:'11px 12px', cursor:'pointer', boxShadow:'0 1px 3px rgba(0,0,0,0.04)',
+        animation: late ? 'latePulse 1.6s infinite' : fresh ? 'freshFlash 1.4s ease' : 'none',
+      }}
+    >
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'6px' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+          <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px' }}>{order.order_number}</span>
+          {fresh && <span style={{ fontSize:'9px', fontWeight:'800', color:'#FF6A00', background:'rgba(255,106,0,0.12)', padding:'1px 6px', borderRadius:'100px', animation:'blink 1.5s infinite' }}>جديد</span>}
+          {isVIP && <span title="عميل VIP" style={{ fontSize:'11px' }}>⭐</span>}
+          {order.coupon_code && <span title="يحتوي كوبون" style={{ fontSize:'11px' }}>🎁</span>}
+          {order.notes && <span title="ملاحظة من الزبون" style={{ fontSize:'11px' }}>📝</span>}
+        </div>
+        {isActive(order.status) && (
+          <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize:'11px', fontWeight:'800', color:ts.c, background:ts.bg, padding:'2px 8px', borderRadius:'100px' }}>🕐 {fmtElapsed(m)}</span>
+        )}
+      </div>
+
+      <div style={{ fontSize:'12px', color:'#6B7280', display:'flex', gap:'6px', alignItems:'center', flexWrap:'wrap', marginBottom:'8px' }}>
+        {order.customer_name && <span style={{ fontWeight:'700', color:'#374151' }}>{order.customer_name}</span>}
+        <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize:'10px', fontWeight:'800', color:tc.c, background:tc.bg, padding:'2px 7px', borderRadius:'100px' }}>{tc.emoji} {tc.label}</span>
+        {order.type === 'dine_in' && (order.table_name || order.table_number) && <span>طاولة {order.table_name || order.table_number}</span>}
+        {order.source === 'qr' && <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize:'10px', fontWeight:'800', color:'#9A3412', background:'#FFF0EB', padding:'2px 7px', borderRadius:'100px' }}>▦ QR</span>}
+      </div>
+
+      {order.notes && <div style={{ fontSize:'11px', color:'#92400E', background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:'8px', padding:'5px 8px', marginBottom:'8px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>📝 {order.notes}</div>}
+
+      {/* ملخص الأصناف */}
+      <div style={{ display:'flex', flexDirection:'column', gap:'2px', marginBottom:'8px' }}>
+        {items.slice(0, 3).map((it, i) => (
+          <div key={i} style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#374151', opacity: it.unavailable ? 0.45 : 1 }}>
+            <span style={{ textDecoration: it.unavailable ? 'line-through' : 'none' }}>{it.emoji || '🍽️'} {it.name}</span>
+            <span style={{ color:'#9CA3AF', fontWeight:'700' }}>×{it.qty}</span>
+          </div>
+        ))}
+        {items.length > 3 && <div style={{ fontSize:'11px', color:'#9CA3AF' }}>+{items.length - 3} أصناف أخرى…</div>}
+      </div>
+
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px' }}>
+        <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6A00' }}>{Number(order.total || 0).toFixed(0)} ﷼</span>
+        {STATUS[order.status]?.next && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onAdvance(order) }}
+            style={{ padding:'7px 12px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'11px', cursor:'pointer', whiteSpace:'nowrap' }}
+          >{STATUS[order.status].nextLabel}</button>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function Spinner() {
   return (
@@ -366,7 +453,7 @@ export default function Orders() {
   const timeStyle = (m) => m >= th.late
     ? { c:'#DC2626', bg:'#FEE2E2' }
     : m >= th.warn ? { c:'#B45309', bg:'#FEF3C7' } : { c:'#059669', bg:'#D1FAE5' }
-  const isActive = (st) => ['pending','preparing','ready'].includes(st)
+  // isActive رُفعت لمستوى الوحدة (PHASE 3) — تُستخدَم أيضاً من OrderCard هناك.
   const isLate = (o) => isActive(o.status) && minsSince(o.created_at) >= th.late
   const isWarn = (o) => isActive(o.status) && minsSince(o.created_at) >= th.warn && minsSince(o.created_at) < th.late
 
@@ -443,82 +530,8 @@ export default function Orders() {
 
   const keyframes = `@keyframes spin{to{transform:rotate(360deg)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}@keyframes latePulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.35)}50%{box-shadow:0 0 0 4px rgba(220,38,38,0)}}@keyframes slideUp{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}@keyframes slideDown{from{transform:translateY(-16px);opacity:0}to{transform:none;opacity:1}}@keyframes ring{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(6deg)}}@keyframes freshFlash{0%{background:#FFF1E8}100%{background:#fff}}`
 
-  // ===== كارت الطلب (كانبان) =====
-  const OrderCard = ({ order }) => {
-    const s = STATUS[order.status] || STATUS.pending
-    const items = Array.isArray(order.items) ? order.items : []
-    const m = minsSince(order.created_at)
-    const ts = timeStyle(m)
-    const late = isActive(order.status) && m >= th.late
-    const fresh = order.status === 'pending' && m < 2
-    const tc = typeChip(order.type)
-    const touch = useRef({ x:0, y:0, sw:false })
-    const canAdvance = !!STATUS[order.status]?.next
-    return (
-      <div
-        onTouchStart={(e) => { const t = e.touches[0]; touch.current = { x:t.clientX, y:t.clientY, sw:false } }}
-        onTouchEnd={(e) => {
-          const t = e.changedTouches[0]
-          const dx = t.clientX - touch.current.x, dy = t.clientY - touch.current.y
-          if (Math.abs(dx) > 70 && Math.abs(dy) < 40) {
-            touch.current.sw = true
-            if (canAdvance && dx < 0) advanceOrder(order)         // سحب لليسار = تقديم الحالة
-            else if (order.status === 'pending' && dx > 0) cancelOrder(order) // سحب لليمين = إلغاء (قبل القبول فقط)
-          }
-        }}
-        onClick={() => { if (touch.current.sw) { touch.current.sw = false; return } setSelectedOrder(order) }}
-        style={{
-          background:'white', borderRadius:'13px', border:'1px solid #E5E7EB',
-          borderRight:`4px solid ${late ? '#DC2626' : s.color}`,
-          padding:'11px 12px', cursor:'pointer', boxShadow:'0 1px 3px rgba(0,0,0,0.04)',
-          animation: late ? 'latePulse 1.6s infinite' : fresh ? 'freshFlash 1.4s ease' : 'none',
-        }}
-      >
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'6px' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-            <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px' }}>{order.order_number}</span>
-            {fresh && <span style={{ fontSize:'9px', fontWeight:'800', color:'#FF6A00', background:'rgba(255,106,0,0.12)', padding:'1px 6px', borderRadius:'100px', animation:'blink 1.5s infinite' }}>جديد</span>}
-            {isVIP(order) && <span title="عميل VIP" style={{ fontSize:'11px' }}>⭐</span>}
-            {order.coupon_code && <span title="يحتوي كوبون" style={{ fontSize:'11px' }}>🎁</span>}
-            {order.notes && <span title="ملاحظة من الزبون" style={{ fontSize:'11px' }}>📝</span>}
-          </div>
-          {isActive(order.status) && (
-            <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize:'11px', fontWeight:'800', color:ts.c, background:ts.bg, padding:'2px 8px', borderRadius:'100px' }}>🕐 {fmtElapsed(m)}</span>
-          )}
-        </div>
-
-        <div style={{ fontSize:'12px', color:'#6B7280', display:'flex', gap:'6px', alignItems:'center', flexWrap:'wrap', marginBottom:'8px' }}>
-          {order.customer_name && <span style={{ fontWeight:'700', color:'#374151' }}>{order.customer_name}</span>}
-          <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize:'10px', fontWeight:'800', color:tc.c, background:tc.bg, padding:'2px 7px', borderRadius:'100px' }}>{tc.emoji} {tc.label}</span>
-          {order.type === 'dine_in' && (order.table_name || order.table_number) && <span>طاولة {order.table_name || order.table_number}</span>}
-          {order.source === 'qr' && <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize:'10px', fontWeight:'800', color:'#9A3412', background:'#FFF0EB', padding:'2px 7px', borderRadius:'100px' }}>▦ QR</span>}
-        </div>
-
-        {order.notes && <div style={{ fontSize:'11px', color:'#92400E', background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:'8px', padding:'5px 8px', marginBottom:'8px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>📝 {order.notes}</div>}
-
-        {/* ملخص الأصناف */}
-        <div style={{ display:'flex', flexDirection:'column', gap:'2px', marginBottom:'8px' }}>
-          {items.slice(0, 3).map((it, i) => (
-            <div key={i} style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#374151', opacity: it.unavailable ? 0.45 : 1 }}>
-              <span style={{ textDecoration: it.unavailable ? 'line-through' : 'none' }}>{it.emoji || '🍽️'} {it.name}</span>
-              <span style={{ color:'#9CA3AF', fontWeight:'700' }}>×{it.qty}</span>
-            </div>
-          ))}
-          {items.length > 3 && <div style={{ fontSize:'11px', color:'#9CA3AF' }}>+{items.length - 3} أصناف أخرى…</div>}
-        </div>
-
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px' }}>
-          <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6A00' }}>{Number(order.total || 0).toFixed(0)} ﷼</span>
-          {STATUS[order.status]?.next && (
-            <button
-              onClick={(e) => { e.stopPropagation(); advanceOrder(order) }}
-              style={{ padding:'7px 12px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'11px', cursor:'pointer', whiteSpace:'nowrap' }}
-            >{STATUS[order.status].nextLabel}</button>
-          )}
-        </div>
-      </div>
-    )
-  }
+  // OrderCard انتقل لمستوى الوحدة أعلى الملف (PHASE 3، سبب جذري: إعادة تركيب
+  // متكررة أثناء إيماءات اللمس — راجع التعليق هناك).
 
   return (
     <AppShell
@@ -655,7 +668,18 @@ export default function Orders() {
                           <div style={{ fontSize:'26px', opacity:0.5, marginBottom:'6px' }}>{col.emoji}</div>
                           لا توجد طلبات
                         </div>
-                      ) : list.map(o => <OrderCard key={o.id} order={o} />)}
+                      ) : list.map(o => (
+                        <OrderCard
+                          key={o.id}
+                          order={o}
+                          now={now}
+                          th={th}
+                          isVIP={isVIP(o)}
+                          onAdvance={advanceOrder}
+                          onCancel={cancelOrder}
+                          onSelect={setSelectedOrder}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>
