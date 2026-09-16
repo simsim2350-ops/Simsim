@@ -8,6 +8,7 @@ import { detectContentBox, type FramingResult } from '@/lib/smartImageFraming'
 import { t } from '@/lib/i18n'
 import type { Lang, Product } from '@/lib/types'
 import type { SelectedOption } from '@/lib/cart/types'
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 
 type ModalProduct = {
   id: string
@@ -51,6 +52,14 @@ export function ProductOptionsModal({
 }) {
   const { addToCart, updateCartItem, removeItem, items } = useCart()
   const strings = t(lang)
+
+  // Global mobile scroll/touch conflict fix — see
+  // SIMSIM_MENU_GLOBAL_SCROLL_TOUCH_FIX_EXECUTION_REPORT.md. This component
+  // is only ever mounted while its modal should be shown (parents conditionally
+  // render it, never toggle a prop), so locking unconditionally on mount and
+  // releasing on unmount is the correct usage — same pattern already relied
+  // on by every other call site of this shared, ref-counted hook.
+  useBodyScrollLock(true)
   const groups = useMemo(() => normalizeOptionGroups(product.options), [product.options])
   const name = lang === 'en' && product.nameEn ? product.nameEn : product.name
   // Real product.description(_en) only — never invented. Same lang-fallback

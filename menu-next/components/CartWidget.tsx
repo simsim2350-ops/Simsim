@@ -10,6 +10,7 @@ import { ProductOptionsModal } from './ProductOptionsModal'
 import { CartRecommendations } from './CartRecommendations'
 import type { CartItem } from '@/lib/cart/types'
 import { startCheckoutNavigation } from '@/lib/checkoutNavDiagnostics'
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 
 export function CartWidget({
   lang, currency, priceColor, branchId, branchName, slug, products, tableToken, cartWideIds, recommendationsEnabled, recommendationsCount,
@@ -33,6 +34,14 @@ export function CartWidget({
   // the product's real, current option groups looked up from the already
   // server-fetched `products` list (no extra fetch, no new client request).
   const [editingItem, setEditingItem] = useState<CartItem | null>(null)
+
+  // Global mobile scroll/touch conflict fix — see
+  // SIMSIM_MENU_GLOBAL_SCROLL_TOUCH_FIX_EXECUTION_REPORT.md. Without this,
+  // document.body stays scrollable while the cart sheet is open, so a touch
+  // gesture inside .cart-sheet__items that runs out of its own room (short
+  // content, or reaching the list's own scroll boundary) chains straight
+  // into the background page instead of stopping at the sheet's edge.
+  useBodyScrollLock(open)
 
   useEffect(() => {
     if (!open) return

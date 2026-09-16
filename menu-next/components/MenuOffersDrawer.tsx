@@ -5,6 +5,7 @@ import { useMenuBanners } from '@/lib/banners/BannerContext'
 import type { Banner, DisplayCoupon } from '@/lib/banners/types'
 import { t } from '@/lib/i18n'
 import type { Lang } from '@/lib/types'
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 
 // Faithful port of src/features/menu/MenuOffersDrawer.jsx — same pairing logic
 // (banners and coupons are independent lists, paired by index up to
@@ -90,6 +91,10 @@ function OfferCard({ banner, coupon, brandColor, lang }: { banner: Banner | null
 export function MenuOffersDrawer({ brandColor, lang }: { brandColor: string; lang: Lang }) {
   const { offersOpen, closeOffers, banners, coupons } = useMenuBanners()
   const strings = t(lang)
+
+  // Global mobile scroll/touch conflict fix — see
+  // SIMSIM_MENU_GLOBAL_SCROLL_TOUCH_FIX_EXECUTION_REPORT.md.
+  useBodyScrollLock(offersOpen)
 
   useEffect(() => {
     if (!offersOpen) return undefined

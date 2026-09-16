@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useCart } from '@/lib/cart/CartContext'
 import { t } from '@/lib/i18n'
 import type { Lang } from '@/lib/types'
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 
 // Rendered exactly once (in the [slug] layout, alongside CartProvider) — not
 // per product card. Global cart state (conflict) is shared across every
@@ -11,6 +12,10 @@ import type { Lang } from '@/lib/types'
 export function BranchConflictModal({ lang }: { lang: Lang }) {
   const { conflict, resolveConflictKeepNewBranch, cancelConflict } = useCart()
   const strings = t(lang)
+
+  // Global mobile scroll/touch conflict fix — see
+  // SIMSIM_MENU_GLOBAL_SCROLL_TOUCH_FIX_EXECUTION_REPORT.md.
+  useBodyScrollLock(Boolean(conflict))
 
   // Escape maps to the same safe choice the Cancel button makes (keep the
   // existing cart, don't switch branches) — never to the destructive confirm

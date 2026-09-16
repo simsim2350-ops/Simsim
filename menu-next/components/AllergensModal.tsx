@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import type { Allergen, Lang } from '@/lib/types'
 import { t } from '@/lib/i18n'
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock'
 
 // Bottom-sheet, data-driven from restaurant.allergens — same shape/behavior as
 // the old menu's AllergensModal.jsx (string or {label, label_en, icon} entries).
@@ -13,6 +14,10 @@ export function AllergensModal({ open, onClose, allergens, lang }: {
   lang: Lang
 }) {
   const strings = t(lang)
+
+  // Global mobile scroll/touch conflict fix — see
+  // SIMSIM_MENU_GLOBAL_SCROLL_TOUCH_FIX_EXECUTION_REPORT.md.
+  useBodyScrollLock(open)
 
   useEffect(() => {
     if (!open) return
