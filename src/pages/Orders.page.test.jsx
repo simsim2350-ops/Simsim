@@ -62,10 +62,17 @@ const { mockSupabase, queueSupabaseResponse, resetSupabaseMock, triggerRealtimeE
 
   function makeChain() {
     const chain = {}
+    const chainId = Math.random().toString(36).slice(2, 7)
     for (const method of ['select', 'eq', 'order', 'limit', 'update', 'in', 'single']) {
-      chain[method] = () => chain
+      chain[method] = (...args) => { console.log('[CI-TRACE]', Date.now(), chainId, method, JSON.stringify(args)); return chain }
     }
-    chain.then = (resolve, reject) => Promise.resolve(nextResponse()).then(resolve, reject)
+    chain.then = (resolve, reject) => {
+      console.log('[CI-TRACE]', Date.now(), chainId, 'then-called, queue-len-before-pop:', queue.length)
+      return Promise.resolve(nextResponse()).then(
+        (v) => { console.log('[CI-TRACE]', Date.now(), chainId, 'resolved:', JSON.stringify(v)); return resolve(v) },
+        (e) => { console.log('[CI-TRACE]', Date.now(), chainId, 'rejected:', String(e)); return reject(e) },
+      )
+    }
     return chain
   }
 
@@ -140,9 +147,9 @@ vi.mock('../lib/branchesApi', () => ({ fetchBranches: vi.fn().mockResolvedValue(
 // advanceOrder/acceptFromBanner/acceptAllNew *success* paths; error paths
 // call `toast.error(...)`. Both are asserted on below.
 const mockToast = vi.hoisted(() => {
-  const fn = vi.fn()
-  fn.success = vi.fn()
-  fn.error = vi.fn()
+  const fn = vi.fn((...args) => { console.log('[CI-TRACE]', Date.now(), 'toast() base called', typeof args[0], JSON.stringify(args[1])) })
+  fn.success = vi.fn((...args) => { console.log('[CI-TRACE]', Date.now(), 'toast.success', JSON.stringify(args)) })
+  fn.error = vi.fn((...args) => { console.log('[CI-TRACE]', Date.now(), 'toast.error', JSON.stringify(args)) })
   fn.dismiss = vi.fn()
   return fn
 })
@@ -252,13 +259,16 @@ describe('Orders() — Kanban column placement (ORDERS-COV-042)', () => {
 
 describe('Orders() — advanceOrder (ORDERS-COV-020/021/022, the PHASE-7-adjacent concurrency guard)', () => {
   it('020 — success: shows the success (undo) toast, not an error', async () => {
+    console.log('[CI-TRACE]', Date.now(), '=== TEST 020 START (control) ===')
     const pendingOrder = order({ status: 'pending', order_number: '#3001' })
     const { getByRole, findByText } = renderOrdersPage([pendingOrder])
     await findByText(/🔥 النشطة/)
 
     // Second queued response answers advanceOrder's own .update().eq().eq().select() call.
     queueSupabaseResponse({ data: [{ ...pendingOrder, status: 'preparing' }], error: null })
+    console.log('[CI-TRACE]', Date.now(), '020: about to click advance button')
     fireEvent.click(getByRole('button', { name: '✓ قبول وتحضير' }))
+    console.log('[CI-TRACE]', Date.now(), '020: fireEvent.click returned')
 
     // showUndo() calls the base toast(renderProp, { duration: 60000 }) callable —
     // distinct from toast.error/.success, so its presence alone proves success.
@@ -288,12 +298,15 @@ describe('Orders() — advanceOrder (ORDERS-COV-020/021/022, the PHASE-7-adjacen
   })
 
   it('022 — unexpected error: shows the generic fallback message, order stays put, page does not crash', async () => {
+    console.log('[CI-TRACE]', Date.now(), '=== TEST 022 START ===')
     const pendingOrder = order({ status: 'pending', order_number: '#3003' })
     const { getByRole, findByText, getByText } = renderOrdersPage([pendingOrder])
     await findByText(/🔥 النشطة/)
 
     queueSupabaseResponse({ data: null, error: { message: 'network error' } })
+    console.log('[CI-TRACE]', Date.now(), '022: about to click advance button')
     fireEvent.click(getByRole('button', { name: '✓ قبول وتحضير' }))
+    console.log('[CI-TRACE]', Date.now(), '022: fireEvent.click returned')
 
     // transitionErrorMessage's generic-fallback branch (Orders.jsx ~37-38, the
     // one PHASE-7-adjacent branch not reachable via any pending-transition
@@ -357,6 +370,7 @@ describe('Orders() — acceptFromBanner (ORDERS-COV-023, a PHASE-7-documented fi
 
 describe('Orders() — acceptAllNew (ORDERS-COV-024, a PHASE-7-documented fix)', () => {
   it('partial success: some orders accepted, some not — the count-specific message fires, not a blanket success', async () => {
+    console.log('[CI-TRACE]', Date.now(), '=== TEST PARTIAL START ===')
     const { findByText, getByText } = renderOrdersPage([])
     await findByText(/🔥 النشطة/)
 
@@ -369,10 +383,12 @@ describe('Orders() — acceptAllNew (ORDERS-COV-024, a PHASE-7-documented fix)',
       triggerRealtimeEvent({ eventType: 'INSERT', new: orderC })
     })
     await waitFor(() => expect(getByText(/قبول الكل \(3\)/)).toBeInTheDocument())
+    console.log('[CI-TRACE]', Date.now(), 'partial: banner shows (3), about to queue+click')
 
     // Only 2 of the 3 rows still matched status='pending' by the time the update ran.
     queueSupabaseResponse({ data: [{ ...orderA, status: 'preparing' }, { ...orderB, status: 'preparing' }], error: null })
     fireEvent.click(getByText(/قبول الكل \(3\)/))
+    console.log('[CI-TRACE]', Date.now(), 'partial: fireEvent.click returned')
 
     // Bounded timeout bump — same CI-only flakiness as the 022 test above,
     // see SIMSIM_PR415_CI_FLAKINESS_FIX_REPORT.md.
@@ -381,6 +397,7 @@ describe('Orders() — acceptAllNew (ORDERS-COV-024, a PHASE-7-documented fix)',
   })
 
   it('zero accepted: none of the queued orders matched anymore — shows the failure message, not success', async () => {
+    console.log('[CI-TRACE]', Date.now(), '=== TEST ZERO START ===')
     const { findByText, getByText } = renderOrdersPage([])
     await findByText(/🔥 النشطة/)
 
@@ -391,9 +408,11 @@ describe('Orders() — acceptAllNew (ORDERS-COV-024, a PHASE-7-documented fix)',
       triggerRealtimeEvent({ eventType: 'INSERT', new: orderB })
     })
     await waitFor(() => expect(getByText(/قبول الكل \(2\)/)).toBeInTheDocument())
+    console.log('[CI-TRACE]', Date.now(), 'zero: banner shows (2), about to queue+click')
 
     queueSupabaseResponse({ data: [], error: null })
     fireEvent.click(getByText(/قبول الكل \(2\)/))
+    console.log('[CI-TRACE]', Date.now(), 'zero: fireEvent.click returned')
 
     // Bounded timeout bump — same CI-only flakiness as the 022 test above,
     // see SIMSIM_PR415_CI_FLAKINESS_FIX_REPORT.md.
