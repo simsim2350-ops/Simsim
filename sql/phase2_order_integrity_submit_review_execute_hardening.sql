@@ -1,0 +1,55 @@
+-- Phase 2 Order Integrity — EXECUTE privilege hardening (GRANT hygiene only).
+--
+-- Audit (independent of PR #415/#416, found while reviewing submit_review's
+-- current production grants): public.submit_review(uuid, integer, text,
+-- text) — the CURRENT and only live signature, confirmed via
+-- pg_get_function_identity_arguments on production; the old 3-argument
+-- signature (uuid, integer/int, text) referenced by
+-- sql/submit_review.sql's own REVOKE/GRANT no longer exists (it was DROPPED
+-- by phase2_order_integrity_submit_review_access_token.sql) — carries a
+-- PUBLIC EXECUTE grant in addition to the explicit anon/authenticated
+-- grants it actually needs.
+--
+-- Root cause (same category as sql/phase1_security_revoke_admin_delete_plan_anon.sql
+-- and its own comment on this exact pattern): PostgreSQL auto-grants
+-- EXECUTE to PUBLIC on `CREATE FUNCTION` unless explicitly revoked.
+-- phase2_order_integrity_submit_review_access_token.sql dropped the old
+-- 3-arg function and created a brand-new 4-arg one — a fresh function
+-- object, so PostgreSQL granted PUBLIC EXECUTE on it by default. Nobody
+-- revoked it afterward. This is GRANT hygiene, not the same class of issue
+-- as the access-token gap closed by ..._enforce.sql — PUBLIC does not add
+-- any capability beyond what anon already has (any client already reaches
+-- this function via the anon key), but it is redundant, unaudited, and
+-- means any future custom Postgres role — not just anon/authenticated —
+-- would silently inherit EXECUTE unless someone remembers this default.
+--
+-- Caller audit (this task, repo-wide grep, re-verified — not assumed):
+--   - menu-next/components/MyOrdersView.tsx and OrderStatusView.tsx: the
+--     only two live callers, both via supabaseBrowser() (menu-next/lib/
+--     supabase/client.ts), which is hard-wired to the anon/publishable key
+--     only — never service_role, never an authenticated session (menu-next
+--     customers are anonymous by design). Both resolve to Postgres role
+--     `anon` at the database level.
+--   - src/features/menu/hooks/useReviews.js: confirmed dead code (zero
+--     imports anywhere in src/, not reachable from App.jsx) — re-verified
+--     directly in this task, same conclusion as every prior audit of this
+--     function.
+--   - No server-side/backend/Edge Function caller exists anywhere in the
+--     repo (grep across supabase/functions, menu-next/app/api, src/ found
+--     none).
+-- Conclusion: `anon` is the only privilege this function is actually
+-- exercised through today. `authenticated` was already an explicit grant
+-- before this migration (sql/submit_review.sql, carried forward) and is
+-- left untouched — this migration's scope is PUBLIC only, not a redesign
+-- of the authorization model.
+--
+-- This migration changes ONLY the grant below. It does not touch the
+-- function's signature, body, SECURITY DEFINER, search_path, the
+-- access-token enforcement added by ..._enforce.sql, the completed-status
+-- requirement, duplicate-review protection, rating validation, comment
+-- handling, or any error message — no CREATE OR REPLACE FUNCTION statement
+-- appears in this file at all. Revoking EXECUTE from PUBLIC does not affect
+-- the separate, explicit `anon`/`authenticated` grants already in place —
+-- those are independent ACL entries, not inherited through PUBLIC.
+
+revoke execute on function public.submit_review(uuid, integer, text, text) from public;
