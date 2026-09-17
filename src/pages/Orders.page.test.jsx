@@ -96,8 +96,24 @@ vi.mock('../lib/supabase', () => ({ supabase: mockSupabase }))
 // ever reads restaurant.id (verified: `grep -n "\\buser\\b" src/pages/Orders.jsx`
 // shows no other use of `user`). AppShell's own (separate) useAuthStore()
 // usage never runs — AppShell itself is mocked below.
+//
+// The returned object must be referentially STABLE across renders — the real
+// Zustand useAuthStore() returns the same store object reference between
+// renders unless the underlying store state actually changes. A fresh object
+// literal here (as this used to be) breaks that contract: Orders.jsx's
+// useEffect(..., [restaurant]) treats a new reference as a changed dependency
+// on every single render, re-firing fetchOrders()/subscribeOrders() each
+// time — which then races the test's own queued Supabase responses on the
+// shared response queue above. See SIMSIM_PR415_CI_DIAGNOSTIC_REPORT.md for
+// the full investigation (this was confirmed locally: instrumenting the
+// mock's supabase.from(...) calls showed extra, unintended fetchOrders()
+// calls interleaved with the test's own intentional calls until this exact
+// fix — a stable reference via vi.hoisted — was applied).
+const { authValue } = vi.hoisted(() => ({
+  authValue: { user: { id: 'user-1' }, restaurant: { id: 'restaurant-1', name: 'Test Restaurant' } },
+}))
 vi.mock('../store/authStore', () => ({
-  useAuthStore: () => ({ user: { id: 'user-1' }, restaurant: { id: 'restaurant-1', name: 'Test Restaurant' } }),
+  useAuthStore: () => authValue,
 }))
 
 // ---- AppShell pass-through mock ------------------------------------------
