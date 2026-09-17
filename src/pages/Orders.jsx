@@ -27,12 +27,16 @@ const COLS = [
 ]
 
 // رسالة عربية مفهومة عند رفض انتقال حالة من مشغّل enforce_order_transition (PHASE 5/D-09 — ADR-50)
-// بدل عرض نص Postgres الخام (raise exception 'invalid_order_transition: ...')
-const transitionErrorMessage = (message) => (
-  typeof message === 'string' && message.includes('invalid_order_transition')
-    ? '⚠️ لا يمكن تنفيذ هذا التغيير — إما أن الانتقال غير مسموح أو انتهت مهلة التراجع (60 ثانية)'
-    : message
-)
+// بدل عرض نص Postgres الخام (raise exception 'invalid_order_transition: ...').
+// أي خطأ آخر (شبكة، RLS، إلخ) يحصل على رسالة عامة مفهومة أيضاً — النص التقني الخام
+// يبقى في console فقط (PHASE-7: كان يُعرض حرفياً للموظف قبل هذا الإصلاح).
+const transitionErrorMessage = (message) => {
+  if (typeof message === 'string' && message.includes('invalid_order_transition')) {
+    return '⚠️ لا يمكن تنفيذ هذا التغيير — إما أن الانتقال غير مسموح أو انتهت مهلة التراجع (60 ثانية)'
+  }
+  console.error('Order action error:', message)
+  return '⚠️ حدث خطأ غير متوقع — حاول مرة أخرى'
+}
 
 const TYPE_LABEL = { dine_in:'🪑 محلي', takeaway:'🥡 سفري', delivery:'🛵 توصيل', car_pickup:'🚗 استلام من السيارة' }
 const TYPE_META = {
@@ -403,7 +407,10 @@ export default function Orders() {
   const acceptFromBanner = async (order) => {
     dismissFromQueue(order.id)
     // نفس حماية advanceOrder: لا يُنفَّذ إلا لو الطلب لسه "انتظار" فعلياً (لم يُلغَ الزبون له للتو)
-    const { data } = await supabase.from('orders').update({ status: 'preparing' }).eq('id', order.id).eq('status', 'pending').select()
+    const { data, error } = await supabase.from('orders').update({ status: 'preparing' }).eq('id', order.id).eq('status', 'pending').select()
+    // PHASE-7: خطأ حقيقي (شبكة/صلاحيات) كان يُعرض سابقاً بنفس رسالة "ألغاه الزبون" المضلِّلة
+    // لعدم فحص error أصلاً — الآن يُميَّز بوضوح عن حالة عدم وجود صف مطابق.
+    if (error) { toast.error(transitionErrorMessage(error.message)); return }
     if (!data || data.length === 0) {
       toast.error(`🚫 الطلب ${order.order_number} أُلغي من الزبون قبل قبوله`)
       return
@@ -415,8 +422,13 @@ export default function Orders() {
     const ids = queue.map(q => q.id)
     if (ids.length === 0) return
     setQueue([])
-    await supabase.from('orders').update({ status: 'preparing' }).in('id', ids).eq('status', 'pending')
-    toast.success(`👨‍🍳 تم قبول ${ids.length} طلب`)
+    // PHASE-7: لم يكن يُفحص لا error ولا نتيجة العملية أصلاً — رسالة "تم القبول" كانت تظهر
+    // دائماً حتى لو فشلت العملية بالكامل (شبكة/صلاحيات) أو قَبِلت جزءاً فقط من الطلبات.
+    const { data, error } = await supabase.from('orders').update({ status: 'preparing' }).in('id', ids).eq('status', 'pending').select()
+    if (error) { toast.error(transitionErrorMessage(error.message)); return }
+    const acceptedCount = data?.length || 0
+    if (acceptedCount === 0) { toast.error('🚫 تعذّر قبول الطلبات — تحقّق من الشاشة'); return }
+    toast.success(acceptedCount === ids.length ? `👨‍🍳 تم قبول ${acceptedCount} طلب` : `👨‍🍳 تم قبول ${acceptedCount} من ${ids.length} طلب — تحقّق من الباقي`)
   }
 
   const cancelOrder = (order) => setCancelTarget(order) // يفتح نافذة اختيار السبب
