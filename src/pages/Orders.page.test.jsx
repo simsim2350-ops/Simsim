@@ -282,7 +282,15 @@ describe('Orders() — advanceOrder (ORDERS-COV-020/021/022, the PHASE-7-adjacen
     // transitionErrorMessage's generic-fallback branch (Orders.jsx ~37-38, the
     // one PHASE-7-adjacent branch not reachable via any pending-transition
     // test elsewhere) — a real, non-"invalid_order_transition" error message.
-    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('⚠️ حدث خطأ غير متوقع — حاول مرة أخرى'))
+    // Bounded timeout bump (RTL default 1000ms → 3000ms), this assertion only:
+    // observed flaky on GitHub Actions CI (Node 20) though never locally
+    // (Node 24) even across repeated runs — the CI failure surfaces as
+    // Vitest's own global per-test timeout rather than waitFor's own faster,
+    // more specific timeout error, consistent with the underlying async chain
+    // being correct but occasionally slower to settle under CI's scheduling
+    // than this fixed budget allowed for. See
+    // SIMSIM_PR415_CI_FLAKINESS_FIX_REPORT.md for the full investigation.
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('⚠️ حدث خطأ غير متوقع — حاول مرة أخرى'), { timeout: 3000 })
     expect(mockToast).not.toHaveBeenCalled()
     // Page did not crash — the order's own card is still rendered.
     expect(getByText('#3003')).toBeInTheDocument()
@@ -350,7 +358,9 @@ describe('Orders() — acceptAllNew (ORDERS-COV-024, a PHASE-7-documented fix)',
     queueSupabaseResponse({ data: [{ ...orderA, status: 'preparing' }, { ...orderB, status: 'preparing' }], error: null })
     fireEvent.click(getByText(/قبول الكل \(3\)/))
 
-    await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith('👨‍🍳 تم قبول 2 من 3 طلب — تحقّق من الباقي'))
+    // Bounded timeout bump — same CI-only flakiness as the 022 test above,
+    // see SIMSIM_PR415_CI_FLAKINESS_FIX_REPORT.md.
+    await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith('👨‍🍳 تم قبول 2 من 3 طلب — تحقّق من الباقي'), { timeout: 3000 })
     expect(mockToast.error).not.toHaveBeenCalled()
   })
 
@@ -369,7 +379,9 @@ describe('Orders() — acceptAllNew (ORDERS-COV-024, a PHASE-7-documented fix)',
     queueSupabaseResponse({ data: [], error: null })
     fireEvent.click(getByText(/قبول الكل \(2\)/))
 
-    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('🚫 تعذّر قبول الطلبات — تحقّق من الشاشة'))
+    // Bounded timeout bump — same CI-only flakiness as the 022 test above,
+    // see SIMSIM_PR415_CI_FLAKINESS_FIX_REPORT.md.
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('🚫 تعذّر قبول الطلبات — تحقّق من الشاشة'), { timeout: 3000 })
     expect(mockToast.success).not.toHaveBeenCalled()
   })
 })
