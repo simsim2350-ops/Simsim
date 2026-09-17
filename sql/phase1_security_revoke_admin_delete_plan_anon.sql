@@ -1,0 +1,22 @@
+-- Phase 1 Security Hardening — defense-in-depth, GRANT hygiene
+--
+-- admin_delete_plan(p_id uuid) was the ONLY one of 71 admin_* functions
+-- executable by the `anon` role (verified: has_function_privilege('anon',
+-- ..., 'EXECUTE') = true; all 70 siblings = false). Not independently
+-- exploitable — its own first statement is
+-- `if not public.platform_admin_can('manage_billing') then raise exception
+-- 'forbidden'` and platform_admin_can() resolves via auth.uid(), which is
+-- NULL for anon, so the check correctly fails closed either way.
+--
+-- Root cause (found on verification): its ACL carried a blanket
+-- `=X/postgres` PUBLIC grant that no sibling admin_* function has —
+-- Postgres auto-grants EXECUTE to PUBLIC on function creation unless
+-- explicitly revoked, and whatever process set up the other 70 functions'
+-- grants revoked PUBLIC; this one was missed. A first attempt at
+-- `revoke ... from anon` was a no-op (anon was never granted directly, it
+-- inherited via PUBLIC) — corrected below to revoke from PUBLIC, which
+-- matches every sibling's actual ACL shape exactly (postgres/authenticated/
+-- service_role only). Verified live: anon_can_execute now false,
+-- authenticated_can_execute unchanged (true, matching all siblings).
+
+revoke execute on function public.admin_delete_plan(uuid) from public;

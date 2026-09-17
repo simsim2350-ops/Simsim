@@ -6,13 +6,22 @@ import { supabaseBrowser } from './supabase/client'
 // in the Security Audit phase), same client-side duplicate-prevention via
 // localStorage (the real, authoritative duplicate guard is the DB's own
 // uq_reviews_order_id unique constraint — this is only a UX nicety).
-export async function submitReview(orderId: string, rating: number, comment: string): Promise<boolean> {
+//
+// accessToken (Phase 2 order-integrity hardening): submit_review now checks
+// this against orders.order_access_token when supplied, the same capability
+// token every other order-scoped customer RPC already required (see
+// cancel_order_by_customer / get_orders_status_secure). Both call sites
+// (OrderStatusView, MyOrdersView) already have the token in scope — it was
+// simply never passed before. The RPC still accepts an omitted token for
+// backward compatibility during rollout, so this is not a breaking change.
+export async function submitReview(orderId: string, rating: number, comment: string, accessToken: string | null): Promise<boolean> {
   const client = supabaseBrowser()
   if (!client) return false
   const { error } = await client.rpc('submit_review', {
     p_order_id: orderId,
     p_rating: rating,
     p_comment: comment.trim() || null,
+    p_access_token: accessToken || null,
   } as never)
   return !error
 }

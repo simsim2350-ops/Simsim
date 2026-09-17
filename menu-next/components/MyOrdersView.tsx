@@ -96,7 +96,7 @@ export function MyOrdersView({
     const draft = drafts[order.id]
     if (!draft || draft.rating < 1) return
     setSubmittingId(order.id)
-    const ok = await submitReview(order.id, draft.rating, draft.comment || '')
+    const ok = await submitReview(order.id, draft.rating, draft.comment || '', order.accessToken)
     setSubmittingId(null)
     if (ok) {
       markReviewed(slug, order.id)

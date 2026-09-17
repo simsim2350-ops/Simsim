@@ -130,7 +130,7 @@ export function OrderStatusView({
   const handleSubmitReview = async () => {
     if (reviewDraft.rating < 1) return
     setSubmittingReview(true)
-    const ok = await submitReview(orderId, reviewDraft.rating, reviewDraft.comment)
+    const ok = await submitReview(orderId, reviewDraft.rating, reviewDraft.comment, accessToken)
     setSubmittingReview(false)
     if (ok) {
       markReviewed(slug, orderId)
