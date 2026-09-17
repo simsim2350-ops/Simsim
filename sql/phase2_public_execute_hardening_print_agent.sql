@@ -1,0 +1,30 @@
+-- Phase 2 — PUBLIC EXECUTE hardening (Group B: Print Agent).
+--
+-- Independent global audit (SIMSIM_GLOBAL_PUBLIC_EXECUTE_AUDIT_REPORT.md)
+-- followed by a second, narrower verification pass
+-- (SIMSIM_PUBLIC_EXECUTE_REMEDIATION_PRECHECK_REPORT.md) found that
+-- public.claim_next_print_job(uuid, uuid, integer, integer) carries an
+-- EXECUTE grant to PUBLIC in addition to the explicit `authenticated`
+-- grant its own creating migration already states:
+--
+--   sql/print_jobs_phase2_agent.sql:120 — GRANT EXECUTE ON FUNCTION
+--     public.claim_next_print_job(uuid, uuid, integer, integer)
+--     TO authenticated;
+--
+-- Caller evidence (re-verified in the precheck task): the only live
+-- caller is print-agent/src/supabaseAgentClient.mjs, which authenticates
+-- via `client.auth.signInWithPassword({ email: config.agentEmail,
+-- password: config.agentPassword })` — a real restaurant_members login,
+-- the same mechanism src/pages/StaffLogin.jsx uses. This resolves to the
+-- `authenticated` Postgres role. There is no anon path, no browser client,
+-- no service_role usage for this function anywhere in the repository.
+-- The function body also carries its own internal authorization check
+-- (has_restaurant_access + member_has_branch_access), independent of this
+-- grant hardening.
+--
+-- This migration removes ONLY the PUBLIC grant. Nothing else changes: not
+-- the function body, not the signature, not SECURITY DEFINER, not
+-- search_path, not ownership, and NOT the existing
+-- authenticated/service_role grants.
+
+revoke execute on function public.claim_next_print_job(uuid, uuid, integer, integer) from public;
