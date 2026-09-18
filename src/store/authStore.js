@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
+import { appConfig } from '../config'
 import { fetchEffectiveFeatures } from '../lib/featuresApi'
 import { has as featuresHas, value as featuresValue } from '../lib/features'
 import { withTimeout } from '../lib/asyncTimeout'
@@ -351,8 +352,48 @@ export const useAuthStore = create((set, get) => ({
     if (error) throw error
   },
 
+  // Migration 5.0 (F-01 remediation) — no longer calls
+  // supabase.auth.signInWithPassword() directly from the browser. Instead
+  // relays through the dashboard-login-guard Edge Function, which enforces
+  // server-side rate limiting + temporary account lockout BEFORE Supabase
+  // Auth is ever asked to verify the password — see
+  // supabase/functions/dashboard-login-guard/handler.js and
+  // sql/phase6_migration5_0_dashboard_login_rate_limiting.sql. Supabase Auth
+  // remains the sole verifier of the password; this only changes how the
+  // resulting session tokens reach the browser (via setSession() instead of
+  // signInWithPassword()'s own return value) — autoRefreshToken,
+  // onAuthStateChange, and signOut are all unaffected. Login.jsx/
+  // StaffLogin.jsx are unchanged: both still just call signIn(email,
+  // password) and inspect a thrown Error's .message exactly as before,
+  // including the pre-existing "email not confirmed" redirect branch
+  // (Login.jsx), which this function preserves via the same message text.
   signIn: async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    // apikey/Authorization: the publishable anon key — same convention every
+    // other Edge Function in this project requires (verify_jwt: true; the
+    // anon key is itself a project-signed JWT, so this is not a session
+    // token and reveals nothing about this specific login attempt).
+    const res = await fetch(`${appConfig.supabaseUrl}/functions/v1/dashboard-login-guard`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: appConfig.supabaseAnonKey,
+        Authorization: `Bearer ${appConfig.supabaseAnonKey}`,
+      },
+      body: JSON.stringify({ email, password }),
+    })
+    const body = await res.json().catch(() => null)
+
+    if (body?.error === 'email_not_confirmed') {
+      throw new Error('Email not confirmed')
+    }
+    if (!res.ok || typeof body?.access_token !== 'string' || typeof body?.refresh_token !== 'string') {
+      throw new Error('Invalid login credentials')
+    }
+
+    const { data, error } = await supabase.auth.setSession({
+      access_token: body.access_token,
+      refresh_token: body.refresh_token,
+    })
     if (error) throw error
     return data
   },
