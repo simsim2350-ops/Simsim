@@ -8,7 +8,7 @@ import type { Lang } from '@/lib/types'
 import { useCart } from '@/lib/cart/CartContext'
 import { useActiveOrders } from '@/lib/orders/useActiveOrders'
 import type { StoredOrder } from '@/lib/orders/types'
-import { getCustomerLoyalty, getRememberedPhone, type LoyaltyInfo } from '@/lib/loyalty'
+import { getCustomerLoyalty, type LoyaltyInfo } from '@/lib/loyalty'
 import { getReviewedIds, markReviewed, submitReview } from '@/lib/reviews'
 import { buildWhatsAppOrderUrl } from '@/lib/whatsapp'
 import { resolveReorder } from '@/lib/orders/reorder'
@@ -76,8 +76,10 @@ export function MyOrdersView({
 
   useEffect(() => {
     setReviewedIds(getReviewedIds(slug))
-    const phone = getRememberedPhone(slug)
-    if (phone) getCustomerLoyalty(restaurantId, phone).then(setLoyalty)
+    // Phase 6 Migration 4: identity now comes from the server-validated
+    // customer session (handler derives phone from the cookie), not a
+    // client-supplied phone — see lib/loyalty.ts.
+    getCustomerLoyalty(restaurantId).then(setLoyalty)
   }, [slug, restaurantId])
 
   const formatPrice = (n: number) => n.toLocaleString(isEn ? 'en-US' : 'ar-SA')
