@@ -151,6 +151,16 @@ Unchanged from the preflight report's own "Risks" section: availability risk fro
 
 ## **IMPLEMENTED — VERIFIED**
 
+**Critical rollout caveat — read before considering this "live for real users":**
+
+| Layer | Status |
+|---|---|
+| Database (tables + functions + grants) | **LIVE in production** — applied directly via migration, verified. |
+| `dashboard-login-guard` Edge Function | **LIVE in production** — deployed, verified with real HTTP traffic against it. |
+| `authStore.js` frontend change | Committed (`674a2e1`) and **pushed to `test/deployment-update-visual-smoke-test`** — **NOT yet merged to `main`, NOT yet deployed to the production Vercel build.** |
+
+**This means: right now, real Dashboard/Staff users on `simsimmenu.com` are still using the OLD code path (`supabase.auth.signInWithPassword()` called directly, unprotected) until this branch is merged to `main` and Vercel rebuilds** — the exact same PR → merge → verify sequence Migration 4.4/4.8 used to ship a frontend/backend pairing like this one to real traffic. The backend protection (DB + Edge Function) is fully live and was verified directly against real HTTP calls to it in this task — but a real browser login won't reach it until the frontend ships. **This gap was not asked to be closed in this task's own instructions (no PR/merge step was requested) and was not closed unilaterally** — flagged here explicitly so it is not mistaken for a completed production rollout.
+
 ---
 
 ## Final Security Decision
