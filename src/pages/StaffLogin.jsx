@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
+import { useDashboardLoginLockoutUX } from '../hooks/useDashboardLoginLockoutUX'
+import DashboardLoginLockoutNotice from '../components/DashboardLoginLockoutNotice'
 
 // خريطة الصفحة → المسار (لتوجيه الموظف لأول صفحة مسموحة)
 const PAGE_PATH = {
@@ -20,6 +22,9 @@ export default function StaffLogin() {
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
+  // نفس account_key الذي سيُرسل فعلياً إلى signIn() — لا حساب اسم المستخدم وحده.
+  const loginEmail = username.trim() ? `${username.trim().toLowerCase()}.${slug}@staff.simsim.app` : ''
+  const lockout = useDashboardLoginLockoutUX(loginEmail)
 
   useEffect(() => {
     (async () => {
@@ -37,10 +42,14 @@ export default function StaffLogin() {
     e.preventDefault()
     const u = username.trim().toLowerCase()
     if (!u || !password) { toast.error('أدخل اسم المستخدم وكلمة المرور'); return }
+    // UX فقط — لا يرسل أي طلب أثناء العدّاد المحلي؛ الحماية الفعلية تبقى من
+    // جهة الخادم بغضّ النظر عن هذا الفحص (انظر useDashboardLoginLockoutUX).
+    if (lockout.isLocked) return
     setLoading(true)
     try {
       const email = `${u}.${slug}@staff.simsim.app`
       await signIn(email, password)
+      lockout.registerSuccess()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('فشل الدخول')
 
@@ -68,6 +77,7 @@ export default function StaffLogin() {
       toast.success('مرحباً بك 👋')
       navigate(dest)
     } catch (err) {
+      lockout.registerFailure()
       toast.error('اسم المستخدم أو كلمة المرور غير صحيحة')
       setLoading(false)
     }
@@ -116,9 +126,12 @@ export default function StaffLogin() {
               </button>
             </div>
           </div>
-          <button type="submit" disabled={loading}
-            style={{ ...s.btn, background:`linear-gradient(135deg, ${brand}, ${brand}CC)`, opacity: loading ? 0.8 : 1 }}>
-            {loading ? 'جارٍ الدخول...' : 'دخول ←'}
+          {lockout.isLocked && <DashboardLoginLockoutNotice countdownLabel={lockout.countdownLabel} />}
+
+          <button type="submit" disabled={loading || lockout.isLocked}
+            aria-disabled={loading || lockout.isLocked}
+            style={{ ...s.btn, background:`linear-gradient(135deg, ${brand}, ${brand}CC)`, opacity: (loading || lockout.isLocked) ? 0.6 : 1, cursor: lockout.isLocked ? 'not-allowed' : 'pointer' }}>
+            {loading ? 'جارٍ الدخول...' : lockout.isLocked ? 'غير متاح مؤقتاً 🔒' : 'دخول ←'}
           </button>
         </form>
       </div>
