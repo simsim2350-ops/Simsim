@@ -4,6 +4,8 @@ import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import { trackOwnerMilestone } from '../lib/analytics'
+import { useDashboardLoginLockoutUX } from '../hooks/useDashboardLoginLockoutUX'
+import DashboardLoginLockoutNotice from '../components/DashboardLoginLockoutNotice'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -13,6 +15,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024)
+  const lockout = useDashboardLoginLockoutUX(email)
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 1024)
@@ -26,9 +29,13 @@ export default function Login() {
       toast.error('أدخل بريدك وكلمة المرور')
       return
     }
+    // UX فقط — لا يرسل أي طلب أثناء العدّاد المحلي؛ الحماية الفعلية تبقى من
+    // جهة الخادم بغضّ النظر عن هذا الفحص (انظر useDashboardLoginLockoutUX).
+    if (lockout.isLocked) return
     setLoading(true)
     try {
       const { data: signInData } = await signIn(email, password)
+      lockout.registerSuccess()
       const session = signInData?.session || (await supabase.auth.getSession()).data.session
       if (!session?.user) throw new Error('session_not_available')
 
@@ -43,9 +50,13 @@ export default function Login() {
     } catch (err) {
       const message = String(err?.message || '').toLowerCase()
       if (message.includes('email not confirmed') || message.includes('email not verified')) {
+        // كلمة المرور كانت صحيحة فعلياً (Migration 5.0's handler.js) — لا تُحتسب كمحاولة فاشلة محلياً.
+        lockout.registerSuccess()
         toast('تحقق من بريدك الإلكتروني أولًا. يمكنك طلب رابط تأكيد جديد.', { icon:'📧' })
         navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`, { state: { email: email.trim() } })
       } else {
+        // session_not_available يقع بعد نجاح signIn فعلياً — ليس فشل بيانات دخول، فلا يُحتسب هنا.
+        if (message !== 'session_not_available') lockout.registerFailure()
         toast.error('البريد أو كلمة المرور غير صحيحة')
       }
     } finally {
@@ -149,17 +160,20 @@ export default function Login() {
               </div>
             </div>
 
+            {lockout.isLocked && <DashboardLoginLockoutNotice countdownLabel={lockout.countdownLabel} />}
+
             <button
               type="submit"
-              disabled={loading}
-              style={{ ...styles.submitBtn, opacity: loading ? 0.8 : 1 }}
+              disabled={loading || lockout.isLocked}
+              aria-disabled={loading || lockout.isLocked}
+              style={{ ...styles.submitBtn, opacity: (loading || lockout.isLocked) ? 0.6 : 1, cursor: lockout.isLocked ? 'not-allowed' : 'pointer' }}
             >
               {loading ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                   <div style={styles.spinner} />
                   جارٍ الدخول...
                 </span>
-              ) : 'دخول إلى لوحة التحكم ←'}
+              ) : lockout.isLocked ? 'غير متاح مؤقتاً 🔒' : 'دخول إلى لوحة التحكم ←'}
             </button>
           </form>
 
