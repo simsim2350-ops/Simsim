@@ -70,8 +70,9 @@ Deno.serve(async (req) => {
       .from('platform_admins')
       .insert({ user_id: created.user.id, role_id, is_active: true })
     if (insErr) {
+      console.error('[create-platform-admin] role_assignment_failed:', insErr.message)
       await admin.auth.admin.deleteUser(created.user.id)
-      return json({ error: 'فشل إسناد المشرف: ' + insErr.message }, 500)
+      return json({ error: 'فشل إسناد المشرف' }, 500)
     }
 
     // 7) تدوين الإجراء في سجلّ التدقيق (بهوية الطالب — الدالة تُسجّل admin_user_id تلقائياً)
@@ -84,7 +85,8 @@ Deno.serve(async (req) => {
 
     return json({ ok: true, user_id: created.user.id }, 200)
   } catch (e) {
-    return json({ error: String((e as Error)?.message || e) }, 500)
+    console.error('[create-platform-admin] unexpected_error:', (e as Error)?.message ?? e)
+    return json({ error: 'internal_error' }, 500)
   }
 })
 

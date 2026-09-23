@@ -5,11 +5,17 @@ import { resolve } from 'node:path'
 const sql = readFileSync(resolve(process.cwd(), 'sql/phase1_owner_activation_measurement.sql'), 'utf8')
 
 describe('Phase 1 owner activation SQL contract', () => {
+  // ملاحظة: هذا الملف يبقى بلا تعديل عمداً (لا إعادة كتابة لتاريخ migrations قائم).
+  // القيمة 'restaurant_owner' هنا تاريخية/متجاوَزة فقط — لم تعد تعكس السلوك الحي في
+  // القاعدة: sql/owner_activation_actor_type_contract_fix.sql (أحدث) يستبدلها بـ'owner'
+  // (متوافقة مع ADR-42 في PROJECT_STATE.md). لذلك أُزيل التأكيد على القيمة القديمة من هنا
+  // عمداً — عقد actor_type الحي الآن مُختبَر في analyticsActorTypeContract.test.js
+  // و ownerActivationActorTypeContractFix.test.js تحديداً، لا في هذا الملف التاريخي.
   it('يمرر branch_id وdedupe_key إلى track_owner_event ثم emit_event', () => {
     expect(sql).toContain('p_branch_id uuid default null')
     expect(sql).toContain('p_dedupe_key text default null')
     expect(sql).toContain("nullif(left(btrim(coalesce(p_dedupe_key, '')), 240), '')")
-    expect(sql).toContain("v_scope, p_event_type, p_restaurant_id, p_branch_id, 'restaurant_owner'")
+    expect(sql).toContain('v_scope, p_event_type, p_restaurant_id, p_branch_id,')
   })
 
   it('يرفض restaurant_id لا يملكه المستخدم قبل إدخال الحدث', () => {
