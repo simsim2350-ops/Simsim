@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
@@ -8,34 +8,26 @@ import AppShell from '../components/AppShell'
 import ConfirmDialog from '../components/ConfirmDialog'
 import UpgradeModal from '../components/UpgradeModal'
 import { useFeature } from '../hooks/useFeature'
-import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
+import { appConfig } from '../config'
 import { fetchRecommendationsForProduct, addRecommendation, removeRecommendation, updateRecommendationPriority, fetchCartWideList, addCartWideItem, removeCartWideItem, updateCartWidePriority, toggleCartWideActive } from '../lib/recommendationsApi'
 import { fetchBranches } from '../lib/branchesApi'
 import { calculateMenuReadiness } from '../lib/menuReadiness'
 import { isFirstOwnerContentItem } from '../lib/ownerActivation'
 import { trackOwnerMilestone } from '../lib/analytics'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
-import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-
-const EMOJIS = ['🍽️','🍔','🍕','🌮','🥙','🥗','🍜','🥩','🍗','☕','🧃','🥤','🍰','🧁','🍟','🌯','🎯','⭐','🔥','🍣']
-
-// شارة مستوى السعرات: 🟢 منخفض (<300) / 🟡 متوسط (300-600) / 🔴 مرتفع (600+)
-function getCalorieBadge(calories) {
-  if (calories == null) return null
-  if (calories < 300) return '🟢'
-  if (calories <= 600) return '🟡'
-  return '🔴'
-}
-
-const inputStyle = {
-  width:'100%', padding:'11px 13px',
-  border:'1.5px solid #E5E7EB', borderRadius:'11px',
-  fontFamily:'Tajawal,sans-serif', fontSize:'14px',
-  color:'#0B0B0F', background:'#F8F9FB',
-  outline:'none', textAlign:'right', direction:'rtl',
-  marginTop:'4px', boxSizing:'border-box',
-}
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
+import SortableCard from './menu/SortableCard'
+import CategoryCard from './menu/CategoryCard'
+import ProductCard from './menu/ProductCard'
+import CategoryFormModal from './menu/CategoryFormModal'
+import ProductFormModal from './menu/ProductFormModal'
+import SearchFilterBar from './menu/SearchFilterBar'
+import FilterSheet from './menu/FilterSheet'
+import { inputStyle } from './menu/menuFormShared'
+import {
+  filterCategories, filterProductsBySearch, filterProductsByFilters,
+  DEFAULT_PRODUCT_FILTERS, isDefaultProductFilters, countActiveFilters,
+} from './menu/menuSearch'
 
 function Spinner() {
   return (
@@ -43,25 +35,6 @@ function Spinner() {
       <div style={{ width:'44px', height:'44px', border:'3px solid rgba(255,106,0,0.3)', borderTopColor:'#FF6A00', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       جارٍ التحميل...
-    </div>
-  )
-}
-
-// يلف أي بطاقة (قسم أو صنف) ليصبح قابلاً للسحب والإفلات، مع مقبض سحب صريح (أأمن من سحب البطاقة كلها لأنها فيها أزرار أخرى)
-function SortableCard({ id, children }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 10 : 'auto',
-  }
-  return (
-    <div ref={setNodeRef} style={{ ...style, display:'flex', alignItems:'center', gap:'4px' }}>
-      <div {...attributes} {...listeners} style={{ cursor:'grab', padding:'8px 4px', color:'#D1D5DB', fontSize:'18px', flexShrink:0, touchAction:'none' }}>
-        ⠿
-      </div>
-      <div style={{ flex:1, minWidth:0 }}>{children}</div>
     </div>
   )
 }
@@ -81,11 +54,14 @@ export default function Menu() {
   const [currentBranchId, setCurrentBranchId] = useState(null) // الفرع الذي يُحرَّر منيوه حالياً
   const currentBranch = branches.find(branch => branch.id === currentBranchId) || null
 
+  // بحث وفلترة — يعملان على البيانات المحمّلة أصلاً، بلا استعلام أو إعادة تحميل جديد
+  const [searchQuery, setSearchQuery] = useState('')
+  const [productFilters, setProductFilters] = useState(DEFAULT_PRODUCT_FILTERS)
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false)
+
   // Modals
   const [catModal, setCatModal] = useState(false)
   const [prodModal, setProdModal] = useState(false)
-  useBodyScrollLock(catModal)
-  useBodyScrollLock(prodModal)
   const [editingCat, setEditingCat] = useState(null)
   const [editingProd, setEditingProd] = useState(null)
 
@@ -152,6 +128,10 @@ export default function Menu() {
     if (!currentBranchId) return
     fetchAll()
     loadCartWide()
+    // تبديل الفرع = منيو مختلف بالكامل — لا معنى لبقاء بحث/فلاتر الفرع السابق
+    setSearchQuery('')
+    setProductFilters(DEFAULT_PRODUCT_FILTERS)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentBranchId])
 
   // مزامنة التبويب عند التنقل من السايدبار (الأصناف/الأقسام)
@@ -174,6 +154,17 @@ export default function Menu() {
     }
   }
 
+  // ===== بحث وفلترة (Client-side على البيانات المحمّلة) =====
+  const categoriesById = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories])
+  const filteredCategories = useMemo(() => filterCategories(categories, searchQuery), [categories, searchQuery])
+  const searchedProducts = useMemo(() => filterProductsBySearch(products, categoriesById, searchQuery), [products, categoriesById, searchQuery])
+  const filteredProducts = useMemo(() => filterProductsByFilters(searchedProducts, productFilters), [searchedProducts, productFilters])
+  const activeFilterCount = countActiveFilters(productFilters)
+  // إعادة الترتيب بالسحب تُعيد كتابة sort_order لكل العناصر الظاهرة — غير آمنة أثناء
+  // بحث/فلترة نشطة (قد تُخفي عناصر أخرى من نفس القسم وتُفسد ترتيبها الحقيقي)
+  const isCategoriesFiltering = searchQuery.trim().length > 0
+  const isProductsFiltering = searchQuery.trim().length > 0 || !isDefaultProductFilters(productFilters)
+
   // ===== CATEGORIES =====
   const openAddCat = () => {
     setEditingCat(null)
@@ -188,7 +179,6 @@ export default function Menu() {
   }
 
   const saveCat = async () => {
-    if (!catForm.name.trim()) { toast.error('أدخل اسم القسم'); return }
     try {
       if (editingCat) {
         const { error } = await supabase.from('categories')
@@ -465,9 +455,6 @@ export default function Menu() {
   }
 
   const saveProd = async () => {
-    if (!prodForm.name.trim()) { toast.error('أدخل اسم الصنف'); return }
-    if (!prodForm.price) { toast.error('أدخل السعر'); return }
-
     // تنظيف مجموعات الخيارات: إزالة المجموعات/الخيارات بدون اسم
     const cleanOptions = (prodForm.options || [])
       .map(group => ({
@@ -594,6 +581,20 @@ export default function Menu() {
     toast.success(prod.is_available ? 'تم الإخفاء 🚫' : 'تم الإظهار ✅')
   }
 
+  // ===== معاينة/مشاركة المنيو — تُعيد استخدام نفس رابط منيو الزبون الحقيقي (menu-next) =====
+  const menuUrl = restaurant?.slug ? `${appConfig.menuNextBaseUrl}/menu/${restaurant.slug}` : null
+  const previewMenu = () => { if (menuUrl) window.open(menuUrl, '_blank') }
+  const shareMenu = async () => {
+    if (!menuUrl) return
+    try {
+      await navigator.clipboard.writeText(menuUrl)
+      trackOwnerMilestone('menu_link_copied', { restaurantId: restaurant?.id, props: { source: 'menu_admin' } })
+      toast.success('تم نسخ رابط المنيو')
+    } catch {
+      toast.error('تعذر نسخ الرابط')
+    }
+  }
+
   if (loading) return <Spinner />
 
   return (
@@ -602,6 +603,8 @@ export default function Menu() {
       title="إدارة المنيو"
       actions={<>
         <button onClick={() => navigate('/dashboard')} style={{ padding:'7px 12px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'600', fontSize:'12px', cursor:'pointer', color:'#374151' }}>← الرئيسية</button>
+        <button onClick={previewMenu} disabled={!menuUrl} aria-label="معاينة المنيو" title="معاينة المنيو" style={{ width:'32px', height:'32px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontSize:'14px', cursor: menuUrl ? 'pointer' : 'default', opacity: menuUrl ? 1 : 0.5 }}>👁️</button>
+        <button onClick={shareMenu} disabled={!menuUrl} aria-label="مشاركة رابط المنيو" title="مشاركة رابط المنيو" style={{ width:'32px', height:'32px', borderRadius:'9px', border:'1.5px solid #E5E7EB', background:'white', fontSize:'14px', cursor: menuUrl ? 'pointer' : 'default', opacity: menuUrl ? 1 : 0.5 }}>🔗</button>
         {tab !== 'suggestions' && (
           <button onClick={() => tab === 'categories' ? openAddCat() : openAddProd()} style={{ padding:'7px 14px', borderRadius:'9px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer' }}>＋ {tab === 'categories' ? 'قسم' : 'صنف'}</button>
         )}
@@ -635,6 +638,18 @@ export default function Menu() {
           </div>
         )}
 
+        {/* شريط البحث + الفلاتر — لتبويبي الأقسام والأصناف فقط (اقتراحات السلة له بحث إضافة خاص به بالأسفل) */}
+        {((tab === 'categories' && categories.length > 0) || (tab === 'products' && products.length > 0)) && (
+          <SearchFilterBar
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
+            placeholder={tab === 'categories' ? 'ابحث عن قسم...' : 'ابحث عن صنف أو قسم...'}
+            showFilterButton={tab === 'products'}
+            activeFilterCount={activeFilterCount}
+            onOpenFilters={() => setFilterSheetOpen(true)}
+          />
+        )}
+
         {/* Content */}
         <div style={{ flex:1, overflowY:'auto', padding:'16px' }}>
 
@@ -650,32 +665,24 @@ export default function Menu() {
                     ＋ إضافة أول قسم
                   </button>
                 </div>
+              ) : filteredCategories.length === 0 ? (
+                <div style={{ textAlign:'center', padding:'50px 16px', color:'#9CA3AF' }}>
+                  <div style={{ fontSize:'42px', opacity:0.3, marginBottom:'12px' }}>🔍</div>
+                  <div style={{ fontSize:'15px', fontWeight:'700', color:'#374151' }}>لا توجد نتائج مطابقة لـ«{searchQuery}»</div>
+                </div>
+              ) : isCategoriesFiltering ? (
+                <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+                  {filteredCategories.map(cat => (
+                    <CategoryCard key={cat.id} cat={cat} itemCount={products.filter(p => p.category_id === cat.id).length} onEdit={openEditCat} onToggleVisibility={toggleCatVisibility} onDelete={setConfirmDeleteCat} />
+                  ))}
+                </div>
               ) : (
                 <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleCatDragEnd}>
                   <SortableContext items={categories.map(c => c.id)} strategy={verticalListSortingStrategy}>
                     <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
                       {categories.map(cat => (
                         <SortableCard key={cat.id} id={cat.id}>
-                          <div style={{ background:'white', borderRadius:'14px', border:'1.5px solid #E5E7EB', padding:'14px 16px', display:'flex', alignItems:'center', gap:'12px' }}>
-                            <div style={{ width:'44px', height:'44px', borderRadius:'12px', background:'#FFF0EB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px', flexShrink:0, overflow:'hidden' }}>
-                              {cat.cover_url
-                                ? <img src={cat.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                                : cat.emoji}
-                            </div>
-                            <div style={{ flex:1, minWidth:0 }}>
-                              <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'15px', marginBottom:'3px' }}>{cat.name}</div>
-                              <div style={{ fontSize:'12px', color:'#9CA3AF' }}>
-                                {products.filter(p => p.category_id === cat.id).length} صنف
-                              </div>
-                            </div>
-                            <div style={{ display:'flex', alignItems:'center', gap:'6px', flexShrink:0 }}>
-                              <button onClick={() => toggleCatVisibility(cat)} style={{ padding:'5px 8px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background: cat.is_visible ? '#D1FAE5' : '#F3F4F6', color: cat.is_visible ? '#065F46' : '#6B7280', fontSize:'11px', fontWeight:'700', cursor:'pointer', whiteSpace:'nowrap' }}>
-                                {cat.is_visible ? '👁️' : '🚫'}
-                              </button>
-                              <button onClick={() => openEditCat(cat)} style={{ width:'32px', height:'32px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', cursor:'pointer', fontSize:'14px' }}>✏️</button>
-                              <button onClick={() => setConfirmDeleteCat(cat)} style={{ width:'32px', height:'32px', borderRadius:'8px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'14px' }}>🗑️</button>
-                            </div>
-                          </div>
+                          <CategoryCard cat={cat} itemCount={products.filter(p => p.category_id === cat.id).length} onEdit={openEditCat} onToggleVisibility={toggleCatVisibility} onDelete={setConfirmDeleteCat} />
                         </SortableCard>
                       ))}
                     </div>
@@ -702,10 +709,15 @@ export default function Menu() {
                     ＋ إضافة أول صنف
                   </button>
                 </div>
+              ) : filteredProducts.length === 0 ? (
+                <div style={{ textAlign:'center', padding:'50px 16px', color:'#9CA3AF' }}>
+                  <div style={{ fontSize:'42px', opacity:0.3, marginBottom:'12px' }}>🔍</div>
+                  <div style={{ fontSize:'15px', fontWeight:'700', color:'#374151' }}>{searchQuery ? `لا توجد نتائج مطابقة لـ«${searchQuery}»` : 'لا توجد أصناف مطابقة لهذه الفلاتر'}</div>
+                </div>
               ) : (
                 <div style={{ display:'flex', flexDirection:'column', gap:'20px' }}>
                   {[...categories, { id: null, name: 'بدون قسم', emoji:'📦' }].map(cat => {
-                    const catProds = products.filter(p => (p.category_id || null) === cat.id)
+                    const catProds = filteredProducts.filter(p => (p.category_id || null) === cat.id)
                     if (catProds.length === 0) return null
                     return (
                       <div key={cat.id || 'none'}>
@@ -714,43 +726,25 @@ export default function Menu() {
                           <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'13px', color:'#6B7280' }}>{cat.name}</span>
                           <span style={{ fontSize:'11px', color:'#9CA3AF', background:'#F3F4F6', padding:'1px 7px', borderRadius:'100px' }}>{catProds.length}</span>
                         </div>
-                        <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleProdDragEnd(cat.id)}>
-                          <SortableContext items={catProds.map(p => p.id)} strategy={verticalListSortingStrategy}>
-                            <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
-                              {catProds.map(prod => (
-                                <SortableCard key={prod.id} id={prod.id}>
-                                  <div style={{ background:'white', borderRadius:'14px', border:'1.5px solid #E5E7EB', padding:'14px 16px', display:'flex', alignItems:'center', gap:'12px' }}>
-                                    <div style={{ width:'52px', height:'52px', borderRadius:'12px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'26px', flexShrink:0, border:'1px solid #E5E7EB', overflow:'hidden' }}>
-                                      {prod.image_url
-                                        ? <img src={prod.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                                        : prod.emoji}
-                                    </div>
-                                    <div style={{ flex:1, minWidth:0 }}>
-                                      <div style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px', marginBottom:'3px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{prod.name}</div>
-                                      {prod.description && <div style={{ fontSize:'12px', color:'#9CA3AF', marginBottom:'4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{prod.description}</div>}
-                                      <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap' }}>
-                                        <span style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'14px', color:'#FF6A00' }}>{prod.price} ﷼</span>
-                                        {prod.compare_price && <span style={{ fontSize:'12px', color:'#9CA3AF', textDecoration:'line-through' }}>{prod.compare_price} ﷼</span>}
-                                        {prod.calories && <span style={{ fontSize:'11px', color:'#9CA3AF' }}>{getCalorieBadge(prod.calories)} {prod.calories} كالوري</span>}
-                                        {prod.is_best_seller && <span style={{ fontSize:'10px', color:'#B45309', background:'#FEF3C7', padding:'2px 6px', borderRadius:'100px' }}>🔥 الأكثر مبيعًا</span>}
-                                        {prod.is_featured && <span style={{ fontSize:'10px', color:'#1E5FBF', background:'#EAF3FF', padding:'2px 6px', borderRadius:'100px' }}>مختارات المطعم</span>}
-                                      </div>
-                                    </div>
-                                    <div style={{ display:'flex', flexDirection:'column', gap:'6px', alignItems:'flex-end', flexShrink:0 }}>
-                                      <button onClick={() => toggleProdAvailability(prod)} style={{ padding:'4px 8px', borderRadius:'7px', border:'1.5px solid #E5E7EB', background: prod.is_available ? '#D1FAE5' : '#F3F4F6', color: prod.is_available ? '#065F46' : '#6B7280', fontSize:'10px', fontWeight:'700', cursor:'pointer', whiteSpace:'nowrap' }}>
-                                        {prod.is_available ? '✅ متاح' : '🚫 مخفي'}
-                                      </button>
-                                      <div style={{ display:'flex', gap:'5px' }}>
-                                        <button onClick={() => openEditProd(prod)} style={{ width:'30px', height:'30px', borderRadius:'8px', border:'1.5px solid #E5E7EB', background:'white', cursor:'pointer', fontSize:'13px' }}>✏️</button>
-                                        <button onClick={() => setConfirmDeleteProd(prod)} style={{ width:'30px', height:'30px', borderRadius:'8px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'13px' }}>🗑️</button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </SortableCard>
-                              ))}
-                            </div>
-                          </SortableContext>
-                        </DndContext>
+                        {isProductsFiltering ? (
+                          <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+                            {catProds.map(prod => (
+                              <ProductCard key={prod.id} prod={prod} onEdit={openEditProd} onToggleAvailability={toggleProdAvailability} onDelete={setConfirmDeleteProd} />
+                            ))}
+                          </div>
+                        ) : (
+                          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleProdDragEnd(cat.id)}>
+                            <SortableContext items={catProds.map(p => p.id)} strategy={verticalListSortingStrategy}>
+                              <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+                                {catProds.map(prod => (
+                                  <SortableCard key={prod.id} id={prod.id}>
+                                    <ProductCard prod={prod} onEdit={openEditProd} onToggleAvailability={toggleProdAvailability} onDelete={setConfirmDeleteProd} />
+                                  </SortableCard>
+                                ))}
+                              </div>
+                            </SortableContext>
+                          </DndContext>
+                        )}
                       </div>
                     )
                   })}
@@ -848,312 +842,53 @@ export default function Menu() {
           )}
         </div>
 
-      {/* ===== CATEGORY MODAL ===== */}
-      {catModal && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={() => setCatModal(false)}>
-          <div style={{ background:'white', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', padding:'20px 20px 36px' }} onClick={e => e.stopPropagation()}>
-            <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'2px', margin:'0 auto 20px' }}/>
-            <h3 style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'18px', marginBottom:'18px', textAlign:'center' }}>
-              {editingCat ? 'تعديل القسم' : '📋 إضافة قسم جديد'}
-            </h3>
+      <CategoryFormModal
+        key={editingCat?.id || 'new-cat'}
+        open={catModal}
+        editingCat={editingCat}
+        catForm={catForm}
+        setCatForm={setCatForm}
+        onSave={saveCat}
+        onClose={() => setCatModal(false)}
+        uploadingCatImage={uploadingCatImage}
+        onImageUpload={handleCatImageUpload}
+        onImageRemove={() => setCatForm(f => ({ ...f, cover_url: '' }))}
+      />
 
-            <div style={{ marginBottom:'14px' }}>
-              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px' }}>صورة غلاف القسم (اختياري)</label>
-              <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-                <div style={{ width:'64px', height:'64px', borderRadius:'12px', background:'#F8F9FB', border:'1.5px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'26px', overflow:'hidden', flexShrink:0 }}>
-                  {catForm.cover_url
-                    ? <img src={catForm.cover_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                    : catForm.emoji}
-                </div>
-                <label style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'9px 14px', borderRadius:'10px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', color:'#374151' }}>
-                  {uploadingCatImage ? 'جارٍ الرفع...' : '📷 رفع صورة'}
-                  <input type="file" accept="image/*" onChange={handleCatImageUpload} disabled={uploadingCatImage} style={{ display:'none' }} />
-                </label>
-                {catForm.cover_url && (
-                  <button onClick={() => setCatForm(f => ({ ...f, cover_url: '' }))} style={{ padding:'9px 12px', borderRadius:'10px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', color:'#EF4444', fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>حذف</button>
-                )}
-              </div>
-            </div>
+      <ProductFormModal
+        key={editingProd?.id || 'new-prod'}
+        open={prodModal}
+        editingProd={editingProd}
+        prodForm={prodForm}
+        setProdForm={setProdForm}
+        categories={categories}
+        onSave={saveProd}
+        onClose={() => setProdModal(false)}
+        uploadingProdImage={uploadingProdImage}
+        onImageUpload={handleProdImageUpload}
+        onImageRemove={() => setProdForm(f => ({ ...f, image_url: '' }))}
+        addOptionGroup={addOptionGroup}
+        removeOptionGroup={removeOptionGroup}
+        updateOptionGroup={updateOptionGroup}
+        addChoice={addChoice}
+        removeChoice={removeChoice}
+        updateChoice={updateChoice}
+        recommendations={recommendations}
+        recSearch={recSearch}
+        setRecSearch={setRecSearch}
+        recSearchResults={recSearchResults}
+        addRec={addRec}
+        removeRec={removeRec}
+        moveRec={moveRec}
+      />
 
-            <div style={{ marginBottom:'14px' }}>
-              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px' }}>أيقونة القسم (تظهر إن لم توجد صورة)</label>
-              <div style={{ display:'flex', gap:'7px', flexWrap:'wrap' }}>
-                {EMOJIS.map(e => (
-                  <div key={e} onClick={() => setCatForm(f=>({...f,emoji:e}))} style={{ width:'36px', height:'36px', borderRadius:'9px', border:`2px solid ${catForm.emoji===e?'#FF6A00':'#E5E7EB'}`, background: catForm.emoji===e?'#FFF0EB':'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', cursor:'pointer', transition:'all 0.15s' }}>
-                    {e}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ marginBottom:'14px' }}>
-              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px' }}>اسم القسم *</label>
-              <input style={inputStyle} placeholder="مثال: البرغر، المشروبات..." value={catForm.name} onChange={e => setCatForm(f=>({...f,name:e.target.value}))} autoFocus />
-            </div>
-
-            <div style={{ marginBottom:'14px' }}>
-              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px', color:'#6B7280' }}>🇬🇧 اسم القسم (إنجليزي) <span style={{ fontWeight:'400', fontSize:'11px' }}>— اختياري</span></label>
-              <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} placeholder="e.g. Burgers, Drinks..." value={catForm.name_en} onChange={e => setCatForm(f=>({...f,name_en:e.target.value}))} />
-            </div>
-
-            <label style={{ display:'flex', alignItems:'center', gap:'10px', cursor:'pointer', marginBottom:'20px' }}>
-              <input type="checkbox" checked={catForm.is_visible} onChange={e => setCatForm(f=>({...f,is_visible:e.target.checked}))} style={{ width:'18px', height:'18px', accentColor:'#FF6A00' }}/>
-              <span style={{ fontSize:'14px', fontWeight:'600' }}>إظهار القسم في المنيو</span>
-            </label>
-
-            <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={() => setCatModal(false)} style={{ flex:1, padding:'13px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'600', fontSize:'14px', cursor:'pointer', color:'#6B7280' }}>إلغاء</button>
-              <button onClick={saveCat} style={{ flex:2, padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
-                💾 {editingCat ? 'تحديث القسم' : 'إضافة القسم'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===== PRODUCT MODAL ===== */}
-      {prodModal && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={() => setProdModal(false)}>
-          <div style={{ background:'white', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', maxHeight:'92vh', overflowY:'auto', padding:'20px 20px 36px' }} onClick={e => e.stopPropagation()}>
-            <div style={{ width:'40px', height:'4px', background:'#E5E7EB', borderRadius:'2px', margin:'0 auto 20px' }}/>
-            <h3 style={{ fontFamily:'Tajawal,sans-serif', fontWeight:'900', fontSize:'18px', marginBottom:'18px', textAlign:'center' }}>
-              {editingProd ? 'تعديل الصنف' : '🍽️ إضافة صنف جديد'}
-            </h3>
-
-            <div style={{ marginBottom:'14px' }}>
-              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px' }}>صورة الصنف (اختياري)</label>
-              <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-                <div style={{ width:'64px', height:'64px', borderRadius:'12px', background:'#F8F9FB', border:'1.5px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'26px', overflow:'hidden', flexShrink:0 }}>
-                  {prodForm.image_url
-                    ? <img src={prodForm.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                    : prodForm.emoji}
-                </div>
-                <label style={{ display:'inline-flex', alignItems:'center', gap:'6px', padding:'9px 14px', borderRadius:'10px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'12px', cursor:'pointer', color:'#374151' }}>
-                  {uploadingProdImage ? 'جارٍ الرفع...' : '📷 رفع صورة'}
-                  <input type="file" accept="image/*" onChange={handleProdImageUpload} disabled={uploadingProdImage} style={{ display:'none' }} />
-                </label>
-                {prodForm.image_url && (
-                  <button onClick={() => setProdForm(f => ({ ...f, image_url: '' }))} style={{ padding:'9px 12px', borderRadius:'10px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', color:'#EF4444', fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>حذف</button>
-                )}
-              </div>
-            </div>
-
-            <div style={{ marginBottom:'14px' }}>
-              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px' }}>أيقونة الصنف (تظهر إن لم توجد صورة)</label>
-              <div style={{ display:'flex', gap:'7px', flexWrap:'wrap' }}>
-                {EMOJIS.map(e => (
-                  <div key={e} onClick={() => setProdForm(f=>({...f,emoji:e}))} style={{ width:'36px', height:'36px', borderRadius:'9px', border:`2px solid ${prodForm.emoji===e?'#FF6A00':'#E5E7EB'}`, background: prodForm.emoji===e?'#FFF0EB':'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', cursor:'pointer', transition:'all 0.15s' }}>
-                    {e}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ marginBottom:'14px' }}>
-              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px' }}>اسم الصنف *</label>
-              <input style={inputStyle} placeholder="مثال: برغر كلاسيك" value={prodForm.name} onChange={e => setProdForm(f=>({...f,name:e.target.value}))} autoFocus />
-            </div>
-
-            <div style={{ marginBottom:'14px' }}>
-              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px', color:'#6B7280' }}>🇬🇧 اسم الصنف (إنجليزي) <span style={{ fontWeight:'400', fontSize:'11px' }}>— اختياري</span></label>
-              <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} placeholder="e.g. Classic Burger" value={prodForm.name_en} onChange={e => setProdForm(f=>({...f,name_en:e.target.value}))} />
-            </div>
-
-            <div style={{ marginBottom:'14px' }}>
-              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px' }}>الوصف</label>
-              <textarea style={{ ...inputStyle, minHeight:'72px', resize:'vertical' }} placeholder="وصف شهي يجذب العملاء..." value={prodForm.description} onChange={e => setProdForm(f=>({...f,description:e.target.value}))} />
-            </div>
-
-            <div style={{ marginBottom:'14px' }}>
-              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px', color:'#6B7280' }}>🇬🇧 الوصف (إنجليزي) <span style={{ fontWeight:'400', fontSize:'11px' }}>— اختياري</span></label>
-              <textarea style={{ ...inputStyle, minHeight:'72px', resize:'vertical', direction:'ltr', textAlign:'left' }} placeholder="Appetizing description..." value={prodForm.description_en} onChange={e => setProdForm(f=>({...f,description_en:e.target.value}))} />
-            </div>
-
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'14px' }}>
-              <div>
-                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px' }}>السعر (ريال) *</label>
-                <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} type="number" min="0" step="0.5" placeholder="0.00" value={prodForm.price} onChange={e => setProdForm(f=>({...f,price:e.target.value}))} />
-              </div>
-              <div>
-                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px' }}>سعر المقارنة</label>
-                <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} type="number" min="0" step="0.5" placeholder="0.00" value={prodForm.compare_price} onChange={e => setProdForm(f=>({...f,compare_price:e.target.value}))} />
-              </div>
-            </div>
-
-            <div style={{ marginBottom:'14px' }}>
-              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px' }}>🔥 السعرات الحرارية (اختياري)</label>
-              <input style={{ ...inputStyle, direction:'ltr', textAlign:'left' }} type="number" min="0" step="1" placeholder="مثال: 450" value={prodForm.calories} onChange={e => setProdForm(f=>({...f,calories:e.target.value}))} />
-            </div>
-
-            <div style={{ marginBottom:'14px' }}>
-              <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'4px' }}>القسم</label>
-              <select style={{ ...inputStyle, cursor:'pointer' }} value={prodForm.category_id} onChange={e => setProdForm(f=>({...f,category_id:e.target.value}))}>
-                <option value="">بدون قسم</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.emoji} {cat.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ display:'flex', gap:'12px 20px', marginBottom:'20px', flexWrap:'wrap' }}>
-              <label style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
-                <input type="checkbox" checked={prodForm.is_available} onChange={e => setProdForm(f=>({...f,is_available:e.target.checked}))} style={{ width:'17px', height:'17px', accentColor:'#FF6A00' }}/>
-                <span style={{ fontSize:'13px', fontWeight:'600' }}>✅ متاح للطلب</span>
-              </label>
-              <label style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
-                <input type="checkbox" checked={prodForm.is_featured} onChange={e => setProdForm(f=>({...f,is_featured:e.target.checked}))} style={{ width:'17px', height:'17px', accentColor:'#1E5FBF' }}/>
-                <span style={{ fontSize:'13px', fontWeight:'600' }}>⭐ مختارات المطعم</span>
-              </label>
-              <label style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
-                <input type="checkbox" checked={prodForm.is_best_seller} onChange={e => setProdForm(f=>({...f,is_best_seller:e.target.checked}))} style={{ width:'17px', height:'17px', accentColor:'#F59E0B' }}/>
-                <span style={{ fontSize:'13px', fontWeight:'600' }}>🔥 الأكثر مبيعًا</span>
-              </label>
-            </div>
-
-            {/* ===== خيارات الصنف (الحجم / الإضافات) ===== */}
-            <div style={{ marginBottom:'20px', border:'1.5px solid #E5E7EB', borderRadius:'14px', overflow:'hidden' }}>
-              <div style={{ padding:'12px 14px', background:'#F8F9FB', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                <span style={{ fontSize:'13px', fontWeight:'800' }}>🧩 خيارات الصنف (الحجم، الإضافات...)</span>
-                <button type="button" onClick={addOptionGroup} style={{ padding:'5px 10px', borderRadius:'8px', border:'1.5px solid #FF6A00', background:'white', color:'#FF6A00', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer' }}>
-                  ＋ مجموعة
-                </button>
-              </div>
-
-              {(prodForm.options || []).length === 0 ? (
-                <div style={{ padding:'16px', textAlign:'center', fontSize:'12px', color:'#9CA3AF' }}>
-                  لا توجد خيارات — مفيدة لو الصنف له أحجام أو إضافات (مثل: الحجم، الإضافات)
-                </div>
-              ) : (
-                <div style={{ padding:'12px', display:'flex', flexDirection:'column', gap:'12px' }}>
-                  {prodForm.options.map((group, gi) => (
-                    <div key={gi} style={{ border:'1.5px solid #E5E7EB', borderRadius:'12px', padding:'10px', background:'white' }}>
-                      <div style={{ display:'flex', gap:'8px', marginBottom:'8px', alignItems:'center' }}>
-                        <input
-                          placeholder="اسم المجموعة (مثال: الحجم)"
-                          value={group.name}
-                          onChange={e => updateOptionGroup(gi, 'name', e.target.value)}
-                          style={{ flex:1, padding:'8px 10px', border:'1.5px solid #E5E7EB', borderRadius:'9px', fontFamily:'Tajawal,sans-serif', fontSize:'13px', outline:'none', textAlign:'right' }}
-                        />
-                        <button type="button" onClick={() => removeOptionGroup(gi)} style={{ width:'30px', height:'30px', flexShrink:0, borderRadius:'8px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'13px' }}>🗑️</button>
-                      </div>
-
-                      <div style={{ display:'flex', gap:'14px', marginBottom:'10px', flexWrap:'wrap' }}>
-                        <label style={{ display:'flex', alignItems:'center', gap:'6px', cursor:'pointer', fontSize:'12px' }}>
-                          <input
-                            type="radio"
-                            name={`group-type-${gi}`}
-                            checked={group.type !== 'multiple'}
-                            onChange={() => updateOptionGroup(gi, 'type', 'single')}
-                            style={{ accentColor:'#FF6A00' }}
-                          />
-                          اختيار واحد
-                        </label>
-                        <label style={{ display:'flex', alignItems:'center', gap:'6px', cursor:'pointer', fontSize:'12px' }}>
-                          <input
-                            type="radio"
-                            name={`group-type-${gi}`}
-                            checked={group.type === 'multiple'}
-                            onChange={() => updateOptionGroup(gi, 'type', 'multiple')}
-                            style={{ accentColor:'#FF6A00' }}
-                          />
-                          اختيار متعدد
-                        </label>
-                        <label style={{ display:'flex', alignItems:'center', gap:'6px', cursor:'pointer', fontSize:'12px' }}>
-                          <input
-                            type="checkbox"
-                            checked={!!group.required}
-                            onChange={e => updateOptionGroup(gi, 'required', e.target.checked)}
-                            style={{ accentColor:'#FF6A00' }}
-                          />
-                          إجباري
-                        </label>
-                      </div>
-
-                      <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
-                        {group.choices.map((choice, ci) => (
-                          <div key={ci} style={{ display:'flex', gap:'6px', alignItems:'center' }}>
-                            <input
-                              placeholder="اسم الخيار"
-                              value={choice.name}
-                              onChange={e => updateChoice(gi, ci, 'name', e.target.value)}
-                              style={{ flex:2, padding:'7px 9px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'12px', outline:'none', textAlign:'right' }}
-                            />
-                            <input
-                              type="number"
-                              step="0.5"
-                              placeholder="+0"
-                              value={choice.price}
-                              onChange={e => updateChoice(gi, ci, 'price', e.target.value)}
-                              style={{ flex:1, padding:'7px 9px', border:'1.5px solid #E5E7EB', borderRadius:'8px', fontFamily:'Tajawal,sans-serif', fontSize:'12px', outline:'none', direction:'ltr', textAlign:'left' }}
-                            />
-                            <button type="button" onClick={() => removeChoice(gi, ci)} style={{ width:'26px', height:'26px', flexShrink:0, borderRadius:'7px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'11px' }}>✕</button>
-                          </div>
-                        ))}
-                        <button type="button" onClick={() => addChoice(gi)} style={{ marginTop:'4px', padding:'6px', borderRadius:'8px', border:'1.5px dashed #E5E7EB', background:'transparent', color:'#9CA3AF', fontFamily:'Tajawal,sans-serif', fontWeight:'700', fontSize:'11px', cursor:'pointer' }}>
-                          ＋ إضافة خيار
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* محرك الاقتراحات الذكي — يظهر فقط لصنف محفوظ فعلاً (يحتاج معرّفاً) */}
-            {editingProd && (
-              <div style={{ marginBottom:'18px' }}>
-                <label style={{ display:'block', fontSize:'13px', fontWeight:'700', marginBottom:'8px', color:'#374151' }}>
-                  🔗 اقتراح مع هذا الصنف <span style={{ fontWeight:'400', color:'#9CA3AF' }}>— تظهر هذه الأصناف في السلة عند إضافة الزبون لـ«{editingProd.name}»</span>
-                </label>
-
-                {recommendations.length > 0 && (
-                  <div style={{ display:'flex', flexDirection:'column', gap:'6px', marginBottom:'10px' }}>
-                    {recommendations.map((rec, i) => (
-                      <div key={rec.id} style={{ display:'flex', alignItems:'center', gap:'8px', border:'1.5px solid #E5E7EB', borderRadius:'10px', padding:'7px 10px', background:'white' }}>
-                        <div style={{ display:'flex', flexDirection:'column', gap:'0', flexShrink:0 }}>
-                          <button type="button" onClick={() => moveRec(rec, 'up')} disabled={i === 0} style={{ width:'18px', height:'14px', border:'none', background:'none', cursor: i === 0 ? 'default' : 'pointer', color: i === 0 ? '#E5E7EB' : '#6B7280', fontSize:'9px' }}>▲</button>
-                          <button type="button" onClick={() => moveRec(rec, 'down')} disabled={i === recommendations.length - 1} style={{ width:'18px', height:'14px', border:'none', background:'none', cursor: i === recommendations.length - 1 ? 'default' : 'pointer', color: i === recommendations.length - 1 ? '#E5E7EB' : '#6B7280', fontSize:'9px' }}>▼</button>
-                        </div>
-                        <span style={{ fontSize:'16px', flexShrink:0 }}>{rec.recommended?.emoji || '🍽️'}</span>
-                        <span style={{ flex:1, fontSize:'13px', fontWeight:'600', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{rec.recommended?.name}</span>
-                        <span style={{ fontSize:'12px', color:'#9CA3AF', flexShrink:0 }}>{rec.recommended?.price} ﷼</span>
-                        <button type="button" onClick={() => removeRec(rec)} style={{ width:'24px', height:'24px', flexShrink:0, borderRadius:'7px', border:'1.5px solid #FEE2E2', background:'#FEF2F2', cursor:'pointer', fontSize:'11px' }}>✕</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div style={{ position:'relative' }}>
-                  <input
-                    value={recSearch}
-                    onChange={e => setRecSearch(e.target.value)}
-                    placeholder="ابحث عن صنف لإضافته كاقتراح..."
-                    style={{ ...inputStyle, marginTop:0 }}
-                  />
-                  {recSearchResults.length > 0 && (
-                    <div style={{ position:'absolute', top:'calc(100% + 4px)', right:0, left:0, background:'white', border:'1.5px solid #E5E7EB', borderRadius:'10px', boxShadow:'0 8px 20px rgba(0,0,0,0.08)', zIndex:10, overflow:'hidden' }}>
-                      {recSearchResults.map(p => (
-                        <div key={p.id} onClick={() => addRec(p)} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'9px 12px', cursor:'pointer', borderBottom:'1px solid #F3F4F6' }}>
-                          <span style={{ fontSize:'15px' }}>{p.emoji || '🍽️'}</span>
-                          <span style={{ flex:1, fontSize:'13px' }}>{p.name}</span>
-                          <span style={{ fontSize:'12px', color:'#9CA3AF' }}>{p.price} ﷼</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={() => setProdModal(false)} style={{ flex:1, padding:'13px', borderRadius:'12px', border:'1.5px solid #E5E7EB', background:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'600', fontSize:'14px', cursor:'pointer', color:'#6B7280' }}>إلغاء</button>
-              <button onClick={saveProd} style={{ flex:2, padding:'13px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#FF6A00,#E05D00)', color:'white', fontFamily:'Tajawal,sans-serif', fontWeight:'800', fontSize:'14px', cursor:'pointer' }}>
-                💾 {editingProd ? 'تحديث الصنف' : 'إضافة الصنف'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <FilterSheet
+        open={filterSheetOpen}
+        categories={categories}
+        filters={productFilters}
+        onApply={(next) => { setProductFilters(next); setFilterSheetOpen(false) }}
+        onClose={() => setFilterSheetOpen(false)}
+      />
 
       <ConfirmDialog
         open={!!confirmDeleteCat}
