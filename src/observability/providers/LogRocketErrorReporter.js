@@ -16,6 +16,10 @@ export class LogRocketErrorReporter extends ErrorReporter {
       LogRocket.init(appId, {
         // ── Privacy: Network sanitizers ──────────────────────────────────────
         network: {
+          // احتواء مؤقت لـSECURITY-004: إيقاف تسجيل الشبكة (الطلبات/الاستجابات) كلياً، لأن
+          // dashboard-login-guard يحمل password وaccess/refresh tokens وكان يُسجَّل بلا حجب.
+          // الـsanitizers أدناه تُترك كما هي ولا تُعدَّل في هذه المرحلة (الإصلاح الكامل لاحقاً).
+          isEnabled: false,
           requestSanitizer: request => {
             // حذف Authorization header (يحتوي Supabase Bearer token)
             if (request.headers['Authorization']) {
