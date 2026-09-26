@@ -7,7 +7,6 @@ import { has as featureHas, state as featureState, accessStatus } from './lib/fe
 import RootErrorBoundary from './components/RootErrorBoundary'
 import { appConfig } from './config'
 import RequirePlatformAdmin from './admin/RequirePlatformAdmin'
-import LogRocketDiag from './pages/LogRocketDiag'
 import ProtectedRoute, { PageLoader, AuthBootstrapError } from './components/ProtectedRoute'
 import { checkForNewDeployment } from './lib/deploymentVersion'
 
@@ -268,7 +267,6 @@ function ConfiguredApp() {
         <Route path="/admin/catalog"     element={<RequirePlatformAdmin><AdminCatalog /></RequirePlatformAdmin>} />
         <Route path="/admin/branding"    element={<RequirePlatformAdmin><AdminBranding /></RequirePlatformAdmin>} />
         <Route path="/admin/marketing"   element={<RequirePlatformAdmin><AdminMarketing /></RequirePlatformAdmin>} />
-        <Route path="/logrocket-diag"   element={<LogRocketDiag />} />
         <Route path="*"                element={<NotFound />} />
       </Routes>
       </Suspense>

@@ -21,7 +21,7 @@
       "dest": "https://simsim-menu-next.vercel.app/api/$1"
     },
     {
-      "src": "/(login|register|forgot-password|reset-password|verify-email|auth/callback|onboarding|dashboard|orders|customers|branches|tables|qr|settings|analytics|billing|loyalty|marketing|staff|admin|logrocket-diag)$",
+      "src": "/(login|register|forgot-password|reset-password|verify-email|auth/callback|onboarding|dashboard|orders|customers|branches|tables|qr|settings|analytics|billing|loyalty|marketing|staff|admin)$",
       "dest": "/index.html"
     },
     {
