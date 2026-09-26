@@ -1,11 +1,29 @@
 // مُنفِّذ LogRocket لـErrorReporter — يُفعَّل فقط إذا وُجد VITE_LOGROCKET_APP_ID.
 // لا يكسر التطبيق إذا غاب المعرّف أو أخفق LogRocket في الإقلاع.
 // لا يعمل في بيئة التطوير (import.meta.env.DEV) لتفادي تسجيل جلسات dev.
+// كل إعدادات الخصوصية (network/URL/console/IP/DOM/exceptions) تأتي من privacy/ — لا منطق sanitizer هنا.
 import LogRocket from 'logrocket'
 import { ErrorReporter } from '../contracts'
+import { buildLogRocketOptions, scrubErrorText } from '../privacy/networkPolicy'
+import { toSafeError, installGlobalExceptionBoundary } from '../privacy/exceptionBoundary'
+import { safeErrorMeta } from '../privacy/exceptionMessagePolicy'
+
+const STACK_MAX_LENGTH = 2000
+
+// extra لـLogRocket: قيم نصية/رقمية منظَّفة فقط (لا كائنات، لا بيانات طلب/استجابة).
+function buildExtra(context) {
+  const extra = {}
+  if (context?.source) extra.source = scrubErrorText(context.source, 80)
+  if (context?.componentStack) extra.componentStack = scrubErrorText(context.componentStack, STACK_MAX_LENGTH)
+  if (context?.filename) extra.filename = scrubErrorText(context.filename, 200)
+  if (Number.isFinite(context?.lineno)) extra.lineno = context.lineno
+  if (Number.isFinite(context?.colno)) extra.colno = context.colno
+  return extra
+}
 
 export class LogRocketErrorReporter extends ErrorReporter {
   #ready = false
+  #uninstallBoundary = null
 
   constructor() {
     super()
@@ -13,57 +31,35 @@ export class LogRocketErrorReporter extends ErrorReporter {
     if (!appId || import.meta.env.DEV) return
 
     try {
-      LogRocket.init(appId, {
-        // ── Privacy: Network sanitizers ──────────────────────────────────────
-        network: {
-          // احتواء مؤقت لـSECURITY-004: إيقاف تسجيل الشبكة (الطلبات/الاستجابات) كلياً، لأن
-          // dashboard-login-guard يحمل password وaccess/refresh tokens وكان يُسجَّل بلا حجب.
-          // الـsanitizers أدناه تُترك كما هي ولا تُعدَّل في هذه المرحلة (الإصلاح الكامل لاحقاً).
-          isEnabled: false,
-          requestSanitizer: request => {
-            // حذف Authorization header (يحتوي Supabase Bearer token)
-            if (request.headers['Authorization']) {
-              request.headers['Authorization'] = '[REDACTED]'
-            }
-            // حذف Supabase anon key header
-            if (request.headers['apikey']) {
-              request.headers['apikey'] = '[REDACTED]'
-            }
-            // حذف body طلبات المصادقة (تحتوي password أو OTP)
-            const url = request.url || ''
-            if (url.includes('/auth/') || url.includes('/token')) {
-              request.body = '[REDACTED - auth request]'
-            }
-            return request
-          },
-          responseSanitizer: response => {
-            // حذف body استجابات المصادقة (تحتوي access_token وrefresh_token)
-            const url = response.url || ''
-            if (url.includes('/auth/') || url.includes('/token')) {
-              response.body = '[REDACTED - auth response]'
-            }
-            return response
-          },
-        },
-        // ── Privacy: DOM input masking ────────────────────────────────────────
-        dom: {
-          // يمنع تسجيل ما يكتبه المستخدم في أي input (كلمة المرور، البريد، OTP، إلخ)
-          inputSanitizer: true,
-        },
-      })
+      LogRocket.init(appId, buildLogRocketOptions())
       this.#ready = true
+      // الخيارات تعطّل الالتقاط التلقائي الخام (shouldDetectExceptions=false)؛ هذا الحدّ يعوّضه بنسخة منظَّفة.
+      this.#uninstallBoundary = installGlobalExceptionBoundary((raw, context) => this.captureException(raw, context))
     } catch {
       // إذا أخفق LogRocket في الإقلاع: التطبيق يستمر بلا observability.
     }
   }
 
+  /** يزيل مستمعي حدّ الاستثناءات (للاختبارات وإعادة التحميل الساخنة). لا يوقف LogRocket نفسه. */
+  dispose() {
+    try { this.#uninstallBoundary?.() } catch { /* ignore */ }
+    this.#uninstallBoundary = null
+  }
+
   captureException(error, context) {
     if (!this.#ready) return
     try {
-      const extra = {}
-      if (context?.source) extra.source = context.source
-      if (context?.componentStack) extra.componentStack = context.componentStack
-      LogRocket.captureException(error, { extra })
+      // Phase 1.8G: الرسالة الأصلية لا تُرسَل أبداً (Default-Deny). ما يُرسَل: نسخة آمنة + بيانات تجميع لا تحوي نصاً أصلياً.
+      const safe = toSafeError(error)
+      const meta = safeErrorMeta(safe)
+      const extra = buildExtra(context)
+      if (meta) {
+        extra.fingerprint = meta.fingerprint
+        extra.valueKind = meta.kind
+        extra.messageRedacted = meta.redacted
+        if (meta.code) extra.errorCode = meta.code
+      }
+      LogRocket.captureException(safe, { extra })
     } catch {
       // لا propagation — الإبلاغ يفشل بصمت.
     }
@@ -72,9 +68,7 @@ export class LogRocketErrorReporter extends ErrorReporter {
   captureMessage(message, context) {
     if (!this.#ready) return
     try {
-      const extra = {}
-      if (context?.source) extra.source = context.source
-      LogRocket.captureMessage(message, { extra })
+      LogRocket.captureMessage(scrubErrorText(message), { extra: buildExtra(context) })
     } catch {
       // لا propagation.
     }
